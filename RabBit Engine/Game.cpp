@@ -73,7 +73,7 @@ void Game::Render()
     if (m_timer.GetFrameCount() == 0)
     {
         return;
-    }
+    }    
 
     // Prepare the command list to render a new frame.
     Clear();

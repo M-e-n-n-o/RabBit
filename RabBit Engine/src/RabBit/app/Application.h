@@ -10,7 +10,10 @@ namespace RabBit
 		Application();
 		virtual ~Application();
 
+		void Run();
+
 		virtual int TestValue() = 0;
+		virtual void Update() = 0;
 	};
 
 	// To be defined in client

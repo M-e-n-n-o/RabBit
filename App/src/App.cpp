@@ -13,6 +13,11 @@ public:
 
 	}
 
+	void Update() override
+	{
+
+	}
+
 	int TestValue() override
 	{
 		return 69420;

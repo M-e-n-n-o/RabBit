@@ -8,6 +8,8 @@
 #include "app/Application.h"
 extern RabBit::Application* RabBit::CreateApplication();
 
+#include "TempWindow.h"
+
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
@@ -21,5 +23,5 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     delete app;
 
-    return 0;
+    return TempWindow::win(hInstance, nCmdShow);
 }

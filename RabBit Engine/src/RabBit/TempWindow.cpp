@@ -1,127 +1,97 @@
-//
-// Main.cpp
-//
-
 #include "RabBitPch.h"
-#include "Game.h"
+#include "TempWindow.h"
 
 using namespace DirectX;
 
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wcovered-switch-default"
-#pragma clang diagnostic ignored "-Wswitch-enum"
-#endif
-
-#pragma warning(disable : 4061)
-
-#ifdef USING_D3D12_AGILITY_SDK
-extern "C"
-{
-    // Used to enable the "Agility SDK" components
-    __declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_SDK_VERSION;
-    __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\";
-}
-#endif
-
-namespace
-{
-    std::unique_ptr<Game> g_game;
-}
+#include "../Game.h"
 
 LPCWSTR g_szAppName = L"RabBit Engine";
 
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-void ExitGame() noexcept;
+std::unique_ptr<Game> g_game;
 
 // Entry point
-//int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
-//{
-//    UNREFERENCED_PARAMETER(hPrevInstance);
-//    UNREFERENCED_PARAMETER(lpCmdLine);
-//
-//    if (!XMVerifyCPUSupport())
-//        return 1;
-//
-//#ifdef __MINGW32__
-//    if (FAILED(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED)))
-//        return 1;
-//#else
-//    Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);
-//    if (FAILED(initialize))
-//        return 1;
-//#endif
-//
-//    g_game = std::make_unique<Game>();
-//
-//    // Register class and create window
-//    {
-//        // Register class
-//        WNDCLASSEXW wcex = {};
-//        wcex.cbSize = sizeof(WNDCLASSEXW);
-//        wcex.style = CS_HREDRAW | CS_VREDRAW;
-//        wcex.lpfnWndProc = WndProc;
-//        wcex.hInstance = hInstance;
-//        wcex.hIcon = LoadIconW(hInstance, L"IDI_ICON");
-//        wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-//        wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
-//        wcex.lpszClassName = L"RabBit_EngineWindowClass";
-//        wcex.hIconSm = LoadIconW(wcex.hInstance, L"IDI_ICON");
-//        if (!RegisterClassExW(&wcex))
-//            return 1;
-//
-//        // Create window
-//        int w, h;
-//        g_game->GetDefaultSize(w, h);
-//
-//        RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
-//
-//        AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-//
-//        HWND hwnd = CreateWindowExW(0, L"RabBit_EngineWindowClass", g_szAppName, WS_OVERLAPPEDWINDOW,
-//            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
-//            nullptr);
-//        // TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"RabBit_EngineWindowClass", g_szAppName, WS_POPUP,
-//        // to default to fullscreen.
-//
-//        if (!hwnd)
-//            return 1;
-//
-//        ShowWindow(hwnd, nCmdShow);
-//        // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
-//
-//        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
-//
-//        GetClientRect(hwnd, &rc);
-//
-//        g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
-//    }
-//
-//    auto* app = RabBit::CreateApplication();
-//    _RPT1(0, "Application test value: %d\n", app->TestValue());
-//    delete app;
-//
-//    // Main message loop
-//    MSG msg = {};
-//    while (WM_QUIT != msg.message)
-//    {
-//        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-//        {
-//            TranslateMessage(&msg);
-//            DispatchMessage(&msg);
-//        }
-//        else
-//        {
-//            g_game->Tick();
-//        }
-//    }
-//
-//    g_game.reset();
-//
-//    return static_cast<int>(msg.wParam);
-//}
+
+int TempWindow::win(HINSTANCE hInstance, int nCmdShow)
+{
+    if (!XMVerifyCPUSupport())
+        return 1;
+
+#ifdef __MINGW32__
+    if (FAILED(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED)))
+        return 1;
+#else
+    Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);
+    if (FAILED(initialize))
+        return 1;
+#endif
+
+    g_game = std::make_unique<Game>();
+
+    // Register class and create window
+    {
+        // Register class
+        WNDCLASSEXW wcex = {};
+        wcex.cbSize = sizeof(WNDCLASSEXW);
+        wcex.style = CS_HREDRAW | CS_VREDRAW;
+        wcex.lpfnWndProc = WndProc;
+        wcex.hInstance = hInstance;
+        wcex.hIcon = LoadIconW(hInstance, L"IDI_ICON");
+        wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+        wcex.lpszClassName = L"RabBit_EngineWindowClass";
+        wcex.hIconSm = LoadIconW(wcex.hInstance, L"IDI_ICON");
+        if (!RegisterClassExW(&wcex))
+            return 1;
+
+        // Create window
+        int w, h;
+        g_game->GetDefaultSize(w, h);
+
+        RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
+
+        AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+
+        HWND hwnd = CreateWindowExW(0, L"RabBit_EngineWindowClass", g_szAppName, WS_OVERLAPPEDWINDOW,
+            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
+            nullptr);
+        // TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"RabBit_EngineWindowClass", g_szAppName, WS_POPUP,
+        // to default to fullscreen.
+
+        if (!hwnd)
+            return 1;
+
+        ShowWindow(hwnd, nCmdShow);
+        // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
+
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
+
+        GetClientRect(hwnd, &rc);
+
+        g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+    }
+
+    // Main message loop
+    MSG msg = {};
+    while (WM_QUIT != msg.message)
+    {
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else
+        {
+            g_game->Tick();
+        }
+    }
+
+    g_game.reset();
+
+    return static_cast<int>(msg.wParam);
+}
 
 // Windows procedure
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK TempWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static bool s_in_sizemove = false;
     static bool s_in_suspend = false;
@@ -274,7 +244,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 // Exit helper
-void ExitGame() noexcept
+void TempWindow::ExitGame() noexcept
 {
     PostQuitMessage(0);
 }

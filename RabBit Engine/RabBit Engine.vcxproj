@@ -119,17 +119,28 @@
     <ClInclude Include="src\RabBit.h" />
     <ClInclude Include="src\RabBit\EntryPoint.h" />
     <ClInclude Include="external\D3DX12\StepTimer.h" />
+    <ClInclude Include="src\RabBit\TempWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\RabBit\app\Application.cpp" />
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="Main.cpp" />
     <ClCompile Include="src\RabBit\RabBitPch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\RabBit\TempWindow.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="external\WinPixEventRuntime.1.0.220810001\build\WinPixEventRuntime.targets" Condition="Exists('external\WinPixEventRuntime.1.0.220810001\build\WinPixEventRuntime.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('external\WinPixEventRuntime.1.0.220810001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', 'external\WinPixEventRuntime.1.0.220810001\build\WinPixEventRuntime.targets'))" />
+  </Target>
 </Project>
