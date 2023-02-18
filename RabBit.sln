@@ -3,12 +3,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.33027.164
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RabBit Engine", "RabBit Engine\RabBit Engine.vcxproj", "{9DC25807-3AE3-4BF2-8246-5D2ABCD8F0F4}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "App", "App\App.vcxproj", "{44DC13DA-AE52-442F-ABC6-C3A9D7F73BF9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9DC25807-3AE3-4BF2-8246-5D2ABCD8F0F4} = {9DC25807-3AE3-4BF2-8246-5D2ABCD8F0F4}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RabBit Engine", "RabBit Engine\RabBit Engine.vcxproj", "{9DC25807-3AE3-4BF2-8246-5D2ABCD8F0F4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
