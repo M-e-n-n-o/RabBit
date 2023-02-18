@@ -1,6 +1,5 @@
 # Build
 out/
-out-int/
 
 # Prerequisites
 *.d
