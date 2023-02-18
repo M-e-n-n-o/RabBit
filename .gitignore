@@ -1,3 +1,7 @@
+# Build
+out/
+out-int/
+
 # Prerequisites
 *.d
 
@@ -30,3 +34,7 @@
 *.exe
 *.out
 *.app
+
+# Visual studio
+.vs/
+.vscode/
