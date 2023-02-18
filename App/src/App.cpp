@@ -15,7 +15,7 @@ public:
 
 	int TestValue() override
 	{
-		return 69;
+		return 69420;
 	}
 };
 

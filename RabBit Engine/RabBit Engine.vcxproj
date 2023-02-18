@@ -54,7 +54,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)src\RabBit\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)src\RabBit\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>RabBitPch.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
@@ -81,7 +81,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)src\RabBit\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)src\RabBit\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>RabBitPch.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
@@ -111,32 +111,23 @@
     </FXCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="external\D3DX12\d3dx12.h" />
     <ClInclude Include="src\RabBit\app\Application.h" />
-    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="Game.h" />
-    <ClInclude Include="RabBitPch.h" />
+    <ClInclude Include="src\RabBit\RabBitPch.h" />
     <ClInclude Include="src\RabBit\Core.h" />
     <ClInclude Include="src\RabBit.h" />
     <ClInclude Include="src\RabBit\EntryPoint.h" />
-    <ClInclude Include="StepTimer.h" />
+    <ClInclude Include="external\D3DX12\StepTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\RabBit\app\Application.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="RabBitPch.cpp">
+    <ClCompile Include="src\RabBit\RabBitPch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="resource.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="directx.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Manifest Include="settings.manifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
