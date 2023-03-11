@@ -43,7 +43,7 @@
 * Created by: Menno Bil
 * 
 * Include this file in your project to make use of the RabBit engine.
-* Every class, function and variable in this engine is inside the RabBit namespace. 
+* Every class, function and variable in this engine is inside the RB namespace. 
 */
 
 

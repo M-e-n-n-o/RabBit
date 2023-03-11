@@ -1,6 +1,6 @@
 #include <RabBit.h>
 
-class App : public RabBit::Application
+class App : public RB::Application
 {
 public:
 	App()
@@ -24,7 +24,7 @@ public:
 	}
 };
 
-RabBit::Application* RabBit::CreateApplication()
+RB::Application* RB::CreateApplication()
 {
 	return new App();
 }

@@ -1,7 +1,7 @@
 #include "RabBitPch.h"
 #include "Application.h"
 
-namespace RabBit
+namespace RB
 {
 	Application::Application()
 	{

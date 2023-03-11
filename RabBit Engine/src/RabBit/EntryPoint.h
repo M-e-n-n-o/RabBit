@@ -6,7 +6,7 @@
 #include <cstdio>
 
 #include "app/Application.h"
-extern RabBit::Application* RabBit::CreateApplication();
+extern RB::Application* RB::CreateApplication();
 
 #include "TempWindow.h"
 
@@ -15,7 +15,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    auto* app = RabBit::CreateApplication();
+    auto* app = RB::CreateApplication();
 
     char msgbuf[100];
     sprintf_s(msgbuf, "Application test value: %d\n", app->TestValue());

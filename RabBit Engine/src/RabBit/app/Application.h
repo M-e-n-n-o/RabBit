@@ -2,7 +2,7 @@
 
 #include "Core.h"
 
-namespace RabBit
+namespace RB
 {
 	class RABBIT_API Application
 	{
