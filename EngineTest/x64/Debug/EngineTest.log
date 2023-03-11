@@ -1,0 +1,3 @@
+﻿     Creating library C:\Users\Bil\Documents\Projecten\RabBit\x64\Debug\EngineTest.lib and object C:\Users\Bil\Documents\Projecten\RabBit\x64\Debug\EngineTest.exp
+EngineTest.obj : error LNK2019: unresolved external symbol "public: __cdecl RB::math::Vec3::Vec3(float,float,float)" (??0Vec3@math@RB@@QEAA@MMM@Z) referenced in function "public: void __cdecl EngineTest::EngineTest::TestMethod1(void)" (?TestMethod1@EngineTest@1@QEAAXXZ)
+C:\Users\Bil\Documents\Projecten\RabBit\x64\Debug\EngineTest.dll : fatal error LNK1120: 1 unresolved externals

@@ -5,7 +5,7 @@ class App : public RB::Application
 public:
 	App()
 	{
-
+		
 	}
 
 	~App()

@@ -120,6 +120,7 @@
     <ClInclude Include="src\RabBit\EntryPoint.h" />
     <ClInclude Include="external\D3DX12\StepTimer.h" />
     <ClInclude Include="src\RabBit\TempWindow.h" />
+    <ClInclude Include="src\RabBit\utils\math\Vec3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\RabBit\app\Application.cpp" />
@@ -129,6 +130,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\RabBit\TempWindow.cpp" />
+    <ClCompile Include="src\RabBit\utils\math\Vec3.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
