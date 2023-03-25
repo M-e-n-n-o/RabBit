@@ -2,7 +2,7 @@
 #include "CppUnitTest.h"
 
 // Tested files
-#include "utils/math/Vec3.h"
+#include "utils/math/Vec.h"
 
 using namespace RB::math;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;

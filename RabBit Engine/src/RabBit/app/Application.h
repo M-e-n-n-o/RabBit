@@ -15,7 +15,7 @@ namespace RB
 		virtual int TestValue() = 0;
 		virtual void Update() = 0;
 	};
-
+	
 	// To be defined in client
 	Application* CreateApplication();
 }
