@@ -53,4 +53,4 @@
 
 #include "RabBit/app/Application.h"
 
-#include "RabBit/utils/math/Vec3.h"
+#include "RabBit/utils/math/Vec.h"
