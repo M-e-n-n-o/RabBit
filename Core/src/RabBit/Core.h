@@ -1,6 +1,8 @@
 #pragma once
 
-#ifdef RB_PLATFORM_WINDOWS
+#ifdef _WIN32
+	#define RB_PLATFORM_WINDOWS
+
 	#ifdef RB_CORE_ACCESS
 		//#define RABBIT_API __declspec(dllexport)
 	#else
