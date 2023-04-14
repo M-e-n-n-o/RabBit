@@ -1,8 +1,7 @@
-#include "pch.h"
 #include "CppUnitTest.h"
 
 // Tested files
-#include "utils/math/Vec.h"
+#include "RabBit/utils/math/Vec.h"
 
 using namespace RB::math;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;

@@ -36,7 +36,7 @@ int TempWindow::win(HINSTANCE hInstance, int nCmdShow)
         wcex.lpfnWndProc = WndProc;
         wcex.hInstance = hInstance;
         wcex.hIcon = LoadIconW(hInstance, L"IDI_ICON");
-        wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        wcex.hCursor = LoadCursorW(nullptr, L"IDC_ARROW");
         wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
         wcex.lpszClassName = L"RabBit_EngineWindowClass";
         wcex.hIconSm = LoadIconW(wcex.hInstance, L"IDI_ICON");
