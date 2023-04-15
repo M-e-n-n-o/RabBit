@@ -1,32 +1,21 @@
-enable_testing()
-
-include(FetchContent)
-
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        release-1.11.0
-)
-FetchContent_MakeAvailable(googletest)
-add_library(GTest::GTest INTERFACE IMPORTED)
-target_link_libraries(GTest::GTest INTERFACE gtest_main)
-
 file(GLOB_RECURSE TEST_SRC_FILES CONFIGURE_DEPENDS
-"src/*.h"
-"src/*.cpp"
+    "src/*.h"
+    "src/*.cpp"
 )
 
 add_executable(Test ${TEST_SRC_FILES})
 
-# Link RabBit
+# Link RabBit & GoogleTest
 target_include_directories(Test PUBLIC 
-"../src" 
-"../src/RabBit"
+    "../src" 
+    "../src/RabBit"
 )
-target_link_directories(Test PUBLIC RabBit)
-target_link_libraries(Test 
+target_link_directories(Test PUBLIC 
     RabBit
-    GTest::GTest
+)
+target_link_libraries(Test PRIVATE
+    RabBit
+    gtest
 )
 
 add_test(NAME Test COMMAND Test)

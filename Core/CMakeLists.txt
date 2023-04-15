@@ -53,5 +53,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 
 if(RABBIT_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(external/GoogleTest)
     add_subdirectory(tests)
 endif()
