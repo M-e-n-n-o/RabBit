@@ -4,7 +4,7 @@
 
 namespace RB
 {
-	class RABBIT_API Application
+	class Application
 	{
 	public:
 		Application();

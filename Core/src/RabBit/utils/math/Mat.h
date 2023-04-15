@@ -5,7 +5,7 @@
 
 namespace RB::math
 {
-	struct RABBIT_API Mat4
+	struct Mat4
 	{
 	public:
 		

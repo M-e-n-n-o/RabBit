@@ -4,7 +4,7 @@
 
 namespace RB::math
 {
-	struct RABBIT_API Vec3
+	struct Vec3
 	{
 	public:
 		union { float x, r; };
@@ -41,7 +41,7 @@ namespace RB::math
 		static float Angle(const Vec3& first, const Vec3& second);
 	};
 
-	struct RABBIT_API Vec4
+	struct Vec4
 	{
 	public:
 		union { float x, r; };
