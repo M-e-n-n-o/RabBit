@@ -22,6 +22,6 @@ target_link_libraries(${APP_NAME} RabBit)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_custom_command(TARGET ${APP_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:RabBit>/RabBit.dll"
+            "$<TARGET_FILE_DIR:RabBit>/RabBit.lib"
             $<TARGET_FILE_DIR:${APP_NAME}>)
 endif()
