@@ -23,5 +23,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     delete app;
 
-    return TempWindow::win(hInstance, nCmdShow);
+    while(true) {}
+
+    //return TempWindow::win(hInstance, nCmdShow);
 }
