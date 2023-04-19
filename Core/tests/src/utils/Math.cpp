@@ -10,7 +10,7 @@ TEST(MathTest, Vec3AddVec3)
 	Vec3 second(0.5f);
 	Vec3 result = first + second;
 	ASSERT_EQ(1.0f, result.x);
-	ASSERT_EQ(2.0f, result.y);
+	ASSERT_EQ(1.0f, result.y);
 	ASSERT_EQ(1.0f, result.z);
 }
 
