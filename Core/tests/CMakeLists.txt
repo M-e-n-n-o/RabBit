@@ -3,6 +3,7 @@ file(GLOB_RECURSE TEST_SRC_FILES CONFIGURE_DEPENDS
     "src/*.cpp"
 )
 
+include(GoogleTest)
 add_executable(Test ${TEST_SRC_FILES})
 
 # Link RabBit & GoogleTest
@@ -18,7 +19,10 @@ target_link_libraries(Test PRIVATE
     gtest
 )
 
-add_test(NAME Test COMMAND Test)
+gtest_discover_tests(Test
+    DISCOVERY_TIMEOUT
+        240
+)
 
 # Add post build command to copy RabBit library to build location
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
