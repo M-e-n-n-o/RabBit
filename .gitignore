@@ -1,9 +1,6 @@
 # Build
 out/
 
-# External libs
-external/
-
 # Prerequisites
 *.d
 
