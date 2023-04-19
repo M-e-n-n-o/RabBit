@@ -40,16 +40,16 @@ target_include_directories(RabBit PUBLIC
 
 # Link windows specific libraries
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    find_library(D3D12 d3d12)
-    find_library(DXGI dxgi)
-    find_library(D3DCOMPILER d3dcompiler)
+    # find_library(D3D12 d3d12)
+    # find_library(DXGI dxgi)
+    # find_library(D3DCOMPILER d3dcompiler)
 
-    # Link external libraries
-    target_link_libraries(RabBit PUBLIC
-        ${D3D12}
-        ${DXGI}
-        ${D3DCOMPILER}
-    )
+    # # Link external libraries
+    # target_link_libraries(RabBit PUBLIC
+    #     ${D3D12}
+    #     ${DXGI}
+    #     ${D3DCOMPILER}
+    # )
 endif()
 
 if(RABBIT_BUILD_TESTS)
