@@ -1,6 +1,6 @@
 # RabBit Engine
 
-<p align="right">
+<p align="left">
 <img src="https://github.com/M-e-n-n-o/RabBit/actions/workflows/BuildAndTest.yml/badge.svg">
 </p>
 
