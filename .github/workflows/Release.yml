@@ -7,15 +7,16 @@ on:
     branches: [ "main" ]
 
 env:
+  OPERATING_SYSTEM:     windows-latest
   BUILD_CONFIG_DIST:    MinSizeRel
   BUILD_CONFIG_DEBUG:   Debug
   BUILD_CONFIG_RELEASE: Release
 
 
 jobs:
-  runs-on: windows-latest
-
   setup:
+    runs-on: ${{env.OPERATING_SYSTEM}}
+
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v3
@@ -26,6 +27,9 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
   dist:
+    runs-on: ${{env.OPERATING_SYSTEM}}
+
+    steps:
     - name: Distribution build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
 
@@ -34,6 +38,9 @@ jobs:
       run: ctest
 
   release:
+    runs-on: ${{env.OPERATING_SYSTEM}}
+
+    steps:
     - name: Release build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_RELEASE}}
 
@@ -42,6 +49,9 @@ jobs:
       run: ctest
 
   debug:
+    runs-on: ${{env.OPERATING_SYSTEM}}
+
+    steps:
     - name: Debug build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DEBUG}}
 
