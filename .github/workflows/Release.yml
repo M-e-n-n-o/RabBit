@@ -1,0 +1,50 @@
+name: Build & Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  BUILD_CONFIG_DIST:    MinSizeRel
+  BUILD_CONFIG_DEBUG:   Debug
+  BUILD_CONFIG_RELEASE: Release
+
+
+jobs:
+  runs-on: windows-latest
+
+  setup:
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/out
+
+  dist:
+    - name: Distribution build
+      run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
+
+    - name: Distribution tests
+      working-directory: ${{github.workspace}}/out/Core/tests
+      run: ctest
+
+  release:
+    - name: Release build
+      run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_RELEASE}}
+
+    - name: Release tests
+      working-directory: ${{github.workspace}}/out/Core/tests
+      run: ctest
+
+  debug:
+    - name: Debug build
+      run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DEBUG}}
+
+    - name: Debug tests
+      working-directory: ${{github.workspace}}/out/Core/tests
+      run: ctest
