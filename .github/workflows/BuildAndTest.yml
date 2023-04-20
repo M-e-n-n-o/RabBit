@@ -13,10 +13,11 @@ env:
 
 
 jobs:
-  setup:
+  BuildAndTest:
     runs-on: windows-latest
 
     steps:
+    # Setup
     - name: Checkout repository and submodules
       uses: actions/checkout@v3
       with:
@@ -25,11 +26,8 @@ jobs:
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/out
 
-  dist:
-    runs-on: windows-latest
-    needs: setup
 
-    steps:
+    # Distribution
     - name: Distribution build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
 
@@ -37,11 +35,8 @@ jobs:
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
 
-  release:
-    runs-on: windows-latest
-    needs: setup
 
-    steps:
+    # Release
     - name: Release build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_RELEASE}}
 
@@ -49,11 +44,8 @@ jobs:
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
 
-  debug:
-    runs-on: windows-latest
-    needs: setup
 
-    steps:
+    # Debug
     - name: Debug build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DEBUG}}
 
