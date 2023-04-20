@@ -8,7 +8,7 @@
 #include "app/Application.h"
 extern RB::Application* RB::CreateApplication();
 
-#include "TempWindow.h"
+//#include "TempWindow.h"
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -25,5 +25,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     while(true) {}
 
-    return TempWindow::win(hInstance, nCmdShow);
+    return true;
+    //return TempWindow::win(hInstance, nCmdShow);
 }
