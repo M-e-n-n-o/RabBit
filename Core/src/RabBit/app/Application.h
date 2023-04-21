@@ -12,7 +12,6 @@ namespace RB
 
 		void Run();
 
-		virtual int TestValue() = 0;
 		virtual void Update() = 0;
 	};
 	

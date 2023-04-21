@@ -16,9 +16,9 @@ add_library(RabBit STATIC ${RABBIT_SRC_FILES})
 
 # Add standard preprocessor definitions
 add_compile_definitions(
-    _CRT_SECURE_NO_WARNINGS
-
-    RB_VERSION="${CMAKE_PROJECT_VERSION}"
+    RB_VERSION_MAJOR="${PROJECT_VERSION_MAJOR}"
+    RB_VERSION_MINOR="${PROJECT_VERSION_MINOR}"
+    RB_VERSION_PATCH="${PROJECT_VERSION_PATCH}"
 
     $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>
     $<$<CONFIG:Release>:RB_CONFIG_RELEASE>
@@ -40,16 +40,11 @@ target_include_directories(RabBit PUBLIC
 
 # Link windows specific libraries
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    # find_library(D3D12 d3d12)
-    # find_library(DXGI dxgi)
-    # find_library(D3DCOMPILER d3dcompiler)
-
-    # # Link external libraries
-    # target_link_libraries(RabBit PUBLIC
-    #     ${D3D12}
-    #     ${DXGI}
-    #     ${D3DCOMPILER}
-    # )
+    target_link_libraries(RabBit
+        d3d12.lib
+        dxgi.lib
+        dxguid.lib
+    )
 endif()
 
 if(RABBIT_BUILD_TESTS)

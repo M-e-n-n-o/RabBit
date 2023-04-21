@@ -17,11 +17,6 @@ public:
 	{
 
 	}
-
-	int TestValue() override
-	{
-		return 69420;
-	}
 };
 
 RB::Application* RB::CreateApplication()
