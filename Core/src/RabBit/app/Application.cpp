@@ -19,7 +19,7 @@ namespace RB
 {
 	Application::Application()
 	{
-		RB_LOG("RabBit Engine version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
+		RB_LOG_RELEASE("RabBit Engine version: %s.%s.%s\n", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
 
 		RB_ASSERT(1 == 1);
 
