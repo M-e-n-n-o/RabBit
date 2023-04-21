@@ -10,5 +10,6 @@
 #else
 
 #define RB_ASSERT(x)
+#define RB_ASSERT_D3D(x)
 
 #endif
