@@ -18,12 +18,12 @@ Vec3::Vec3(float x, float y, float z)
 {
 }
 
-void RB::math::Vec3::Normalize()
+void Vec3::Normalize()
 {
 	*this = *this / GetLength();
 }
 
-float RB::math::Vec3::GetLength() const
+float Vec3::GetLength() const
 {
 	return sqrt((x * x) + (y * y) + (z * z));
 }
@@ -46,7 +46,7 @@ Vec3 Vec3::operator+(float const& other) const
 	);
 }
 
-Vec3 RB::math::Vec3::operator-(const Vec3& other) const
+Vec3 Vec3::operator-(const Vec3& other) const
 {
 	return Vec3(
 		x - other.x,
@@ -55,7 +55,7 @@ Vec3 RB::math::Vec3::operator-(const Vec3& other) const
 	);
 }
 
-Vec3 RB::math::Vec3::operator-(const float& other) const
+Vec3 Vec3::operator-(const float& other) const
 {
 	return Vec3(
 		x - other,
@@ -64,7 +64,7 @@ Vec3 RB::math::Vec3::operator-(const float& other) const
 	);
 }
 
-Vec3 RB::math::Vec3::operator*(const Vec3& other) const
+Vec3 Vec3::operator*(const Vec3& other) const
 {
 	return Vec3(
 		x * other.x,
@@ -73,7 +73,7 @@ Vec3 RB::math::Vec3::operator*(const Vec3& other) const
 	);
 }
 
-Vec3 RB::math::Vec3::operator*(const float& other) const
+Vec3 Vec3::operator*(const float& other) const
 {
 	return Vec3(
 		x * other,
@@ -82,7 +82,7 @@ Vec3 RB::math::Vec3::operator*(const float& other) const
 	);
 }
 
-Vec3 RB::math::Vec3::operator/(const Vec3& other) const
+Vec3 Vec3::operator/(const Vec3& other) const
 {
 	return Vec3(
 		x / other.x,
@@ -91,7 +91,7 @@ Vec3 RB::math::Vec3::operator/(const Vec3& other) const
 	);
 }
 
-Vec3 RB::math::Vec3::operator/(const float& other) const
+Vec3 Vec3::operator/(const float& other) const
 {
 	return Vec3(
 		x / other,
@@ -100,7 +100,7 @@ Vec3 RB::math::Vec3::operator/(const float& other) const
 	);
 }
 
-Vec3 RB::math::Vec3::Cross(const Vec3& first, const Vec3& second)
+Vec3 Vec3::Cross(const Vec3& first, const Vec3& second)
 {
 	return Vec3(
 		first.y * second.z - first.z * second.y,
@@ -109,7 +109,7 @@ Vec3 RB::math::Vec3::Cross(const Vec3& first, const Vec3& second)
 	);
 }
 
-float RB::math::Vec3::Dot(const Vec3& first, const Vec3& second)
+float Vec3::Dot(const Vec3& first, const Vec3& second)
 {
 	return (
 		first.x * second.x +
@@ -118,7 +118,7 @@ float RB::math::Vec3::Dot(const Vec3& first, const Vec3& second)
 	);
 }
 
-float RB::math::Vec3::Angle(const Vec3& first, const Vec3& second)
+float Vec3::Angle(const Vec3& first, const Vec3& second)
 {
 	return acos(Dot(first, second) / (first.GetLength() * second.GetLength()));
 }

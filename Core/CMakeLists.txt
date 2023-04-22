@@ -19,11 +19,6 @@ add_compile_definitions(
     RB_VERSION_MAJOR="${PROJECT_VERSION_MAJOR}"
     RB_VERSION_MINOR="${PROJECT_VERSION_MINOR}"
     RB_VERSION_PATCH="${PROJECT_VERSION_PATCH}"
-
-    $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>
-    $<$<CONFIG:Release>:RB_CONFIG_RELEASE>
-    $<$<CONFIG:RelWithDebInfo>:RB_CONFIG_RELEASE>
-    $<$<CONFIG:MinSizeRel>:RB_CONFIG_DIST>
 )
 
 # Give RabBit core access to itself

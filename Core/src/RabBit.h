@@ -51,6 +51,9 @@
 #include "RabBit/EntryPoint.h"
 // ---------------------------------
 
+#include "RabBit/utils/debug/Log.h"
+#include "RabBit/utils/debug/Assert.h"
+
 #include "RabBit/app/Application.h"
 
 #include "RabBit/utils/math/Vec.h"

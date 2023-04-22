@@ -20,9 +20,8 @@
 	#endif
 
 	#ifdef RB_CONFIG_DIST
-
 	#endif
 
 #else
-	#error RabBit only supports Windows! Make sure to specify a supported platform in the CMakeLists.txt!
+	#error Make sure to specify a supported platform in the CMakeLists.txt! RabBit only supports Windows!
 #endif
