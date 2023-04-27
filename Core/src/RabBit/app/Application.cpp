@@ -7,10 +7,11 @@ namespace RB
 {
 	Application::Application()
 	{
-		RB_LOG_RELEASE("Welcome to the RabBit Engine");
-		RB_LOG_RELEASE("Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
+		//RB_LOG_RELEASE("Welcome to the RabBit Engine");
+		//RB_LOG_RELEASE("Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
 
-		GraphicsDevice device;
+		Graphics::GraphicsDevice device;
+		
 	}
 
 	Application::~Application()

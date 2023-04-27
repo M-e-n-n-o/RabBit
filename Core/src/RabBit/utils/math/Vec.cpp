@@ -1,7 +1,7 @@
 #include "RabBitPch.h"
 #include "utils/math/Vec.h"
 
-using namespace RB::math;
+using namespace RB::Math;
 
 Vec3::Vec3()
 	: x(0.0f), y(0.0f), z(0.0f)

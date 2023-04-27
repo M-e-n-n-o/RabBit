@@ -3,6 +3,8 @@
 #include "Core.h"
 #include "utils/debug/Log.h"
 
+#include <exception>
+
 namespace RB
 {
 	#ifdef RB_ENABLE_ASSERTS

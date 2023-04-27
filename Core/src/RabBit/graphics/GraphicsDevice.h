@@ -14,7 +14,7 @@
 // D3D12 extension library.
 #include <D3DX12/d3dx12.h>
 
-namespace RB
+namespace RB::Graphics
 {
 	class GraphicsDevice
 	{
@@ -24,6 +24,7 @@ namespace RB
 
 	private:
 		void CreateAdapter();
+		void CreateDevice();
 
 		Microsoft::WRL::ComPtr<ID3D12Device2> m_NativeDevice;
 		Microsoft::WRL::ComPtr<IDXGIAdapter4> m_NativeAdapter;

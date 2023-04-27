@@ -3,7 +3,7 @@
 #include "Core.h"
 #include "utils/math/Vec.h"
 
-namespace RB::math
+namespace RB::Math
 {
 	struct Mat4
 	{

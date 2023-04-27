@@ -2,7 +2,7 @@
 
 #include "Core.h"
 
-namespace RB::math
+namespace RB::Math
 {
 	struct Vec3
 	{

@@ -2,18 +2,18 @@
 
 #include "Core.h"
 
-namespace RB
+namespace RB::Debug
 {
 #ifdef RB_ENABLE_LOGS
 
 	#ifdef RB_CORE_ACCESS
-		#define RB_LOG(...)			{ RB::Logger::SetModeNormal();	RB::Logger::LogCore(__VA_ARGS__); }	
-		#define RB_LOG_WARN(...)	{ RB::Logger::SetModeWarn();	RB::Logger::LogCore(__VA_ARGS__); }
-		#define RB_LOG_ERROR(...)	{ RB::Logger::SetModeError();	RB::Logger::LogCore(__VA_ARGS__); }
+		#define RB_LOG(...)			{ RB::Debug::Logger::SetModeNormal();	RB::Debug::Logger::LogCore(__VA_ARGS__); }	
+		#define RB_LOG_WARN(...)	{ RB::Debug::Logger::SetModeWarn();		RB::Debug::Logger::LogCore(__VA_ARGS__); }
+		#define RB_LOG_ERROR(...)	{ RB::Debug::Logger::SetModeError();	RB::Debug::Logger::LogCore(__VA_ARGS__); }
 	#else
-		#define RB_LOG(...)			{ RB::Logger::SetModeNormal();	RB::Logger::LogApp(__VA_ARGS__); }	
-		#define RB_LOG_WARN(...)	{ RB::Logger::SetModeWarn();	RB::Logger::LogApp(__VA_ARGS__); }
-		#define RB_LOG_ERROR(...)	{ RB::Logger::SetModeError();	RB::Logger::LogApp(__VA_ARGS__); }
+		#define RB_LOG(...)			{ RB::Debug::Logger::SetModeNormal();	RB::Debug::Logger::LogApp(__VA_ARGS__); }	
+		#define RB_LOG_WARN(...)	{ RB::Debug::Logger::SetModeWarn();		RB::Debug::Logger::LogApp(__VA_ARGS__); }
+		#define RB_LOG_ERROR(...)	{ RB::Debug::Logger::SetModeError();	RB::Debug::Logger::LogApp(__VA_ARGS__); }
 	#endif
 
 	#define RB_LOG_RELEASE(...)		RB_LOG(__VA_ARGS__)
