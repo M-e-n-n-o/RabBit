@@ -9,13 +9,24 @@
 #undef CreateWindow
 #endif
 
-namespace RB::Graphics::NativeWindow
+namespace RB::Graphics
 {
-	extern HWND g_NativeWindowHandle;
+	class NativeWindow
+	{
+	public:
+		NativeWindow() = default;
 
-	void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
+		void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
 
-	void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height);
+		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height);
 
-	void ShowWindow();
+		void ShowWindow();
+
+		HWND GetWindowHandle() const { return m_NativeWindowHandle; }
+
+	private:
+		HWND m_NativeWindowHandle;
+	};
+
+	extern NativeWindow* g_NativeWindow;
 }

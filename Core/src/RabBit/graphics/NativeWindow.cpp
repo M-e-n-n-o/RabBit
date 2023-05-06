@@ -1,20 +1,14 @@
 #include "RabBitPch.h"
 #include "NativeWindow.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-#include <wrl.h>
-
-namespace RB::Graphics::NativeWindow
+namespace RB::Graphics
 {
-	HWND g_NativeWindowHandle = nullptr;
+	NativeWindow* g_NativeWindow = nullptr;
 
 	// Window callback function
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-
-	void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
+	void NativeWindow::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
 	{
 		WNDCLASSEXW window_class = {};
 
@@ -35,7 +29,7 @@ namespace RB::Graphics::NativeWindow
 		RB_ASSERT_FATAL_RELEASE(SUCCEEDED(result), "Failed to register window");
 	}
 
-	void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height)
+	void NativeWindow::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height)
 	{
 		int screen_width	= ::GetSystemMetrics(SM_CXSCREEN);
 		int screen_height	= ::GetSystemMetrics(SM_CYSCREEN);
@@ -50,7 +44,7 @@ namespace RB::Graphics::NativeWindow
 		int window_x		= std::max<int>(0, (screen_width - window_width) / 2);
 		int window_y		= std::max<int>(0, (screen_height - window_height) / 2);
 
-		g_NativeWindowHandle = ::CreateWindowExW(
+		m_NativeWindowHandle = ::CreateWindowExW(
 			NULL,
 			class_name,
 			window_title,
@@ -65,12 +59,12 @@ namespace RB::Graphics::NativeWindow
 			nullptr
 		);
 
-		RB_ASSERT_FATAL_RELEASE(g_NativeWindowHandle, "Failed to create window");
+		RB_ASSERT_FATAL_RELEASE(m_NativeWindowHandle, "Failed to create window");
 	}
 
-	void ShowWindow()
+	void NativeWindow::ShowWindow()
 	{
-		::ShowWindow(g_NativeWindowHandle, SW_SHOW);
+		::ShowWindow(m_NativeWindowHandle, SW_SHOW);
 	}
 
 	LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)

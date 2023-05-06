@@ -1,15 +1,16 @@
 #include "RabBitPch.h"
 #include "GraphicsDevice.h"
 
-using namespace Microsoft::WRL;
+#include "utils/Gptr.h"
 
 namespace RB::Graphics
 {
+	GraphicsDevice* g_GraphicsDevice = nullptr;
 
 	GraphicsDevice::GraphicsDevice()
 	{
 #ifdef RB_CONFIG_DEBUG
-		ComPtr<ID3D12Debug> debug_interface;
+		GPtr<ID3D12Debug> debug_interface;
 		RB_ASSERT_FATAL_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)), "Could not get the debug interface");
 		debug_interface->EnableDebugLayer();
 #endif
@@ -25,7 +26,7 @@ namespace RB::Graphics
 
 	void GraphicsDevice::CreateAdapter()
 	{
-		ComPtr<IDXGIFactory4> dxgi_factory;
+		GPtr<IDXGIFactory4> dxgi_factory;
 		uint32_t factory_flags = 0;
 #ifdef RB_CONFIG_DEBUG
 		factory_flags = DXGI_CREATE_FACTORY_DEBUG;
@@ -33,7 +34,7 @@ namespace RB::Graphics
 
 		RB_ASSERT_FATAL_RELEASE_D3D(CreateDXGIFactory2(factory_flags, IID_PPV_ARGS(&dxgi_factory)), "Could not create factory");
 
-		ComPtr<IDXGIAdapter1> dxgi_adapter1;
+		GPtr<IDXGIAdapter1> dxgi_adapter1;
 
 		std::stringstream output;
 		output << "Following D3D12 compatible GPU's found:\n";
@@ -77,18 +78,18 @@ namespace RB::Graphics
 
 		// Enable debug messages
 #ifdef RB_CONFIG_DEBUG
-		ComPtr<ID3D12InfoQueue> info_queue;
+		GPtr<ID3D12InfoQueue> info_queue;
 		if (FAILED(m_NativeDevice.As(&info_queue)))
 		{
 			RB_LOG_ERROR("Could not create D3D12 info queue, D3D12 debug messages will not be visible");
 			return;
 		}
 
-		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
-		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO, FALSE);
-		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, FALSE);
+		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION,	TRUE);
+		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,		TRUE);
+		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,		TRUE);
+		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,			FALSE);
+		info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,		FALSE);
 
 		// Suppress whole categories of messages
 		// D3D12_MESSAGE_CATEGORY categories[] = 
@@ -113,10 +114,10 @@ namespace RB::Graphics
 		D3D12_INFO_QUEUE_FILTER filter = {};
 		//filter.DenyList.NumCategories = _countof(categories);
 		//filter.DenyList.pCategoryList = categories;
-		filter.DenyList.NumSeverities = _countof(severities);
-		filter.DenyList.pSeverityList = severities;
-		filter.DenyList.NumIDs = _countof(ids);
-		filter.DenyList.pIDList = ids;
+		filter.DenyList.NumSeverities	= _countof(severities);
+		filter.DenyList.pSeverityList	= severities;
+		filter.DenyList.NumIDs			= _countof(ids);
+		filter.DenyList.pIDList			= ids;
 
 		RB_ASSERT_FATAL_RELEASE_D3D(info_queue->PushStorageFilter(&filter), "Could not set the D3D12 message filter");
 #endif

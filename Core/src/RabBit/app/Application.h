@@ -2,6 +2,9 @@
 
 #include "Core.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 namespace RB
 {
 	class Application
@@ -10,6 +13,7 @@ namespace RB
 		Application();
 		virtual ~Application();
 
+		void Start(HINSTANCE window_instance);
 		void Run();
 
 		virtual void Update() = 0;

@@ -25,5 +25,3 @@
 #else
 	#error Make sure to specify a supported platform in the CMakeLists.txt! RabBit only supports Windows!
 #endif
-
-#include <cstdint>
