@@ -2,6 +2,10 @@
 
 #include "Core.h"
 
+#ifndef RB_ENABLE_LOGS
+	#include <cstdio>
+#endif
+
 namespace RB::Debug
 {
 #ifdef RB_ENABLE_LOGS

@@ -19,7 +19,7 @@
 		#define RB_ENABLE_LOGS
 	#endif
 
-	#ifdef RB_CONFIG_DIST
+	#ifdef RB_CONFIG_FINAL
 	#endif
 
 #else
