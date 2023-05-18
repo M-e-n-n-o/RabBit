@@ -1,10 +1,12 @@
 #include "RabBitPch.h"
 #include "Application.h"
 
-#include "graphics/NativeWindow.h"
+#include "graphics/window/NativeWindow.h"
 #include "graphics/GraphicsDevice.h"
+#include "graphics/CommandQueue.h"
 
 using namespace RB::Graphics;
+using namespace RB::Window;
 
 namespace RB
 {
@@ -27,7 +29,12 @@ namespace RB
 
 		g_GraphicsDevice = new GraphicsDevice();
 
+		CommandQueue command_queue = CommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+
 		g_NativeWindow->ShowWindow();
+
+		// Initialize app user
+		Start();
 	}
 
 	void Application::Run()

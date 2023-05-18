@@ -1,7 +1,7 @@
 #include "RabBitPch.h"
 #include "NativeWindow.h"
 
-namespace RB::Graphics
+namespace RB::Window
 {
 	NativeWindow* g_NativeWindow = nullptr;
 

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "utils/GPtr.h"
+#include "utils/Ptr.h"
 
 // DirectX 12 specific headers.
+#include <d3d12.h>
 #include <dxgi1_6.h>
 
 // D3D12 extension library.
@@ -13,10 +14,11 @@ namespace RB::Graphics
 	class CommandQueue
 	{
 	public:
-		CommandQueue();
+		CommandQueue(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
+		CommandQueue(GPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
 		~CommandQueue();
 
 	private:
-
+		GPtr<ID3D12CommandQueue> m_NativeCommandQueue;
 	};
 }

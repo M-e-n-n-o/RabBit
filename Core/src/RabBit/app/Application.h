@@ -16,6 +16,7 @@ namespace RB
 		void Start(HINSTANCE window_instance);
 		void Run();
 
+		virtual void Start() = 0;
 		virtual void Update() = 0;
 	};
 	

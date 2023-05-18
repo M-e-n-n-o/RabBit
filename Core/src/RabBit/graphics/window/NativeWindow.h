@@ -1,15 +1,16 @@
 #pragma once
 
+#include "utils/Ptr.h"
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-
 #include <wrl.h>
 
 #if defined(CreateWindow)
 #undef CreateWindow
 #endif
 
-namespace RB::Graphics
+namespace RB::Window
 {
 	class NativeWindow
 	{

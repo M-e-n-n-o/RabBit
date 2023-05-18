@@ -1,8 +1,6 @@
 #include "RabBitPch.h"
 #include "GraphicsDevice.h"
 
-#include "utils/Gptr.h"
-
 namespace RB::Graphics
 {
 	GraphicsDevice* g_GraphicsDevice = nullptr;
@@ -24,6 +22,26 @@ namespace RB::Graphics
 
 	}
 
+	bool GraphicsDevice::IsFeatureSupported(DXGI_FEATURE feature)
+	{
+		BOOL supported = FALSE;
+
+		GPtr<IDXGIFactory4> factory4;
+		if (SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory4))))
+		{
+			GPtr<IDXGIFactory5> factory5;
+			if (SUCCEEDED(factory4.As(&factory5)))
+			{
+				if (FAILED(factory5->CheckFeatureSupport(feature, &supported, sizeof(supported))))
+				{
+					supported = FALSE;
+				}
+			}
+		}
+
+		return supported == TRUE;
+	}
+
 	void GraphicsDevice::CreateAdapter()
 	{
 		GPtr<IDXGIFactory4> dxgi_factory;
@@ -36,8 +54,7 @@ namespace RB::Graphics
 
 		GPtr<IDXGIAdapter1> dxgi_adapter1;
 
-		std::stringstream output;
-		output << "Following D3D12 compatible GPU's found:\n";
+		RB_LOG("Found the following D3D12 compatible GPU's:");
 
 		std::string desc_best_adapter;
 		int64_t max_dedicated_vram = 0;
@@ -53,7 +70,8 @@ namespace RB::Graphics
 				char desc[128];
 				char def_char = ' ';
 				WideCharToMultiByte(CP_ACP, 0, dxgi_adapter_desc.Description, -1, desc, 128, &def_char, NULL);
-				output << "\t\t" << (adapter_index + 1) << ". " << desc << "\n";
+				//output << "\t\t" << (adapter_index + 1) << ". " << desc << "\n";
+				RB_LOG("\t%d. %s", adapter_index + 1, desc);
 
 				if (dxgi_adapter_desc.DedicatedVideoMemory > max_dedicated_vram)
 				{
@@ -66,10 +84,9 @@ namespace RB::Graphics
 
 		RB_ASSERT_FATAL_RELEASE_D3D(max_dedicated_vram != 0, "Could not find any D3D12 compatible GPU");
 
-		output << "\t Chosen GPU:\n";
-		output << "\t\tName: " << desc_best_adapter << "\n";
-		output << "\t\tVRAM: " << (max_dedicated_vram / 1000000) << " MB";
-		RB_LOG(output.str().c_str());
+		RB_LOG("Selected graphics device:");
+		RB_LOG("\tName: %s", desc_best_adapter.c_str());
+		RB_LOG("\tVRAM: %d MB", max_dedicated_vram / 1000000);
 	}
 
 	void GraphicsDevice::CreateDevice()

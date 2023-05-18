@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/Gptr.h"
+#include "utils/Ptr.h"
 
 // DirectX 12 specific headers.
 #include <dxgi1_6.h>
@@ -15,6 +15,10 @@ namespace RB::Graphics
 	public:
 		GraphicsDevice();
 		~GraphicsDevice();
+
+		static bool IsFeatureSupported(DXGI_FEATURE feature);
+
+		GPtr<ID3D12Device2> Get() const { return m_NativeDevice; }
 
 	private:
 		void CreateAdapter();
