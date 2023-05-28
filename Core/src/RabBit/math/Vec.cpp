@@ -1,5 +1,5 @@
 #include "RabBitPch.h"
-#include "utils/math/Vec.h"
+#include "Vec.h"
 
 using namespace RB::Math;
 

@@ -5,7 +5,7 @@
 #include <Windows.h>
 
 #ifdef RB_ENABLE_LOGS
-namespace RB::Debug
+namespace RB::Utils::Debug
 {
 	void Logger::OpenConsole()
 	{

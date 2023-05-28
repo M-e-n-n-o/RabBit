@@ -10,12 +10,12 @@
 #undef CreateWindow
 #endif
 
-namespace RB::Window
+namespace RB::Graphics::Window
 {
 	class NativeWindow
 	{
 	public:
-		NativeWindow() = default;
+		NativeWindow();
 
 		void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
 

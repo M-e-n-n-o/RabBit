@@ -5,7 +5,7 @@
 
 #include <exception>
 
-namespace RB
+namespace RB::Utils::Debug
 {
 	#ifdef RB_ENABLE_ASSERTS
 

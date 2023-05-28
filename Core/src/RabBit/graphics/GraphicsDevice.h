@@ -3,6 +3,7 @@
 #include "utils/Ptr.h"
 
 // DirectX 12 specific headers.
+#include <d3d12.h>
 #include <dxgi1_6.h>
 
 // D3D12 extension library.
@@ -16,9 +17,10 @@ namespace RB::Graphics
 		GraphicsDevice();
 		~GraphicsDevice();
 
-		static bool IsFeatureSupported(DXGI_FEATURE feature);
+				bool IsFormatSupported(DXGI_FORMAT format);
+		static	bool IsFeatureSupported(DXGI_FEATURE feature);
 
-		GPtr<ID3D12Device2> Get() const { return m_NativeDevice; }
+		GPtr<ID3D12Device2> Get2() const { return m_NativeDevice; }
 
 	private:
 		void CreateAdapter();

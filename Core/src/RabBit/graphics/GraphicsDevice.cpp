@@ -22,6 +22,17 @@ namespace RB::Graphics
 
 	}
 
+	bool GraphicsDevice::IsFormatSupported(DXGI_FORMAT format)
+	{
+		D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = { format };
+		if (FAILED(m_NativeDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &format_support, sizeof(format_support))))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 	bool GraphicsDevice::IsFeatureSupported(DXGI_FEATURE feature)
 	{
 		BOOL supported = FALSE;

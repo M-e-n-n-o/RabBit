@@ -2,11 +2,12 @@
 #include "Application.h"
 
 #include "graphics/window/NativeWindow.h"
+#include "graphics/window/SwapChain.h"
 #include "graphics/GraphicsDevice.h"
 #include "graphics/CommandQueue.h"
 
 using namespace RB::Graphics;
-using namespace RB::Window;
+using namespace RB::Graphics::Window;
 
 namespace RB
 {
@@ -23,13 +24,18 @@ namespace RB
 
 	void Application::Start(HINSTANCE window_instance)
 	{
+		const uint32_t width  = 1920;
+		const uint32_t height = 1080;
+
 		g_NativeWindow = new NativeWindow();
 		g_NativeWindow->RegisterWindowCLass(window_instance, L"DX12WindowClass");
-		g_NativeWindow->CreateWindow(window_instance, L"DX12WindowClass", L"RabBit App", 1920, 1080);
+		g_NativeWindow->CreateWindow(window_instance, L"DX12WindowClass", L"RabBit App", width, height);
 
 		g_GraphicsDevice = new GraphicsDevice();
 
 		CommandQueue command_queue = CommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+
+		g_SwapChain = new SwapChain(command_queue.Get(), width, height);
 
 		g_NativeWindow->ShowWindow();
 
@@ -43,5 +49,15 @@ namespace RB
 		{
 			Update();
 		}
+	}
+
+	void Application::Shutdown()
+	{
+		// Shutdown app user
+		Stop();
+
+		delete g_SwapChain;
+		delete g_GraphicsDevice;
+		delete g_NativeWindow;
 	}
 }

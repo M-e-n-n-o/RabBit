@@ -1,12 +1,17 @@
 #include "RabBitPch.h"
 #include "NativeWindow.h"
 
-namespace RB::Window
+namespace RB::Graphics::Window
 {
 	NativeWindow* g_NativeWindow = nullptr;
 
 	// Window callback function
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
+
+	NativeWindow::NativeWindow()
+		:	m_NativeWindowHandle(nullptr)
+	{
+	}
 
 	void NativeWindow::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
 	{

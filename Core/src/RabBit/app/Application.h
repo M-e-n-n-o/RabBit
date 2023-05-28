@@ -15,9 +15,11 @@ namespace RB
 
 		void Start(HINSTANCE window_instance);
 		void Run();
+		void Shutdown();
 
 		virtual void Start() = 0;
 		virtual void Update() = 0;
+		virtual void Stop() = 0;
 	};
 	
 	// To be defined in client

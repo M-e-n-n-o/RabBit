@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <RabBit/utils/math/Vec.h>
 
-using namespace RB::math;
+using namespace RB::Math;
 using namespace testing;
 
 TEST(MathTest, Vec3AddVec3)

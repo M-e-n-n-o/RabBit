@@ -16,7 +16,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     // Create the logger
 #ifdef RB_ENABLE_LOGS
-    RB::Debug::Logger::OpenConsole();
+    RB::Utils::Debug::Logger::OpenConsole();
 #endif
 
     auto* app = RB::CreateApplication();
@@ -24,6 +24,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     app->Start(hInstance);
 
     app->Run();
+
+    app->Shutdown();
 
     delete app;
 

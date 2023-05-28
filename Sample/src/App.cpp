@@ -12,6 +12,11 @@ public:
 	{
 
 	}
+
+	void Stop() override
+	{
+
+	}
 };
 
 RB::Application* RB::CreateApplication()
