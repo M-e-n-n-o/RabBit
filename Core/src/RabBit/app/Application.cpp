@@ -5,6 +5,7 @@
 #include "graphics/window/SwapChain.h"
 #include "graphics/GraphicsDevice.h"
 #include "graphics/CommandQueue.h"
+#include "graphics/CommandList.h"
 
 using namespace RB::Graphics;
 using namespace RB::Graphics::Window;
@@ -36,6 +37,8 @@ namespace RB
 		CommandQueue command_queue = CommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
 
 		g_SwapChain = new SwapChain(command_queue.Get(), width, height);
+
+		CommandList command_list = CommandList(D3D12_COMMAND_LIST_TYPE_DIRECT, g_SwapChain->GetBackBufferCount(), g_SwapChain->GetCurrentBackBufferIndex());
 
 		g_NativeWindow->ShowWindow();
 

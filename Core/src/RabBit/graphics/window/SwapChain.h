@@ -18,16 +18,27 @@ namespace RB::Graphics::Window
 			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 		~SwapChain();
 
+		void Resize(const uint32_t width, const uint32_t height);
+
 		GPtr<IDXGISwapChain4> Get4() const { return m_SwapChain; }
 		uint32_t GetBackBufferCount() const { return m_BackBufferCount; }
+		uint32_t GetCurrentBackBufferIndex() const { return m_CurrentBackBufferIndex; }
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentDescriptorHandleCPU() const;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandleCPU(uint32_t back_buffer_index) const;
 
 	private:
-		GPtr<IDXGISwapChain4>	m_SwapChain;
+		void CreateDescriptorHeap();
+		void UpdateRenderTargetViews();
 
-		uint32_t				m_CurrentBackBufferIndex;
-		uint32_t				m_BackBufferCount;
-		uint32_t				m_Width;
-		uint32_t				m_Height;
+		GPtr<IDXGISwapChain4>		m_SwapChain;
+		GPtr<ID3D12DescriptorHeap>	m_DescriptorHeap;
+		GPtr<ID3D12Resource>*		m_BackBuffers;
+
+		uint32_t					m_DescriptorIncrementSize;
+		uint32_t					m_CurrentBackBufferIndex;
+		uint32_t					m_BackBufferCount;
+		uint32_t					m_Width;
+		uint32_t					m_Height;
 	};
 
 	extern SwapChain* g_SwapChain;
