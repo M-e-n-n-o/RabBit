@@ -139,9 +139,11 @@ namespace RB::Graphics::Window
 		}
 		break;
 		default:
-		break;
+		{
+			return DefWindowProcW(hwnd, message, wParam, lParam);
+		}
 		}
 
-		return ::DefWindowProcW(hwnd, message, wParam, lParam);
+		return 0;
 	}
 }

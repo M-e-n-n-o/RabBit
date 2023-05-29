@@ -5,7 +5,7 @@ class App : public RB::Application
 public:
 	void Start() override
 	{
-		RB_LOG("Hoiii");
+		RB_LOG("t", "Hoiii");
 	}
 
 	void Update() override

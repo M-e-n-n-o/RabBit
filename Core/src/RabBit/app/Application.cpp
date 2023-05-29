@@ -23,8 +23,8 @@ namespace RB
 			m_ShouldStop(false)
 				
 	{
-		RB_LOG_RELEASE("Welcome to the RabBit Engine");
-		RB_LOG_RELEASE("Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);	
+		RB_LOG_RELEASE(LOGTAG_GRAPHICS, "Welcome to the RabBit Engine");
+		RB_LOG_RELEASE(LOGTAG_GRAPHICS, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
 	}
 
 	Application::~Application()
@@ -86,7 +86,7 @@ namespace RB
 
 	void Application::Render()
 	{
-		RB_LOG("Start render frame");
+		RB_LOG(LOGTAG_MAIN, "Start render frame");
 
 		_CommandList->Reset(g_SwapChain->GetCurrentBackBufferIndex());
 		auto back_buffer = g_SwapChain->GetCurrentBackBuffer();
@@ -120,7 +120,7 @@ namespace RB
 			_CommandQueue->Get()->ExecuteCommandLists(_countof(command_lists), command_lists);
 
 
-			_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _CommandQueue->PlaceFence();
+			_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _CommandQueue->SignalFence	();
 
 			g_SwapChain->Present(true, true);
 
@@ -144,7 +144,7 @@ namespace RB
 
 		BindEvent<WindowResizeEvent>([this](WindowResizeEvent& resize_event)
 		{
-			RB_LOG("Window resize event received");
+			RB_LOG(LOGTAG_EVENT, "Window resize event received");
 
 			uint32_t width = resize_event.GetWidth();
 			uint32_t height = resize_event.GetHeight();
@@ -164,7 +164,7 @@ namespace RB
 
 		BindEvent<WindowCloseEvent>([this](WindowCloseEvent& close_event)
 		{
-			RB_LOG("Window close event received");
+			RB_LOG(LOGTAG_EVENT, "Window close event received");
 			m_ShouldStop = true;
 		}, event);
 	}

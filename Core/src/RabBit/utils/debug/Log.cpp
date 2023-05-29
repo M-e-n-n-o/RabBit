@@ -34,11 +34,11 @@ namespace RB::Utils::Debug
 		SetConsoleTextAttribute(console, 4);
 	}
 
-	void Logger::LogCore(const char* format, ...)
+	void Logger::LogCore(const char* tag, const char* format, ...)
 	{
 		va_list args;
 		va_start(args, format);
-		printf("[RabBit] ");
+		printf("[RabBit][%s]", tag);
 		vprintf(format, args);
 		printf("\n");
 		va_end(args);

@@ -21,6 +21,7 @@ namespace RB::Graphics
 		static	bool IsFeatureSupported(DXGI_FEATURE feature);
 
 		GPtr<ID3D12Device2> Get2() const { return m_NativeDevice; }
+		GPtr<IDXGIAdapter4> GetAdapter4() const { return m_NativeAdapter; }
 
 	private:
 		void CreateAdapter();
