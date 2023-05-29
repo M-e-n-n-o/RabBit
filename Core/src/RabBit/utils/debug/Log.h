@@ -23,13 +23,13 @@ namespace RB::Utils::Debug
 		#define RB_LOG_WARN(tag, ...)	{ RB::Utils::Debug::Logger::SetModeWarn();		RB::Utils::Debug::Logger::LogCore(tag, __VA_ARGS__); }
 		#define RB_LOG_ERROR(tag, ...)	{ RB::Utils::Debug::Logger::SetModeError();		RB::Utils::Debug::Logger::LogCore(tag, __VA_ARGS__); }
 	#else
-		#define RB_LOG(...)			{ RB::Utils::Debug::Logger::SetModeNormal();	RB::Utils::Debug::Logger::LogApp(__VA_ARGS__); }	
-		#define RB_LOG_WARN(...)	{ RB::Utils::Debug::Logger::SetModeWarn();		RB::Utils::Debug::Logger::LogApp(__VA_ARGS__); }
-		#define RB_LOG_ERROR(...)	{ RB::Utils::Debug::Logger::SetModeError();		RB::Utils::Debug::Logger::LogApp(__VA_ARGS__); }
+		#define RB_LOG(...)				{ RB::Utils::Debug::Logger::SetModeNormal();	RB::Utils::Debug::Logger::LogApp(__VA_ARGS__); }	
+		#define RB_LOG_WARN(...)		{ RB::Utils::Debug::Logger::SetModeWarn();		RB::Utils::Debug::Logger::LogApp(__VA_ARGS__); }
+		#define RB_LOG_ERROR(...)		{ RB::Utils::Debug::Logger::SetModeError();		RB::Utils::Debug::Logger::LogApp(__VA_ARGS__); }
 	#endif
 
-	#define RB_LOG_RELEASE(...)		RB_LOG(__VA_ARGS__)
-	#define RB_LOG_CRITICAL(...)	RB_LOG_ERROR(__VA_ARGS__)
+	#define RB_LOG_RELEASE(...)			RB_LOG(__VA_ARGS__)
+	#define RB_LOG_CRITICAL(...)		RB_LOG_ERROR(__VA_ARGS__)
 
 #else
 
@@ -37,8 +37,8 @@ namespace RB::Utils::Debug
 	#define RB_LOG_WARN(...)
 	#define RB_LOG_ERROR(...)
 
-	#define RB_LOG_RELEASE(tag, ...) { char msg[500]; sprintf(msg, __VA_ARGS__);  OutputDebugStringA(msg); OutputDebugStringA("\n"); }
-	#define RB_LOG_CRITICAL(tag, ...) RB_LOG_RELEASE("Critical error:") RB_LOG_RELEASE(__VA_ARGS__)
+	#define RB_LOG_RELEASE(tag, ...)	{ char msg[500]; sprintf(msg, __VA_ARGS__);  OutputDebugStringA(msg); OutputDebugStringA("\n"); }
+	#define RB_LOG_CRITICAL(tag, ...)	RB_LOG_RELEASE("Critical error:") RB_LOG_RELEASE(__VA_ARGS__)
 
 #endif
 

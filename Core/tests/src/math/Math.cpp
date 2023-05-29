@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <RabBit/utils/math/Vec.h>
+#include <RabBit/math/Vec.h>
 
 using namespace RB::Math;
 using namespace testing;
