@@ -6,13 +6,18 @@
 #include "graphics/GraphicsDevice.h"
 #include "graphics/CommandQueue.h"
 #include "graphics/CommandList.h"
+#include "input/events/ApplicationEvent.h"
 
 using namespace RB::Graphics;
 using namespace RB::Graphics::Window;
+using namespace RB::Input::Events;
 
 namespace RB
 {
 	Application::Application()
+		:	m_Initialized(false),
+			m_ShouldStop(false)
+				
 	{
 		RB_LOG_RELEASE("Welcome to the RabBit Engine");
 		RB_LOG_RELEASE("Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);	
@@ -23,14 +28,14 @@ namespace RB
 
 	}
 
-	void Application::Start(HINSTANCE window_instance)
+	void Application::Start(void* window_instance)
 	{
 		const uint32_t width  = 1920;
 		const uint32_t height = 1080;
 
-		g_NativeWindow = new NativeWindow();
-		g_NativeWindow->RegisterWindowCLass(window_instance, L"DX12WindowClass");
-		g_NativeWindow->CreateWindow(window_instance, L"DX12WindowClass", L"RabBit App", width, height);
+		g_NativeWindow = new NativeWindow(this);
+		g_NativeWindow->RegisterWindowCLass((HINSTANCE) window_instance, L"DX12WindowClass");
+		g_NativeWindow->CreateWindow((HINSTANCE) window_instance, L"DX12WindowClass", L"RabBit App", width, height);
 
 		g_GraphicsDevice = new GraphicsDevice();
 
@@ -42,15 +47,17 @@ namespace RB
 
 		g_NativeWindow->ShowWindow();
 
+		m_Initialized = true;
+
 		// Initialize app user
 		Start();
 	}
 
 	void Application::Run()
 	{
-		while (true)
+		while (!m_ShouldStop)
 		{
-			Update();
+			g_NativeWindow->ProcessEvents();
 		}
 	}
 
@@ -62,5 +69,21 @@ namespace RB
 		delete g_SwapChain;
 		delete g_GraphicsDevice;
 		delete g_NativeWindow;
+	}
+
+	void Application::OnEvent(Event& event)
+	{
+		if (!m_Initialized)
+		{
+			return;
+		}
+
+		BindEvent<WindowCloseEvent>([this](WindowCloseEvent& window_event)
+		{
+			RB_LOG("Window close event received");
+			m_ShouldStop = true;
+		}, event);
+
+		//BindEvent<WindowCreatedEvent>(RB_BIND_EVENT_FN(test), event);
 	}
 }

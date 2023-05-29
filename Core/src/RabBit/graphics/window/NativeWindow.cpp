@@ -1,16 +1,40 @@
 #include "RabBitPch.h"
 #include "NativeWindow.h"
 
+#include "input/events/ApplicationEvent.h"
+#include "input/events/MouseEvent.h"
+#include "input/events/KeyEvent.h"
+
+using namespace RB::Input;
+using namespace RB::Input::Events;
+
 namespace RB::Graphics::Window
 {
+
 	NativeWindow* g_NativeWindow = nullptr;
 
 	// Window callback function
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-	NativeWindow::NativeWindow()
-		:	m_NativeWindowHandle(nullptr)
+	NativeWindow::NativeWindow(EventListener* listener)
+		:	m_NativeWindowHandle(nullptr),
+			m_Listener(listener)
 	{
+	}
+
+	NativeWindow::~NativeWindow()
+	{
+		DestroyWindow(m_NativeWindowHandle);
+	}
+
+	void NativeWindow::ProcessEvents()
+	{
+		MSG message = {};
+		if (PeekMessage(&message, m_NativeWindowHandle, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
 	}
 
 	void NativeWindow::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
@@ -76,15 +100,48 @@ namespace RB::Graphics::Window
 	{
 		switch (message)
 		{
-		case WM_CLOSE:
-			DestroyWindow(hwnd);
-			break;
-		case WM_DESTROY:
-			PostQuitMessage(0);
-			break;
-		default:
-			return DefWindowProc(hwnd, message, wParam, lParam);
+		case WM_PAINT:
+		{
+			Event& e = WindowRenderEvent();
+			g_NativeWindow->m_Listener->OnEvent(e);
 		}
-		return 0;
+		break;
+		case WM_SYSKEYDOWN:
+		case WM_KEYDOWN:
+		{
+			Event& e = KeyPressedEvent(static_cast<KeyCode>(wParam), false);
+			g_NativeWindow->m_Listener->OnEvent(e);
+		}
+		break;
+		case WM_SYSCHAR:
+			break;
+		case WM_SIZE:
+		{
+			RECT client_rect = {};
+			::GetClientRect(g_NativeWindow->m_NativeWindowHandle, &client_rect);
+
+			uint32_t width = client_rect.right - client_rect.left;
+			uint32_t height = client_rect.bottom - client_rect.top;
+
+			Event& e = WindowResizeEvent(width, height);
+			g_NativeWindow->m_Listener->OnEvent(e);
+		}
+		break;
+		case WM_CLOSE:
+		{
+			Event& e = WindowCloseEvent();
+			g_NativeWindow->m_Listener->OnEvent(e);
+		}
+		break;
+		case WM_DESTROY:
+		{
+			PostQuitMessage(0);
+		}
+		break;
+		default:
+		break;
+		}
+
+		return ::DefWindowProcW(hwnd, message, wParam, lParam);
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils/Ptr.h"
+#include "input/events/Event.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -15,7 +16,10 @@ namespace RB::Graphics::Window
 	class NativeWindow
 	{
 	public:
-		NativeWindow();
+		NativeWindow(Input::Events::EventListener* listener);
+		~NativeWindow();
+
+		void ProcessEvents();
 
 		void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
 
@@ -27,6 +31,10 @@ namespace RB::Graphics::Window
 
 	private:
 		HWND m_NativeWindowHandle;
+
+		Input::Events::EventListener* m_Listener;
+
+		friend LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 	};
 
 	extern NativeWindow* g_NativeWindow;
