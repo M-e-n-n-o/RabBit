@@ -1,9 +1,22 @@
 #include "RabBitPch.h"
 #include "GraphicsDevice.h"
 
+#ifdef RB_CONFIG_DEBUG
+#include <dxgidebug.h>
+#endif
+
 namespace RB::Graphics
 {
 	GraphicsDevice* g_GraphicsDevice = nullptr;
+
+	void ReportLiveObjects()
+	{
+		IDXGIDebug1* debug;
+		DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug));
+
+		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
+		debug->Release();
+	}
 
 	GraphicsDevice::GraphicsDevice()
 	{
@@ -19,7 +32,10 @@ namespace RB::Graphics
 
 	GraphicsDevice::~GraphicsDevice()
 	{
-
+#ifdef RB_CONFIG_DEBUG
+		RB_LOG("Outputting live objects to VS console...");
+		atexit(&ReportLiveObjects);
+#endif
 	}
 
 	bool GraphicsDevice::IsFormatSupported(DXGI_FORMAT format)

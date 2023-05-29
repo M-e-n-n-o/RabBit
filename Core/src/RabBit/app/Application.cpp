@@ -80,6 +80,8 @@ namespace RB
 		delete _CommandQueue;
 		delete g_GraphicsDevice;
 		delete g_NativeWindow;
+
+		
 	}
 
 	void Application::Render()
