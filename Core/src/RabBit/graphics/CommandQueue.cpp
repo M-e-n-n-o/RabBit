@@ -24,7 +24,7 @@ namespace RB::Graphics
 
 	void CommandQueue::Flush(uint64_t max_duration_ms)
 	{
-		uint64_t fence_value_for_signal = Signal();
+		uint64_t fence_value_for_signal = PlaceFence();
 		WaitForFenceValue(fence_value_for_signal, max_duration_ms);
 	}
 	
@@ -38,7 +38,7 @@ namespace RB::Graphics
 		m_FenceValue = 0;
 	}
 	
-	uint64_t CommandQueue::Signal()
+	uint64_t CommandQueue::PlaceFence()
 	{
 		uint64_t fence_value_for_signal = ++m_FenceValue;
 		RB_ASSERT_FATAL_RELEASE_D3D(m_NativeCommandQueue->Signal(m_Fence.Get(), fence_value_for_signal), "Could not signal the command queue");

@@ -120,7 +120,7 @@ namespace RB
 			_CommandQueue->Get()->ExecuteCommandLists(_countof(command_lists), command_lists);
 
 
-			_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _CommandQueue->Signal();
+			_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _CommandQueue->PlaceFence();
 
 			g_SwapChain->Present(true, true);
 

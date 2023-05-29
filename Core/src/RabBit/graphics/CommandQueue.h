@@ -20,7 +20,7 @@ namespace RB::Graphics
 		CommandQueue(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
 		~CommandQueue();
 
-		uint64_t Signal();
+		uint64_t PlaceFence();
 		void WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
 		void Flush(uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
 
