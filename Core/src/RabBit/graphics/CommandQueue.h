@@ -20,14 +20,14 @@ namespace RB::Graphics
 		CommandQueue(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
 		~CommandQueue();
 
+		uint64_t Signal();
+		void WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
 		void Flush(uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
 
 		GPtr<ID3D12CommandQueue> Get() const { return m_NativeCommandQueue; }
 
 	private:
 		void CreateFence();
-		uint64_t Signal();
-		void WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms);
 
 		GPtr<ID3D12CommandQueue>	m_NativeCommandQueue;
 		GPtr<ID3D12Fence>			m_Fence;

@@ -18,11 +18,16 @@ namespace RB::Graphics::Window
 			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 		~SwapChain();
 
+		void Present(bool use_vsync, bool use_tearing_if_supported);
+
 		void Resize(const uint32_t width, const uint32_t height);
 
-		GPtr<IDXGISwapChain4> Get4() const { return m_SwapChain; }
+		GPtr<IDXGISwapChain4> Get4() const { return m_NativeSwapChain; }
+		uint32_t GetWidth() const { return m_Width; }
+		uint32_t GetHeight() const { return m_Height; }
 		uint32_t GetBackBufferCount() const { return m_BackBufferCount; }
 		uint32_t GetCurrentBackBufferIndex() const { return m_CurrentBackBufferIndex; }
+		GPtr<ID3D12Resource> GetCurrentBackBuffer() const { return m_BackBuffers[m_CurrentBackBufferIndex]; }
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentDescriptorHandleCPU() const;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandleCPU(uint32_t back_buffer_index) const;
 
@@ -30,7 +35,7 @@ namespace RB::Graphics::Window
 		void CreateDescriptorHeap();
 		void UpdateRenderTargetViews();
 
-		GPtr<IDXGISwapChain4>		m_SwapChain;
+		GPtr<IDXGISwapChain4>		m_NativeSwapChain;
 		GPtr<ID3D12DescriptorHeap>	m_DescriptorHeap;
 		GPtr<ID3D12Resource>*		m_BackBuffers;
 
@@ -39,6 +44,8 @@ namespace RB::Graphics::Window
 		uint32_t					m_BackBufferCount;
 		uint32_t					m_Width;
 		uint32_t					m_Height;
+
+		bool						m_IsTearingSupported;
 	};
 
 	extern SwapChain* g_SwapChain;

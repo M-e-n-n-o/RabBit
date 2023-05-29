@@ -19,6 +19,7 @@ namespace RB::Graphics
 
 	CommandQueue::~CommandQueue()
 	{
+		CloseHandle(m_FenceEventHandle);
 	}
 
 	void CommandQueue::Flush(uint64_t max_duration_ms)

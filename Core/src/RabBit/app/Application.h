@@ -15,11 +15,13 @@ namespace RB
 		void Run();
 		void Shutdown();
 
+		void Render();
+
+		void OnEvent(Input::Events::Event& event) override;
+
 		virtual void Start() = 0;
 		virtual void Update() = 0;
 		virtual void Stop() = 0;
-
-		void OnEvent(Input::Events::Event& event) override;
 
 	private:
 		bool	m_Initialized;
