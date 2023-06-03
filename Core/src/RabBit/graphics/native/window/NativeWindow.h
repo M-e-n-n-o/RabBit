@@ -11,7 +11,7 @@
 #undef CreateWindow
 #endif
 
-namespace RB::Graphics::Window
+namespace RB::Graphics::Native::Window
 {
 	class NativeWindow
 	{

@@ -12,7 +12,7 @@
 #undef max
 #endif
 
-namespace RB::Graphics
+namespace RB::Graphics::Native
 {
 	class CommandQueue
 	{

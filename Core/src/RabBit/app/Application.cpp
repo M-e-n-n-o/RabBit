@@ -1,15 +1,16 @@
 #include "RabBitPch.h"
 #include "Application.h"
 
-#include "graphics/window/NativeWindow.h"
-#include "graphics/window/SwapChain.h"
-#include "graphics/GraphicsDevice.h"
-#include "graphics/CommandQueue.h"
-#include "graphics/CommandList.h"
+#include "graphics/Window.h"
+#include "graphics/native/window/SwapChain.h"
+#include "graphics/native/GraphicsDevice.h"
+#include "graphics/native/CommandQueue.h"
+#include "graphics/native/CommandList.h"
 #include "input/events/ApplicationEvent.h"
 
 using namespace RB::Graphics;
-using namespace RB::Graphics::Window;
+using namespace RB::Graphics::Native;
+using namespace RB::Graphics::Native::Window;
 using namespace RB::Input::Events;
 
 namespace RB
@@ -18,9 +19,10 @@ namespace RB
 	CommandList* _CommandList = nullptr;
 	uint32_t _FenceValues[3] = {};
 
-	Application::Application()
-		:	m_Initialized(false),
-			m_ShouldStop(false)
+	Application::Application(AppInfo& info)
+		: m_StartAppInfo(info)
+		, m_Initialized(false)
+		, m_ShouldStop(false)
 				
 	{
 		RB_LOG_RELEASE(LOGTAG_GRAPHICS, "Welcome to the RabBit Engine");
@@ -34,22 +36,13 @@ namespace RB
 
 	void Application::Start(void* window_instance)
 	{
-		const uint32_t width  = 1920;
-		const uint32_t height = 1080;
-
-		g_NativeWindow = new NativeWindow(this);
-		g_NativeWindow->RegisterWindowCLass((HINSTANCE) window_instance, L"DX12WindowClass");
-		g_NativeWindow->CreateWindow((HINSTANCE) window_instance, L"DX12WindowClass", L"RabBit App", width, height);
-
 		g_GraphicsDevice = new GraphicsDevice();
 
 		_CommandQueue = new CommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
 
-		g_SwapChain = new SwapChain(_CommandQueue->Get(), width, height);
+		m_Window = new Graphics::Window(window_instance, _CommandQueue, this, m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
 
 		_CommandList = new CommandList(D3D12_COMMAND_LIST_TYPE_DIRECT, g_SwapChain->GetBackBufferCount(), g_SwapChain->GetCurrentBackBufferIndex());
-
-		g_NativeWindow->ShowWindow();
 
 		m_Initialized = true;
 
@@ -61,7 +54,8 @@ namespace RB
 	{
 		while (!m_ShouldStop)
 		{
-			g_NativeWindow->ProcessEvents();
+			//g_NativeWindow->ProcessEvents();
+			m_Window->Update();
 
 			// Only do updates, rendering is called via events
 			Update();
@@ -76,17 +70,17 @@ namespace RB
 		_CommandQueue->Flush();
 
 		delete _CommandList;
-		delete g_SwapChain;
 		delete _CommandQueue;
-		delete g_GraphicsDevice;
-		delete g_NativeWindow;
-
-		
+		delete m_Window;
+		delete g_GraphicsDevice;		
 	}
 
 	void Application::Render()
 	{
-		RB_LOG(LOGTAG_MAIN, "Start render frame");
+		if (m_Window->IsMinimized())
+		{
+			return;
+		}
 
 		_CommandList->Reset(g_SwapChain->GetCurrentBackBufferIndex());
 		auto back_buffer = g_SwapChain->GetCurrentBackBuffer();
@@ -149,17 +143,9 @@ namespace RB
 			uint32_t width = resize_event.GetWidth();
 			uint32_t height = resize_event.GetHeight();
 
-			if (g_SwapChain->GetWidth() == width && g_SwapChain->GetHeight() == height)
-			{
-				return;
-			}
-
-			width = std::max(1u, width);
-			height = std::max(1u, height);
-
 			_CommandQueue->Flush();
 
-			g_SwapChain->Resize(width, height);
+			m_Window->Resize(width, height);
 		}, event);
 
 		BindEvent<WindowCloseEvent>([this](WindowCloseEvent& close_event)

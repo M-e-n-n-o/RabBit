@@ -2,7 +2,7 @@
 #include "CommandList.h"
 #include "GraphicsDevice.h"
 
-namespace RB::Graphics
+namespace RB::Graphics::Native
 {
 	CommandList::CommandList(D3D12_COMMAND_LIST_TYPE type, uint32_t allocator_count, uint32_t first_allocator_index)
 	{

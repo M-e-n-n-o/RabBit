@@ -1,9 +1,9 @@
 #include "RabBitPch.h"
 #include "SwapChain.h"
-#include "graphics/GraphicsDevice.h"
-#include "graphics/window/NativeWindow.h"
+#include "graphics/native/GraphicsDevice.h"
+#include "graphics/native/window/NativeWindow.h"
 
-namespace RB::Graphics::Window
+namespace RB::Graphics::Native::Window
 {
 	SwapChain* g_SwapChain = nullptr;
 

@@ -8,9 +8,8 @@
 using namespace RB::Input;
 using namespace RB::Input::Events;
 
-namespace RB::Graphics::Window
+namespace RB::Graphics::Native::Window
 {
-
 	NativeWindow* g_NativeWindow = nullptr;
 
 	// Window callback function

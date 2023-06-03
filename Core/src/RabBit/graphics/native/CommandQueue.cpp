@@ -2,7 +2,7 @@
 #include "CommandQueue.h"
 #include "GraphicsDevice.h"
 
-namespace RB::Graphics
+namespace RB::Graphics::Native
 {
 	CommandQueue::CommandQueue(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags)
 	{

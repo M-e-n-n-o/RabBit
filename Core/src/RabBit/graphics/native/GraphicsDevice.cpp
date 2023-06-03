@@ -5,7 +5,7 @@
 #include <dxgidebug.h>
 #endif
 
-namespace RB::Graphics
+namespace RB::Graphics::Native
 {
 	GraphicsDevice* g_GraphicsDevice = nullptr;
 

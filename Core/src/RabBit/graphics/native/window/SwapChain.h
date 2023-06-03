@@ -9,7 +9,7 @@
 // D3D12 extension library.
 #include <D3DX12/d3dx12.h>
 
-namespace RB::Graphics::Window
+namespace RB::Graphics::Native::Window
 {
 	class SwapChain
 	{
