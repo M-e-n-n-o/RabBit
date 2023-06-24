@@ -1,5 +1,6 @@
 #include "RabBitPch.h"
 #include "GraphicsDevice.h"
+#include "GpuEngine.h"
 
 #ifdef RB_CONFIG_DEBUG
 #include <dxgidebug.h>
@@ -19,6 +20,9 @@ namespace RB::Graphics::Native
 	}
 
 	GraphicsDevice::GraphicsDevice()
+		: m_CopyEngine(nullptr)
+		, m_ComputeEngine(nullptr)
+		, m_GraphicsEngine(nullptr)
 	{
 #ifdef RB_CONFIG_DEBUG
 		GPtr<ID3D12Debug> debug_interface;
@@ -32,6 +36,10 @@ namespace RB::Graphics::Native
 
 	GraphicsDevice::~GraphicsDevice()
 	{
+		if (m_CopyEngine) delete m_CopyEngine;
+		if (m_ComputeEngine) delete m_ComputeEngine;
+		if (m_GraphicsEngine) delete m_GraphicsEngine;
+
 #ifdef RB_CONFIG_DEBUG
 		RB_LOG(LOGTAG_GRAPHICS, "Outputting live objects to VS console...");
 		atexit(&ReportLiveObjects);
@@ -67,6 +75,36 @@ namespace RB::Graphics::Native
 		}
 
 		return supported == TRUE;
+	}
+
+	GpuEngine* GraphicsDevice::GetCopyEngine()
+	{
+		if (!m_CopyEngine)
+		{
+			m_CopyEngine = new GpuEngine(D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+		}
+
+		return m_CopyEngine;
+	}
+
+	GpuEngine* GraphicsDevice::GetComputeEngine()
+	{
+		if (!m_ComputeEngine)
+		{
+			m_ComputeEngine = new GpuEngine(D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+		}
+
+		return m_ComputeEngine;
+	}
+
+	GpuEngine* GraphicsDevice::GetGraphicsEngine()
+	{
+		if (!m_GraphicsEngine)
+		{
+			m_GraphicsEngine = new GpuEngine(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, D3D12_COMMAND_QUEUE_FLAG_NONE);
+		}
+
+		return m_GraphicsEngine;
 	}
 
 	void GraphicsDevice::CreateAdapter()

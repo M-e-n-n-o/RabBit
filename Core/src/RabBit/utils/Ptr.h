@@ -4,6 +4,14 @@
 #include <Windows.h>
 #include <wrl.h>
 
+#if defined(max)
+#undef max
+#endif
+
+#if defined(min)
+#undef min
+#endif
+
 #include <memory>
 
 namespace RB

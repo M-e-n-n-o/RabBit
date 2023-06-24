@@ -4,8 +4,7 @@
 #include "graphics/Window.h"
 #include "graphics/native/window/SwapChain.h"
 #include "graphics/native/GraphicsDevice.h"
-#include "graphics/native/CommandQueue.h"
-#include "graphics/native/CommandList.h"
+#include "graphics/native/GpuEngine.h"
 #include "input/events/ApplicationEvent.h"
 
 using namespace RB::Graphics;
@@ -15,8 +14,7 @@ using namespace RB::Input::Events;
 
 namespace RB
 {
-	CommandQueue* _CommandQueue = nullptr;
-	CommandList* _CommandList = nullptr;
+	GpuEngine* _GraphicsEngine = nullptr;
 	uint32_t _FenceValues[3] = {};
 
 	Application::Application(AppInfo& info)
@@ -38,11 +36,9 @@ namespace RB
 	{
 		g_GraphicsDevice = new GraphicsDevice();
 
-		_CommandQueue = new CommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
 
-		m_Window = new Graphics::Window(window_instance, _CommandQueue, this, m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
-
-		_CommandList = new CommandList(D3D12_COMMAND_LIST_TYPE_DIRECT, g_SwapChain->GetBackBufferCount(), g_SwapChain->GetCurrentBackBufferIndex());
+		m_Window = new Graphics::Window(window_instance, _GraphicsEngine, this, m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
 
 		m_Initialized = true;
 
@@ -54,7 +50,6 @@ namespace RB
 	{
 		while (!m_ShouldStop)
 		{
-			//g_NativeWindow->ProcessEvents();
 			m_Window->Update();
 
 			// Only do updates, rendering is called via events
@@ -67,10 +62,8 @@ namespace RB
 		// Shutdown app user
 		Stop();
 
-		_CommandQueue->Flush();
+		_GraphicsEngine->WaitForIdle();
 
-		delete _CommandList;
-		delete _CommandQueue;
 		delete m_Window;
 		delete g_GraphicsDevice;		
 	}
@@ -82,7 +75,8 @@ namespace RB
 			return;
 		}
 
-		_CommandList->Reset(g_SwapChain->GetCurrentBackBufferIndex());
+		GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsEngine->GetCommandList();
+
 		auto back_buffer = g_SwapChain->GetCurrentBackBuffer();
 
 		// Clear the render target
@@ -92,11 +86,11 @@ namespace RB
 				D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
 			);
 
-			_CommandList->Get()->ResourceBarrier(1, &barrier);
+			command_list->ResourceBarrier(1, &barrier);
 
 			FLOAT clear_color[] = { 0.3f, 1.0f, 0.7f, 1.0f };
 
-			_CommandList->Get()->ClearRenderTargetView(g_SwapChain->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+			command_list->ClearRenderTargetView(g_SwapChain->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 		}
 
 		// Present
@@ -106,19 +100,13 @@ namespace RB
 				D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
 			);
 
-			_CommandList->Get()->ResourceBarrier(1, &barrier);
+			command_list->ResourceBarrier(1, &barrier);
 
-			RB_ASSERT_FATAL_RELEASE_D3D(_CommandList->Get()->Close(), "Could not close command list");
+			_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _GraphicsEngine->ExecuteCommandList(command_list);
 
-			ID3D12CommandList* const command_lists[] = { _CommandList->Get().Get() };
-			_CommandQueue->Get()->ExecuteCommandLists(_countof(command_lists), command_lists);
+			g_SwapChain->Present(true);
 
-
-			_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _CommandQueue->SignalFence	();
-
-			g_SwapChain->Present(true, true);
-
-			_CommandQueue->WaitForFenceValue(_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()]);
+			_GraphicsEngine->WaitForFenceValue(_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()]);
 		}
 	}
 
@@ -143,7 +131,7 @@ namespace RB
 			uint32_t width = resize_event.GetWidth();
 			uint32_t height = resize_event.GetHeight();
 
-			_CommandQueue->Flush();
+			_GraphicsEngine->WaitForIdle();
 
 			m_Window->Resize(width, height);
 		}, event);

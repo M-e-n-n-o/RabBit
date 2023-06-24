@@ -6,13 +6,13 @@ namespace RB::Graphics
 {
 	namespace Native
 	{
-		class CommandQueue;
+		class GpuEngine;
 	}
 
 	class Window
 	{
 	public:
-		Window(void* window_instance, Native::CommandQueue* command_queue, Input::Events::EventListener* listener, 
+		Window(void* window_instance, Native::GpuEngine* graphics_engine, Input::Events::EventListener* listener,
 			const char* window_name, uint32_t window_width, uint32_t window_height);
 		~Window();
 

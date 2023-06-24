@@ -18,7 +18,7 @@ namespace RB::Graphics::Native::Window
 			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 		~SwapChain();
 
-		void Present(bool use_vsync, bool use_tearing_if_supported);
+		void Present(bool vsync_enabled);
 
 		void Resize(const uint32_t width, const uint32_t height);
 
