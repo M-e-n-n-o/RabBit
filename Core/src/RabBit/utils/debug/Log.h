@@ -9,9 +9,9 @@
 
 namespace RB
 {
-	constexpr char* LOGTAG_MAIN		= "Main";
-	constexpr char* LOGTAG_EVENT	= "Event";
-	constexpr char* LOGTAG_GRAPHICS = "Graphics";
+	constexpr wchar_t* LOGTAG_MAIN		= L"Main";
+	constexpr wchar_t* LOGTAG_EVENT		= L"Event";
+	constexpr wchar_t* LOGTAG_GRAPHICS	= L"Graphics";
 }
 
 namespace RB::Utils::Debug
@@ -51,7 +51,7 @@ namespace RB::Utils::Debug
 		void SetModeWarn();
 		void SetModeError();
 
-		void LogCore(const char* tag, const char* format, ...);
+		void LogCore(const wchar_t* tag, const char* format, ...);
 		void LogApp(const char* format, ...);
 	}
 #endif

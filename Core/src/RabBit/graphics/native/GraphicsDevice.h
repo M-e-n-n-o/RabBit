@@ -22,8 +22,8 @@ namespace RB::Graphics::Native
 				bool IsFormatSupported(DXGI_FORMAT format);
 		static	bool IsFeatureSupported(DXGI_FEATURE feature);
 
-		GPtr<ID3D12Device2> Get2() const { return m_NativeDevice; }
-		GPtr<IDXGIAdapter4> GetAdapter4() const { return m_NativeAdapter; }
+		GPtr<ID3D12Device2> Get() const { return m_NativeDevice; }
+		GPtr<IDXGIAdapter4> GetAdapter() const { return m_NativeAdapter; }
 
 		// Multi-engine: https://learn.microsoft.com/en-us/windows/win32/direct3d12/user-mode-heap-synchronization
 		GraphicsDeviceEngine* GetCopyEngine();

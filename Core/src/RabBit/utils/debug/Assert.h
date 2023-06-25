@@ -7,20 +7,18 @@
 
 namespace RB::Utils::Debug
 {
-	constexpr char* LOGTAG_ASSERT = "Assert";
-
 	#ifdef RB_ENABLE_ASSERTS
 
-		#define RB_ASSERT_FATAL(x, ...)		{ if(!(x)) { RB_LOG_ERROR(RB::Utils::Debug::LOGTAG_ASSERT, __VA_ARGS__); throw std::exception(); } }
-		#define RB_ASSERT_FATAL_D3D(x, ...)	{ if(FAILED(x)) { RB_LOG_ERROR(RB::Utils::Debug::LOGTAG_ASSERT, __VA_ARGS__); throw std::exception(); } }
+		#define RB_ASSERT_FATAL(tag, check, ...)		{ if(!(check)) { RB_LOG_ERROR(tag, __VA_ARGS__); throw std::exception(); } }
+		#define RB_ASSERT_FATAL_D3D(check, ...)			{ if(FAILED(check)) { RB_LOG_ERROR(RB::LOGTAG_GRAPHICS, __VA_ARGS__); throw std::exception(); } }
 
 	#else
 
-		#define RB_ASSERT_FATAL(x, ...)
-		#define RB_ASSERT_FATAL_D3D(x, ...)
+		#define RB_ASSERT_FATAL(check, ...)
+		#define RB_ASSERT_FATAL_D3D(check, ...)
 
 	#endif
 
-	#define RB_ASSERT_FATAL_RELEASE(x, ...)		{ if(!(x)) { RB_LOG_CRITICAL(RB::Utils::Debug::LOGTAG_ASSERT, __VA_ARGS__); throw std::exception(); } };
-	#define RB_ASSERT_FATAL_RELEASE_D3D(x, ...)	{ if(FAILED(x)) { RB_LOG_CRITICAL(RB::Utils::Debug::LOGTAG_ASSERT, __VA_ARGS__); throw std::exception(); } };
+	#define RB_ASSERT_FATAL_RELEASE(tag, check, ...)	{ if(!(check)) { RB_LOG_CRITICAL(tag, __VA_ARGS__); throw std::exception(); } };
+	#define RB_ASSERT_FATAL_RELEASE_D3D(check, ...)		{ if(FAILED(check)) { RB_LOG_CRITICAL(RB::LOGTAG_GRAPHICS, __VA_ARGS__); throw std::exception(); } };
 }

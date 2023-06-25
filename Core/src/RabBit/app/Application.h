@@ -14,7 +14,7 @@ namespace RB
 
 	struct AppInfo
 	{
-		const char* name;
+		const wchar_t* name;
 		uint32_t windowWidth;
 		uint32_t windowHeight;
 	};

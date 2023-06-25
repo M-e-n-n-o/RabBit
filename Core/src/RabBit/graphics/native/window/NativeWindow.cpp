@@ -54,7 +54,7 @@ namespace RB::Graphics::Native::Window
 		window_class.hIconSm		= ::LoadIcon(instance, "0");			// MAKEINTRESOURCE(APP_ICON)
 
 		HRESULT result = ::RegisterClassExW(&window_class);
-		RB_ASSERT_FATAL_RELEASE(SUCCEEDED(result), "Failed to register window");
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, SUCCEEDED(result), "Failed to register window");
 	}
 
 	void NativeWindow::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height)
@@ -87,7 +87,7 @@ namespace RB::Graphics::Native::Window
 			nullptr
 		);
 
-		RB_ASSERT_FATAL_RELEASE(m_NativeWindowHandle, "Failed to create window");
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_NativeWindowHandle, "Failed to create window");
 	}
 
 	void NativeWindow::ShowWindow()

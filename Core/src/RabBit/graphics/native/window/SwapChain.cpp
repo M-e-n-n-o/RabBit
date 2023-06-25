@@ -13,7 +13,7 @@ namespace RB::Graphics::Native::Window
 			m_Width(width),
 			m_Height(height)
 	{
-		RB_ASSERT_FATAL_RELEASE(g_GraphicsDevice->IsFormatSupported(format), "Device does not support passed in format, can not create SwapChain");
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, g_GraphicsDevice->IsFormatSupported(format), "Device does not support passed in format, can not create SwapChain");
 
 		GPtr<IDXGIFactory4> dxgi_factory;
 		UINT factory_flags = 0;
@@ -53,7 +53,7 @@ namespace RB::Graphics::Native::Window
 		m_CurrentBackBufferIndex = m_NativeSwapChain->GetCurrentBackBufferIndex();
 
 		CreateDescriptorHeap();
-		m_DescriptorIncrementSize = g_GraphicsDevice->Get2()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		m_DescriptorIncrementSize = g_GraphicsDevice->Get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 		m_BackBuffers = new GPtr<ID3D12Resource>[m_BackBufferCount];
 		UpdateRenderTargetViews();
@@ -111,7 +111,7 @@ namespace RB::Graphics::Native::Window
 		desc.NumDescriptors = m_BackBufferCount;
 		desc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
-		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get2()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)), 
+		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)), 
 			"Could not create descriptor heap for swap chain buffers");
 	}
 	
@@ -124,7 +124,7 @@ namespace RB::Graphics::Native::Window
 			GPtr<ID3D12Resource> back_buffer;
 			RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->GetBuffer(back_buffer_index, IID_PPV_ARGS(&back_buffer)), "Could not retrieve back buffer from swap chain");
 
-			g_GraphicsDevice->Get2()->CreateRenderTargetView(back_buffer.Get(), nullptr, rtv_handle);
+			g_GraphicsDevice->Get()->CreateRenderTargetView(back_buffer.Get(), nullptr, rtv_handle);
 
 			m_BackBuffers[back_buffer_index] = back_buffer;
 			rtv_handle.Offset(m_DescriptorIncrementSize);

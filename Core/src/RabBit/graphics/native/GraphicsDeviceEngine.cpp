@@ -13,7 +13,7 @@ namespace RB::Graphics::Native
 		desc.Flags = flags;
 		desc.NodeMask = 0;
 
-		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get2()->CreateCommandQueue(&desc, IID_PPV_ARGS(&m_CommandQueue)), "Could not create command queue");
+		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandQueue(&desc, IID_PPV_ARGS(&m_CommandQueue)), "Could not create command queue");
 
 		CreateFence();
 	}
@@ -43,7 +43,7 @@ namespace RB::Graphics::Native
 		}
 		else
 		{
-			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get2()->CreateCommandAllocator(m_Type, IID_PPV_ARGS(&command_allocator)), "Could not create command allocator");
+			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandAllocator(m_Type, IID_PPV_ARGS(&command_allocator)), "Could not create command allocator");
 		}
 
 		if (!m_CommandListQueue.empty())
@@ -55,7 +55,7 @@ namespace RB::Graphics::Native
 		}
 		else
 		{
-			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get2()->CreateCommandList(0, m_Type, command_allocator.Get(), nullptr, IID_PPV_ARGS(&command_list)), "Could not create command list");
+			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandList(0, m_Type, command_allocator.Get(), nullptr, IID_PPV_ARGS(&command_list)), "Could not create command list");
 		}
 
 		// Associate the command allocator with the command list so that it can be
@@ -86,7 +86,7 @@ namespace RB::Graphics::Native
 				"Could not retrieve command allocator from command list");
 		}
 
-		RB_ASSERT_FATAL(num_command_lists <= 5, "Can not execute more than 5 command lists at the moment!");
+		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, num_command_lists <= 5, "Can not execute more than 5 command lists at the moment!");
 		ID3D12CommandList* const final_command_lists[] = { command_lists[0].Get(), command_lists[1].Get(), command_lists[2].Get(), command_lists[3].Get(), command_lists[4].Get() };
 
 		m_CommandQueue->ExecuteCommandLists(num_command_lists, final_command_lists);
@@ -108,10 +108,10 @@ namespace RB::Graphics::Native
 	
 	void GraphicsDeviceEngine::CreateFence()
 	{
-		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get2()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)), "Could not create fence");
+		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)), "Could not create fence");
 
 		m_FenceEventHandle = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-		RB_ASSERT_FATAL_RELEASE(m_FenceEventHandle, "Could not create fence event");
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_FenceEventHandle, "Could not create fence event");
 
 		m_FenceValue = 0;
 	}

@@ -15,7 +15,7 @@ using namespace RB::Input::Events;
 namespace RB
 {
 	GraphicsDeviceEngine* _GraphicsEngine = nullptr;
-	uint32_t _FenceValues[3] = {};
+	uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
 	Application::Application(AppInfo& info)
 		: m_StartAppInfo(info)
@@ -23,8 +23,8 @@ namespace RB
 		, m_ShouldStop(false)
 				
 	{
-		RB_LOG_RELEASE(LOGTAG_GRAPHICS, "Welcome to the RabBit Engine");
-		RB_LOG_RELEASE(LOGTAG_GRAPHICS, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
+		RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
+		RB_LOG_RELEASE(LOGTAG_MAIN, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
 	}
 
 	Application::~Application()
@@ -38,11 +38,12 @@ namespace RB
 
 		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
 
-		m_Window = new Graphics::Window(window_instance, _GraphicsEngine, this, m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
+		m_Window = new Graphics::Window(window_instance, this, m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
 
 		m_Initialized = true;
 
 		// Initialize app user
+		RB_LOG(LOGTAG_MAIN, "Starting application: %ls", m_StartAppInfo.name);
 		Start();
 	}
 

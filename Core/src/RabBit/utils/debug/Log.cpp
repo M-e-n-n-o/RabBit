@@ -9,6 +9,8 @@ namespace RB::Utils::Debug
 {
 	void Logger::OpenConsole()
 	{
+		setlocale(LC_ALL, "");
+
 		AllocConsole();
 		int succeeded = freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
 	}
@@ -34,13 +36,13 @@ namespace RB::Utils::Debug
 		SetConsoleTextAttribute(console, 4);
 	}
 
-	void Logger::LogCore(const char* tag, const char* format, ...)
+	void Logger::LogCore(const wchar_t* tag, const char* format, ...)
 	{
 		va_list args;
 		va_start(args, format);
-		printf("[RabBit][%s]", tag);
+		wprintf(L"[RabBit][%s] ", tag);
 		vprintf(format, args);
-		printf("\n");
+		wprintf(L"\n");
 		va_end(args);
 	}
 
@@ -48,9 +50,9 @@ namespace RB::Utils::Debug
 	{
 		va_list args;
 		va_start(args, format);
-		printf("[App] ");
+		wprintf(L"[App] ");
 		vprintf(format, args);
-		printf("\n");
+		wprintf(L"\n");
 		va_end(args);
 	}
 }

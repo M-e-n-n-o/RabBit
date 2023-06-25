@@ -24,7 +24,7 @@ public:
 RB::Application* RB::CreateApplication()
 {
 	RB::AppInfo app_info	= {};
-	app_info.name			= "RabBit App";
+	app_info.name			= L"RabBit App";
 	app_info.windowWidth	= 1920;
 	app_info.windowHeight	= 1080;
 

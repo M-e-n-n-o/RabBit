@@ -4,16 +4,13 @@
 
 namespace RB::Graphics
 {
-	namespace Native
-	{
-		class GraphicsDeviceEngine;
-	}
-
 	class Window
 	{
 	public:
-		Window(void* window_instance, Native::GraphicsDeviceEngine* graphics_engine, Input::Events::EventListener* listener,
-			const char* window_name, uint32_t window_width, uint32_t window_height);
+		static const uint32_t BACK_BUFFER_COUNT = 3u;
+
+		Window(void* window_instance, Input::Events::EventListener* listener,
+			const wchar_t* window_name, uint32_t window_width, uint32_t window_height);
 		~Window();
 
 		void Update();
