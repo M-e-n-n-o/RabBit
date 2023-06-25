@@ -1,12 +1,10 @@
-#include "GpuEngine.h"
-#include "GpuEngine.h"
 #include "RabBitPch.h"
-#include "GpuEngine.h"
+#include "GraphicsDeviceEngine.h"
 #include "GraphicsDevice.h"
 
 namespace RB::Graphics::Native
 {
-	GpuEngine::GpuEngine(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags)
+	GraphicsDeviceEngine::GraphicsDeviceEngine(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags)
 		: m_Type(type)
 	{
 		D3D12_COMMAND_QUEUE_DESC desc = {};
@@ -20,18 +18,18 @@ namespace RB::Graphics::Native
 		CreateFence();
 	}
 
-	GpuEngine::~GpuEngine()
+	GraphicsDeviceEngine::~GraphicsDeviceEngine()
 	{
 		CloseHandle(m_FenceEventHandle);
 	}
 
-	void GpuEngine::WaitForIdle(uint64_t max_duration_ms)
+	void GraphicsDeviceEngine::WaitForIdle(uint64_t max_duration_ms)
 	{
 		uint64_t fence_value_for_signal = SignalFence();
 		WaitForFenceValue(fence_value_for_signal, max_duration_ms);
 	}
 
-	GPtr<ID3D12GraphicsCommandList2> GpuEngine::GetCommandList()
+	GPtr<ID3D12GraphicsCommandList2> GraphicsDeviceEngine::GetCommandList()
 	{
 		GPtr<ID3D12CommandAllocator> command_allocator;
 		GPtr<ID3D12GraphicsCommandList2> command_list;
@@ -67,14 +65,14 @@ namespace RB::Graphics::Native
 		return command_list;
 	}
 
-	uint64_t GpuEngine::ExecuteCommandList(GPtr<ID3D12GraphicsCommandList2> command_list)
+	uint64_t GraphicsDeviceEngine::ExecuteCommandList(GPtr<ID3D12GraphicsCommandList2> command_list)
 	{
 		GPtr<ID3D12GraphicsCommandList2> ptr[] = { command_list };
 
 		return ExecuteCommandLists(1, ptr);
 	}
 
-	uint64_t GpuEngine::ExecuteCommandLists(uint32_t num_command_lists, GPtr<ID3D12GraphicsCommandList2>* command_lists)
+	uint64_t GraphicsDeviceEngine::ExecuteCommandLists(uint32_t num_command_lists, GPtr<ID3D12GraphicsCommandList2>* command_lists)
 	{
 		ID3D12CommandAllocator** command_allocators = (ID3D12CommandAllocator**)alloca(sizeof(ID3D12CommandAllocator*) * num_command_lists);
 
@@ -108,7 +106,7 @@ namespace RB::Graphics::Native
 		return fence_value;
 	}
 	
-	void GpuEngine::CreateFence()
+	void GraphicsDeviceEngine::CreateFence()
 	{
 		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get2()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)), "Could not create fence");
 
@@ -118,19 +116,19 @@ namespace RB::Graphics::Native
 		m_FenceValue = 0;
 	}
 	
-	uint64_t GpuEngine::SignalFence()
+	uint64_t GraphicsDeviceEngine::SignalFence()
 	{
 		uint64_t fence_value_for_signal = ++m_FenceValue;
 		RB_ASSERT_FATAL_RELEASE_D3D(m_CommandQueue->Signal(m_Fence.Get(), fence_value_for_signal), "Could not signal the command queue");
 		return fence_value_for_signal;
 	}
 
-	bool GpuEngine::IsFenceReached(uint64_t fence_value)
+	bool GraphicsDeviceEngine::IsFenceReached(uint64_t fence_value)
 	{
 		return m_Fence->GetCompletedValue() >= fence_value;
 	}
 
-	void GpuEngine::WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms)
+	void GraphicsDeviceEngine::WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms)
 	{
 		if (IsFenceReached(fence_value))
 		{

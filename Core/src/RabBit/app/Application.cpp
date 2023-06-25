@@ -4,7 +4,7 @@
 #include "graphics/Window.h"
 #include "graphics/native/window/SwapChain.h"
 #include "graphics/native/GraphicsDevice.h"
-#include "graphics/native/GpuEngine.h"
+#include "graphics/native/GraphicsDeviceEngine.h"
 #include "input/events/ApplicationEvent.h"
 
 using namespace RB::Graphics;
@@ -14,7 +14,7 @@ using namespace RB::Input::Events;
 
 namespace RB
 {
-	GpuEngine* _GraphicsEngine = nullptr;
+	GraphicsDeviceEngine* _GraphicsEngine = nullptr;
 	uint32_t _FenceValues[3] = {};
 
 	Application::Application(AppInfo& info)

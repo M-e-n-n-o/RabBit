@@ -2,14 +2,14 @@
 #include "Window.h"
 #include "graphics/native/window/NativeWindow.h"
 #include "graphics/native/window/SwapChain.h"
-#include "graphics/native/GpuEngine.h"
+#include "graphics/native/GraphicsDeviceEngine.h"
 
 using namespace RB::Graphics::Native;
 using namespace RB::Graphics::Native::Window;
 
 namespace RB::Graphics
 {
-	Window::Window(void* window_instance, Native::GpuEngine* graphics_engine, Input::Events::EventListener* listener,
+	Window::Window(void* window_instance, Native::GraphicsDeviceEngine* graphics_engine, Input::Events::EventListener* listener,
 		const char* window_name, uint32_t window_width, uint32_t window_height)
 		: m_Minimized(window_width == 0 && window_height == 0)
 	{

@@ -11,7 +11,7 @@
 
 namespace RB::Graphics::Native
 {
-	class GpuEngine;
+	class GraphicsDeviceEngine;
 
 	class GraphicsDevice
 	{
@@ -26,9 +26,9 @@ namespace RB::Graphics::Native
 		GPtr<IDXGIAdapter4> GetAdapter4() const { return m_NativeAdapter; }
 
 		// Multi-engine: https://learn.microsoft.com/en-us/windows/win32/direct3d12/user-mode-heap-synchronization
-		GpuEngine* GetCopyEngine();
-		GpuEngine* GetComputeEngine();
-		GpuEngine* GetGraphicsEngine();
+		GraphicsDeviceEngine* GetCopyEngine();
+		GraphicsDeviceEngine* GetComputeEngine();
+		GraphicsDeviceEngine* GetGraphicsEngine();
 
 	private:
 		void CreateAdapter();
@@ -37,9 +37,9 @@ namespace RB::Graphics::Native
 		GPtr<ID3D12Device2> m_NativeDevice;
 		GPtr<IDXGIAdapter4> m_NativeAdapter;
 
-		GpuEngine*			m_CopyEngine;
-		GpuEngine*			m_ComputeEngine;
-		GpuEngine*			m_GraphicsEngine;
+		GraphicsDeviceEngine*			m_CopyEngine;
+		GraphicsDeviceEngine*			m_ComputeEngine;
+		GraphicsDeviceEngine*			m_GraphicsEngine;
 	};
 
 	extern GraphicsDevice* g_GraphicsDevice;

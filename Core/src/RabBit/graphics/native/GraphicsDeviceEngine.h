@@ -10,11 +10,11 @@
 namespace RB::Graphics::Native
 {
 	// D3D12 Command queue wrapper
-	class GpuEngine
+	class GraphicsDeviceEngine
 	{
 	public:
-		GpuEngine(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
-		~GpuEngine();
+		GraphicsDeviceEngine(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
+		~GraphicsDeviceEngine();
 
 		uint64_t SignalFence();
 		bool IsFenceReached(uint64_t fence_value);
