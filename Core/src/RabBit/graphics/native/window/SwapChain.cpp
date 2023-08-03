@@ -48,6 +48,8 @@ namespace RB::Graphics::Native::Window
 			&swap_chain1
 		), "Could not create swap chain");
 
+		RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->MakeWindowAssociation(g_NativeWindow->GetWindowHandle(), DXGI_MWA_NO_ALT_ENTER), "Could not hint window to not automatically handle Alt-Enter");
+
 		RB_ASSERT_FATAL_RELEASE_D3D(swap_chain1.As(&m_NativeSwapChain), "Could not convert the swap chain to abstraction level 4");
 
 		m_CurrentBackBufferIndex = m_NativeSwapChain->GetCurrentBackBufferIndex();
