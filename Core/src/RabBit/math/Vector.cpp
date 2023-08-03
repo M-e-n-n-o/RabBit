@@ -1,115 +1,115 @@
 #include "RabBitPch.h"
-#include "Vec.h"
+#include "Vector.h"
 
 using namespace RB::Math;
 
-Vec3::Vec3()
+Float3::Float3()
 	: x(0.0f), y(0.0f), z(0.0f)
 {
 }
 
-Vec3::Vec3(float xyz)
+Float3::Float3(float xyz)
 	: x(xyz), y(xyz), z(xyz)
 {
 }
 
-Vec3::Vec3(float x, float y, float z)
+Float3::Float3(float x, float y, float z)
 	: x(x), y(y), z(z)
 {
 }
 
-void Vec3::Normalize()
+void Float3::Normalize()
 {
 	*this = *this / GetLength();
 }
 
-float Vec3::GetLength() const
+float Float3::GetLength() const
 {
 	return sqrt((x * x) + (y * y) + (z * z));
 }
 
-Vec3 Vec3::operator+(const Vec3& other) const
+Float3 Float3::operator+(const Float3& other) const
 {
-	return Vec3(
+	return Float3(
 		x + other.x,
 		y + other.y,
 		z + other.z
 	);
 }
 
-Vec3 Vec3::operator+(float const& other) const
+Float3 Float3::operator+(float const& other) const
 {
-	return Vec3(
+	return Float3(
 		x + other,
 		y + other,
 		z + other
 	);
 }
 
-Vec3 Vec3::operator-(const Vec3& other) const
+Float3 Float3::operator-(const Float3& other) const
 {
-	return Vec3(
+	return Float3(
 		x - other.x,
 		y - other.y,
 		z - other.z
 	);
 }
 
-Vec3 Vec3::operator-(const float& other) const
+Float3 Float3::operator-(const float& other) const
 {
-	return Vec3(
+	return Float3(
 		x - other,
 		y - other,
 		z - other
 	);
 }
 
-Vec3 Vec3::operator*(const Vec3& other) const
+Float3 Float3::operator*(const Float3& other) const
 {
-	return Vec3(
+	return Float3(
 		x * other.x,
 		y * other.y,
 		z * other.z
 	);
 }
 
-Vec3 Vec3::operator*(const float& other) const
+Float3 Float3::operator*(const float& other) const
 {
-	return Vec3(
+	return Float3(
 		x * other,
 		y * other,
 		z * other
 	);
 }
 
-Vec3 Vec3::operator/(const Vec3& other) const
+Float3 Float3::operator/(const Float3& other) const
 {
-	return Vec3(
+	return Float3(
 		x / other.x,
 		y / other.y,
 		z / other.z
 	);
 }
 
-Vec3 Vec3::operator/(const float& other) const
+Float3 Float3::operator/(const float& other) const
 {
-	return Vec3(
+	return Float3(
 		x / other,
 		y / other,
 		z / other
 	);
 }
 
-Vec3 Vec3::Cross(const Vec3& first, const Vec3& second)
+Float3 Float3::Cross(const Float3& first, const Float3& second)
 {
-	return Vec3(
+	return Float3(
 		first.y * second.z - first.z * second.y,
 		first.z * second.x - first.x * second.z,
 		first.x * second.y - first.y * second.x
 	);
 }
 
-float Vec3::Dot(const Vec3& first, const Vec3& second)
+float Float3::Dot(const Float3& first, const Float3& second)
 {
 	return (
 		first.x * second.x +
@@ -118,7 +118,7 @@ float Vec3::Dot(const Vec3& first, const Vec3& second)
 	);
 }
 
-float Vec3::Angle(const Vec3& first, const Vec3& second)
+float Float3::Angle(const Float3& first, const Float3& second)
 {
 	return acos(Dot(first, second) / (first.GetLength() * second.GetLength()));
 }

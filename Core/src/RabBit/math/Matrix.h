@@ -5,13 +5,13 @@
 
 namespace RB::Math
 {
-	struct Mat4
+	struct Float4x4
 	{
 	public:
 		
 
-		Mat4();
-		~Mat4() = default;
+		Float4x4();
+		~Float4x4() = default;
 
 
 
