@@ -2,6 +2,8 @@
 #include "Resource.h"
 #include "ResourceManager.h"
 
+#include <D3DX12/d3dx12.h>
+
 namespace RB::Graphics::Native
 {
 	Resource::Resource(const wchar_t* name)
@@ -61,8 +63,8 @@ namespace RB::Graphics::Native
 	{
 		if (this != &other)
 		{
-			m_Resource = other.m_Resource;
-			m_Name = other.m_Name;
+			m_Name		 = other.m_Name;
+			m_Resource	 = other.m_Resource;
 			m_ClearValue = std::move(other.m_ClearValue);
 
 			other.m_Resource.Reset();
@@ -79,6 +81,23 @@ namespace RB::Graphics::Native
 	bool Resource::IsValid() const
 	{
 		return (m_Resource != nullptr);
+	}
+
+	bool Resource::Map(void** mapped_memory, Math::Int2 range, uint32_t subresource_index)
+	{
+		CD3DX12_RANGE* d3d_range = (CD3DX12_RANGE*) alloca(sizeof(CD3DX12_RANGE));
+
+		d3d_range->Begin = range.x;
+		d3d_range->End	 = range.y;	
+
+		if (range.x == -1 || range.y == -1)
+		{
+			d3d_range = nullptr;
+		}
+
+		HRESULT result = m_Resource->Map(subresource_index, d3d_range, mapped_memory);
+
+		return SUCCEEDED(result);
 	}
 
 	D3D12_RESOURCE_DESC Resource::GetDesc() const

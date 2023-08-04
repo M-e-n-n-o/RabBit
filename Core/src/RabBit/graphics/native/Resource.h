@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils/Ptr.h"
+#include "math/Vector.h"
 
 // DirectX 12 specific headers.
 #include <d3d12.h>
@@ -22,6 +23,10 @@ namespace RB::Graphics::Native
 		virtual ~Resource();
 
 		bool IsValid() const;
+
+		// No need to Unmap
+		// Set range to -1 to specify the whole resource might be written to
+		bool Map(void** mapped_memory, Math::Int2 range = Math::Int2(-1), uint32_t subresource_index = 0);
 
 		D3D12_RESOURCE_DESC GetDesc() const;
 
