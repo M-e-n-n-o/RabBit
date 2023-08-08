@@ -1,4 +1,4 @@
-#include "RabBitPch.h"
+#include "RabBitCommon.h"
 #include "ResourceManager.h"
 #include "GraphicsDevice.h"
 #include "ResourceStateManager.h"

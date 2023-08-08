@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/Ptr.h"
+#include "RabBitCommon.h"
 
 // DirectX 12 specific headers.
 #include <d3d12.h>

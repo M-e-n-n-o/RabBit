@@ -19,5 +19,7 @@
 #include <system_error>
 #include <tuple>
 
+#include "utils/Macro.h"
+
 #include "utils/debug/Log.h"
 #include "utils/debug/Assert.h"

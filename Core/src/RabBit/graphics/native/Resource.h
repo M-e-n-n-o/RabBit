@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/Ptr.h"
+#include "RabBitCommon.h"
 #include "math/Vector.h"
 
 // DirectX 12 specific headers.

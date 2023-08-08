@@ -1,4 +1,4 @@
-#include "RabBitPch.h"
+#include "RabBitCommon.h"
 #include "Resource.h"
 #include "ResourceManager.h"
 
@@ -85,7 +85,7 @@ namespace RB::Graphics::Native
 
 	bool Resource::Map(void** mapped_memory, Math::Int2 range, uint32_t subresource_index)
 	{
-		CD3DX12_RANGE* d3d_range = (CD3DX12_RANGE*) alloca(sizeof(CD3DX12_RANGE));
+		CD3DX12_RANGE* d3d_range = (CD3DX12_RANGE*) ALLOC_STACK(sizeof(CD3DX12_RANGE));
 
 		d3d_range->Begin = range.x;
 		d3d_range->End	 = range.y;	

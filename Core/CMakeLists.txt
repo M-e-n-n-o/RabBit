@@ -25,7 +25,7 @@ add_compile_definitions(
 target_compile_definitions(RabBit PRIVATE RB_CORE_ACCESS)
 
 # Set precompiled header
-target_precompile_headers(RabBit PRIVATE "src/RabBit/RabBitPch.h")
+target_precompile_headers(RabBit PRIVATE "src/RabBit/RabBitCommon.h")
 
 target_include_directories(RabBit PUBLIC
     "src"

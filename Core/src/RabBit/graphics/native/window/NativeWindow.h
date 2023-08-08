@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/Ptr.h"
+#include "RabBitCommon.h"
 #include "input/events/Event.h"
 
 #define WIN32_LEAN_AND_MEAN

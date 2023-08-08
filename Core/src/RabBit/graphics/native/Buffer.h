@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/Ptr.h"
+#include "RabBitCommon.h"
 #include "Resource.h"
 
 // DirectX 12 specific headers.
@@ -8,6 +8,7 @@
 
 namespace RB::Graphics::Native
 {
+	// Move this class in a separate file
 	class Texture : public Resource
 	{
 
@@ -15,6 +16,12 @@ namespace RB::Graphics::Native
 
 	class Buffer : public Resource
 	{
+	public:
+		Buffer(const D3D12_RESOURCE_DESC& resource_desc, const std::wstring& name = L"");
+		virtual ~Buffer();
+
+	private:
+		virtual void CreateViews(uint32_t num_elements, uint32_t element_size) = 0;
 	};
 
 	// Helper class to wrap command list calls
