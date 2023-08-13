@@ -17,15 +17,19 @@ namespace RB::Graphics::Native
 
 		void InsertResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier);
 
-		void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = 0);
-		void TransitionResourceDirect(ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = 0);
+		void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+		void TransitionResourceDirect(ID3D12GraphicsCommandList* command_list, ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 
 		void InsertUAVBarrier(ID3D12Resource* resource);
 		void InsertAliasBarrier(ID3D12Resource* before, ID3D12Resource* after);
 
-		void FlushPendingTransitions();
+		void FlushPendingTransitions(ID3D12GraphicsCommandList* command_list);
 
 	private:
+        bool GetCurrentState(ID3D12Resource* resource, uint32_t subresource, D3D12_RESOURCE_STATES& out_state);
+
+        void UpdateResourceState(ID3D12Resource* resource, uint32_t subresource, D3D12_RESOURCE_STATES state);
+
 		struct ResourceState
 		{
             // Initialize all of the subresources within a resource to the given state.
@@ -34,16 +38,16 @@ namespace RB::Graphics::Native
             {}
 
             // Set a subresource to a particular state.
-            void SetSubresourceState(UINT subresource, D3D12_RESOURCE_STATES state)
+            void SetSubresourceState(uint32_t subresource, D3D12_RESOURCE_STATES new_state)
             {
                 if (subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
                 {
-                    state = state;
+                    state = new_state;
                     subresourceState.clear();
                 }
                 else
                 {
-                    subresourceState[subresource] = state;
+                    subresourceState[subresource] = new_state;
                 }
             }
 
@@ -51,17 +55,17 @@ namespace RB::Graphics::Native
             // If the specified subresource is not found in the SubresourceState array (map)
             // then the state of the resource (D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES) is
             // returned.
-            D3D12_RESOURCE_STATES GetSubresourceState(UINT subresource) const
+            D3D12_RESOURCE_STATES GetSubresourceState(uint32_t subresource) const
             {
-                D3D12_RESOURCE_STATES state = state;
+                D3D12_RESOURCE_STATES found_state = state;
 
                 const auto iter = subresourceState.find(subresource);
                 if (iter != subresourceState.end())
                 {
-                    state = iter->second;
+                    found_state = iter->second;
                 }
 
-                return state;
+                return found_state;
             }
 
             // If the "subresourceState" array (map) is empty, then the "state" variable defines 
@@ -70,7 +74,7 @@ namespace RB::Graphics::Native
             std::map<UINT, D3D12_RESOURCE_STATES> subresourceState;
 		};
 
-        std::unordered_map<ID3D12Resource*, ResourceState> m_ResourceStateMap;
+        std::unordered_map<ID3D12Resource*, ResourceState> m_ResourceStates;
 	};
 
 	extern ResourceStateManager* g_ResourceStateManager;
