@@ -25,3 +25,4 @@
 
 #include "utils/debug/Log.h"
 #include "utils/debug/Assert.h"
+#include "utils/debug/Profile.h"

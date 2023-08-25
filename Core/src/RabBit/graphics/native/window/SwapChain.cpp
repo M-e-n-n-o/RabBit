@@ -130,6 +130,9 @@ namespace RB::Graphics::Native::Window
 
 			m_BackBuffers[back_buffer_index] = back_buffer;
 			rtv_handle.Offset(m_DescriptorIncrementSize);
+
+			std::wstring name = L"Swapchain Buffer " + std::to_wstring(back_buffer_index);
+			m_BackBuffers[back_buffer_index]->SetName(name.c_str());
 		}
 	}
 }

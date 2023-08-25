@@ -27,6 +27,6 @@ namespace RB::Graphics::Native
 	// Helper class to wrap command list calls
 	class VertexBuffer : public Buffer
 	{
-		D3D12_VERTEX_BUFFER_VIEW;
+		//D3D12_VERTEX_BUFFER_VIEW;
 	};
 }

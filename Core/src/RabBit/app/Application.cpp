@@ -80,34 +80,39 @@ namespace RB
 
 		auto back_buffer = g_SwapChain->GetCurrentBackBuffer();
 
-		// Clear the render target
 		{
-			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-				back_buffer.Get(),
-				D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
-			);
+			// Clear the render target
+			{
+				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
 
-			command_list->ResourceBarrier(1, &barrier);
+				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+					back_buffer.Get(),
+					D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
+				);
 
-			FLOAT clear_color[] = { 0.3f, 1.0f, 0.7f, 1.0f };
+				command_list->ResourceBarrier(1, &barrier);
 
-			command_list->ClearRenderTargetView(g_SwapChain->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
-		}
+				FLOAT clear_color[] = { 0.3f, 1.0f, 0.7f, 1.0f };
 
-		// Present
-		{
-			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-				back_buffer.Get(),
-				D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
-			);
+				command_list->ClearRenderTargetView(g_SwapChain->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+			}
 
-			command_list->ResourceBarrier(1, &barrier);
+			// Present
+			{
+				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+					back_buffer.Get(),
+					D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
+				);
 
-			_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _GraphicsEngine->ExecuteCommandList(command_list);
+				command_list->ResourceBarrier(1, &barrier);
 
-			g_SwapChain->Present(true);
+				_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _GraphicsEngine->ExecuteCommandList(command_list);
 
-			_GraphicsEngine->WaitForFenceValue(_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()]);
+				g_SwapChain->Present(true);
+
+				_GraphicsEngine->WaitForFenceValue(_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()]);
+			}
+
 		}
 	}
 

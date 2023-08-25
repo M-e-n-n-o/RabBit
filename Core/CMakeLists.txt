@@ -9,6 +9,8 @@ option(RABBIT_BUILD_TESTS "Build tests" ON)
 file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.cpp"
+
+    # D3D12
     "external/D3DX12/*.h"
 )
 
@@ -31,15 +33,38 @@ target_include_directories(RabBit PUBLIC
     "src"
     "src/RabBit"
     "external"
+
+    # WinPixEventRuntime
+    "external/WinPixEventRuntime/Include/WinPixEventRuntime"
 )
 
 # Link windows specific libraries
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+
+    set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
+
+    # Library paths
+    set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
+
     target_link_libraries(RabBit
+        # D3D12
         d3d12.lib
         dxgi.lib
         dxguid.lib
+
+        # WinPixEventRuntime
+        "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
     )
+
+    # Copy libraries next to the final executable (should be called app side)
+    function(copyExternalLibraries)
+        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+
+            "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
+
+            $<TARGET_FILE_DIR:${APP_NAME}>)
+    endfunction()
 endif()
 
 if(RABBIT_BUILD_TESTS)
