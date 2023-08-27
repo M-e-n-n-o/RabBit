@@ -11,6 +11,8 @@ namespace RB::Graphics::Native
 	* TODO: 
 	* - Track the resource sizes
 	* - Make is possible to easily create and alias (multiple) resources from 1 heap (all rendertargets in 1 big heap)
+	* - Make sure, there is a way to detect which resources should be deleted, and delete them (also remove from ResourceStateManager) 
+		(keep all vertex data in memory, stream textures and shader inputs)
 	*/
 
 	// Global resource manager

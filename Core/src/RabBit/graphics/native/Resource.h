@@ -12,8 +12,10 @@ namespace RB::Graphics::Native
 	{
 	public:
 		Resource(const wchar_t* name = L"");
-		Resource(const D3D12_RESOURCE_DESC& resource_desc, const D3D12_CLEAR_VALUE* clear_value = nullptr, const wchar_t* name = L"");
 		Resource(GPtr<ID3D12Resource> resource, const wchar_t* name = L"");
+		Resource(const D3D12_RESOURCE_DESC& resource_desc, const D3D12_CLEAR_VALUE* clear_value = nullptr, const wchar_t* name = L"");
+		Resource(const D3D12_RESOURCE_DESC& resource_desc, const D3D12_CLEAR_VALUE* clear_value = nullptr, D3D12_HEAP_TYPE heap_type = D3D12_HEAP_TYPE_DEFAULT,
+			D3D12_HEAP_FLAGS heap_flags = D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATES start_state = D3D12_RESOURCE_STATE_COMMON, const wchar_t* name = L"");
 		Resource(const Resource& copy);
 		Resource(Resource&& copy);
 
@@ -23,12 +25,18 @@ namespace RB::Graphics::Native
 		virtual ~Resource();
 
 		bool IsValid() const;
+		bool IsCPUAccessible() const { return m_IsCPUAccessible; }
 
-		// No need to Unmap
 		// Set range to -1 to specify the whole resource might be written to
 		bool Map(void** mapped_memory, Math::Int2 range = Math::Int2(-1), uint32_t subresource_index = 0);
+		// No need to call unmap
+		void Unmap(Math::Int2 range = Math::Int2(-1), uint32_t subresource_index = 0);
 
 		D3D12_RESOURCE_DESC GetDesc() const;
+
+		std::wstring GetName() const { return m_Name; }
+
+		GPtr<ID3D12Resource> GetResource() const { return m_Resource; }
 
 		virtual void Reset();
 
@@ -43,5 +51,6 @@ namespace RB::Graphics::Native
 		std::wstring				m_Name;
 		GPtr<ID3D12Resource>		m_Resource;
 		Unique<D3D12_CLEAR_VALUE>	m_ClearValue;
+		bool						m_IsCPUAccessible;
 	};
 }

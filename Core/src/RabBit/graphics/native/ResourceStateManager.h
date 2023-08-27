@@ -18,6 +18,7 @@ namespace RB::Graphics::Native
 		void InsertResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier);
 
 		void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+        // Not recommended to use in production
 		void TransitionResourceDirect(ID3D12GraphicsCommandList* command_list, ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 
 		void InsertUAVBarrier(ID3D12Resource* resource);
@@ -75,6 +76,8 @@ namespace RB::Graphics::Native
 		};
 
         std::unordered_map<ID3D12Resource*, ResourceState> m_ResourceStates;
+
+        std::vector<D3D12_RESOURCE_BARRIER> m_PendingBarriers;
 	};
 
 	extern ResourceStateManager* g_ResourceStateManager;

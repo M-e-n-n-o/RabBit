@@ -46,6 +46,16 @@ namespace RB::Utils::Debug
 		va_end(args);
 	}
 
+	void Logger::LogCore(const wchar_t* tag, const wchar_t* format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+		wprintf(L"[RabBit][%s] ", tag);
+		vwprintf(format, args);
+		wprintf(L"\n");
+		va_end(args);
+	}
+
 	void Logger::LogApp(const char* format, ...)
 	{
 		va_list args;

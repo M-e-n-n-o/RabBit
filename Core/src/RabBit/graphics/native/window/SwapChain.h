@@ -11,6 +11,15 @@
 
 namespace RB::Graphics::Native::Window
 {
+	enum class VsyncMode : uint8_t
+	{
+		Off		= 0,
+		On		= 1,
+		Half	= 2,
+		Quarter	= 3,
+		Eighth	= 4
+	};
+
 	class SwapChain
 	{
 	public:
@@ -18,7 +27,7 @@ namespace RB::Graphics::Native::Window
 			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 		~SwapChain();
 
-		void Present(bool vsync_enabled);
+		void Present(const VsyncMode& vsync_mode);
 
 		void Resize(const uint32_t width, const uint32_t height);
 

@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "ResourceStateManager.h"
 #include "GraphicsDevice.h"
-#include "GraphicsDeviceEngine.h"
+#include "DeviceEngine.h"
 
 namespace RB::Graphics::Native
 {
@@ -28,7 +28,12 @@ namespace RB::Graphics::Native
 
 	void ResourceStateManager::InsertResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier)
 	{
-		// TODO
+		m_PendingBarriers.push_back(barrier);
+
+		if (barrier.Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION)
+		{
+			UpdateResourceState(barrier.Transition.pResource, barrier.Transition.Subresource, barrier.Transition.StateAfter);
+		}
 	}
 
 	void ResourceStateManager::TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource)
@@ -74,7 +79,9 @@ namespace RB::Graphics::Native
 
 	void ResourceStateManager::FlushPendingTransitions(ID3D12GraphicsCommandList* command_list)
 	{
-		// TODO
+		command_list->ResourceBarrier(m_PendingBarriers.size(), m_PendingBarriers.data());
+
+		m_PendingBarriers.clear();
 	}
 
 	bool ResourceStateManager::GetCurrentState(ID3D12Resource* resource, uint32_t subresource, D3D12_RESOURCE_STATES& out_state)

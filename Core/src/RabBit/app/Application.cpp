@@ -4,7 +4,7 @@
 #include "graphics/Window.h"
 #include "graphics/native/window/SwapChain.h"
 #include "graphics/native/GraphicsDevice.h"
-#include "graphics/native/GraphicsDeviceEngine.h"
+#include "graphics/native/DeviceEngine.h"
 #include "input/events/ApplicationEvent.h"
 
 using namespace RB::Graphics;
@@ -14,7 +14,7 @@ using namespace RB::Input::Events;
 
 namespace RB
 {
-	GraphicsDeviceEngine* _GraphicsEngine = nullptr;
+	DeviceEngine* _GraphicsEngine = nullptr;
 	uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
 	Application::Application(AppInfo& info)
@@ -76,25 +76,26 @@ namespace RB
 			return;
 		}
 
-		GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsEngine->GetCommandList();
+		CommandList* command_list = _GraphicsEngine->GetCommandList();
+		ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
 
 		auto back_buffer = g_SwapChain->GetCurrentBackBuffer();
 
 		{
 			// Clear the render target
 			{
-				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
+				RB_PROFILE_GPU_SCOPED(d3d_list, "Frame");
 
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 					back_buffer.Get(),
 					D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
 				);
 
-				command_list->ResourceBarrier(1, &barrier);
+				d3d_list->ResourceBarrier(1, &barrier);
 
 				FLOAT clear_color[] = { 0.3f, 1.0f, 0.7f, 1.0f };
 
-				command_list->ClearRenderTargetView(g_SwapChain->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+				d3d_list->ClearRenderTargetView(g_SwapChain->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 			}
 
 			// Present
@@ -104,12 +105,14 @@ namespace RB
 					D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
 				);
 
-				command_list->ResourceBarrier(1, &barrier);
+				d3d_list->ResourceBarrier(1, &barrier);
 
+				uint64_t value = g_SwapChain->GetCurrentBackBufferIndex();
 				_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _GraphicsEngine->ExecuteCommandList(command_list);
 
-				g_SwapChain->Present(true);
+				g_SwapChain->Present(VsyncMode::On);
 
+				value = g_SwapChain->GetCurrentBackBufferIndex();
 				_GraphicsEngine->WaitForFenceValue(_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()]);
 			}
 

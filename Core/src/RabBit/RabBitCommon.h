@@ -19,6 +19,7 @@
 #include <system_error>
 #include <tuple>
 #include <map>
+#include <queue>
 #include <unordered_map>
 
 #include "utils/Macro.h"

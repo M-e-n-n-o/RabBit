@@ -8,10 +8,16 @@ namespace RB::Graphics::Native
 {
 	Resource::Resource(const wchar_t* name)
 		: m_Name(name)
+		, m_IsCPUAccessible(false)
 	{
 	}
 
 	Resource::Resource(const D3D12_RESOURCE_DESC& resource_desc, const D3D12_CLEAR_VALUE* clear_value, const wchar_t* name)
+		: Resource(resource_desc, clear_value, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COMMON, name)
+	{
+	}
+
+	Resource::Resource(const D3D12_RESOURCE_DESC& resource_desc, const D3D12_CLEAR_VALUE* clear_value, D3D12_HEAP_TYPE heap_type, D3D12_HEAP_FLAGS heap_flags, D3D12_RESOURCE_STATES start_state, const wchar_t* name)
 		: m_Name(name)
 	{
 		if (clear_value)
@@ -19,12 +25,15 @@ namespace RB::Graphics::Native
 			m_ClearValue = CreateUnique<D3D12_CLEAR_VALUE>(*clear_value);
 		}
 
-		m_Resource = g_ResourceManager->CreateCommittedResource(m_Name.c_str(), resource_desc, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COMMON, clear_value);
+		m_IsCPUAccessible = (heap_type == D3D12_HEAP_TYPE_UPLOAD || heap_type == D3D12_HEAP_TYPE_READBACK);
+
+		m_Resource = g_ResourceManager->CreateCommittedResource(m_Name.c_str(), resource_desc, heap_type, heap_flags, start_state, clear_value);
 	}
 
 	Resource::Resource(GPtr<ID3D12Resource> resource, const wchar_t* name)
 		: m_Name(name)
 		, m_Resource(resource)
+		, m_IsCPUAccessible(false)
 	{
 		m_Resource->SetName(m_Name.c_str());
 	}
@@ -33,6 +42,7 @@ namespace RB::Graphics::Native
 		: m_Name(copy.m_Name)
 		, m_Resource(copy.m_Resource)
 		, m_ClearValue(CreateUnique<D3D12_CLEAR_VALUE>(*copy.m_ClearValue))
+		, m_IsCPUAccessible(copy.m_IsCPUAccessible)
 	{
 	}
 
@@ -40,6 +50,7 @@ namespace RB::Graphics::Native
 		: m_Name(std::move(copy.m_Name))
 		, m_Resource(std::move(copy.m_Resource))
 		, m_ClearValue(std::move(copy.m_ClearValue))
+		, m_IsCPUAccessible(std::move(copy.m_IsCPUAccessible))
 	{
 	}
 
@@ -98,6 +109,21 @@ namespace RB::Graphics::Native
 		HRESULT result = m_Resource->Map(subresource_index, d3d_range, mapped_memory);
 
 		return SUCCEEDED(result);
+	}
+
+	void Resource::Unmap(Math::Int2 range, uint32_t subresource_index)
+	{
+		CD3DX12_RANGE* d3d_range = (CD3DX12_RANGE*)ALLOC_STACK(sizeof(CD3DX12_RANGE));
+
+		d3d_range->Begin = range.x;
+		d3d_range->End = range.y;
+
+		if (range.x == -1 || range.y == -1)
+		{
+			d3d_range = nullptr;
+		}
+
+		m_Resource->Unmap(subresource_index, d3d_range);
 	}
 
 	D3D12_RESOURCE_DESC Resource::GetDesc() const

@@ -66,9 +66,10 @@ namespace RB::Graphics::Native::Window
 		delete[] m_BackBuffers;
 	}
 
-	void SwapChain::Present(bool vsync_enabled)
+	void SwapChain::Present(const VsyncMode& vsync_mode)
 	{
-		UINT sync_interval = vsync_enabled ? 1 : 0;
+		bool vsync_enabled = vsync_mode != VsyncMode::Off;
+		UINT sync_interval = (UINT) vsync_mode;
 		UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
 		RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->Present(sync_interval, present_flags), "Failed to present frame");

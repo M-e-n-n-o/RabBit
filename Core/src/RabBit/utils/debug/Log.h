@@ -52,6 +52,7 @@ namespace RB::Utils::Debug
 		void SetModeError();
 
 		void LogCore(const wchar_t* tag, const char* format, ...);
+		void LogCore(const wchar_t* tag, const wchar_t* format, ...);
 		void LogApp(const char* format, ...);
 	}
 #endif

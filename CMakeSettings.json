@@ -25,7 +25,7 @@
             "variables": []
         },
         {
-            "name": "Final",
+            "name": "Distribution",
             "generator": "Ninja",
             "configurationType": "MinSizeRel",
             "buildRoot": "${projectDir}\\out\\build\\${name}",

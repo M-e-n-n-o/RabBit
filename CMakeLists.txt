@@ -15,7 +15,7 @@ add_compile_definitions(
     $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>
     $<$<CONFIG:Release>:RB_CONFIG_RELEASE>
     $<$<CONFIG:RelWithDebInfo>:RB_CONFIG_RELEASE>
-    $<$<CONFIG:MinSizeRel>:RB_CONFIG_FINAL>
+    $<$<CONFIG:MinSizeRel>:RB_CONFIG_DIST>
 )
 
 # Set RabBit options

@@ -1,6 +1,6 @@
 #include "RabBitCommon.h"
 #include "GraphicsDevice.h"
-#include "GraphicsDeviceEngine.h"
+#include "DeviceEngine.h"
 
 #ifdef RB_CONFIG_DEBUG
 #include <dxgidebug.h>
@@ -77,31 +77,31 @@ namespace RB::Graphics::Native
 		return supported == TRUE;
 	}
 
-	GraphicsDeviceEngine* GraphicsDevice::GetCopyEngine()
+	DeviceEngine* GraphicsDevice::GetCopyEngine()
 	{
 		if (!m_CopyEngine)
 		{
-			m_CopyEngine = new GraphicsDeviceEngine(D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+			m_CopyEngine = new DeviceEngine(D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
 		}
 
 		return m_CopyEngine;
 	}
 
-	GraphicsDeviceEngine* GraphicsDevice::GetComputeEngine()
+	DeviceEngine* GraphicsDevice::GetComputeEngine()
 	{
 		if (!m_ComputeEngine)
 		{
-			m_ComputeEngine = new GraphicsDeviceEngine(D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+			m_ComputeEngine = new DeviceEngine(D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
 		}
 
 		return m_ComputeEngine;
 	}
 
-	GraphicsDeviceEngine* GraphicsDevice::GetGraphicsEngine()
+	DeviceEngine* GraphicsDevice::GetGraphicsEngine()
 	{
 		if (!m_GraphicsEngine)
 		{
-			m_GraphicsEngine = new GraphicsDeviceEngine(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, D3D12_COMMAND_QUEUE_FLAG_NONE);
+			m_GraphicsEngine = new DeviceEngine(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, D3D12_COMMAND_QUEUE_FLAG_NONE);
 		}
 
 		return m_GraphicsEngine;

@@ -3,7 +3,7 @@
 #include "graphics/native/GraphicsDevice.h"
 #include "graphics/native/window/NativeWindow.h"
 #include "graphics/native/window/SwapChain.h"
-#include "graphics/native/GraphicsDeviceEngine.h"
+#include "graphics/native/DeviceEngine.h"
 
 using namespace RB::Graphics::Native;
 using namespace RB::Graphics::Native::Window;
