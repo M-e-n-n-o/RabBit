@@ -1,6 +1,8 @@
 #include "RabBitCommon.h"
 #include "Buffer.h"
 
+#include <D3DX12/d3dx12.h>
+
 namespace RB::Graphics::Native
 {
 	// --------------------------------------------------------
@@ -13,7 +15,9 @@ namespace RB::Graphics::Native
 		, m_NumElements(num_elements)
 		, m_ElementSize(element_size)
 	{
-		CreateViews(num_elements, element_size);
+		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, resource_desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER, "A buffer should always have a buffer dimension");
+
+		CreateViews();
 	}
 
 	Buffer::~Buffer()
@@ -24,12 +28,36 @@ namespace RB::Graphics::Native
 	//                    Vertex Buffer
 	// --------------------------------------------------------
 
-	//VertexBuffer::VertexBuffer(uint32_t num_elements, uint32_t element_size, void* data, const wchar_t* name)
-	//	: Buffer()
-	//{
-	//}
+	VertexBuffer::VertexBuffer(uint32_t num_elements, uint32_t element_size, void* vertex_data, const wchar_t* name)
+		: Buffer(CD3DX12_RESOURCE_DESC::Buffer(num_elements * element_size), num_elements, element_size, vertex_data, name)
+	{
+	}
 
-	//void VertexBuffer::CreateViews(uint32_t num_elements, uint32_t element_size)
-	//{
-	//}
-} 
+	void VertexBuffer::CreateViews()
+	{
+		m_VertexView = {};
+		m_VertexView.BufferLocation = m_Resource->GetGPUVirtualAddress();
+		m_VertexView.SizeInBytes	= GetBufferSize();
+		m_VertexView.StrideInBytes	= m_NumElements;
+	}
+
+	// --------------------------------------------------------
+	//                    Index Buffer
+	// --------------------------------------------------------
+
+	#define CALC_INDEX_ELEM_SIZE(use_32_bit_precision) ((use_32_bit_precision) ? 4 : 2)
+
+	IndexBuffer::IndexBuffer(uint32_t num_indices, bool use_32_bit_precision, void* indices, const wchar_t* name)
+		: Buffer(CD3DX12_RESOURCE_DESC::Buffer(num_indices * CALC_INDEX_ELEM_SIZE(use_32_bit_precision)), num_indices, CALC_INDEX_ELEM_SIZE(use_32_bit_precision), indices, name)
+		, m_Use32BitPrecision(use_32_bit_precision)
+	{
+	}
+
+	void IndexBuffer::CreateViews()
+	{
+		m_IndexView = {};
+		m_IndexView.BufferLocation	= m_Resource->GetGPUVirtualAddress();
+		m_IndexView.SizeInBytes		= GetBufferSize();
+		m_IndexView.Format			= m_Use32BitPrecision ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
+	}
+}

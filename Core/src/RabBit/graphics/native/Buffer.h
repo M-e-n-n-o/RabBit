@@ -19,8 +19,8 @@ namespace RB::Graphics::Native
 		uint32_t	GetElementSize()	const { return m_ElementSize; }
 		uint32_t	GetBufferSize()		const { return m_NumElements * m_ElementSize; }
 
-	private:
-		virtual void CreateViews(uint32_t num_elements, uint32_t element_size) = 0;
+	protected:
+		virtual void CreateViews() = 0;
 
 		const void*		m_Data;
 		const uint32_t	m_NumElements;
@@ -38,11 +38,34 @@ namespace RB::Graphics::Native
 	class VertexBuffer : public Buffer
 	{
 	public:
-		VertexBuffer(uint32_t num_elements, uint32_t element_size, void* data, const wchar_t* name = L"");
+		VertexBuffer(uint32_t num_elements, uint32_t element_size, void* vertex_data, const wchar_t* name = L"");
 
 	private:
-		void CreateViews(uint32_t num_elements, uint32_t element_size) override;
+		void CreateViews() override;
 
 		D3D12_VERTEX_BUFFER_VIEW m_VertexView;
 	};
+
+	class IndexBuffer : public Buffer
+	{
+	public:
+		IndexBuffer(uint32_t num_indices, bool use_32_bit_precision, void* indices, const wchar_t* name = L"");
+
+	private:
+		void CreateViews() override;
+
+		D3D12_INDEX_BUFFER_VIEW m_IndexView;
+
+		bool m_Use32BitPrecision;
+	};
+
+	//class DynamicVertexBuffer : public DynamicBuffer
+	//{
+
+	//};
+
+	//class ShaderConstantBuffer : public DynamicBuffer
+	//{
+
+	//};
 }
