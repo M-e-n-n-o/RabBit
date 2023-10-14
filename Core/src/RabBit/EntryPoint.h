@@ -21,7 +21,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     auto* app = RB::CreateApplication();
 
-    app->Start(hInstance);
+    app->Start();
 
     app->Run();
 

@@ -40,4 +40,6 @@ namespace RB
 	{
 		return std::make_unique<T>(std::forward<Args>(args)...);
 	}
+
+	const wchar_t* CharToWchar(const char* c);
 }

@@ -13,29 +13,34 @@
 
 namespace RB::Graphics::Native::Window
 {
+	struct WindowArgs
+	{
+		HINSTANCE		instance;
+		const wchar_t*	className;
+		const wchar_t*	windowName;
+		uint32_t		width;
+		uint32_t		height;
+	};
+
 	class NativeWindow
 	{
 	public:
-		NativeWindow(Input::Events::EventListener* listener);
+		NativeWindow(const WindowArgs args, Input::Events::EventListener* listener);
 		~NativeWindow();
 
 		void ProcessEvents();
 
+		void ShowWindow();
+
+		HWND GetHandle() const { return m_WindowHandle; }
+
+	private:
 		void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
 
 		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height);
 
-		void ShowWindow();
-
-		HWND GetWindowHandle() const { return m_NativeWindowHandle; }
-
-	private:
-		HWND m_NativeWindowHandle;
+		HWND m_WindowHandle;
 
 		Input::Events::EventListener* m_Listener;
-
-		friend LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 	};
-
-	extern NativeWindow* g_NativeWindow;
 }

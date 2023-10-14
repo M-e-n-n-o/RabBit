@@ -5,13 +5,11 @@
 
 namespace RB::Graphics::Native::Window
 {
-	SwapChain* g_SwapChain = nullptr;
-
-	SwapChain::SwapChain(GPtr<ID3D12CommandQueue> command_queue, uint32_t width, uint32_t height, uint32_t buffer_count, 
+	SwapChain::SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count,
 		DXGI_FORMAT format)
-		:	m_BackBufferCount(buffer_count),
-			m_Width(width),
-			m_Height(height)
+		: m_BackBufferCount(buffer_count)
+		, m_Width(width)
+		, m_Height(height)
 	{
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, g_GraphicsDevice->IsFormatSupported(format), "Device does not support passed in format, can not create SwapChain");
 
@@ -41,14 +39,14 @@ namespace RB::Graphics::Native::Window
 		GPtr<IDXGISwapChain1> swap_chain1;
 		RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->CreateSwapChainForHwnd(
 			command_queue.Get(),
-			g_NativeWindow->GetWindowHandle(),
+			window_handle,
 			&swap_chain_desc,
 			nullptr,
 			nullptr,
 			&swap_chain1
 		), "Could not create swap chain");
 
-		RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->MakeWindowAssociation(g_NativeWindow->GetWindowHandle(), DXGI_MWA_NO_ALT_ENTER), "Could not hint window to not automatically handle Alt-Enter");
+		RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->MakeWindowAssociation(window_handle, DXGI_MWA_NO_ALT_ENTER), "Could not hint window to not automatically handle Alt-Enter");
 
 		RB_ASSERT_FATAL_RELEASE_D3D(swap_chain1.As(&m_NativeSwapChain), "Could not convert the swap chain to abstraction level 4");
 

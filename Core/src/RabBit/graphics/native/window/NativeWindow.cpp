@@ -10,26 +10,33 @@ using namespace RB::Input::Events;
 
 namespace RB::Graphics::Native::Window
 {
-	NativeWindow* g_NativeWindow = nullptr;
-
 	// Window callback function
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-	NativeWindow::NativeWindow(EventListener* listener)
-		:	m_NativeWindowHandle(nullptr),
-			m_Listener(listener)
+	std::unordered_map<HWND, EventListener*> WindowListeners;
+
+
+	NativeWindow::NativeWindow(const WindowArgs args, EventListener* listener)
+		: m_WindowHandle(nullptr)
+		, m_Listener(listener)
 	{
+		RegisterWindowCLass(args.instance, args.className);
+		CreateWindow(args.instance, args.className, args.windowName, args.width, args.height);
+
+		WindowListeners.insert(std::pair<HWND, EventListener*>(m_WindowHandle, listener));
 	}
 
 	NativeWindow::~NativeWindow()
 	{
-		DestroyWindow(m_NativeWindowHandle);
+		WindowListeners.erase(m_WindowHandle);
+
+		DestroyWindow(m_WindowHandle);
 	}
 
 	void NativeWindow::ProcessEvents()
 	{
 		MSG message = {};
-		if (PeekMessage(&message, m_NativeWindowHandle, 0, 0, PM_REMOVE))
+		if (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&message);
 			DispatchMessage(&message);
@@ -72,7 +79,7 @@ namespace RB::Graphics::Native::Window
 		int window_x		= std::max<int>(0, (screen_width - window_width) / 2);
 		int window_y		= std::max<int>(0, (screen_height - window_height) / 2);
 
-		m_NativeWindowHandle = ::CreateWindowExW(
+		m_WindowHandle = ::CreateWindowExW(
 			NULL,
 			class_name,
 			window_title,
@@ -87,29 +94,42 @@ namespace RB::Graphics::Native::Window
 			nullptr
 		);
 
-		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_NativeWindowHandle, "Failed to create window");
+		DWORD error = GetLastError();
+		//error
+
+		RB_LOG(LOGTAG_EVENT, "%d", (int)error);
+
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_WindowHandle, "Failed to create window");
 	}
 
 	void NativeWindow::ShowWindow()
 	{
-		::ShowWindow(m_NativeWindowHandle, SW_SHOW);
+		::ShowWindow(m_WindowHandle, SW_SHOW);
 	}
 
 	LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
+		EventListener* listener = nullptr;
+
+		auto got = WindowListeners.find(hwnd);
+		if (got != WindowListeners.end())
+		{
+			listener = got->second;
+		}
+
 		switch (message)
 		{
 		case WM_PAINT:
 		{
 			Event& e = WindowRenderEvent();
-			g_NativeWindow->m_Listener->OnEvent(e);
+			listener->OnEvent(e);
 		}
 		break;
 		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 		{
 			Event& e = KeyPressedEvent(static_cast<KeyCode>(wParam), false);
-			g_NativeWindow->m_Listener->OnEvent(e);
+			listener->OnEvent(e);
 		}
 		break;
 		case WM_SYSCHAR:
@@ -117,19 +137,19 @@ namespace RB::Graphics::Native::Window
 		case WM_SIZE:
 		{
 			RECT client_rect = {};
-			::GetClientRect(g_NativeWindow->m_NativeWindowHandle, &client_rect);
+			::GetClientRect(hwnd, &client_rect);
 
 			uint32_t width = client_rect.right - client_rect.left;
 			uint32_t height = client_rect.bottom - client_rect.top;
 
 			Event& e = WindowResizeEvent(width, height);
-			g_NativeWindow->m_Listener->OnEvent(e);
+			listener->OnEvent(e);
 		}
 		break;
 		case WM_CLOSE:
 		{
 			Event& e = WindowCloseEvent();
-			g_NativeWindow->m_Listener->OnEvent(e);
+			listener->OnEvent(e);
 		}
 		break;
 		case WM_DESTROY:

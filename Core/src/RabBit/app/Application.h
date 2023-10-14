@@ -14,7 +14,7 @@ namespace RB
 
 	struct AppInfo
 	{
-		const wchar_t* name;
+		const char* name;
 		uint32_t windowWidth;
 		uint32_t windowHeight;
 	};
@@ -25,7 +25,7 @@ namespace RB
 		Application(AppInfo& info);
 		virtual ~Application();
 
-		void Start(void* window_instance);
+		void Start();
 		void Run();
 		void Shutdown();
 
@@ -33,9 +33,9 @@ namespace RB
 
 		void OnEvent(Input::Events::Event& event) override;
 
-		virtual void Start() = 0;
-		virtual void Update() = 0;
-		virtual void Stop() = 0;
+		virtual void OnStart() = 0;
+		virtual void OnUpdate() = 0;
+		virtual void OnStop() = 0;
 
 		Graphics::Window* GetWindow() const { return m_Window; }
 

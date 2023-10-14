@@ -23,7 +23,7 @@ namespace RB::Graphics::Native::Window
 	class SwapChain
 	{
 	public:
-		SwapChain(GPtr<ID3D12CommandQueue> command_queue, const uint32_t width, const uint32_t height, const uint32_t buffer_count = 3u, 
+		SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count = 3u,
 			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 		~SwapChain();
 
@@ -56,6 +56,4 @@ namespace RB::Graphics::Native::Window
 
 		bool						m_IsTearingSupported;
 	};
-
-	extern SwapChain* g_SwapChain;
 }

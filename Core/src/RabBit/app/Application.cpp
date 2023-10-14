@@ -17,6 +17,8 @@ namespace RB
 	DeviceEngine* _GraphicsEngine = nullptr;
 	uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
+	Graphics::Window* SecondWindow;
+
 	Application::Application(AppInfo& info)
 		: m_StartAppInfo(info)
 		, m_Initialized(false)
@@ -32,19 +34,22 @@ namespace RB
 
 	}
 
-	void Application::Start(void* window_instance)
+	void Application::Start()
 	{
 		g_GraphicsDevice = new GraphicsDevice();
 
 		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
 
-		m_Window = new Graphics::Window(window_instance, this, m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
+		SecondWindow = new Graphics::Window("Test", nullptr, 1280, 720);
+
+		m_Window = new Graphics::Window(m_StartAppInfo.name, this, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
+
 
 		m_Initialized = true;
 
 		// Initialize app user
 		RB_LOG(LOGTAG_MAIN, "Starting application: %ls", m_StartAppInfo.name);
-		Start();
+		OnStart();
 	}
 
 	void Application::Run()
@@ -53,17 +58,23 @@ namespace RB
 		{
 			m_Window->Update();
 
+			if (SecondWindow->IsValid())
+				SecondWindow->Update();
+
 			// Only do updates, rendering is called via events
-			Update();
+			OnUpdate();
 		}
 	}
 
 	void Application::Shutdown()
 	{
 		// Shutdown app user
-		Stop();
+		OnStop();
 
 		_GraphicsEngine->WaitForIdle();
+
+		if (SecondWindow->IsValid())
+			delete SecondWindow;
 
 		delete m_Window;
 		delete g_GraphicsDevice;		
@@ -79,7 +90,7 @@ namespace RB
 		CommandList* command_list = _GraphicsEngine->GetCommandList();
 		ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
 
-		auto back_buffer = g_SwapChain->GetCurrentBackBuffer();
+		auto back_buffer = m_Window->GetSwapChain()->GetCurrentBackBuffer();
 
 		{
 			// Clear the render target
@@ -95,7 +106,7 @@ namespace RB
 
 				FLOAT clear_color[] = { 0.3f, 1.0f, 0.7f, 1.0f };
 
-				d3d_list->ClearRenderTargetView(g_SwapChain->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+				d3d_list->ClearRenderTargetView(m_Window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 			}
 
 			// Present
@@ -107,13 +118,13 @@ namespace RB
 
 				d3d_list->ResourceBarrier(1, &barrier);
 
-				uint64_t value = g_SwapChain->GetCurrentBackBufferIndex();
-				_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()] = _GraphicsEngine->ExecuteCommandList(command_list);
+				uint64_t value = m_Window->GetSwapChain()->GetCurrentBackBufferIndex();
+				_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsEngine->ExecuteCommandList(command_list);
 
-				g_SwapChain->Present(VsyncMode::On);
+				m_Window->GetSwapChain()->Present(VsyncMode::On);
 
-				value = g_SwapChain->GetCurrentBackBufferIndex();
-				_GraphicsEngine->WaitForFenceValue(_FenceValues[g_SwapChain->GetCurrentBackBufferIndex()]);
+				value = m_Window->GetSwapChain()->GetCurrentBackBufferIndex();
+				_GraphicsEngine->WaitForFenceValue(_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()]);
 			}
 
 		}
@@ -131,18 +142,6 @@ namespace RB
 		BindEvent<WindowRenderEvent>([this](WindowRenderEvent& render_event)
 		{
 			Render();
-		}, event);
-
-		BindEvent<WindowResizeEvent>([this](WindowResizeEvent& resize_event)
-		{
-			RB_LOG(LOGTAG_EVENT, "Window resize event received");
-
-			uint32_t width = resize_event.GetWidth();
-			uint32_t height = resize_event.GetHeight();
-
-			_GraphicsEngine->WaitForIdle();
-
-			m_Window->Resize(width, height);
 		}, event);
 
 		BindEvent<WindowCloseEvent>([this](WindowCloseEvent& close_event)
