@@ -12,12 +12,12 @@ namespace RB::Input::Events
 
 	enum EventCategory
 	{
-		None				= 0,
-		EventCatApplication = (1 << 0),
-		EventCatInput		= (1 << 1),
-		EventCatKeyboard	= (1 << 2),
-		EventCatMouse		= (1 << 3),
-		EventCatMouseButton = (1 << 4),
+		kEventCat_None			= 0,
+		kEventCat_Application	= (1 << 0),
+		kEventCat_Input			= (1 << 1),
+		kEventCat_Keyboard		= (1 << 2),
+		kEventCat_Mouse			= (1 << 3),
+		kEventCat_MouseButton	= (1 << 4),
 	};
 
 	#define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\
@@ -51,7 +51,7 @@ namespace RB::Input::Events
 	{
 	public:
 		EVENT_CLASS_TYPE(None)
-		int GetCategoryFlags() const override { return None; }
+		int GetCategoryFlags() const override { return kEventCat_None; }
 	};
 
 	template<class Type, typename Function>

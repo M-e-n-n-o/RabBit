@@ -5,11 +5,11 @@
 
 namespace RB::Graphics::Native::Window
 {
-	SwapChain::SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count,
-		DXGI_FORMAT format)
+	SwapChain::SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count, DXGI_FORMAT format, bool transparency_support)
 		: m_BackBufferCount(buffer_count)
 		, m_Width(width)
 		, m_Height(height)
+		, m_UseComposition(transparency_support)
 	{
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, g_GraphicsDevice->IsFormatSupported(format), "Device does not support passed in format, can not create SwapChain");
 
@@ -33,18 +33,31 @@ namespace RB::Graphics::Native::Window
 		swap_chain_desc.BufferCount = buffer_count;
 		swap_chain_desc.Scaling		= DXGI_SCALING_STRETCH;
 		swap_chain_desc.SwapEffect	= DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		swap_chain_desc.AlphaMode	= DXGI_ALPHA_MODE_UNSPECIFIED;
+		swap_chain_desc.AlphaMode	= m_UseComposition ? DXGI_ALPHA_MODE_PREMULTIPLIED : DXGI_ALPHA_MODE_UNSPECIFIED;
 		swap_chain_desc.Flags		= m_IsTearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 
 		GPtr<IDXGISwapChain1> swap_chain1;
-		RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->CreateSwapChainForHwnd(
-			command_queue.Get(),
-			window_handle,
-			&swap_chain_desc,
-			nullptr,
-			nullptr,
-			&swap_chain1
-		), "Could not create swap chain");
+
+		if (m_UseComposition)
+		{
+			RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->CreateSwapChainForComposition(
+				command_queue.Get(),
+				&swap_chain_desc,
+				nullptr,
+				&swap_chain1
+			), "Could not create composition swap chain");
+		}
+		else
+		{
+			RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->CreateSwapChainForHwnd(
+				command_queue.Get(),
+				window_handle,
+				&swap_chain_desc,
+				nullptr,
+				nullptr,
+				&swap_chain1
+			), "Could not create swap chain for HWND");
+		}
 
 		RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->MakeWindowAssociation(window_handle, DXGI_MWA_NO_ALT_ENTER), "Could not hint window to not automatically handle Alt-Enter");
 
@@ -57,6 +70,11 @@ namespace RB::Graphics::Native::Window
 
 		m_BackBuffers = new GPtr<ID3D12Resource>[m_BackBufferCount];
 		UpdateRenderTargetViews();
+
+		if (m_UseComposition)
+		{
+			CreateCompositionObjects(window_handle);
+		}
 	}
 	
 	SwapChain::~SwapChain()
@@ -73,6 +91,11 @@ namespace RB::Graphics::Native::Window
 		RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->Present(sync_interval, present_flags), "Failed to present frame");
 
 		m_CurrentBackBufferIndex = m_NativeSwapChain->GetCurrentBackBufferIndex();
+
+		if (m_UseComposition)
+		{
+			RB_ASSERT_FATAL_RELEASE_D3D(m_CompositionDevice->Commit(), "Could not commit the composition device");
+		}
 	}
 
 	void SwapChain::Resize(const uint32_t width, const uint32_t height)
@@ -133,5 +156,21 @@ namespace RB::Graphics::Native::Window
 			std::wstring name = L"Swapchain Buffer " + std::to_wstring(back_buffer_index);
 			m_BackBuffers[back_buffer_index]->SetName(name.c_str());
 		}
+	}
+	
+	void SwapChain::CreateCompositionObjects(HWND window_handle)
+	{
+		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get11On12().As(&m_DeviceForComposition), "Could not query the DXGI device from the D3D11On12 device");
+
+		RB_ASSERT_FATAL_RELEASE_D3D(DCompositionCreateDevice(m_DeviceForComposition.Get(), IID_PPV_ARGS(&m_CompositionDevice)), "Could not create composition device");
+
+		m_CompositionDevice->CreateTargetForHwnd(window_handle, true, m_CompositionTarget.GetAddressOf());
+
+		GPtr<IDCompositionVisual> visual;
+		RB_ASSERT_FATAL_RELEASE_D3D(m_CompositionDevice->CreateVisual(visual.GetAddressOf()), "Could not create composition visual");
+
+		RB_ASSERT_FATAL_RELEASE_D3D(visual->SetContent(m_NativeSwapChain.Get()), "Could not set the swapchain as the composition content");
+
+		RB_ASSERT_FATAL_RELEASE_D3D(m_CompositionTarget->SetRoot(visual.Get()), "Could not set the visual as the composition target");
 	}
 }

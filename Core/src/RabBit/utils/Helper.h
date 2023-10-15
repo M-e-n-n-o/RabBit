@@ -16,8 +16,8 @@
 
 namespace RB
 {
-	#define ALLOC_STACK(size)	alloca(size)
-	#define ALLOC_HEAP(size)	malloc(size)
+	#define ALLOC_STACK(size)		alloca(size)
+	#define ALLOC_HEAP(size)		malloc(size)
 
 	// Custom graphics pointer
 	template<class T>

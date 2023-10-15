@@ -21,7 +21,7 @@ namespace RB::Graphics::Native::Window
 		, m_Listener(listener)
 	{
 		RegisterWindowCLass(args.instance, args.className);
-		CreateWindow(args.instance, args.className, args.windowName, args.width, args.height);
+		CreateWindow(args.instance, args.className, args.windowName, args.width, args.height, args.extendedStyle, args.style, args.borderless);
 
 		WindowListeners.insert(std::pair<HWND, EventListener*>(m_WindowHandle, listener));
 	}
@@ -64,7 +64,7 @@ namespace RB::Graphics::Native::Window
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, SUCCEEDED(result), "Failed to register window");
 	}
 
-	void NativeWindow::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height)
+	void NativeWindow::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless)
 	{
 		int screen_width	= ::GetSystemMetrics(SM_CXSCREEN);
 		int screen_height	= ::GetSystemMetrics(SM_CYSCREEN);
@@ -80,10 +80,10 @@ namespace RB::Graphics::Native::Window
 		int window_y		= std::max<int>(0, (screen_height - window_height) / 2);
 
 		m_WindowHandle = ::CreateWindowExW(
-			NULL,
+			extendedStyle,
 			class_name,
 			window_title,
-			WS_OVERLAPPEDWINDOW,
+			style,
 			window_x,
 			window_y,
 			window_width,
@@ -94,12 +94,16 @@ namespace RB::Graphics::Native::Window
 			nullptr
 		);
 
-		DWORD error = GetLastError();
-		//error
-
-		RB_LOG(LOGTAG_EVENT, "%d", (int)error);
-
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_WindowHandle, "Failed to create window");
+
+		if (borderless)
+		{
+			SetWindowLong(m_WindowHandle, GWL_STYLE, NULL);
+		}
+
+		//long wAttr = GetWindowLong(m_WindowHandle, GWL_EXSTYLE);
+		//SetWindowLong(m_WindowHandle, GWL_EXSTYLE, wAttr | WS_EX_LAYERED);
+		//SetLayeredWindowAttributes(m_WindowHandle, 0, 0xFF / 2, 0x02);
 	}
 
 	void NativeWindow::ShowWindow()

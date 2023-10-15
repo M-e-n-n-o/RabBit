@@ -6,6 +6,9 @@
 #include <dxgidebug.h>
 #endif
 
+#include <d3d11.h>
+#include <d3d11on12.h>
+
 namespace RB::Graphics::Native
 {
 	GraphicsDevice* g_GraphicsDevice = nullptr;
@@ -203,5 +206,27 @@ namespace RB::Graphics::Native
 
 		RB_ASSERT_FATAL_RELEASE_D3D(info_queue->PushStorageFilter(&filter), "Could not set the D3D12 message filter");
 #endif
+	}
+
+	GPtr<ID3D11On12Device> GraphicsDevice::Get11On12()
+	{
+		GPtr<ID3D11Device> d3d11Device;
+
+		RB_ASSERT_FATAL_RELEASE_D3D(D3D11On12CreateDevice(
+			m_NativeDevice.Get(),
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT, // Needed for Direct Composition
+			NULL,
+			0,
+			reinterpret_cast<IUnknown**>(GetGraphicsEngine()->GetCommandQueue().GetAddressOf()),
+			1,
+			0,
+			&d3d11Device,
+			&m_11DeviceContext,
+			nullptr
+		), "Could not create a 11 on 12 device");
+
+		RB_ASSERT_FATAL_RELEASE_D3D(d3d11Device.As(&m_11On12Device), "Could not query the 11 on 12 device");
+
+		return m_11On12Device;
 	}
 }

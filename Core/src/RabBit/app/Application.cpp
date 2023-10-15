@@ -7,10 +7,14 @@
 #include "graphics/native/DeviceEngine.h"
 #include "input/events/ApplicationEvent.h"
 
+#include "input/events/KeyEvent.h"
+#include "input/KeyCodes.h"
+
 using namespace RB::Graphics;
 using namespace RB::Graphics::Native;
 using namespace RB::Graphics::Native::Window;
 using namespace RB::Input::Events;
+using namespace RB::Input;
 
 namespace RB
 {
@@ -40,9 +44,10 @@ namespace RB
 
 		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
 
-		SecondWindow = new Graphics::Window("Test", nullptr, 1280, 720);
 
-		m_Window = new Graphics::Window(m_StartAppInfo.name, this, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight);
+		SecondWindow = new Graphics::Window("Test", nullptr, 1280, 720, kWindowStyle_Borderless);
+		m_Window = new Graphics::Window(m_StartAppInfo.name, this, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
+		
 
 
 		m_Initialized = true;
@@ -104,7 +109,7 @@ namespace RB
 
 				d3d_list->ResourceBarrier(1, &barrier);
 
-				FLOAT clear_color[] = { 0.3f, 1.0f, 0.7f, 1.0f };
+				FLOAT clear_color[] = { 0.3f, 0.1f, 0.1f, 0.0f };
 
 				d3d_list->ClearRenderTargetView(m_Window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 			}
@@ -136,6 +141,15 @@ namespace RB
 		{
 			return;
 		}
+
+		BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
+		{
+			if (e.GetKeyCode() == KeyCode::K)
+			{
+				if (SecondWindow->IsValid())
+					SecondWindow->Resize(200, 200, 200, 100);
+			}
+		}, event);
 
 		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
 

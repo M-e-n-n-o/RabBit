@@ -13,7 +13,7 @@ namespace RB::Input::Events
 
 	public:
 		KeyCode GetKeyCode() const { return m_KeyCode; }
-		int GetCategoryFlags() const override { return EventCatInput | EventCatKeyboard; }
+		int GetCategoryFlags() const override { return kEventCat_Input | kEventCat_Keyboard; }
 
 	private:
 		KeyCode m_KeyCode;

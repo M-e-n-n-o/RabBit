@@ -10,9 +10,11 @@ namespace RB::Graphics
 		class SwapChain;
 	}
 
-	enum class WindowType
+	enum WindowStyle : uint32_t
 	{
-		Main
+		kWindowStyle_None				= (0),
+		kWindowStyle_Borderless			= (1 << 0),
+		kWindowStyle_SemiTransparent	= (1 << 1)
 	};
 
 	class Window : Input::Events::EventListener
@@ -20,12 +22,12 @@ namespace RB::Graphics
 	public:
 		static const uint32_t BACK_BUFFER_COUNT = 2u;
 
-		Window(const char* window_name, Input::Events::EventListener* listener, uint32_t window_width, uint32_t window_height);
+		Window(const char* window_name, Input::Events::EventListener* listener, uint32_t window_width, uint32_t window_height, uint32_t window_style);
 		virtual ~Window();
 
 		void Update();
 
-		void Resize(uint32_t width, uint32_t height);
+		void Resize(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 
 		uint32_t GetWidth() const;
 		uint32_t GetHeight() const;
@@ -37,6 +39,7 @@ namespace RB::Graphics
 
 		void OnEvent(Input::Events::Event& event);
 	private:
+		void OnResize(uint32_t width, uint32_t height);
 		void DestroyWindow();
 
 		Native::Window::NativeWindow*	m_NativeWindow;

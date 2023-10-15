@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16.3)
 
 project(RabBitSolution)
 set(CMAKE_CXX_STANDARD 17)
+set(CXX_STANDARD_REQUIRED ON)
 
 # Link global libraries
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")

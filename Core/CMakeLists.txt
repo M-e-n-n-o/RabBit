@@ -52,6 +52,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         dxgi.lib
         dxguid.lib
 
+        # D3D11
+        d3d11.lib
+        dcomp.lib
+
         # WinPixEventRuntime
         "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
     )

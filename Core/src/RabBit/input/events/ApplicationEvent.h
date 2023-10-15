@@ -9,7 +9,7 @@ namespace RB::Input::Events
 	public:
 		EVENT_CLASS_TYPE(WindowCreated)
 
-		int GetCategoryFlags() const override { return EventCatApplication; }
+		int GetCategoryFlags() const override { return kEventCat_Application; }
 	};
 
 	class WindowResizeEvent : public Event
@@ -22,7 +22,7 @@ namespace RB::Input::Events
 
 		EVENT_CLASS_TYPE(WindowResize)
 
-		int GetCategoryFlags() const override { return EventCatApplication; }
+		int GetCategoryFlags() const override { return kEventCat_Application; }
 
 	private:
 		uint32_t m_Width;
@@ -34,7 +34,7 @@ namespace RB::Input::Events
 	public:
 		EVENT_CLASS_TYPE(WindowClose)
 
-		int GetCategoryFlags() const override { return EventCatApplication; }
+		int GetCategoryFlags() const override { return kEventCat_Application; }
 	};
 
 	class WindowRenderEvent : public Event
@@ -42,7 +42,7 @@ namespace RB::Input::Events
 	public:
 		EVENT_CLASS_TYPE(WindowRender)
 
-		int GetCategoryFlags() const override { return EventCatApplication; }
+		int GetCategoryFlags() const override { return kEventCat_Application; }
 	};
 
 	class WindowOnFocusEvent : public Event
@@ -50,7 +50,7 @@ namespace RB::Input::Events
 	public:
 		EVENT_CLASS_TYPE(WindowFocus)
 
-		int GetCategoryFlags() const override { return EventCatApplication; }
+		int GetCategoryFlags() const override { return kEventCat_Application; }
 	};
 
 	class WindowLostFocusEvent : public Event
@@ -58,6 +58,6 @@ namespace RB::Input::Events
 	public:
 		EVENT_CLASS_TYPE(WindowLostFocus)
 
-		int GetCategoryFlags() const override { return EventCatApplication; }
+		int GetCategoryFlags() const override { return kEventCat_Application; }
 	};
 }

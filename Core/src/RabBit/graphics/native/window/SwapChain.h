@@ -9,6 +9,9 @@
 // D3D12 extension library.
 #include <D3DX12/d3dx12.h>
 
+// Direct Composition, for transparency support
+#include <dcomp.h>
+
 namespace RB::Graphics::Native::Window
 {
 	enum class VsyncMode : uint8_t
@@ -23,8 +26,8 @@ namespace RB::Graphics::Native::Window
 	class SwapChain
 	{
 	public:
-		SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count = 3u,
-			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
+		SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count = 3u, 
+			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, bool transparency_support = false);
 		~SwapChain();
 
 		void Present(const VsyncMode& vsync_mode);
@@ -43,10 +46,16 @@ namespace RB::Graphics::Native::Window
 	private:
 		void CreateDescriptorHeap();
 		void UpdateRenderTargetViews();
+		void CreateCompositionObjects(HWND window_handle);
 
 		GPtr<IDXGISwapChain4>		m_NativeSwapChain;
 		GPtr<ID3D12DescriptorHeap>	m_DescriptorHeap;
 		GPtr<ID3D12Resource>*		m_BackBuffers;
+
+		bool						m_UseComposition;
+		GPtr<IDXGIDevice>			m_DeviceForComposition;
+		GPtr<IDCompositionDevice>	m_CompositionDevice;
+		GPtr<IDCompositionTarget>	m_CompositionTarget;
 
 		uint32_t					m_DescriptorIncrementSize;
 		uint32_t					m_CurrentBackBufferIndex;

@@ -20,6 +20,9 @@ namespace RB::Graphics::Native::Window
 		const wchar_t*	windowName;
 		uint32_t		width;
 		uint32_t		height;
+		DWORD			extendedStyle;
+		DWORD			style;
+		bool			borderless;
 	};
 
 	class NativeWindow
@@ -37,7 +40,7 @@ namespace RB::Graphics::Native::Window
 	private:
 		void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
 
-		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height);
+		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless);
 
 		HWND m_WindowHandle;
 
