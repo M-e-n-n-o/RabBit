@@ -68,7 +68,7 @@ namespace RB::Math
 		Float2 operator/(const float& other) const;
 
 	public:
-		static Float2 Cross(const Float2& first, const Float2& second);
+		//static Float2 Cross(const Float2& first, const Float2& second);
 
 		static float Dot(const Float2& first, const Float2& second);
 
@@ -113,41 +113,41 @@ namespace RB::Math
 		static float Angle(const Float3& first, const Float3& second);
 	};
 
-	struct Float4
-	{
-	public:
-		union { float x, r; };
-		union { float y, g; };
-		union { float z, b; };
-		union { float w, a; };
+	//struct Float4
+	//{
+	//public:
+	//	union { float x, r; };
+	//	union { float y, g; };
+	//	union { float z, b; };
+	//	union { float w, a; };
 
-		Float4();
-		Float4(float xyzw);
-		Float4(float x, float y, float z, float w);
-		~Float4() = default;
+	//	Float4();
+	//	Float4(float xyzw);
+	//	Float4(float x, float y, float z, float w);
+	//	~Float4() = default;
 
-		void Normalize();
+	//	void Normalize();
 
-		float GetLength() const;
+	//	float GetLength() const;
 
-		Float4 operator+(const Float4& other)  const;
-		Float4 operator+(const float& other) const;
+	//	Float4 operator+(const Float4& other)  const;
+	//	Float4 operator+(const float& other) const;
 
-		Float4 operator-(const Float4& other)  const;
-		Float4 operator-(const float& other) const;
+	//	Float4 operator-(const Float4& other)  const;
+	//	Float4 operator-(const float& other) const;
 
-		Float4 operator*(const Float4& other)  const;
-		Float4 operator*(const float& other) const;
+	//	Float4 operator*(const Float4& other)  const;
+	//	Float4 operator*(const float& other) const;
 
-		Float4 operator/(const Float4& other)  const;
-		Float4 operator/(const float& other) const;
+	//	Float4 operator/(const Float4& other)  const;
+	//	Float4 operator/(const float& other) const;
 
-	public:
-		static Float4 Cross(const Float4& first, const Float4& second);
+	//public:
+	//	static Float4 Cross(const Float4& first, const Float4& second);
 
-		static float Dot(const Float4& first, const Float4& second);
+	//	static float Dot(const Float4& first, const Float4& second);
 
-		// Returns the angle between the two vectors in radians
-		static float Angle(const Float4& first, const Float4& second);
-	};
+	//	// Returns the angle between the two vectors in radians
+	//	static float Angle(const Float4& first, const Float4& second);
+	//};
 }

@@ -7,12 +7,12 @@ public:
 
 	void OnStart() override
 	{
-		RB_LOG("t", "Hoiii");
+		RB_LOG("Hoiii");
 	}
 
 	void OnUpdate() override
 	{
-		
+		RB_LOG("Test");
 	}
 
 	void OnStop() override

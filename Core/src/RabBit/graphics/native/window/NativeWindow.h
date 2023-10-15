@@ -16,8 +16,8 @@ namespace RB::Graphics::Native::Window
 	struct WindowArgs
 	{
 		HINSTANCE		instance;
-		const wchar_t*	className;
-		const wchar_t*	windowName;
+		wchar_t*		className;
+		wchar_t*		windowName;
 		uint32_t		width;
 		uint32_t		height;
 		DWORD			extendedStyle;

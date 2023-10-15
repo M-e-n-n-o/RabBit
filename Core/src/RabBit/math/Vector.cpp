@@ -3,6 +3,116 @@
 
 using namespace RB::Math;
 
+// --------------------------------------------------------------------------
+//									FLOAT 2
+// --------------------------------------------------------------------------
+
+Float2::Float2()
+	: x(0.0f), y(0.0f)
+{
+}
+
+Float2::Float2(float xy)
+	: x(xy), y(xy)
+{
+}
+
+Float2::Float2(float x, float y)
+	: x(x), y(y)
+{
+}
+
+void Float2::Normalize()
+{
+	*this = *this / GetLength();
+}
+
+float Float2::GetLength() const
+{
+	return sqrt((x * x) + (y * y));
+}
+
+Float2 Float2::operator+(const Float2& other) const
+{
+	return Float2(
+		x + other.x,
+		y + other.y
+	);
+}
+
+Float2 Float2::operator+(float const& other) const
+{
+	return Float2(
+		x + other,
+		y + other
+	);
+}
+
+Float2 Float2::operator-(const Float2& other) const
+{
+	return Float2(
+		x - other.x,
+		y - other.y
+	);
+}
+
+Float2 Float2::operator-(const float& other) const
+{
+	return Float2(
+		x - other,
+		y - other
+	);
+}
+
+Float2 Float2::operator*(const Float2& other) const
+{
+	return Float2(
+		x * other.x,
+		y * other.y
+	);
+}
+
+Float2 Float2::operator*(const float& other) const
+{
+	return Float2(
+		x * other,
+		y * other
+	);
+}
+
+Float2 Float2::operator/(const Float2& other) const
+{
+	return Float2(
+		x / other.x,
+		y / other.y
+	);
+}
+
+Float2 Float2::operator/(const float& other) const
+{
+	return Float2(
+		x / other,
+		y / other
+	);
+}
+
+float Float2::Dot(const Float2& first, const Float2& second)
+{
+	return (
+		first.x * second.x +
+		first.y * second.y
+	);
+}
+
+float Float2::Angle(const Float2& first, const Float2& second)
+{
+	return acos(Dot(first, second) / (first.GetLength() * second.GetLength()));
+}
+
+// --------------------------------------------------------------------------
+//									FLOAT 3
+// --------------------------------------------------------------------------
+
 Float3::Float3()
 	: x(0.0f), y(0.0f), z(0.0f)
 {

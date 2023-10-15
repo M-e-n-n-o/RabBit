@@ -38,9 +38,15 @@ namespace RB::Utils::Debug
 
 	void Logger::LogCore(const wchar_t* tag, const char* format, ...)
 	{
+		if (strlen(format) == 0)
+		{
+			wprintf(L"\n");
+			return;
+		}
+
 		va_list args;
 		va_start(args, format);
-		wprintf(L"[RabBit][%s] ", tag);
+		wprintf(L"[RabBit-%s] ", tag);
 		vprintf(format, args);
 		wprintf(L"\n");
 		va_end(args);
@@ -48,9 +54,15 @@ namespace RB::Utils::Debug
 
 	void Logger::LogCore(const wchar_t* tag, const wchar_t* format, ...)
 	{
+		if (wcslen(format) == 0)
+		{
+			wprintf(L"\n");
+			return;
+		}
+
 		va_list args;
 		va_start(args, format);
-		wprintf(L"[RabBit][%s] ", tag);
+		wprintf(L"[RabBit-%s] ", tag);
 		vwprintf(format, args);
 		wprintf(L"\n");
 		va_end(args);
@@ -58,6 +70,12 @@ namespace RB::Utils::Debug
 
 	void Logger::LogApp(const char* format, ...)
 	{
+		if (strlen(format) == 0)
+		{
+			wprintf(L"\n");
+			return;
+		}
+
 		va_list args;
 		va_start(args, format);
 		wprintf(L"[App] ");

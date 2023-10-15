@@ -15,6 +15,33 @@
 namespace RB::Graphics::Native
 {
 	class DeviceEngine;
+	
+	struct MonitorInfo
+	{
+		enum Rotation
+		{
+			kRotation_None = 0,
+			kRotation_90,
+			kRotation_180,
+			kRotation_270
+		};
+
+		char*					name;
+		RB::Math::Float2		resolution;
+		Rotation				rotation;
+		uint32_t				bitsPerColor;
+		DXGI_COLOR_SPACE_TYPE	colorSpace;
+		float					minLuminance;
+		float					maxLuminance;
+		float					maxFullscreenLuminance;
+	};
+
+	struct GraphicsCardInfo
+	{
+		const char*	name;
+		int64_t		videoMemory;
+		int64_t		sharedSystemMemory;
+	};
 
 	class GraphicsDevice
 	{
@@ -36,8 +63,12 @@ namespace RB::Graphics::Native
 		DeviceEngine* GetComputeEngine();
 		DeviceEngine* GetGraphicsEngine();
 
+		const GraphicsCardInfo GetGraphicsCardInfo() const { return m_GpuInfo; }
+		const std::vector<MonitorInfo> GetMonitors() const { return m_Monitors; }
+
 	private:
 		void CreateAdapter();
+		void CreateMonitors();
 		void CreateDevice();
 
 		GPtr<ID3D12Device2>			m_NativeDevice;
@@ -50,6 +81,9 @@ namespace RB::Graphics::Native
 		DeviceEngine*				m_CopyEngine;
 		DeviceEngine*				m_ComputeEngine;
 		DeviceEngine*				m_GraphicsEngine;
+
+		GraphicsCardInfo			m_GpuInfo;
+		std::vector<MonitorInfo>	m_Monitors;
 	};
 
 	extern GraphicsDevice* g_GraphicsDevice;

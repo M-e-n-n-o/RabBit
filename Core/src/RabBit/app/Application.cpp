@@ -40,6 +40,10 @@ namespace RB
 
 	void Application::Start()
 	{
+		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_GRAPHICS, "============== STARTUP ==============");
+		RB_LOG(LOGTAG_GRAPHICS, "");
+
 		g_GraphicsDevice = new GraphicsDevice();
 
 		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
@@ -47,14 +51,20 @@ namespace RB
 
 		SecondWindow = new Graphics::Window("Test", nullptr, 1280, 720, kWindowStyle_Borderless);
 		m_Window = new Graphics::Window(m_StartAppInfo.name, this, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
-		
-
 
 		m_Initialized = true;
 
+		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_GRAPHICS, "========== STARTUP COMPLETE =========");
+		RB_LOG(LOGTAG_GRAPHICS, "");
+
 		// Initialize app user
-		RB_LOG(LOGTAG_MAIN, "Starting application: %ls", m_StartAppInfo.name);
+		RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.name);
 		OnStart();
+
+		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_GRAPHICS, "======== STARTING MAIN LOOP =========");
+		RB_LOG(LOGTAG_GRAPHICS, "");
 	}
 
 	void Application::Run()
@@ -73,6 +83,10 @@ namespace RB
 
 	void Application::Shutdown()
 	{
+		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_GRAPHICS, "============= SHUTDOWN ==============");
+		RB_LOG(LOGTAG_GRAPHICS, "");
+
 		// Shutdown app user
 		OnStop();
 
@@ -82,7 +96,11 @@ namespace RB
 			delete SecondWindow;
 
 		delete m_Window;
-		delete g_GraphicsDevice;		
+		delete g_GraphicsDevice;	
+
+		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_GRAPHICS, "========= SHUTDOWN COMPLETE =========");
+		RB_LOG(LOGTAG_GRAPHICS, "");
 	}
 
 	void Application::Render()

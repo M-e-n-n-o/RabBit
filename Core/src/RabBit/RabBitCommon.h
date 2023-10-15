@@ -27,3 +27,7 @@
 #include "utils/debug/Log.h"
 #include "utils/debug/Assert.h"
 #include "utils/debug/Profile.h"
+
+#include "math/Misc.h"
+#include "math/Vector.h"
+#include "math/Matrix.h"

@@ -18,7 +18,6 @@ namespace RB::Graphics
 		, m_IsValid(true)
 	{
 		WindowArgs args		= {};
-		args.windowName		= CharToWchar(window_name);
 		args.className		= L"RabBit WindowClass";
 		args.instance		= GetModuleHandle(nullptr);
 		args.width			= window_width;
@@ -26,6 +25,8 @@ namespace RB::Graphics
 		args.extendedStyle	= NULL;
 		args.style			= WS_OVERLAPPEDWINDOW;
 		args.borderless		= false;
+		args.windowName		= new wchar_t[strlen(window_name) + 1];
+		CharToWchar(window_name, args.windowName);
 
 		if (window_style & kWindowStyle_Borderless)
 		{

@@ -27,13 +27,19 @@ namespace RB::Graphics::Native
 		, m_ComputeEngine(nullptr)
 		, m_GraphicsEngine(nullptr)
 	{
+		// Tell Windows that this thread is DPI aware
+		SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
 #ifdef RB_CONFIG_DEBUG
 		GPtr<ID3D12Debug> debug_interface;
 		RB_ASSERT_FATAL_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)), "Could not get the debug interface");
 		debug_interface->EnableDebugLayer();
 #endif
 
+		RB_LOG(LOGTAG_GRAPHICS, "-------- ADAPTER INFORMATION --------");
 		CreateAdapter();
+		RB_LOG(LOGTAG_GRAPHICS, "-------- MONITOR INFORMATION --------");
+		CreateMonitors();
 		CreateDevice();
 	}
 
@@ -126,6 +132,7 @@ namespace RB::Graphics::Native
 
 		std::string desc_best_adapter;
 		int64_t max_dedicated_vram = 0;
+		int64_t max_shared_smem = 0;
 		for (uint32_t adapter_index = 0; dxgi_factory->EnumAdapters1(adapter_index, &dxgi_adapter1) != DXGI_ERROR_NOT_FOUND; adapter_index++)
 		{
 			DXGI_ADAPTER_DESC1 dxgi_adapter_desc;
@@ -144,6 +151,7 @@ namespace RB::Graphics::Native
 				if (dxgi_adapter_desc.DedicatedVideoMemory > max_dedicated_vram)
 				{
 					max_dedicated_vram = dxgi_adapter_desc.DedicatedVideoMemory;
+					max_shared_smem = dxgi_adapter_desc.SharedSystemMemory;
 					desc_best_adapter = desc;
 					RB_ASSERT_FATAL_RELEASE_D3D(dxgi_adapter1.As(&m_NativeAdapter), "Could not set adapter");
 				}
@@ -155,6 +163,44 @@ namespace RB::Graphics::Native
 		RB_LOG(LOGTAG_GRAPHICS, "Selected graphics device:");
 		RB_LOG(LOGTAG_GRAPHICS, "\tName: %s", desc_best_adapter.c_str());
 		RB_LOG(LOGTAG_GRAPHICS, "\tVRAM: %d MB", max_dedicated_vram / 1000000);
+
+		m_GpuInfo						= {};
+		m_GpuInfo.name					= desc_best_adapter.c_str();
+		m_GpuInfo.videoMemory			= max_dedicated_vram;
+		m_GpuInfo.sharedSystemMemory	= max_shared_smem;
+	}
+
+	void GraphicsDevice::CreateMonitors()
+	{
+		// To get all possible fullscreen resolutions see:
+		// https://learn.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgioutput1-getdisplaymodelist1
+
+		RB_LOG(LOGTAG_GRAPHICS, "Found the following monitors: ");
+
+		GPtr<IDXGIOutput> output;
+		for (uint32_t output_index = 0; m_NativeAdapter->EnumOutputs(output_index, &output) != DXGI_ERROR_NOT_FOUND; output_index++)
+		{
+			GPtr<IDXGIOutput6> output6;
+			RB_ASSERT_FATAL_RELEASE_D3D(output.As(&output6), "Could not query output 6");
+
+			DXGI_OUTPUT_DESC1 desc;
+			RB_ASSERT_FATAL_RELEASE_D3D(output6->GetDesc1(&desc), "Could not retrieve description for IDXGIOutput");
+
+			MonitorInfo info			= {};
+			info.resolution				= Math::Float2(desc.DesktopCoordinates.right - desc.DesktopCoordinates.left, desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top);
+			info.rotation				= MonitorInfo::Rotation(Math::Abs(desc.Rotation - 1));
+			info.bitsPerColor			= desc.BitsPerColor;
+			info.colorSpace				= desc.ColorSpace;
+			info.minLuminance			= desc.MinLuminance;
+			info.maxLuminance			= desc.MaxLuminance;
+			info.maxFullscreenLuminance = desc.MaxFullFrameLuminance;
+			info.name					= new char[wcslen(desc.DeviceName) + 1];
+			WcharToChar(desc.DeviceName, info.name);
+
+			m_Monitors.push_back(info);
+
+			RB_LOG(LOGTAG_GRAPHICS, "\t%d. %s (%d x %d)", (int) output_index, info.name, (int)info.resolution.x, (int)info.resolution.y);
+		}
 	}
 
 	void GraphicsDevice::CreateDevice()

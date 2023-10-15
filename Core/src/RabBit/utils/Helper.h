@@ -41,5 +41,7 @@ namespace RB
 		return std::make_unique<T>(std::forward<Args>(args)...);
 	}
 
-	const wchar_t* CharToWchar(const char* c);
+	void CharToWchar(const char* inChar, wchar_t* outChar);
+
+	void WcharToChar(const wchar_t* inChar, char* outChar);
 }
