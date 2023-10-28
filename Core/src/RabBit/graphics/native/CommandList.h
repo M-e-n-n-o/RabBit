@@ -33,6 +33,6 @@ namespace RB::Graphics::Native
 		GPtr<ID3D12CommandAllocator>		m_CommandAllocator;
 
 		// Will be released when the command list is reset
-		std::vector<GPtr<ID3D12Object>>		m_TrackedObjects;
+		List<GPtr<ID3D12Object>>			m_TrackedObjects;
 	};
 }

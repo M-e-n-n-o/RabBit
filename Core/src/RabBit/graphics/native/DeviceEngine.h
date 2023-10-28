@@ -44,7 +44,7 @@ namespace RB::Graphics::Native
 		uint64_t						m_FenceValue;
 		HANDLE							m_FenceEventHandle;
 
-		std::vector<CommandList*>		m_AvailableCommandLists;
-		std::vector<CommandListEntry>	m_RunningCommandLists;
+		List<CommandList*>				m_AvailableCommandLists;
+		List<CommandListEntry>			m_RunningCommandLists;
 	};
 }

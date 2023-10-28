@@ -64,7 +64,7 @@ namespace RB::Graphics::Native
 		DeviceEngine* GetGraphicsEngine();
 
 		const GraphicsCardInfo GetGraphicsCardInfo() const { return m_GpuInfo; }
-		const std::vector<MonitorInfo> GetMonitors() const { return m_Monitors; }
+		const List<MonitorInfo> GetMonitors() const { return m_Monitors; }
 
 	private:
 		void CreateAdapter();
@@ -83,7 +83,7 @@ namespace RB::Graphics::Native
 		DeviceEngine*				m_GraphicsEngine;
 
 		GraphicsCardInfo			m_GpuInfo;
-		std::vector<MonitorInfo>	m_Monitors;
+		List<MonitorInfo>			m_Monitors;
 	};
 
 	extern GraphicsDevice* g_GraphicsDevice;

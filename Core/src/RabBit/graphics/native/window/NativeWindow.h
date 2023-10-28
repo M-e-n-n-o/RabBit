@@ -1,7 +1,6 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "input/events/Event.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -28,7 +27,7 @@ namespace RB::Graphics::Native::Window
 	class NativeWindow
 	{
 	public:
-		NativeWindow(const WindowArgs args, Input::Events::EventListener* listener);
+		NativeWindow(const WindowArgs args);
 		~NativeWindow();
 
 		void ProcessEvents();
@@ -43,7 +42,5 @@ namespace RB::Graphics::Native::Window
 		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless);
 
 		HWND m_WindowHandle;
-
-		Input::Events::EventListener* m_Listener;
 	};
 }

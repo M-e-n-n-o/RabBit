@@ -12,7 +12,7 @@ public:
 
 	void OnUpdate() override
 	{
-		RB_LOG("Test");
+		//RB_LOG("Test");
 	}
 
 	void OnStop() override

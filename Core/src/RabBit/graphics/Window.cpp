@@ -4,7 +4,7 @@
 #include "graphics/native/window/NativeWindow.h"
 #include "graphics/native/window/SwapChain.h"
 #include "graphics/native/DeviceEngine.h"
-#include "input/events/ApplicationEvent.h"
+#include "input/events/WindowEvent.h"
 
 using namespace RB::Input::Events;
 using namespace RB::Graphics::Native;
@@ -12,9 +12,9 @@ using namespace RB::Graphics::Native::Window;
 
 namespace RB::Graphics
 {
-	Window::Window(const char* window_name, Input::Events::EventListener* listener, uint32_t window_width, uint32_t window_height, uint32_t window_style)
-		: m_Minimized(window_width == 0 && window_height == 0)
-		, m_Listener(listener)
+	Window::Window(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style)
+		: EventListener(kEventCat_Window)
+		, m_Minimized(window_width == 0 && window_height == 0)
 		, m_IsValid(true)
 	{
 		WindowArgs args		= {};
@@ -38,7 +38,7 @@ namespace RB::Graphics
 			args.extendedStyle = WS_EX_NOREDIRECTIONBITMAP;
 		}
 
-		m_NativeWindow = new NativeWindow(args, this);
+		m_NativeWindow = new NativeWindow(args);
 
 		m_SwapChain = new SwapChain(
 			g_GraphicsDevice->GetGraphicsEngine()->GetCommandQueue(), 
@@ -102,6 +102,14 @@ namespace RB::Graphics
 	
 	void Window::OnEvent(Event& event)
 	{
+		WindowEvent* window_event = static_cast<WindowEvent*>(&event);
+
+		// Only handle window events of this window
+		if (window_event->GetWindowHandle() != m_NativeWindow->GetHandle())
+		{
+			return;
+		}
+
 		switch (event.GetEventType())
 		{
 		case EventType::WindowResize:
@@ -119,21 +127,12 @@ namespace RB::Graphics
 
 		case EventType::WindowClose:
 		{
-			// Only close the window yourself when there are no listeners attached
-			if (!m_Listener)
-			{
-				DestroyWindow();
-			}
+			DestroyWindow();
 		}
 		break;
 
 		default:
 			break;
-		}
-
-		if (m_Listener)
-		{
-			m_Listener->OnEvent(event);
 		}
 	}
 }

@@ -72,12 +72,12 @@ namespace RB::Graphics::Native
             // If the "subresourceState" array (map) is empty, then the "state" variable defines 
             // the state of all of the subresources.
             D3D12_RESOURCE_STATES state;
-            std::map<UINT, D3D12_RESOURCE_STATES> subresourceState;
+            Map<UINT, D3D12_RESOURCE_STATES> subresourceState;
 		};
 
-        std::unordered_map<ID3D12Resource*, ResourceState> m_ResourceStates;
+        UnorderedMap<ID3D12Resource*, ResourceState> m_ResourceStates;
 
-        std::vector<D3D12_RESOURCE_BARRIER> m_PendingBarriers;
+        List<D3D12_RESOURCE_BARRIER> m_PendingBarriers;
 	};
 
 	extern ResourceStateManager* g_ResourceStateManager;

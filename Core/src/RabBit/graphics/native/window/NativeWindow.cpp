@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "NativeWindow.h"
 
-#include "input/events/ApplicationEvent.h"
+#include "input/events/WindowEvent.h"
 #include "input/events/MouseEvent.h"
 #include "input/events/KeyEvent.h"
 
@@ -13,23 +13,15 @@ namespace RB::Graphics::Native::Window
 	// Window callback function
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-	std::unordered_map<HWND, EventListener*> WindowListeners;
-
-
-	NativeWindow::NativeWindow(const WindowArgs args, EventListener* listener)
+	NativeWindow::NativeWindow(const WindowArgs args)
 		: m_WindowHandle(nullptr)
-		, m_Listener(listener)
 	{
 		RegisterWindowCLass(args.instance, args.className);
 		CreateWindow(args.instance, args.className, args.windowName, args.width, args.height, args.extendedStyle, args.style, args.borderless);
-
-		WindowListeners.insert(std::pair<HWND, EventListener*>(m_WindowHandle, listener));
 	}
 
 	NativeWindow::~NativeWindow()
 	{
-		WindowListeners.erase(m_WindowHandle);
-
 		DestroyWindow(m_WindowHandle);
 	}
 
@@ -113,27 +105,19 @@ namespace RB::Graphics::Native::Window
 
 	LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
-		EventListener* listener = nullptr;
-
-		auto got = WindowListeners.find(hwnd);
-		if (got != WindowListeners.end())
-		{
-			listener = got->second;
-		}
-
 		switch (message)
 		{
 		case WM_PAINT:
 		{
-			Event& e = WindowRenderEvent();
-			listener->OnEvent(e);
+			Event* e = new WindowRenderEvent(hwnd);
+			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 		{
-			Event& e = KeyPressedEvent(static_cast<KeyCode>(wParam), false);
-			listener->OnEvent(e);
+			Event* e = new KeyPressedEvent(static_cast<KeyCode>(wParam), false);
+			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_SYSCHAR:
@@ -146,14 +130,14 @@ namespace RB::Graphics::Native::Window
 			uint32_t width = client_rect.right - client_rect.left;
 			uint32_t height = client_rect.bottom - client_rect.top;
 
-			Event& e = WindowResizeEvent(width, height);
-			listener->OnEvent(e);
+			Event* e = new WindowResizeEvent(hwnd, width, height);
+			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_CLOSE:
 		{
-			Event& e = WindowCloseEvent();
-			listener->OnEvent(e);
+			Event* e = new WindowCloseRequestEvent(hwnd);
+			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_DESTROY:

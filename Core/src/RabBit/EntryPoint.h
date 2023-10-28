@@ -4,6 +4,7 @@
 #include <Windows.h>
 
 #include "utils/debug/Log.h"
+#include "input/events/Event.h"
 #include "app/Application.h"
 
 extern RB::Application* RB::CreateApplication();
@@ -19,6 +20,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     RB::Utils::Debug::Logger::OpenConsole();
 #endif
 
+    RB::Input::Events::g_EventManager = new RB::Input::Events::EventManager();
+
     auto* app = RB::CreateApplication();
 
     app->Start();
@@ -28,6 +31,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     app->Shutdown();
 
     delete app;
+    delete RB::Input::Events::g_EventManager;
 
     return 0;
 }

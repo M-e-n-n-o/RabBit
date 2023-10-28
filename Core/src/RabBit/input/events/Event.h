@@ -1,11 +1,13 @@
 #pragma once
 
+#include "RabBitCommon.h"
+
 namespace RB::Input::Events
 {
 	enum class EventType
 	{
 		None = 0,
-		WindowCreated, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved, WindowRender,
+		WindowCreated, WindowCloseRequest, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved, WindowRender,
 		KeyPressed, KeyReleased, KeyTyped,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
@@ -13,11 +15,13 @@ namespace RB::Input::Events
 	enum EventCategory
 	{
 		kEventCat_None			= 0,
-		kEventCat_Application	= (1 << 0),
-		kEventCat_Input			= (1 << 1),
-		kEventCat_Keyboard		= (1 << 2),
-		kEventCat_Mouse			= (1 << 3),
-		kEventCat_MouseButton	= (1 << 4),
+		kEventCat_Window		= (1 << 0),
+		kEventCat_Keyboard		= (1 << 1),
+		kEventCat_Mouse			= (1 << 2),
+		kEventCat_MouseButton	= (1 << 3),
+
+		kEventCat_Input			= (kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton),
+		kEventCat_All			= (kEventCat_Window | kEventCat_Input | kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton)
 	};
 
 	#define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\
@@ -40,7 +44,7 @@ namespace RB::Input::Events
 
 		bool IsInCategory(const EventCategory cat) const
 		{
-			return GetCategoryFlags() & cat;
+			return (GetCategoryFlags() & cat) > 0;
 		}
 
 	private:
@@ -70,10 +74,51 @@ namespace RB::Input::Events
 		return false;
 	}
 
+	class EventListener;
+
+	class EventManager
+	{
+	public:
+		EventManager();
+		~EventManager();
+
+		void AddListener(EventListener* listener);
+		void RemoveListener(EventListener* listener);
+
+		void InsertEvent(Event* event);
+
+	private:
+		List<EventListener*> m_Listeners;
+
+		static const int EVENT_HISTORY_COUNT = 5;
+
+		List<Event*> m_LastEvents;
+	};
+
+	extern EventManager* g_EventManager;
+
 	class EventListener
 	{
 	public:
-		virtual ~EventListener() = default;
+		EventListener(EventCategory category)
+			: m_ListenerCategory(category)
+		{
+			g_EventManager->AddListener(this);
+		}
+
+		virtual ~EventListener()
+		{
+			g_EventManager->RemoveListener(this);
+		}
+
 		virtual void OnEvent(Event& event) = 0;
+
+		bool ListensToCategory(const EventCategory cat) const
+		{
+			return (m_ListenerCategory & cat) > 0;
+		}
+
+	private:
+		EventCategory m_ListenerCategory;
 	};
 }

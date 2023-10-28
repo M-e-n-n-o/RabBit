@@ -22,7 +22,7 @@ namespace RB::Graphics
 	public:
 		static const uint32_t BACK_BUFFER_COUNT = 2u;
 
-		Window(const char* window_name, Input::Events::EventListener* listener, uint32_t window_width, uint32_t window_height, uint32_t window_style);
+		Window(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style);
 		virtual ~Window();
 
 		void Update();
@@ -44,7 +44,6 @@ namespace RB::Graphics
 
 		Native::Window::NativeWindow*	m_NativeWindow;
 		Native::Window::SwapChain*		m_SwapChain;
-		Input::Events::EventListener*	m_Listener;
 		bool							m_Minimized;
 		bool							m_IsValid;
 	};

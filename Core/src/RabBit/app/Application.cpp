@@ -5,7 +5,7 @@
 #include "graphics/native/window/SwapChain.h"
 #include "graphics/native/GraphicsDevice.h"
 #include "graphics/native/DeviceEngine.h"
-#include "input/events/ApplicationEvent.h"
+#include "input/events/WindowEvent.h"
 
 #include "input/events/KeyEvent.h"
 #include "input/KeyCodes.h"
@@ -24,7 +24,8 @@ namespace RB
 	Graphics::Window* SecondWindow;
 
 	Application::Application(AppInfo& info)
-		: m_StartAppInfo(info)
+		: EventListener(kEventCat_All)
+		, m_StartAppInfo(info)
 		, m_Initialized(false)
 		, m_ShouldStop(false)
 				
@@ -49,8 +50,8 @@ namespace RB
 		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
 
 
-		SecondWindow = new Graphics::Window("Test", nullptr, 1280, 720, kWindowStyle_Borderless);
-		m_Window = new Graphics::Window(m_StartAppInfo.name, this, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
+		SecondWindow = new Graphics::Window("Test", 1280, 720, kWindowStyle_Borderless);
+		m_Window = new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
 
 		m_Initialized = true;
 
@@ -67,6 +68,8 @@ namespace RB
 		RB_LOG(LOGTAG_GRAPHICS, "");
 	}
 
+	float value = 0;
+
 	void Application::Run()
 	{
 		while (!m_ShouldStop)
@@ -75,6 +78,9 @@ namespace RB
 
 			if (SecondWindow->IsValid())
 				SecondWindow->Update();
+
+			value += 0.01f;
+			value = fmodf(value, 1);
 
 			// Only do updates, rendering is called via events
 			OnUpdate();
@@ -127,7 +133,7 @@ namespace RB
 
 				d3d_list->ResourceBarrier(1, &barrier);
 
-				FLOAT clear_color[] = { 0.3f, 0.1f, 0.1f, 0.0f };
+				FLOAT clear_color[] = { value, 0.1f, 0.1f, 0.0f };
 
 				d3d_list->ClearRenderTargetView(m_Window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 			}
@@ -176,7 +182,7 @@ namespace RB
 			Render();
 		}, event);
 
-		BindEvent<WindowCloseEvent>([this](WindowCloseEvent& close_event)
+		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
 		{
 			RB_LOG(LOGTAG_EVENT, "Window close event received");
 			m_ShouldStop = true;
