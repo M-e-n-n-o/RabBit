@@ -29,7 +29,9 @@ namespace RB
 		void Run();
 		void Shutdown();
 
+		void StartRenderFrame();
 		void Render();
+		void FinishRenderFrame();
 
 		void OnEvent(Input::Events::Event& event) override;
 
@@ -39,11 +41,15 @@ namespace RB
 
 		Graphics::Window* GetWindow() const { return m_Window; }
 
+		uint64_t GetFrameIndex() const { return m_FrameIndex; }
+
 	private:
 		const AppInfo		m_StartAppInfo;
 
 		bool				m_Initialized;
 		bool				m_ShouldStop;
+
+		uint64_t			m_FrameIndex;
 
 		Graphics::Window*	m_Window;
 	};

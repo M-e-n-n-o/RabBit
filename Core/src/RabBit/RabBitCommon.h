@@ -21,8 +21,13 @@
 #include <map>
 #include <queue>
 #include <unordered_map>
+#include <functional>
 
-#include "utils/Helper.h"
+#include "Core.h"
+
+#include "utils/String.h"
+#include "utils/Container.h"
+#include "utils/Memory.h"
 
 #include "utils/debug/Log.h"
 #include "utils/debug/Assert.h"

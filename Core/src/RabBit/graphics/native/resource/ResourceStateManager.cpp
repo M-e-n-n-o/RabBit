@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "ResourceStateManager.h"
-#include "GraphicsDevice.h"
-#include "DeviceEngine.h"
+#include "../GraphicsDevice.h"
+#include "../DeviceEngine.h"
 
 namespace RB::Graphics::Native
 {

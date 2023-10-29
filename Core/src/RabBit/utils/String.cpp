@@ -1,4 +1,5 @@
-#include "Helper.h"
+#include "RabBitCommon.h"
+#include "String.h"
 
 namespace RB
 {

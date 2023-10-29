@@ -2,7 +2,6 @@
 
 #include "RabBitCommon.h"
 
-// DirectX 12 specific headers.
 #include <d3d12.h>
 
 namespace RB::Graphics::Native

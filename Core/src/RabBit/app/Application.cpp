@@ -5,8 +5,10 @@
 #include "graphics/native/window/SwapChain.h"
 #include "graphics/native/GraphicsDevice.h"
 #include "graphics/native/DeviceEngine.h"
-#include "input/events/WindowEvent.h"
+#include "graphics/native/resource/ResourceManager.h"
+#include "graphics/native/pipeline/Pipeline.h"
 
+#include "input/events/WindowEvent.h"
 #include "input/events/KeyEvent.h"
 #include "input/KeyCodes.h"
 
@@ -23,11 +25,14 @@ namespace RB
 
 	Graphics::Window* SecondWindow;
 
+	float value = 0;
+
 	Application::Application(AppInfo& info)
 		: EventListener(kEventCat_All)
 		, m_StartAppInfo(info)
 		, m_Initialized(false)
 		, m_ShouldStop(false)
+		, m_FrameIndex(0)
 				
 	{
 		RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
@@ -41,57 +46,86 @@ namespace RB
 
 	void Application::Start()
 	{
-		RB_LOG(LOGTAG_GRAPHICS, "");
-		RB_LOG(LOGTAG_GRAPHICS, "============== STARTUP ==============");
-		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
+		RB_LOG(LOGTAG_MAIN, "");
 
 		g_GraphicsDevice = new GraphicsDevice();
 
 		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
 
-
 		SecondWindow = new Graphics::Window("Test", 1280, 720, kWindowStyle_Borderless);
 		m_Window = new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
 
+		g_PipelineManager = new PipelineManager();
+
 		m_Initialized = true;
 
-		RB_LOG(LOGTAG_GRAPHICS, "");
-		RB_LOG(LOGTAG_GRAPHICS, "========== STARTUP COMPLETE =========");
-		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "========== STARTUP COMPLETE =========");
+		RB_LOG(LOGTAG_MAIN, "");
 
 		// Initialize app user
 		RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.name);
 		OnStart();
 
-		RB_LOG(LOGTAG_GRAPHICS, "");
-		RB_LOG(LOGTAG_GRAPHICS, "======== STARTING MAIN LOOP =========");
-		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "======== STARTING MAIN LOOP =========");
+		RB_LOG(LOGTAG_MAIN, "");
 	}
-
-	float value = 0;
 
 	void Application::Run()
 	{
+		D3D12_ROOT_SIGNATURE_DESC signature_desc = {};
+		signature_desc.NumParameters		= 0;
+		signature_desc.pParameters			= nullptr;
+		signature_desc.NumStaticSamplers	= 0;
+		signature_desc.pStaticSamplers		= nullptr;
+		signature_desc.Flags				= D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+		GPtr<ID3DBlob> root_signature_blob;
+		GPtr<ID3DBlob> error_blob;
+		RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeRootSignature(&signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_1, &root_signature_blob, &error_blob), "Could not serialize root signature");
+
+		GPtr<ID3D12RootSignature> root_signature;
+		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature)), "Could not create root signature");
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
+		pso_desc.pRootSignature		= root_signature.Get();
+		pso_desc.VS					= 
+
+		g_PipelineManager->GetGraphicsPipeline(pso_desc);
+
+
+
 		while (!m_ShouldStop)
 		{
+			value += 0.01f;
+			value = fmodf(value, 1);
+
+			// Update application
+			OnUpdate();
+
+			// Render
+			StartRenderFrame();
+			Render();
+			FinishRenderFrame();
+
+			// Poll inputs and update window
 			m_Window->Update();
 
 			if (SecondWindow->IsValid())
 				SecondWindow->Update();
 
-			value += 0.01f;
-			value = fmodf(value, 1);
-
-			// Only do updates, rendering is called via events
-			OnUpdate();
+			m_FrameIndex++;
 		}
 	}
 
 	void Application::Shutdown()
 	{
-		RB_LOG(LOGTAG_GRAPHICS, "");
-		RB_LOG(LOGTAG_GRAPHICS, "============= SHUTDOWN ==============");
-		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "============= SHUTDOWN ==============");
+		RB_LOG(LOGTAG_MAIN, "");
 
 		// Shutdown app user
 		OnStop();
@@ -101,12 +135,18 @@ namespace RB
 		if (SecondWindow->IsValid())
 			delete SecondWindow;
 
+		delete g_PipelineManager;
 		delete m_Window;
 		delete g_GraphicsDevice;	
 
-		RB_LOG(LOGTAG_GRAPHICS, "");
-		RB_LOG(LOGTAG_GRAPHICS, "========= SHUTDOWN COMPLETE =========");
-		RB_LOG(LOGTAG_GRAPHICS, "");
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
+		RB_LOG(LOGTAG_MAIN, "");
+	}
+
+	void Application::StartRenderFrame()
+	{
+
 	}
 
 	void Application::Render()
@@ -159,6 +199,11 @@ namespace RB
 		}
 	}
 
+	void Application::FinishRenderFrame()
+	{
+
+	}
+
 	void Application::OnEvent(Event& event)
 	{
 		if (!m_Initialized)
@@ -177,10 +222,10 @@ namespace RB
 
 		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
 
-		BindEvent<WindowRenderEvent>([this](WindowRenderEvent& render_event)
-		{
-			Render();
-		}, event);
+		//BindEvent<WindowRenderEvent>([this](WindowRenderEvent& render_event)
+		//{
+		//	Render();
+		//}, event);
 
 		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
 		{

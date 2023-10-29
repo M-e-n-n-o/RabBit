@@ -87,6 +87,8 @@ namespace RB::Input::Events
 
 		void InsertEvent(Event* event);
 
+		//Event& GetPreviousEventPerCategory(const EventCategory& cat, uint8_t index);
+
 	private:
 		List<EventListener*> m_Listeners;
 
