@@ -25,7 +25,7 @@ namespace RB
 		Application(AppInfo& info);
 		virtual ~Application();
 
-		void Start();
+		void Start(const char* launch_args);
 		void Run();
 		void Shutdown();
 

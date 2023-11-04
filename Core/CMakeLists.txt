@@ -51,8 +51,9 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         d3d12.lib
         dxgi.lib
         dxguid.lib
+        d3dcompiler.lib
 
-        # D3D11
+        # D3D11 (D3D11On12)
         d3d11.lib
         dcomp.lib
 

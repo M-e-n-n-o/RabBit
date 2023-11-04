@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include "utils/String.h"
 #include "utils/debug/Log.h"
 #include "input/events/Event.h"
 #include "app/Application.h"
@@ -24,7 +25,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     auto* app = RB::CreateApplication();
 
-    app->Start();
+    char args[100];
+    RB_ASSERT_FATAL_RELEASE(_countof(args) >= (wcslen(lpCmdLine) + 1), "Launch arguments copy should be made longer!");
+    RB::WcharToChar(lpCmdLine, args);
+
+    app->Start(args);
 
     app->Run();
 

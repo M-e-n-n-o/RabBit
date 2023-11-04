@@ -9,6 +9,7 @@ namespace RB::Graphics::Native::Window
 		: m_BackBufferCount(buffer_count)
 		, m_Width(width)
 		, m_Height(height)
+		, m_BackBufferFormat(format)
 		, m_UseComposition(transparency_support)
 	{
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, g_GraphicsDevice->IsFormatSupported(format), "Device does not support passed in format, can not create SwapChain");

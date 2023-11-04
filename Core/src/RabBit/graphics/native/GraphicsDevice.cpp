@@ -30,7 +30,7 @@ namespace RB::Graphics::Native
 		// Tell Windows that this thread is DPI aware
 		SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-#ifdef RB_CONFIG_DEBUG
+#if !defined(RB_CONFIG_DIST)
 		GPtr<ID3D12Debug> debug_interface;
 		RB_ASSERT_FATAL_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)), "Could not get the debug interface");
 		debug_interface->EnableDebugLayer();
@@ -49,7 +49,7 @@ namespace RB::Graphics::Native
 		if (m_ComputeEngine) delete m_ComputeEngine;
 		if (m_GraphicsEngine) delete m_GraphicsEngine;
 
-#ifdef RB_CONFIG_DEBUG
+#if !defined(RB_CONFIG_DIST)
 		RB_LOG(LOGTAG_GRAPHICS, "Outputting live objects to VS console...");
 		atexit(&ReportLiveObjects);
 #endif

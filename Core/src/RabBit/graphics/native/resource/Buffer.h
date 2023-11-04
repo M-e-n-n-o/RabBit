@@ -8,18 +8,18 @@
 
 namespace RB::Graphics::Native
 {
-	class Buffer
-	{
+	//class Buffer
+	//{
 
-	};
+	//};
 
-	class VertexBuffer
-	{
+	//class VertexBuffer
+	//{
 
-	};
+	//};
 
-	class IndexBuffer
-	{
+	//class IndexBuffer
+	//{
 
-	};
+	//};
 }

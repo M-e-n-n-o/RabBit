@@ -42,9 +42,9 @@ namespace RB::Input::Events
 			}
 		}
 
-		if (m_LastEvents.size() > EVENT_HISTORY_COUNT)
+		while (m_LastEvents.size() > EVENT_HISTORY_COUNT)
 		{
-			delete m_LastEvents[EVENT_HISTORY_COUNT];
+			delete m_LastEvents[m_LastEvents.size() - 1];
 			m_LastEvents.pop_back();
 		}
 	}

@@ -39,6 +39,7 @@ namespace RB::Graphics::Native::Window
 		uint32_t GetHeight() const { return m_Height; }
 		uint32_t GetBackBufferCount() const { return m_BackBufferCount; }
 		uint32_t GetCurrentBackBufferIndex() const { return m_CurrentBackBufferIndex; }
+		DXGI_FORMAT GetBackBufferFormat() const { return m_BackBufferFormat; }
 		GPtr<ID3D12Resource> GetCurrentBackBuffer() const { return m_BackBuffers[m_CurrentBackBufferIndex]; }
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentDescriptorHandleCPU() const;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandleCPU(uint32_t back_buffer_index) const;
@@ -62,6 +63,7 @@ namespace RB::Graphics::Native::Window
 		uint32_t					m_BackBufferCount;
 		uint32_t					m_Width;
 		uint32_t					m_Height;
+		DXGI_FORMAT					m_BackBufferFormat;
 
 		bool						m_IsTearingSupported;
 	};
