@@ -13,6 +13,7 @@ namespace RB::Graphics::Native
 {
 	GraphicsDevice* g_GraphicsDevice = nullptr;
 
+#ifdef RB_CONFIG_DEBUG
 	void ReportLiveObjects()
 	{
 		IDXGIDebug1* debug;
@@ -21,6 +22,7 @@ namespace RB::Graphics::Native
 		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 		debug->Release();
 	}
+#endif
 
 	GraphicsDevice::GraphicsDevice()
 		: m_CopyEngine(nullptr)
@@ -30,7 +32,7 @@ namespace RB::Graphics::Native
 		// Tell Windows that this thread is DPI aware
 		SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-#if !defined(RB_CONFIG_DIST)
+#ifdef RB_CONFIG_DEBUG
 		GPtr<ID3D12Debug> debug_interface;
 		RB_ASSERT_FATAL_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)), "Could not get the debug interface");
 		debug_interface->EnableDebugLayer();
@@ -49,7 +51,7 @@ namespace RB::Graphics::Native
 		if (m_ComputeEngine) delete m_ComputeEngine;
 		if (m_GraphicsEngine) delete m_GraphicsEngine;
 
-#if !defined(RB_CONFIG_DIST)
+#ifdef RB_CONFIG_DEBUG
 		RB_LOG(LOGTAG_GRAPHICS, "Outputting live objects to VS console...");
 		atexit(&ReportLiveObjects);
 #endif
