@@ -71,8 +71,8 @@ namespace RB
 
 		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
 
-		//_SecondWindow = new Graphics::Window("Test", 1280, 720, kWindowStyle_Borderless);
-		m_Window = new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, 0);
+		_SecondWindow = new Graphics::Window("Test", 1280, 720, kWindowStyle_Borderless);
+		m_Window = new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
 
 		g_ResourceManager = new ResourceManager(2);
 		g_ResourceStateManager = new ResourceStateManager();
@@ -167,7 +167,7 @@ namespace RB
 			pso_desc.PS						= { ps->GetBufferPointer(), ps->GetBufferSize() };
 			//pso_desc.StreamOutput			= ;
 			pso_desc.BlendState				= blend_desc;
-			pso_desc.SampleMask				= 0;
+			pso_desc.SampleMask				= UINT_MAX;
 			pso_desc.RasterizerState		= ras_desc;
 			pso_desc.DepthStencilState		= ds_desc;
 			pso_desc.InputLayout			= { input_elements, 2 };
@@ -187,7 +187,7 @@ namespace RB
 		// VAO
 		{
 			_VertexRes = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
-			_UploadResource = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
+			_UploadResource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 			float* upload_memory;
 			_UploadResource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
@@ -223,8 +223,8 @@ namespace RB
 			// Poll inputs and update window
 			m_Window->Update();
 
-			//if (_SecondWindow->IsValid())
-			//	_SecondWindow->Update();
+			if (_SecondWindow->IsValid())
+				_SecondWindow->Update();
 
 			m_FrameIndex++;
 		}
@@ -241,8 +241,8 @@ namespace RB
 
 		_GraphicsEngine->WaitForIdle();
 
-		//if (_SecondWindow->IsValid())
-		//	delete _SecondWindow;
+		if (_SecondWindow->IsValid())
+			delete _SecondWindow;
 
 		delete g_PipelineManager;
 		delete g_ResourceStateManager;
@@ -303,9 +303,9 @@ namespace RB
 				// Rasterizer state
 				d3d_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
 				d3d_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(m_Window->GetWidth()), static_cast<float>(m_Window->GetHeight())));
-				
+
 				// Output merger
-				d3d_list->OMSetRenderTargets(1, &m_Window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), 0, nullptr);
+				d3d_list->OMSetRenderTargets(1, &m_Window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
 
 				d3d_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
 			}
