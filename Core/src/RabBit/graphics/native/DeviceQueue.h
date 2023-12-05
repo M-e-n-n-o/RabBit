@@ -9,16 +9,16 @@
 namespace RB::Graphics::Native
 {
 	// D3D12 Command queue wrapper
-	class DeviceEngine
+	class DeviceQueue
 	{
 	public:
-		DeviceEngine(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
-		~DeviceEngine();
+		DeviceQueue(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
+		~DeviceQueue();
 
 		uint64_t SignalFence();
 		bool IsFenceReached(uint64_t fence_value);
 		void WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
-		void WaitForIdle(uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
+		void WaitUntilEmpty(uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
 
 		CommandList* GetCommandList();
 		//GPtr<ID3D12GraphicsCommandList2> GetCommandList();

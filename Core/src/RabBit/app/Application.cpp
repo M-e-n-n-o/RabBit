@@ -4,7 +4,7 @@
 #include "graphics/Window.h"
 #include "graphics/native/window/SwapChain.h"
 #include "graphics/native/GraphicsDevice.h"
-#include "graphics/native/DeviceEngine.h"
+#include "graphics/native/DeviceQueue.h"
 #include "graphics/native/resource/ResourceManager.h"
 #include "graphics/native/resource/ResourceStateManager.h"
 #include "graphics/native/pipeline/Pipeline.h"
@@ -23,7 +23,7 @@ using namespace RB::Input;
 
 namespace RB
 {
-	DeviceEngine* _GraphicsEngine = nullptr;
+	DeviceQueue* _GraphicsQueue = nullptr;
 	uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
 	Graphics::Window* _SecondWindow;
@@ -69,7 +69,7 @@ namespace RB
 
 		g_GraphicsDevice = new GraphicsDevice();
 
-		_GraphicsEngine = g_GraphicsDevice->GetGraphicsEngine();
+		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
 		_SecondWindow = new Graphics::Window("Test", 1280, 720, kWindowStyle_Borderless);
 		m_Window = new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
@@ -194,13 +194,13 @@ namespace RB
 			memcpy(upload_memory, _VertexData, sizeof(_VertexData));
 			_UploadResource->Unmap(0, nullptr);
 
-			CommandList* command_list = _GraphicsEngine->GetCommandList();
+			CommandList* command_list = _GraphicsQueue->GetCommandList();
 			ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
 
 			d3d_list->CopyResource(_VertexRes.Get(), _UploadResource.Get());
 
-			uint64_t fence_value = _GraphicsEngine->ExecuteCommandList(command_list);
-			_GraphicsEngine->WaitForFenceValue(fence_value);
+			uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
+			_GraphicsQueue->WaitForFenceValue(fence_value);
 
 			_VaoView.BufferLocation = _VertexRes->GetGPUVirtualAddress();
 			_VaoView.SizeInBytes	= sizeof(_VertexData);
@@ -239,7 +239,7 @@ namespace RB
 		// Shutdown app user
 		OnStop();
 
-		_GraphicsEngine->WaitForIdle();
+		_GraphicsQueue->WaitUntilEmpty();
 
 		if (_SecondWindow->IsValid())
 			delete _SecondWindow;
@@ -267,7 +267,7 @@ namespace RB
 			return;
 		}
 
-		CommandList* command_list = _GraphicsEngine->GetCommandList();
+		CommandList* command_list = _GraphicsQueue->GetCommandList();
 		ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
 
 		auto back_buffer = m_Window->GetSwapChain()->GetCurrentBackBuffer();
@@ -322,12 +322,12 @@ namespace RB
 				d3d_list->ResourceBarrier(1, &barrier);
 
 				uint64_t value = m_Window->GetSwapChain()->GetCurrentBackBufferIndex();
-				_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsEngine->ExecuteCommandList(command_list);
+				_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsQueue->ExecuteCommandList(command_list);
 
 				m_Window->GetSwapChain()->Present(VsyncMode::On);
 
 				value = m_Window->GetSwapChain()->GetCurrentBackBufferIndex();
-				_GraphicsEngine->WaitForFenceValue(_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()]);
+				_GraphicsQueue->WaitForFenceValue(_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()]);
 			}
 
 		}

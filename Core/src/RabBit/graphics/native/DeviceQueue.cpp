@@ -1,10 +1,10 @@
 #include "RabBitCommon.h"
-#include "DeviceEngine.h"
+#include "DeviceQueue.h"
 #include "GraphicsDevice.h"
 
 namespace RB::Graphics::Native
 {
-	DeviceEngine::DeviceEngine(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags)
+	DeviceQueue::DeviceQueue(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags)
 		: m_Type(type)
 	{
 		D3D12_COMMAND_QUEUE_DESC desc = {};
@@ -18,9 +18,9 @@ namespace RB::Graphics::Native
 		CreateFence();
 	}
 
-	DeviceEngine::~DeviceEngine()
+	DeviceQueue::~DeviceQueue()
 	{
-		WaitForIdle();
+		WaitUntilEmpty();
 		UpdateAvailableCommandLists();
 		
 		for (uint32_t i = 0; i < m_AvailableCommandLists.size(); ++i)
@@ -31,13 +31,13 @@ namespace RB::Graphics::Native
 		CloseHandle(m_FenceEventHandle);
 	}
 
-	void DeviceEngine::WaitForIdle(uint64_t max_duration_ms)
+	void DeviceQueue::WaitUntilEmpty(uint64_t max_duration_ms)
 	{
 		uint64_t fence_value_for_signal = SignalFence();
 		WaitForFenceValue(fence_value_for_signal, max_duration_ms);
 	}
 
-	CommandList* DeviceEngine::GetCommandList()
+	CommandList* DeviceQueue::GetCommandList()
 	{
 		CommandList* command_list = nullptr;
 
@@ -64,7 +64,7 @@ namespace RB::Graphics::Native
 		return command_list;
 	}
 
-	void DeviceEngine::UpdateAvailableCommandLists()
+	void DeviceQueue::UpdateAvailableCommandLists()
 	{
 		auto itr = m_RunningCommandLists.begin();
 		while (itr != m_RunningCommandLists.end())
@@ -81,14 +81,14 @@ namespace RB::Graphics::Native
 		}
 	}
 
-	uint64_t DeviceEngine::ExecuteCommandList(CommandList* command_list)
+	uint64_t DeviceQueue::ExecuteCommandList(CommandList* command_list)
 	{
 		CommandList* ptr[] = { command_list };
 
 		return ExecuteCommandLists(1, ptr);
 	}
 
-	uint64_t DeviceEngine::ExecuteCommandLists(uint32_t num_command_lists, CommandList** command_lists)
+	uint64_t DeviceQueue::ExecuteCommandLists(uint32_t num_command_lists, CommandList** command_lists)
 	{
 		ID3D12CommandList** d3d_lists = (ID3D12CommandList**)alloca(sizeof(ID3D12CommandList*) * num_command_lists);
 
@@ -112,7 +112,7 @@ namespace RB::Graphics::Native
 		return fence_value;
 	}
 	
-	void DeviceEngine::CreateFence()
+	void DeviceQueue::CreateFence()
 	{
 		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)), "Could not create fence");
 
@@ -122,19 +122,19 @@ namespace RB::Graphics::Native
 		m_FenceValue = 0;
 	}
 	
-	uint64_t DeviceEngine::SignalFence()
+	uint64_t DeviceQueue::SignalFence()
 	{
 		uint64_t fence_value_for_signal = ++m_FenceValue;
 		RB_ASSERT_FATAL_RELEASE_D3D(m_CommandQueue->Signal(m_Fence.Get(), fence_value_for_signal), "Could not signal the command queue");
 		return fence_value_for_signal;
 	}
 
-	bool DeviceEngine::IsFenceReached(uint64_t fence_value)
+	bool DeviceQueue::IsFenceReached(uint64_t fence_value)
 	{
 		return m_Fence->GetCompletedValue() >= fence_value;
 	}
 
-	void DeviceEngine::WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms)
+	void DeviceQueue::WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms)
 	{
 		if (IsFenceReached(fence_value))
 		{

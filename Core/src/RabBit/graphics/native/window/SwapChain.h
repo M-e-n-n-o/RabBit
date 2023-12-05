@@ -26,7 +26,7 @@ namespace RB::Graphics::Native::Window
 	class SwapChain
 	{
 	public:
-		SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count = 2u, 
+		SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count = 2u,
 			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, bool transparency_support = false);
 		~SwapChain();
 

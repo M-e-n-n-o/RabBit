@@ -14,7 +14,7 @@
 
 namespace RB::Graphics::Native
 {
-	class DeviceEngine;
+	class DeviceQueue;
 	
 	struct MonitorInfo
 	{
@@ -49,24 +49,28 @@ namespace RB::Graphics::Native
 		GraphicsDevice();
 		~GraphicsDevice();
 
-			   bool IsFormatSupported(DXGI_FORMAT format);
-		static bool IsFeatureSupported(DXGI_FEATURE feature);
+		bool IsFormatSupported(DXGI_FORMAT format);
+		bool IsFeatureSupported(DXGI_FEATURE feature);
 
 		GPtr<ID3D12Device2> Get() const { return m_NativeDevice; }
 		GPtr<IDXGIAdapter4> GetAdapter() const { return m_NativeAdapter; }
+		GPtr<IDXGIFactory4> GetFactory() const { return m_Factory; }
 
 		// Not recommended to use for regular rendering (currently only used for Direct Composition)
 		GPtr<ID3D11On12Device> Get11On12();
 
 		// Multi-engine: https://learn.microsoft.com/en-us/windows/win32/direct3d12/user-mode-heap-synchronization
-		DeviceEngine* GetCopyEngine();
-		DeviceEngine* GetComputeEngine();
-		DeviceEngine* GetGraphicsEngine();
+		DeviceQueue* GetCopyQueue();
+		DeviceQueue* GetComputeQueue();
+		DeviceQueue* GetGraphicsQueue();
+
+		void WaitUntilIdle();
 
 		const GraphicsCardInfo GetGraphicsCardInfo() const { return m_GpuInfo; }
 		const List<MonitorInfo> GetMonitors() const { return m_Monitors; }
 
 	private:
+		void CreateFactory();
 		void CreateAdapter();
 		void CreateMonitors();
 		void CreateDevice();
@@ -78,9 +82,11 @@ namespace RB::Graphics::Native
 		GPtr<ID3D11On12Device>		m_11On12Device;
 		GPtr<ID3D11DeviceContext>	m_11DeviceContext;
 
-		DeviceEngine*				m_CopyEngine;
-		DeviceEngine*				m_ComputeEngine;
-		DeviceEngine*				m_GraphicsEngine;
+		GPtr<IDXGIFactory4>			m_Factory;
+
+		DeviceQueue*				m_CopyQueue;
+		DeviceQueue*				m_ComputeQueue;
+		DeviceQueue*				m_GraphicsQueue;
 
 		GraphicsCardInfo			m_GpuInfo;
 		List<MonitorInfo>			m_Monitors;

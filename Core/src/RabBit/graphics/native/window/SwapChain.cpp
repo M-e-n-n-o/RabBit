@@ -5,7 +5,7 @@
 
 namespace RB::Graphics::Native::Window
 {
-	SwapChain::SwapChain(GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count, DXGI_FORMAT format, bool transparency_support)
+	SwapChain::SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count, DXGI_FORMAT format, bool transparency_support)
 		: m_BackBufferCount(buffer_count)
 		, m_Width(width)
 		, m_Height(height)
@@ -14,15 +14,7 @@ namespace RB::Graphics::Native::Window
 	{
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, g_GraphicsDevice->IsFormatSupported(format), "Device does not support passed in format, can not create SwapChain");
 
-		GPtr<IDXGIFactory4> dxgi_factory;
-		UINT factory_flags = 0;
-#ifdef RB_CONFIG_DEBUG
-		factory_flags = DXGI_CREATE_FACTORY_DEBUG;
-#endif
-
-		m_IsTearingSupported = g_GraphicsDevice->IsFeatureSupported(DXGI_FEATURE_PRESENT_ALLOW_TEARING);
-
-		RB_ASSERT_FATAL_RELEASE_D3D(CreateDXGIFactory2(factory_flags, IID_PPV_ARGS(&dxgi_factory)), "Could not create factory");
+		m_IsTearingSupported = g_GraphicsDevice->IsFeatureSupported(DXGI_FEATURE_PRESENT_ALLOW_TEARING); // And if exlusive fullscreen is not active
 
 		DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = {};
 		swap_chain_desc.Width		= width;
@@ -41,7 +33,7 @@ namespace RB::Graphics::Native::Window
 
 		if (m_UseComposition)
 		{
-			RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->CreateSwapChainForComposition(
+			RB_ASSERT_FATAL_RELEASE_D3D(factory->CreateSwapChainForComposition(
 				command_queue.Get(),
 				&swap_chain_desc,
 				nullptr,
@@ -50,7 +42,7 @@ namespace RB::Graphics::Native::Window
 		}
 		else
 		{
-			RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->CreateSwapChainForHwnd(
+			RB_ASSERT_FATAL_RELEASE_D3D(factory->CreateSwapChainForHwnd(
 				command_queue.Get(),
 				window_handle,
 				&swap_chain_desc,
@@ -60,7 +52,7 @@ namespace RB::Graphics::Native::Window
 			), "Could not create swap chain for HWND");
 		}
 
-		RB_ASSERT_FATAL_RELEASE_D3D(dxgi_factory->MakeWindowAssociation(window_handle, DXGI_MWA_NO_ALT_ENTER), "Could not hint window to not automatically handle Alt-Enter");
+		RB_ASSERT_FATAL_RELEASE_D3D(factory->MakeWindowAssociation(window_handle, DXGI_MWA_NO_ALT_ENTER), "Could not hint window to not automatically handle Alt-Enter");
 
 		RB_ASSERT_FATAL_RELEASE_D3D(swap_chain1.As(&m_NativeSwapChain), "Could not convert the swap chain to abstraction level 4");
 
@@ -87,7 +79,7 @@ namespace RB::Graphics::Native::Window
 	{
 		bool vsync_enabled = vsync_mode != VsyncMode::Off;
 		UINT sync_interval = (UINT) vsync_mode;
-		UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+		UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0; // DXGI_PRESENT_ALLOW_TEARING cannot be here in exclusive fullscreen!
 
 		RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->Present(sync_interval, present_flags), "Failed to present frame");
 

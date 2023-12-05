@@ -1,6 +1,6 @@
 #include "RabBitCommon.h"
 #include "GraphicsDevice.h"
-#include "DeviceEngine.h"
+#include "DeviceQueue.h"
 
 #ifdef RB_CONFIG_DEBUG
 #include <dxgidebug.h>
@@ -25,9 +25,9 @@ namespace RB::Graphics::Native
 #endif
 
 	GraphicsDevice::GraphicsDevice()
-		: m_CopyEngine(nullptr)
-		, m_ComputeEngine(nullptr)
-		, m_GraphicsEngine(nullptr)
+		: m_CopyQueue(nullptr)
+		, m_ComputeQueue(nullptr)
+		, m_GraphicsQueue(nullptr)
 	{
 		// Tell Windows that this thread is DPI aware
 		SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -38,6 +38,7 @@ namespace RB::Graphics::Native
 		debug_interface->EnableDebugLayer();
 #endif
 
+		CreateFactory();
 		RB_LOG(LOGTAG_GRAPHICS, "-------- ADAPTER INFORMATION --------");
 		CreateAdapter();
 		RB_LOG(LOGTAG_GRAPHICS, "-------- MONITOR INFORMATION --------");
@@ -47,9 +48,9 @@ namespace RB::Graphics::Native
 
 	GraphicsDevice::~GraphicsDevice()
 	{
-		if (m_CopyEngine) delete m_CopyEngine;
-		if (m_ComputeEngine) delete m_ComputeEngine;
-		if (m_GraphicsEngine) delete m_GraphicsEngine;
+		SAFE_DELETE(m_CopyQueue);
+		SAFE_DELETE(m_ComputeQueue);
+		SAFE_DELETE(m_GraphicsQueue);
 
 #ifdef RB_CONFIG_DEBUG
 		RB_LOG(LOGTAG_GRAPHICS, "Outputting live objects to VS console...");
@@ -72,62 +73,78 @@ namespace RB::Graphics::Native
 	{
 		BOOL supported = FALSE;
 
-		GPtr<IDXGIFactory4> factory4;
-		if (SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory4))))
+		GPtr<IDXGIFactory5> factory5;
+		if (SUCCEEDED(m_Factory.As(&factory5)))
 		{
-			GPtr<IDXGIFactory5> factory5;
-			if (SUCCEEDED(factory4.As(&factory5)))
+			if (FAILED(factory5->CheckFeatureSupport(feature, &supported, sizeof(supported))))
 			{
-				if (FAILED(factory5->CheckFeatureSupport(feature, &supported, sizeof(supported))))
-				{
-					supported = FALSE;
-				}
+				supported = FALSE;
 			}
 		}
 
 		return supported == TRUE;
 	}
 
-	DeviceEngine* GraphicsDevice::GetCopyEngine()
+	void GraphicsDevice::WaitUntilIdle()
 	{
-		if (!m_CopyEngine)
+		if (m_CopyQueue)
 		{
-			m_CopyEngine = new DeviceEngine(D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+			m_CopyQueue->WaitUntilEmpty();
 		}
 
-		return m_CopyEngine;
-	}
-
-	DeviceEngine* GraphicsDevice::GetComputeEngine()
-	{
-		if (!m_ComputeEngine)
+		if (m_ComputeQueue)
 		{
-			m_ComputeEngine = new DeviceEngine(D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+			m_CopyQueue->WaitUntilEmpty();
 		}
 
-		return m_ComputeEngine;
+		if (m_GraphicsQueue)
+		{
+			m_GraphicsQueue->WaitUntilEmpty();
+		}
 	}
 
-	DeviceEngine* GraphicsDevice::GetGraphicsEngine()
+	DeviceQueue* GraphicsDevice::GetCopyQueue()
 	{
-		if (!m_GraphicsEngine)
+		if (!m_CopyQueue)
 		{
-			m_GraphicsEngine = new DeviceEngine(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, D3D12_COMMAND_QUEUE_FLAG_NONE);
+			m_CopyQueue = new DeviceQueue(D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
 		}
 
-		return m_GraphicsEngine;
+		return m_CopyQueue;
 	}
 
-	void GraphicsDevice::CreateAdapter()
+	DeviceQueue* GraphicsDevice::GetComputeQueue()
 	{
-		GPtr<IDXGIFactory4> dxgi_factory;
+		if (!m_ComputeQueue)
+		{
+			m_ComputeQueue = new DeviceQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+		}
+
+		return m_ComputeQueue;
+	}
+
+	DeviceQueue* GraphicsDevice::GetGraphicsQueue()
+	{
+		if (!m_GraphicsQueue)
+		{
+			m_GraphicsQueue = new DeviceQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, D3D12_COMMAND_QUEUE_FLAG_NONE);
+		}
+
+		return m_GraphicsQueue;
+	}
+
+	void GraphicsDevice::CreateFactory()
+	{
 		uint32_t factory_flags = 0;
 #ifdef RB_CONFIG_DEBUG
 		factory_flags = DXGI_CREATE_FACTORY_DEBUG;
 #endif
 
-		RB_ASSERT_FATAL_RELEASE_D3D(CreateDXGIFactory2(factory_flags, IID_PPV_ARGS(&dxgi_factory)), "Could not create factory");
+		RB_ASSERT_FATAL_RELEASE_D3D(CreateDXGIFactory2(factory_flags, IID_PPV_ARGS(&m_Factory)), "Could not create factory");
+	}
 
+	void GraphicsDevice::CreateAdapter()
+	{
 		GPtr<IDXGIAdapter1> dxgi_adapter1;
 
 		RB_LOG(LOGTAG_GRAPHICS, "Found the following D3D12 compatible GPU's:");
@@ -135,7 +152,7 @@ namespace RB::Graphics::Native
 		std::string desc_best_adapter;
 		int64_t max_dedicated_vram = 0;
 		int64_t max_shared_smem = 0;
-		for (uint32_t adapter_index = 0; dxgi_factory->EnumAdapters1(adapter_index, &dxgi_adapter1) != DXGI_ERROR_NOT_FOUND; adapter_index++)
+		for (uint32_t adapter_index = 0; m_Factory->EnumAdapters1(adapter_index, &dxgi_adapter1) != DXGI_ERROR_NOT_FOUND; adapter_index++)
 		{
 			DXGI_ADAPTER_DESC1 dxgi_adapter_desc;
 			dxgi_adapter1->GetDesc1(&dxgi_adapter_desc);
@@ -292,7 +309,7 @@ namespace RB::Graphics::Native
 			D3D11_CREATE_DEVICE_BGRA_SUPPORT, // Needed for Direct Composition
 			NULL,
 			0,
-			reinterpret_cast<IUnknown**>(GetGraphicsEngine()->GetCommandQueue().GetAddressOf()),
+			reinterpret_cast<IUnknown**>(GetGraphicsQueue()->GetCommandQueue().GetAddressOf()),
 			1,
 			0,
 			&d3d11Device,

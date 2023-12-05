@@ -3,7 +3,7 @@
 #include "graphics/native/GraphicsDevice.h"
 #include "graphics/native/window/NativeWindow.h"
 #include "graphics/native/window/SwapChain.h"
-#include "graphics/native/DeviceEngine.h"
+#include "graphics/native/DeviceQueue.h"
 #include "input/events/WindowEvent.h"
 
 using namespace RB::Input::Events;
@@ -41,7 +41,8 @@ namespace RB::Graphics
 		m_NativeWindow = new NativeWindow(args);
 
 		m_SwapChain = new SwapChain(
-			g_GraphicsDevice->GetGraphicsEngine()->GetCommandQueue(), 
+			g_GraphicsDevice->GetFactory(),
+			g_GraphicsDevice->GetGraphicsQueue()->GetCommandQueue(), 
 			m_NativeWindow->GetHandle(), 
 			window_width, window_height, 
 			BACK_BUFFER_COUNT, 
@@ -119,7 +120,7 @@ namespace RB::Graphics
 			uint32_t width = resize_event->GetWidth();
 			uint32_t height = resize_event->GetHeight();
 
-			g_GraphicsDevice->GetGraphicsEngine()->WaitForIdle();
+			g_GraphicsDevice->WaitUntilIdle();
 
 			OnResize(width, height);
 		}
