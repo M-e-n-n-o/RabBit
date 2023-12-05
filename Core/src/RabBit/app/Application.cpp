@@ -306,6 +306,10 @@ namespace RB
 		auto back_buffer = window->GetSwapChain()->GetCurrentBackBuffer();
 
 		{
+			// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
+			uint64_t value = window->GetSwapChain()->GetCurrentBackBufferIndex();
+			_GraphicsQueue->WaitForFenceValue(_FenceValues[value]);
+
 			// Clear the render target
 			{
 				RB_PROFILE_GPU_SCOPED(d3d_list, "Clear");
@@ -355,12 +359,9 @@ namespace RB
 				d3d_list->ResourceBarrier(1, &barrier);
 
 				uint64_t value = window->GetSwapChain()->GetCurrentBackBufferIndex();
-				_FenceValues[window->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsQueue->ExecuteCommandList(command_list);
+				_FenceValues[value] = _GraphicsQueue->ExecuteCommandList(command_list);
 
 				window->GetSwapChain()->Present(VsyncMode::On);
-
-				value = window->GetSwapChain()->GetCurrentBackBufferIndex();
-				_GraphicsQueue->WaitForFenceValue(_FenceValues[window->GetSwapChain()->GetCurrentBackBufferIndex()]);
 			}
 
 		}
