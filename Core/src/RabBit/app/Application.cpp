@@ -26,8 +26,6 @@ namespace RB
 	DeviceQueue* _GraphicsQueue = nullptr;
 	uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
-	Graphics::Window* _SecondWindow;
-
 	float _VertexData[] =
 	{
 		// Pos				Color
@@ -50,6 +48,7 @@ namespace RB
 		, m_Initialized(false)
 		, m_ShouldStop(false)
 		, m_FrameIndex(0)
+		, m_CheckWindows(false)
 				
 	{
 		RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
@@ -71,8 +70,8 @@ namespace RB
 
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
-		_SecondWindow = new Graphics::Window("Test", 1280, 720, kWindowStyle_Borderless);
-		m_Window = new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent);
+		m_Windows.push_back(new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_None));
+		m_Windows.push_back(new Graphics::Window("Test", 1280, 720, kWindowStyle_None));
 
 		g_ResourceManager = new ResourceManager(2);
 		g_ResourceStateManager = new ResourceStateManager();
@@ -174,7 +173,7 @@ namespace RB
 			//pso_desc.IBStripCutValue		= D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
 			pso_desc.PrimitiveTopologyType	= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pso_desc.NumRenderTargets		= 1;
-			pso_desc.RTVFormats[0]			= m_Window->GetSwapChain()->GetBackBufferFormat();
+			pso_desc.RTVFormats[0]			= m_Windows[0]->GetSwapChain()->GetBackBufferFormat();
 			pso_desc.DSVFormat				= DXGI_FORMAT_UNKNOWN;
 			pso_desc.SampleDesc				= { 1, 0 };
 			pso_desc.NodeMask				= 0;
@@ -220,11 +219,35 @@ namespace RB
 			Render();
 			FinishRenderFrame();
 
-			// Poll inputs and update window
-			m_Window->Update();
+			// Poll inputs and update windows
+			for (Graphics::Window* window : m_Windows)
+			{
+				if (window->HasWindow())
+				{
+					window->Update();
+				}
+			}
 
-			if (_SecondWindow->IsValid())
-				_SecondWindow->Update();
+			if (m_CheckWindows)
+			{
+				for (int i = 0; i < m_Windows.size(); i++)
+				{
+					if (m_Windows[i]->ShouldClose())
+					{
+						delete m_Windows[i];
+						m_Windows.erase(m_Windows.begin() + i);
+						i--;
+					}
+				}
+
+				if (m_Windows.size() == 0)
+				{
+					RB_LOG(LOGTAG_EVENT, "Last window has been closed, requesting to stop application");
+					m_ShouldStop = true;
+				}
+
+				m_CheckWindows = false;
+			}
 
 			m_FrameIndex++;
 		}
@@ -241,13 +264,16 @@ namespace RB
 
 		_GraphicsQueue->WaitUntilEmpty();
 
-		if (_SecondWindow->IsValid())
-			delete _SecondWindow;
-
 		delete g_PipelineManager;
 		delete g_ResourceStateManager;
 		delete g_ResourceManager;
-		delete m_Window;
+
+		for (int i = 0; i < m_Windows.size(); i++)
+		{
+			delete m_Windows[i];
+		}
+		m_Windows.clear();
+
 		delete g_GraphicsDevice;	
 
 		RB_LOG(LOGTAG_MAIN, "");
@@ -262,7 +288,7 @@ namespace RB
 
 	void Application::Render()
 	{
-		if (m_Window->IsMinimized())
+		if (m_Windows[0]->IsMinimized())
 		{
 			return;
 		}
@@ -270,7 +296,7 @@ namespace RB
 		CommandList* command_list = _GraphicsQueue->GetCommandList();
 		ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
 
-		auto back_buffer = m_Window->GetSwapChain()->GetCurrentBackBuffer();
+		auto back_buffer = m_Windows[0]->GetSwapChain()->GetCurrentBackBuffer();
 
 		{
 			// Clear the render target
@@ -286,7 +312,7 @@ namespace RB
 
 				FLOAT clear_color[] = { _Value, 0.1f, 0.1f, 0.0f };
 
-				d3d_list->ClearRenderTargetView(m_Window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+				d3d_list->ClearRenderTargetView(m_Windows[0]->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 			}
 
 			// Draw
@@ -302,10 +328,10 @@ namespace RB
 				
 				// Rasterizer state
 				d3d_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
-				d3d_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(m_Window->GetWidth()), static_cast<float>(m_Window->GetHeight())));
+				d3d_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(m_Windows[0]->GetWidth()), static_cast<float>(m_Windows[0]->GetHeight())));
 
 				// Output merger
-				d3d_list->OMSetRenderTargets(1, &m_Window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
+				d3d_list->OMSetRenderTargets(1, &m_Windows[0]->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
 
 				d3d_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
 			}
@@ -321,13 +347,13 @@ namespace RB
 
 				d3d_list->ResourceBarrier(1, &barrier);
 
-				uint64_t value = m_Window->GetSwapChain()->GetCurrentBackBufferIndex();
-				_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsQueue->ExecuteCommandList(command_list);
+				uint64_t value = m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex();
+				_FenceValues[m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsQueue->ExecuteCommandList(command_list);
 
-				m_Window->GetSwapChain()->Present(VsyncMode::On);
+				m_Windows[0]->GetSwapChain()->Present(VsyncMode::On);
 
-				value = m_Window->GetSwapChain()->GetCurrentBackBufferIndex();
-				_GraphicsQueue->WaitForFenceValue(_FenceValues[m_Window->GetSwapChain()->GetCurrentBackBufferIndex()]);
+				value = m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex();
+				_GraphicsQueue->WaitForFenceValue(_FenceValues[m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex()]);
 			}
 
 		}
@@ -336,6 +362,28 @@ namespace RB
 	void Application::FinishRenderFrame()
 	{
 
+	}
+
+	Graphics::Window* Application::GetWindow(uint32_t index) const
+	{
+		RB_ASSERT_FATAL(LOGTAG_MAIN, index < m_Windows.size() && index >= 0, "Trying to get a window that does not exist");
+
+		return m_Windows[index];
+	}
+
+	Graphics::Window* Application::FindWindow(void* window_handle) const
+	{
+		for (Graphics::Window* window : m_Windows)
+		{
+			if (window->IsSameWindow(window_handle))
+			{
+				return window;
+			}
+		}
+
+		RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+
+		return nullptr;
 	}
 
 	void Application::OnEvent(Event& event)
@@ -349,22 +397,21 @@ namespace RB
 		{
 			if (e.GetKeyCode() == KeyCode::K)
 			{
-				if (_SecondWindow->IsValid())
-					_SecondWindow->Resize(200, 200, 200, 100);
+				for (Graphics::Window* window : m_Windows)
+				{
+					if (window->HasWindow() && window->InFocus())
+					{
+						window->Resize(200, 200, 200, 100);
+					}
+				}
 			}
 		}, event);
 
 		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
 
-		//BindEvent<WindowRenderEvent>([this](WindowRenderEvent& render_event)
-		//{
-		//	Render();
-		//}, event);
-
 		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
 		{
-			RB_LOG(LOGTAG_EVENT, "Window close event received");
-			m_ShouldStop = true;
+			m_CheckWindows = true;
 		}, event);
 	}
 }

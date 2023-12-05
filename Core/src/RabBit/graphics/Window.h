@@ -31,9 +31,13 @@ namespace RB::Graphics
 
 		uint32_t GetWidth() const;
 		uint32_t GetHeight() const;
-		bool IsMinimized() const { return m_Minimized; }
 
-		bool IsValid() const { return m_IsValid; }
+		bool IsMinimized()	const { return m_Minimized; }
+		bool InFocus()		const { return m_InFocus; }
+		bool ShouldClose()	const { return m_AskedForClose; }
+		bool HasWindow()	const { return m_IsValid; }
+
+		bool IsSameWindow(void* window_handle) const;
 
 		Native::Window::SwapChain* GetSwapChain() const { return m_SwapChain; }
 
@@ -46,5 +50,7 @@ namespace RB::Graphics
 		Native::Window::SwapChain*		m_SwapChain;
 		bool							m_Minimized;
 		bool							m_IsValid;
+		bool							m_InFocus;
+		bool							m_AskedForClose;
 	};
 }

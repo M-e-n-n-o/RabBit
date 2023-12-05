@@ -134,6 +134,18 @@ namespace RB::Graphics::Native::Window
 			g_EventManager->InsertEvent(e);
 		}
 		break;
+		case WM_SETFOCUS:
+		{
+			Event* e = new WindowOnFocusEvent(hwnd);
+			g_EventManager->InsertEvent(e);
+		}
+		break;
+		case WM_KILLFOCUS:
+		{
+			Event* e = new WindowLostFocusEvent(hwnd);
+			g_EventManager->InsertEvent(e);
+		}
+		break;
 		case WM_CLOSE:
 		{
 			Event* e = new WindowCloseRequestEvent(hwnd);

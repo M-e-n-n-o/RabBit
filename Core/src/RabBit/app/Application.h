@@ -39,19 +39,21 @@ namespace RB
 		virtual void OnUpdate() = 0;
 		virtual void OnStop() = 0;
 
-		Graphics::Window* GetWindow() const { return m_Window; }
+		Graphics::Window* GetWindow(uint32_t index) const;
+		Graphics::Window* FindWindow(void* window_handle) const;
 
 		uint64_t GetFrameIndex() const { return m_FrameIndex; }
 
 	private:
-		const AppInfo		m_StartAppInfo;
+		const AppInfo			m_StartAppInfo;
 
-		bool				m_Initialized;
-		bool				m_ShouldStop;
+		bool					m_Initialized;
+		bool					m_ShouldStop;
 
-		uint64_t			m_FrameIndex;
+		uint64_t				m_FrameIndex;
 
-		Graphics::Window*	m_Window;
+		List<Graphics::Window*>	m_Windows;
+		bool					m_CheckWindows;
 	};
 	
 	// To be defined in client

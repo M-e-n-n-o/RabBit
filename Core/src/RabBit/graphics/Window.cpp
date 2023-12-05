@@ -16,6 +16,8 @@ namespace RB::Graphics
 		: EventListener(kEventCat_Window)
 		, m_Minimized(window_width == 0 && window_height == 0)
 		, m_IsValid(true)
+		, m_InFocus(true)
+		, m_AskedForClose(false)
 	{
 		WindowArgs args		= {};
 		args.className		= L"RabBit WindowClass";
@@ -75,6 +77,8 @@ namespace RB::Graphics
 			return;
 		}
 
+		g_GraphicsDevice->WaitUntilIdle();
+
 		m_Minimized = (width == 0 && height == 0);
 
 		width  = std::max(1u, width);
@@ -93,8 +97,15 @@ namespace RB::Graphics
 		return m_SwapChain->GetHeight();
 	}
 
+	bool Window::IsSameWindow(void* window_handle) const
+	{
+		return window_handle == m_NativeWindow->GetHandle();
+	}
+
 	void Window::DestroyWindow()
 	{
+		g_GraphicsDevice->WaitUntilIdle();
+
 		m_IsValid = false;
 
 		delete m_SwapChain;
@@ -106,7 +117,7 @@ namespace RB::Graphics
 		WindowEvent* window_event = static_cast<WindowEvent*>(&event);
 
 		// Only handle window events of this window
-		if (window_event->GetWindowHandle() != m_NativeWindow->GetHandle())
+		if (!IsSameWindow(window_event->GetWindowHandle()))
 		{
 			return;
 		}
@@ -120,9 +131,25 @@ namespace RB::Graphics
 			uint32_t width = resize_event->GetWidth();
 			uint32_t height = resize_event->GetHeight();
 
-			g_GraphicsDevice->WaitUntilIdle();
-
 			OnResize(width, height);
+		}
+		break;
+
+		case EventType::WindowFocus:
+		{
+			m_InFocus = true;
+		}
+		break;
+
+		case EventType::WindowLostFocus:
+		{
+			m_InFocus = false;
+		}
+		break;
+
+		case EventType::WindowCloseRequest:
+		{
+			m_AskedForClose = true;
 		}
 		break;
 

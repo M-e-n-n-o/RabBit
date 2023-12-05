@@ -12,6 +12,10 @@
 #undef min
 #endif
 
+#if defined(FindWindow)
+#undef FindWindow
+#endif
+
 #include <memory>
 
 namespace RB
