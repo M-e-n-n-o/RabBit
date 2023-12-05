@@ -10,6 +10,7 @@ namespace RB::Graphics
 {
 	struct TextureSize
 	{
+		bool isUsedForUI; // UI should always have the same dimensions as the real swapchain (should not have to be upscaled/downscaled)
 		bool usesUpscaledRenderResolution;
 		bool resizeWithRenderResolution;
 		bool customSize;
@@ -71,7 +72,7 @@ namespace RB::Graphics
 		{
 			// First do render passes. These passes should not render to the swapchain backbuffer but use a "game backbuffer" which can have a different resolution
 			// than the swapchain backbuffer. After the render passes, there will then be a composite pass, or finalize pass, which will "down-/upscale" it to the 
-			// swapchain backbuffer resolution using a sampler in the pixel shader.
+			// swapchain backbuffer resolution using a sampler in the pixel shader and merge the UI with the color texture (as the color and UI textures should be separate).
 		}
 	};
 }
