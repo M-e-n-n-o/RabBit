@@ -39,6 +39,7 @@ namespace RB
 		virtual void OnUpdate() = 0;
 		virtual void OnStop() = 0;
 
+		Graphics::Window* GetPrimaryWindow() const;
 		Graphics::Window* GetWindow(uint32_t index) const;
 		Graphics::Window* FindWindow(void* window_handle) const;
 

@@ -173,7 +173,7 @@ namespace RB
 			//pso_desc.IBStripCutValue		= D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
 			pso_desc.PrimitiveTopologyType	= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pso_desc.NumRenderTargets		= 1;
-			pso_desc.RTVFormats[0]			= m_Windows[0]->GetSwapChain()->GetBackBufferFormat();
+			pso_desc.RTVFormats[0]			= GetPrimaryWindow()->GetSwapChain()->GetBackBufferFormat();
 			pso_desc.DSVFormat				= DXGI_FORMAT_UNKNOWN;
 			pso_desc.SampleDesc				= { 1, 0 };
 			pso_desc.NodeMask				= 0;
@@ -226,13 +226,18 @@ namespace RB
 				{
 					window->Update();
 				}
+				else
+				{
+					m_CheckWindows = true;
+				}
 			}
 
+			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)
 			{
 				for (int i = 0; i < m_Windows.size(); i++)
 				{
-					if (m_Windows[i]->ShouldClose())
+					if (m_Windows[i]->ShouldClose() || !m_Windows[i]->HasWindow())
 					{
 						delete m_Windows[i];
 						m_Windows.erase(m_Windows.begin() + i);
@@ -288,7 +293,9 @@ namespace RB
 
 	void Application::Render()
 	{
-		if (m_Windows[0]->IsMinimized())
+		Graphics::Window* window = GetPrimaryWindow();
+
+		if (window->IsMinimized())
 		{
 			return;
 		}
@@ -296,7 +303,7 @@ namespace RB
 		CommandList* command_list = _GraphicsQueue->GetCommandList();
 		ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
 
-		auto back_buffer = m_Windows[0]->GetSwapChain()->GetCurrentBackBuffer();
+		auto back_buffer = window->GetSwapChain()->GetCurrentBackBuffer();
 
 		{
 			// Clear the render target
@@ -312,7 +319,7 @@ namespace RB
 
 				FLOAT clear_color[] = { _Value, 0.1f, 0.1f, 0.0f };
 
-				d3d_list->ClearRenderTargetView(m_Windows[0]->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+				d3d_list->ClearRenderTargetView(window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 			}
 
 			// Draw
@@ -328,10 +335,10 @@ namespace RB
 				
 				// Rasterizer state
 				d3d_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
-				d3d_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(m_Windows[0]->GetWidth()), static_cast<float>(m_Windows[0]->GetHeight())));
+				d3d_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
 
 				// Output merger
-				d3d_list->OMSetRenderTargets(1, &m_Windows[0]->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
+				d3d_list->OMSetRenderTargets(1, &window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
 
 				d3d_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
 			}
@@ -347,13 +354,13 @@ namespace RB
 
 				d3d_list->ResourceBarrier(1, &barrier);
 
-				uint64_t value = m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex();
-				_FenceValues[m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsQueue->ExecuteCommandList(command_list);
+				uint64_t value = window->GetSwapChain()->GetCurrentBackBufferIndex();
+				_FenceValues[window->GetSwapChain()->GetCurrentBackBufferIndex()] = _GraphicsQueue->ExecuteCommandList(command_list);
 
-				m_Windows[0]->GetSwapChain()->Present(VsyncMode::On);
+				window->GetSwapChain()->Present(VsyncMode::On);
 
-				value = m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex();
-				_GraphicsQueue->WaitForFenceValue(_FenceValues[m_Windows[0]->GetSwapChain()->GetCurrentBackBufferIndex()]);
+				value = window->GetSwapChain()->GetCurrentBackBufferIndex();
+				_GraphicsQueue->WaitForFenceValue(_FenceValues[window->GetSwapChain()->GetCurrentBackBufferIndex()]);
 			}
 
 		}
@@ -362,6 +369,12 @@ namespace RB
 	void Application::FinishRenderFrame()
 	{
 
+	}
+
+	Graphics::Window* Application::GetPrimaryWindow() const
+	{
+		// TODO, should probably change this and being able to set primary windows
+		return m_Windows[0];
 	}
 
 	Graphics::Window* Application::GetWindow(uint32_t index) const
