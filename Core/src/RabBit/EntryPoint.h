@@ -8,7 +8,7 @@
 #include "input/events/Event.h"
 #include "app/Application.h"
 
-extern RB::Application* RB::CreateApplication();
+extern RB::Application* RB::CreateApplication(const char* launch_args);
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -23,11 +23,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     RB::Input::Events::g_EventManager = new RB::Input::Events::EventManager();
 
-    auto* app = RB::CreateApplication();
-
     char args[100];
     RB_ASSERT_FATAL_RELEASE(_countof(args) >= (wcslen(lpCmdLine) + 1), "Launch arguments copy should be made longer!");
     RB::WcharToChar(lpCmdLine, args);
+
+    auto* app = RB::CreateApplication(args);
 
     app->Start(args);
 

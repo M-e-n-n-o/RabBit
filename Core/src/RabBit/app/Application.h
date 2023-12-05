@@ -55,5 +55,5 @@ namespace RB
 	};
 	
 	// To be defined in client
-	Application* CreateApplication();
+	Application* CreateApplication(const char* launch_args);
 }

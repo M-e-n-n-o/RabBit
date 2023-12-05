@@ -21,7 +21,7 @@ public:
 	}
 };
 
-RB::Application* RB::CreateApplication()
+RB::Application* RB::CreateApplication(const char* launch_args)
 {
 	RB::AppInfo app_info	= {};
 	app_info.name			= "RabBit App";
