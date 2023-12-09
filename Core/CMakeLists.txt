@@ -63,12 +63,18 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
     # Copy libraries next to the final executable (should be called app side)
     function(copyExternalLibraries)
-        add_custom_command(TARGET ${APP_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
 
+        # Create a lit of files to copy to the executable
+        set (DLLS_TO_COPY
             "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
+        )
 
-            $<TARGET_FILE_DIR:${APP_NAME}>)
+        foreach (file_i ${DLLS_TO_COPY})
+            add_custom_command(TARGET ${APP_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${file_i}"
+                $<TARGET_FILE_DIR:${APP_NAME}>)
+        endforeach(file_i)
     endfunction()
 endif()
 
