@@ -37,3 +37,6 @@ out/
 # Visual studio
 .vs/
 .vscode/
+
+# Exclusions
+!Core/external/WinPixEventRuntime/bin/
