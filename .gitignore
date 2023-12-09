@@ -39,4 +39,6 @@ out/
 .vscode/
 
 # Exclusions
-!Core/external/WinPixEventRuntime/bin/
+!Core/external/**/*.lib
+!Core/external/**/*.exe
+!Core/external/**/out
