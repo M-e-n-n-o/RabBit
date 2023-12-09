@@ -58,10 +58,12 @@ namespace RB::Graphics::Native
 	{
 		uint64_t seed = 0;
 
-		HashCombine(seed, (char*) desc.CS.pShaderBytecode);
+		//HashCombine(seed, (char*) desc.CS.pShaderBytecode);
 		HashCombine(seed, desc.NodeMask);
 		HashCombine(seed, (char*) desc.CachedPSO.pCachedBlob);
 		HashCombine(seed, (UINT) desc.Flags);
+		
+		//TODO desc.pRootSignature
 
 		return seed;
 	}
@@ -72,11 +74,11 @@ namespace RB::Graphics::Native
 
 		//uint64_t seed = 0;
 
-		//HashCombine(seed, (char*) desc.VS.pShaderBytecode);
-		//HashCombine(seed, (char*) desc.PS.pShaderBytecode);
-		//HashCombine(seed, (char*) desc.DS.pShaderBytecode);
-		//HashCombine(seed, (char*) desc.HS.pShaderBytecode);
-		//HashCombine(seed, (char*) desc.GS.pShaderBytecode);
+		////HashCombine(seed, (char*) desc.VS.pShaderBytecode);
+		////HashCombine(seed, (char*) desc.PS.pShaderBytecode);
+		////HashCombine(seed, (char*) desc.DS.pShaderBytecode);
+		////HashCombine(seed, (char*) desc.HS.pShaderBytecode);
+		////HashCombine(seed, (char*) desc.GS.pShaderBytecode);
 		////HashCombine(seed, desc.StreamOutput);
 		//HashCombine(seed, desc.BlendState.AlphaToCoverageEnable);
 		//HashCombine(seed, desc.BlendState.IndependentBlendEnable);

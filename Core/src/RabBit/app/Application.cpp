@@ -73,8 +73,8 @@ namespace RB
 		m_Windows.push_back(new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_None));
 		m_Windows.push_back(new Graphics::Window("Test", 1280, 720, kWindowStyle_None));
 
-		g_ResourceManager = new ResourceManager(2);
 		g_ResourceStateManager = new ResourceStateManager();
+		g_ResourceManager = new ResourceManager(2);
 		g_PipelineManager = new PipelineManager();
 
 		m_Initialized = true;

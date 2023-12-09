@@ -29,7 +29,7 @@ namespace RB::Graphics::Native
 		, m_ComputeQueue(nullptr)
 		, m_GraphicsQueue(nullptr)
 	{
-		// Tell Windows that this thread is DPI aware
+		// Tell Windows that this thread is DPI aware so it does not automatically apply scaling
 		SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 #ifdef RB_CONFIG_DEBUG
@@ -53,7 +53,7 @@ namespace RB::Graphics::Native
 		SAFE_DELETE(m_GraphicsQueue);
 
 #ifdef RB_CONFIG_DEBUG
-		RB_LOG(LOGTAG_GRAPHICS, "Outputting live objects to VS console...");
+		RB_LOG(LOGTAG_GRAPHICS, "Outputting live objects to console...");
 		atexit(&ReportLiveObjects);
 #endif
 	}
