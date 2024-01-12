@@ -14,8 +14,8 @@ endif()
 # Set RabBit configuration definitions
 add_compile_definitions(
     $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>
-    $<$<CONFIG:Release>:RB_CONFIG_RELEASE>
-    $<$<CONFIG:RelWithDebInfo>:RB_CONFIG_RELEASE>
+    $<$<CONFIG:Release>:RB_CONFIG_OPTIMIZED>
+    $<$<CONFIG:RelWithDebInfo>:RB_CONFIG_OPTIMIZED>
     $<$<CONFIG:MinSizeRel>:RB_CONFIG_DIST>
 )
 

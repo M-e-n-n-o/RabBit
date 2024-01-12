@@ -14,7 +14,7 @@
 		#define RB_ENABLE_LOGS
 	#endif
 
-	#ifdef RB_CONFIG_RELEASE
+	#ifdef RB_CONFIG_OPTIMIZED
 		#define RB_ENABLE_ASSERTS
 		#define RB_ENABLE_LOGS
 	#endif
