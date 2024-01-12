@@ -125,7 +125,7 @@ namespace RB::Graphics::Native
 				bool found_space = false;
 				for (int i = 0; i < m_Pages.size(); ++i)
 				{
-					if (m_Pages[i]->HasSpace(size))
+					if (m_Pages[i]->HasSpace(size, alignment))
 					{
 						found_space = true;
 
