@@ -40,5 +40,6 @@ out/
 
 # Exclusions
 !Core/external/**/*.lib
+!Core/external/**/*.dll
 !Core/external/**/*.exe
 !Core/external/**/out

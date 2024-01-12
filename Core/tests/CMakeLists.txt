@@ -25,9 +25,7 @@ gtest_discover_tests(Test
 )
 
 # Add post build command to copy RabBit library to build location
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_custom_command(TARGET Test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:RabBit>/RabBit.lib"
-            $<TARGET_FILE_DIR:Test>)
-endif()
+add_custom_command(TARGET Test POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE_DIR:RabBit>/RabBit.lib"
+        $<TARGET_FILE_DIR:Test>)

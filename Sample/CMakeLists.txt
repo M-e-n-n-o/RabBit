@@ -19,6 +19,4 @@ target_link_directories(${APP_NAME} PUBLIC RabBit)
 target_link_libraries(${APP_NAME} RabBit)
 
 # Add post build command to copy RabBit libraries to build location
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")   
-    copyExternalLibraries()
-endif()
+copyExternalLibraries()

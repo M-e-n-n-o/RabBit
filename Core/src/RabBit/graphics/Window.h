@@ -4,7 +4,7 @@
 
 namespace RB::Graphics
 {
-	namespace Native::Window
+	namespace D3D12::Window
 	{
 		class NativeWindow;
 		class SwapChain;
@@ -39,15 +39,15 @@ namespace RB::Graphics
 
 		bool IsSameWindow(void* window_handle) const;
 
-		Native::Window::SwapChain* GetSwapChain() const { return m_SwapChain; }
+		D3D12::Window::SwapChain* GetSwapChain() const { return m_SwapChain; }
 
 		void OnEvent(Input::Events::Event& event);
 	private:
 		void OnResize(uint32_t width, uint32_t height);
 		void DestroyWindow();
 
-		Native::Window::NativeWindow*	m_NativeWindow;
-		Native::Window::SwapChain*		m_SwapChain;
+		D3D12::Window::NativeWindow*	m_NativeWindow;
+		D3D12::Window::SwapChain*		m_SwapChain;
 		bool							m_Minimized;
 		bool							m_IsValid;
 		bool							m_InFocus;

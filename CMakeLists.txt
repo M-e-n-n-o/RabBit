@@ -9,6 +9,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     link_libraries(
         Kernel32.lib
     )
+else()
+    message(FATAL_ERROR "This project only supports windows for now!")
 endif()
 
 # Set RabBit configuration definitions

@@ -1,14 +1,14 @@
 #include "RabBitCommon.h"
 #include "Window.h"
-#include "graphics/native/GraphicsDevice.h"
-#include "graphics/native/window/NativeWindow.h"
-#include "graphics/native/window/SwapChain.h"
-#include "graphics/native/DeviceQueue.h"
+#include "graphics/d3d12/GraphicsDevice.h"
+#include "graphics/d3d12/window/NativeWindow.h"
+#include "graphics/d3d12/window/SwapChain.h"
+#include "graphics/d3d12/DeviceQueue.h"
 #include "input/events/WindowEvent.h"
 
 using namespace RB::Input::Events;
-using namespace RB::Graphics::Native;
-using namespace RB::Graphics::Native::Window;
+using namespace RB::Graphics::D3D12;
+using namespace RB::Graphics::D3D12::Window;
 
 namespace RB::Graphics
 {

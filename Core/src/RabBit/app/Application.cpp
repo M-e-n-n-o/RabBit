@@ -2,12 +2,12 @@
 #include "Application.h"
 
 #include "graphics/Window.h"
-#include "graphics/native/window/SwapChain.h"
-#include "graphics/native/GraphicsDevice.h"
-#include "graphics/native/DeviceQueue.h"
-#include "graphics/native/resource/ResourceManager.h"
-#include "graphics/native/resource/ResourceStateManager.h"
-#include "graphics/native/pipeline/Pipeline.h"
+#include "graphics/d3d12/window/SwapChain.h"
+#include "graphics/d3d12/GraphicsDevice.h"
+#include "graphics/d3d12/DeviceQueue.h"
+#include "graphics/d3d12/resource/ResourceManager.h"
+#include "graphics/d3d12/resource/ResourceStateManager.h"
+#include "graphics/d3d12/pipeline/Pipeline.h"
 
 #include "input/events/WindowEvent.h"
 #include "input/events/KeyEvent.h"
@@ -16,8 +16,8 @@
 #include <d3dcompiler.h>
 
 using namespace RB::Graphics;
-using namespace RB::Graphics::Native;
-using namespace RB::Graphics::Native::Window;
+using namespace RB::Graphics::D3D12;
+using namespace RB::Graphics::D3D12::Window;
 using namespace RB::Input::Events;
 using namespace RB::Input;
 

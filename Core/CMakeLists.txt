@@ -38,46 +38,46 @@ target_include_directories(RabBit PUBLIC
     "external/WinPixEventRuntime/Include/WinPixEventRuntime"
 )
 
-# Link windows specific libraries
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
-    set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
+# Library paths
+set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
 
-    # Library paths
-    set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
+target_link_libraries(RabBit
+    # D3D12
+    d3d12.lib
+    dxgi.lib
+    dxguid.lib
+    d3dcompiler.lib
 
-    target_link_libraries(RabBit
-        # D3D12
-        d3d12.lib
-        dxgi.lib
-        dxguid.lib
-        d3dcompiler.lib
+    # D3D11 (D3D11On12)
+    d3d11.lib
+    dcomp.lib
 
-        # D3D11 (D3D11On12)
-        d3d11.lib
-        dcomp.lib
+    # WinPixEventRuntime
+    "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
+)
 
-        # WinPixEventRuntime
-        "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
+# Copy libraries next to the final executable (should be called app side)
+function(copyExternalLibraries)
+
+    # Create a lit of files to copy to the executable
+    set (DLLS_TO_COPY
+        "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
     )
 
-    # Copy libraries next to the final executable (should be called app side)
-    function(copyExternalLibraries)
+    foreach (file_i ${DLLS_TO_COPY})
+        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${file_i}"
+            $<TARGET_FILE_DIR:${APP_NAME}>)
+    endforeach(file_i)
+endfunction()
 
-        # Create a lit of files to copy to the executable
-        set (DLLS_TO_COPY
-            "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
-        )
+# Add shader compiler
+add_subdirectory(shaderCompiler/d3d12)
 
-        foreach (file_i ${DLLS_TO_COPY})
-            add_custom_command(TARGET ${APP_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${file_i}"
-                $<TARGET_FILE_DIR:${APP_NAME}>)
-        endforeach(file_i)
-    endfunction()
-endif()
-
+# Add tests
 if(RABBIT_BUILD_TESTS)
     enable_testing()
     add_subdirectory(external/GoogleTest)
