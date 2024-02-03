@@ -16,24 +16,24 @@
             "name": "Optimized",
             "generator": "Ninja",
             "configurationType": "RelWithDebInfo",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
             "buildRoot": "${projectDir}\\out\\build\\${name}",
             "installRoot": "${projectDir}\\out\\install\\${name}",
             "cmakeCommandArgs": "",
             "buildCommandArgs": "",
             "ctestCommandArgs": "",
-            "inheritEnvironments": [ "msvc_x64_x64" ],
             "variables": []
         },
         {
             "name": "Distribution",
             "generator": "Ninja",
             "configurationType": "MinSizeRel",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
             "buildRoot": "${projectDir}\\out\\build\\${name}",
             "installRoot": "${projectDir}\\out\\install\\${name}",
             "cmakeCommandArgs": "",
             "buildCommandArgs": "",
             "ctestCommandArgs": "",
-            "inheritEnvironments": [ "msvc_x64_x64" ],
             "variables": []
         }
     ],

@@ -37,6 +37,39 @@ namespace RB::Graphics
 		// Maybe also add a fence value that indicates that this texture should wait on that fence value before being used by another commandlist again
 	};
 
+	enum class RenderEntryType : uint32_t
+	{
+		3DObject		= (1 << 0);
+		2DObject		= (1 << 1);
+		Text			= (1 << 2);
+		Volumetric		= (1 << 3);
+	};
+
+	// This is an abstract class, so a TextRenderEntry for example has its own class
+	struct RenderEntry
+	{
+		RenderEntryType type;
+	};
+
+	enum class LightingType
+	{
+		Forward,
+		Deferred
+	};
+
+	enum class Object3DFlags : uint32_t
+	{
+		None				= (1 << 0);
+		SkipShadowCast		= (1 << 1);
+		SkipShadowReceive	= (1 << 2);
+	};
+
+	struct RenderEntryObject3D : public RenderEntry
+	{
+		LightingType lightingType;
+		bool hasTransparency;
+		uint32_t flags;
+	}
 
 	enum class RenderPassType
 	{
@@ -48,9 +81,11 @@ namespace RB::Graphics
 
 	class RenderPass;
 
+	// Some sort of builder class
 	struct RenderPassConfig
 	{
-		RenderPassSetting(bool onlyExecutedWhenDependedOn, bool isAsyncCompatible, D3D12_COMMAND_LIST_TYPE commandListType);
+		// Define which render entry types this pass may receive, if it should only run when another pass needs it, which command list type it needs, and if it is async compute compatible (assert for only compute command lists!)
+		RenderPassConfig(uint32_t renderEntryTypes, bool onlyExecutedWhenDependedOn, bool isAsyncCompatible, D3D12_COMMAND_LIST_TYPE commandListType);
 
 		void AddPassDependency(RenderPassType type);
 
@@ -62,6 +97,8 @@ namespace RB::Graphics
 		void ConfigureOutput(RenderTextureDesc* desc);
 
 		// Where will the settings of different renderpasses be, and how can passes access the settings of different passes?
+		// - Maybe a renderpass can set the number of settings it can have (0 being the lowest setting).
+		//   A context, or another pass, can then get/modify the setting by, for example, increasing to the next value.
 	};
 
 	class CommandList;
@@ -107,7 +144,7 @@ namespace RB::Graphics
 	{
 		RenderContext* contexts;
 
-		void RenderContexts()
+		void RenderContexts(RenderEntry* entries)
 		{
 			/*
 				First render the different render contexts.

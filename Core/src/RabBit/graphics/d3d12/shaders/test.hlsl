@@ -1,15 +1,19 @@
+#if !SHADER
+#vertex_shader   vs_main
+#pixel_shader    ps_main
+#endif
 
 struct vertexInfo
 {
     float2 position : POSITION;
     float3 color    : COLOR;
-}
+};
 
 struct v2p
 {
     float4 position : SV_POSITION;
     float3 color    : TEXCOORD0;
-}
+};
 
 v2p vs_main(vertexInfo input)
 {
