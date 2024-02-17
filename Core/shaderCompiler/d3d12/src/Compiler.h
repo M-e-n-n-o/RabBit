@@ -1,9 +1,5 @@
 #pragma once
-#include <atlbase.h>
-#include <dxcapi.h>
-#include <d3d12shader.h>
-#include <vector>
-#include <string>
+#include "Shader.h"
 
 class Compiler
 {
@@ -12,25 +8,15 @@ public:
 
 	void CompileFiles(std::vector<std::wstring>& files);
 
+	std::vector<Shader> GetCompiledShaders() const { return m_CompiledShaders; }
+
 private:
-	enum class ShaderStage : uint8_t
-	{
-		kUnkown = 0,
-		kVertex,
-		kPixel,
-		kCompute
-	};
-
-	struct ShaderEntry
-	{
-		std::wstring entryName;
-		ShaderStage	 stage;
-	};
-
-	void RetrieveShaderEntries(DxcBuffer& source, std::vector<ShaderEntry>& entries);
-	void GetShaderStages(const char* source, ShaderStage stage, const char* stage_name, std::vector<ShaderEntry>& entries);
+	void RetrieveShaderEntries(DxcBuffer& source, std::vector<Shader>& entries);
+	void GetShaderStages(const char* source, ShaderStage stage, const char* prefix, std::vector<Shader>& entries);
 
 	CComPtr<IDxcUtils>			m_Utils;
 	CComPtr<IDxcCompiler3>		m_Compiler;
 	CComPtr<IDxcIncludeHandler> m_IncludeHandler;
+
+	std::vector<Shader>			m_CompiledShaders;
 };

@@ -1,8 +1,3 @@
-#if !SHADER
-#vertex_shader   vs_main
-#pixel_shader    ps_main
-#endif
-
 struct vertexInfo
 {
     float2 position : POSITION;
@@ -15,15 +10,15 @@ struct v2p
     float3 color    : TEXCOORD0;
 };
 
-v2p vs_main(vertexInfo input)
+v2p VS_VertexColor(vertexInfo input)
 {
     v2p output;
     output.position = float4(input.position, 0, 1);
-    output.color = input.color;
+    output.color = input.color - 0.5f;
     return output;
 }
 
-float4 ps_main(v2p input) : SV_TARGET
+float4 PS_VertexColor(v2p input) : SV_TARGET
 {
     return float4(input.color, 1.0f);
 }

@@ -21,6 +21,7 @@ get_target_property(RB_SRC RabBit SOURCE_DIR)
 target_compile_definitions(ShaderCompilerD3D12 PRIVATE
     RB_SHADER_COMPILER
     RB_SHADER_SOURCE="${RB_SRC}/src/RabBit/graphics/d3d12/shaders"
+    RB_OUTPUT_FOLDER="$<TARGET_FILE_DIR:Sample>"
 )
 
 add_custom_command(TARGET ShaderCompilerD3D12 POST_BUILD

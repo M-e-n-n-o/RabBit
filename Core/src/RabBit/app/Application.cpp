@@ -14,6 +14,8 @@
 #include "input/KeyCodes.h"
 
 #include <d3dcompiler.h>
+#include <fstream>
+#include "graphics/d3d12/shaders/ShaderDefines.h"
 
 using namespace RB::Graphics;
 using namespace RB::Graphics::D3D12;
@@ -102,15 +104,50 @@ namespace RB
 #endif
 
 			GPtr<ID3DBlob> vs, ps, error;
-			HRESULT result = D3DCompileFromFile(L"test.hlsl", NULL, NULL, "vs_main", "vs_4_0", flags, 0, &vs, &error);
-			if (result != S_OK)
+			//HRESULT result = D3DCompileFromFile(L"test.hlsl", NULL, NULL, "vs_main", "vs_4_0", flags, 0, &vs, &error);
+			//if (result != S_OK)
+			//{
+			//	RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not compile vertex shader, error: %s", (char*)error->GetBufferPointer());
+			//}
+			//result = D3DCompileFromFile(L"test.hlsl", NULL, NULL, "ps_main", "ps_4_0", flags, 0, &ps, &error);
+			//if (result != S_OK)
+			//{
+			//	RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not compile vertex shader, error: %s", (char*)error->GetBufferPointer());
+			//}
+
+			void* vs_data;
+			size_t vs_length;
+
+			void* ps_data;
+			size_t ps_length;
+
+			std::ifstream stream(OBJ_FILE_LOCATION, std::ios::in | std::ios::binary);
+
+			if (stream.is_open())
 			{
-				RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not compile vertex shader, error: %s", (char*)error->GetBufferPointer());
+				uint64_t start = SHADER_LUT[VS_VertexColor].offsetInFile;
+				uint64_t end = SHADER_LUT[VS_VertexColor].offsetInFile + SHADER_LUT[VS_VertexColor].lengthInFile;
+
+				stream.seekg(start, std::ios::beg);
+				vs_length = end - start;
+				vs_data = new char[vs_length];
+				stream.read((char*) vs_data, vs_length);
+				//s[end - start] = 0;
+
+				start = SHADER_LUT[PS_VertexColor].offsetInFile;
+				end = SHADER_LUT[PS_VertexColor].offsetInFile + SHADER_LUT[PS_VertexColor].lengthInFile;
+
+				stream.seekg(start, std::ios::beg);
+				ps_length = end - start;
+				ps_data = new char[ps_length];
+				stream.read((char*) ps_data, ps_length);
+				//s[end - start] = 0;
+
+				stream.close();
 			}
-			result = D3DCompileFromFile(L"test.hlsl", NULL, NULL, "ps_main", "ps_4_0", flags, 0, &ps, &error);
-			if (result != S_OK)
+			else
 			{
-				RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not compile vertex shader, error: %s", (char*)error->GetBufferPointer());
+				RB_ASSERT_ALWAYS(LOGTAG_MAIN, "Could not open file");
 			}
 
 			D3D12_ROOT_SIGNATURE_DESC signature_desc = {};
@@ -162,8 +199,8 @@ namespace RB
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 			pso_desc.pRootSignature			= _RootSignature.Get();
-			pso_desc.VS						= { vs->GetBufferPointer(), vs->GetBufferSize() };
-			pso_desc.PS						= { ps->GetBufferPointer(), ps->GetBufferSize() };
+			pso_desc.VS						= { vs_data, vs_length }; //{ vs->GetBufferPointer(), vs->GetBufferSize() };
+			pso_desc.PS						= { ps_data, ps_length }; //{ ps->GetBufferPointer(), ps->GetBufferSize() };
 			//pso_desc.StreamOutput			= ;
 			pso_desc.BlendState				= blend_desc;
 			pso_desc.SampleMask				= UINT_MAX;

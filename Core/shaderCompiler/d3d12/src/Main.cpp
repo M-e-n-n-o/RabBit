@@ -7,6 +7,7 @@
 #include <d3d12shader.h>
 
 #include "Compiler.h"
+#include "ShaderWriter.h"
 #include "Utils.h"
 
 void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>&files);
@@ -36,6 +37,9 @@ int main()
 
 	Compiler compiler;
 	compiler.CompileFiles(files);
+
+	ShaderWriter writer;
+	writer.WriteOutShaders(ConvertAnsiToWide(RB_SHADER_SOURCE), ConvertAnsiToWide(RB_OUTPUT_FOLDER), compiler.GetCompiledShaders());
 
 	LOG(L"");
 	LOG(L"-------------------------------------------------------------------------");

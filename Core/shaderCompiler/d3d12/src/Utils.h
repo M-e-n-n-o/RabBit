@@ -17,3 +17,4 @@
 		}
 
 std::wstring ConvertAnsiToWide(const std::string & str);
+void WcharToChar(const wchar_t* in_char, char* out_char);

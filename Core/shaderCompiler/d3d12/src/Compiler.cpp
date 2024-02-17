@@ -35,7 +35,7 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 		source.Size		= source_blob->GetBufferSize();
 		source.Encoding = DXC_CP_ACP;
 
-		std::vector<ShaderEntry> entries;
+		std::vector<Shader> entries;
 		RetrieveShaderEntries(source, entries);
 
 		if (entries.empty())
@@ -43,7 +43,7 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 			continue;
 		}
 
-		for (const ShaderEntry& entry : entries)
+		for (Shader& entry : entries)
 		{
 			LOG(L"Compiling: " << entry.entryName.c_str());
 
@@ -99,76 +99,54 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 			results->GetStatus(&status);
 			EXIT_ON_FAIL_HR(status, L"Compilation failed");
 
-
-
-
-
-			// Write out .bin file
-			CComPtr<IDxcBlob> shader = nullptr;
-			CComPtr<IDxcBlobUtf16> shader_name = nullptr;
-			results->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shader), &shader_name);
-			if (shader != nullptr)
+			//CComPtr<IDxcBlob> shader_blob;
+			results->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&entry.shaderBlob), nullptr);
+			if (entry.shaderBlob != nullptr)
 			{
-				std::wstring output_file;
-				output_file.append(ConvertAnsiToWide(RB_SHADER_SOURCE));
-				output_file.append(L"/generated/");
-				output_file.append(shader_name->GetStringPointer());
+				//status = m_Utils->GetBlobAsUtf16(shader_blob, &entry.shaderBlob);
+				//EXIT_ON_FAIL_HR(status, L"Could not convert shader blob to UTF16");
 
-				FILE* fp = NULL;
-				_wfopen_s(&fp, output_file.c_str(), L"wb");
-				fwrite(shader->GetBufferPointer(), shader->GetBufferSize(), 1, fp);
-				fclose(fp);
+				m_CompiledShaders.push_back(entry);
 			}
-
-			/*
-				TODO:
-				- Write all blobs of the same shader stage to a single .h file (so VertexShaderBlobs.h, PixelShaderBlobs.h, etc.).
-				  In this file a variable containing the shader blob is made for each shader itself. This .h file can the shader reader in the engine then simply include.
-				  A second file for each shader stage is also made that contains a typename shader index for each shader (so VertexShader.h, PixelShader.h). The engine can then include this file to point which shader to use.
-				- Include handlnig to include other hlsl and .h files
-				- Shader reflection to automatically create PSO's
-
-				https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
-			*/
 		}
 
 	}
 }
 
-void Compiler::RetrieveShaderEntries(DxcBuffer& source, std::vector<ShaderEntry>& entries)
+void Compiler::RetrieveShaderEntries(DxcBuffer& source, std::vector<Shader>& entries)
 {
-	GetShaderStages((char*)source.Ptr, ShaderStage::kVertex,  "#vertex_shader",  entries);
-	GetShaderStages((char*)source.Ptr, ShaderStage::kPixel,   "#pixel_shader",   entries);
-	GetShaderStages((char*)source.Ptr, ShaderStage::kCompute, "#compute_shader", entries);
+	GetShaderStages((char*)source.Ptr, ShaderStage::kVertex,  "VS_",  entries);
+	GetShaderStages((char*)source.Ptr, ShaderStage::kPixel,   "PS_",   entries);
+	GetShaderStages((char*)source.Ptr, ShaderStage::kCompute, "CS_", entries);
 }
 
-void Compiler::GetShaderStages(const char* source, ShaderStage stage, const char* stage_name, std::vector<ShaderEntry>& entries)
+void Compiler::GetShaderStages(const char* source, ShaderStage stage, const char* prefix, std::vector<Shader>& entries)
 {
 	std::size_t pos;
 	std::string string_source(source);
 	
 	while (true)
 	{
-		pos = string_source.find(stage_name);
+		pos = string_source.find(prefix);
 		if (pos == std::string::npos)
 		{
 			break;
 		}
 
-		// Get past the string we were searching for
-		string_source = string_source.substr(pos + strlen(stage_name), string_source.length());
-
-		// Remove leading spaces
-		string_source = std::regex_replace(string_source, std::regex("^ +"), "");
+		// Get to the point where we found the prefix
+		string_source = string_source.substr(pos, string_source.length());
 
 		// Find the end of the name
-		pos = string_source.find('\n');
+		pos = string_source.find('(');
 		EXIT_ON_FAIL(pos != std::string::npos, "Could not find the end of the name");
 
-		ShaderEntry entry;
+		Shader entry;
 		entry.stage		= stage;
-		entry.entryName = ConvertAnsiToWide(string_source.substr(0, pos - 1));
+		entry.entryName = ConvertAnsiToWide(string_source.substr(0, pos));
 
 		entries.push_back(entry);
+
+		// Get past the shader we just found
+		string_source = string_source.substr(pos, string_source.length());
 	}
 }
