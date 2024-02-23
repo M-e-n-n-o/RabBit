@@ -6,7 +6,7 @@
 #include <d3d12.h>
 
 #define USE_PIX
-#include "pix3.h"
+#include <pix3.h>
 #endif
 
 namespace RB::Utils::Debug

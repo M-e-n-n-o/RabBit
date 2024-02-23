@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
+#include "graphics/d3d12/shaders/ShaderSystem.h"
 
 #include <d3d12.h>
 
@@ -23,36 +24,4 @@ namespace RB::Graphics::D3D12
 	};
 
 	extern PipelineManager* g_PipelineManager;
-
-	// ------------------------------------------------------------------
-	//							Pipeline Helpers
-	// ------------------------------------------------------------------
-
-	//class GraphicsPipelineBuilder
-	//{
-	//	GraphicsPipelineBuilder();
-
-	//	void SetVertexShader();
-	//	void SetPixelShader();
-
-	//	void SetInputLayout();
-	//	void SetInputLayout(/* vao */);
-
-	//	// Check if the minimum parameters are set!
-	//	D3D12_GRAPHICS_PIPELINE_STATE_DESC Build();
-
-	//private:
-	//	D3D12_GRAPHICS_PIPELINE_STATE_DESC m_Desc;
-	//};
-
-	//class ComputePipelineBuilder
-	//{
-	//	ComputePipelineBuilder();
-
-	//	// Check if the minimum parameters are set!
-	//	D3D12_COMPUTE_PIPELINE_STATE_DESC Build();
-
-	//private:
-	//	D3D12_COMPUTE_PIPELINE_STATE_DESC m_Desc;
-	//};
 }

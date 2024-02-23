@@ -99,15 +99,13 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 			results->GetStatus(&status);
 			EXIT_ON_FAIL_HR(status, L"Compilation failed");
 
-			//CComPtr<IDxcBlob> shader_blob;
 			results->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&entry.shaderBlob), nullptr);
-			if (entry.shaderBlob != nullptr)
-			{
-				//status = m_Utils->GetBlobAsUtf16(shader_blob, &entry.shaderBlob);
-				//EXIT_ON_FAIL_HR(status, L"Could not convert shader blob to UTF16");
+			EXIT_ON_FAIL(entry.shaderBlob != nullptr, "Could not retrieve shader binary");
 
-				m_CompiledShaders.push_back(entry);
-			}
+			results->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&entry.reflection), nullptr);
+			EXIT_ON_FAIL(entry.reflection != nullptr, "Could not retrieve shader reflection");
+
+			m_CompiledShaders.push_back(entry);
 		}
 
 	}

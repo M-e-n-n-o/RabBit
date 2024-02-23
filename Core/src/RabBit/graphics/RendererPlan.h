@@ -79,13 +79,44 @@ namespace RB::Graphics
 		Reflection
 	};
 
+	enum class RenderInterfaceType
+	{
+		Raster,
+		Compute,
+		Raytracing
+	};
+
+	class RenderInterface
+	{
+		// Standard render things are already in the base render interface, like copy
+
+		void CopyResource();
+
+		void SetShaderInput(uint32_t slot); // SRV
+		void SetShaderOutput(uint32_t slot); // UAV
+	};
+
+	class RasterInterface : RenderInterface
+	{
+		void SetVertexData();
+		void SetStencilValue();
+		void SetRenderTexture();
+		void Draw();
+	};
+
+	class ComputeInterface : RenderInterface
+	{
+		void Dispatch();
+		// etc.
+	};
+
 	class RenderPass;
 
 	// Some sort of builder class
 	struct RenderPassConfig
 	{
 		// Define which render entry types this pass may receive, if it should only run when another pass needs it, which command list type it needs, and if it is async compute compatible (assert for only compute command lists!)
-		RenderPassConfig(uint32_t renderEntryTypes, bool onlyExecutedWhenDependedOn, bool isAsyncCompatible, D3D12_COMMAND_LIST_TYPE commandListType);
+		RenderPassConfig(uint32_t renderEntryTypes, bool onlyExecutedWhenDependedOn, bool isAsyncCompatible, RenderInterfaceType interfaceType);
 
 		void AddPassDependency(RenderPassType type);
 
@@ -108,8 +139,7 @@ namespace RB::Graphics
 	{
 		static RenderPassConfig GetConfiguration();
 
-		// The return value is the output of this pass
-		RenderTexture* Render(CommandList* commandList, RenderTexture** workingTextures, RenderPass** dependencies)
+		void Render(RenderInterface* renderInterface, RenderTexture** outputTextures, RenderTexture** workingTextures, RenderPass** dependencies)
 	};
 
 	class RenderRect

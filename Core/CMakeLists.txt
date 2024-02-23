@@ -36,19 +36,22 @@ target_include_directories(RabBit PUBLIC
 
     # WinPixEventRuntime
     "external/WinPixEventRuntime/Include/WinPixEventRuntime"
+
+    # DXC
+    "external/DXC/inc"
 )
 
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
 # Library paths
 set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
+set(ENV{DXC_PATH} "${EXTERNAL_PATH}/DXC")
 
 target_link_libraries(RabBit
     # D3D12
     d3d12.lib
     dxgi.lib
     dxguid.lib
-    d3dcompiler.lib
 
     # D3D11 (D3D11On12)
     d3d11.lib
@@ -56,14 +59,18 @@ target_link_libraries(RabBit
 
     # WinPixEventRuntime
     "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
+
+    # DXC 
+    "$ENV{DXC_PATH}/lib/x64/dxcompiler.lib"
 )
 
 # Copy libraries next to the final executable (should be called app side)
 function(copyExternalLibraries)
 
     # Create a lit of files to copy to the executable
-    set (DLLS_TO_COPY
+    list (APPEND DLLS_TO_COPY
         "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
+        "$ENV{DXC_PATH}/bin/x64/dxcompiler.dll"
     )
 
     foreach (file_i ${DLLS_TO_COPY})

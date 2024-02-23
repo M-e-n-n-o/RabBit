@@ -18,5 +18,5 @@ struct Shader
 	std::wstring			entryName;
 	ShaderStage				stage;
 	CComPtr<IDxcBlob>		shaderBlob;
-	//CComPtr<IDxcBlobUtf16>	shaderBlob;
+	CComPtr<IDxcBlob>		reflection;
 };

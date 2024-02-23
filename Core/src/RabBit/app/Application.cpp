@@ -8,6 +8,7 @@
 #include "graphics/d3d12/resource/ResourceManager.h"
 #include "graphics/d3d12/resource/ResourceStateManager.h"
 #include "graphics/d3d12/pipeline/Pipeline.h"
+#include "graphics/d3d12/shaders/ShaderSystem.h"
 
 #include "input/events/WindowEvent.h"
 #include "input/events/KeyEvent.h"
@@ -75,9 +76,10 @@ namespace RB
 		m_Windows.push_back(new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_None));
 		m_Windows.push_back(new Graphics::Window("Test", 1280, 720, kWindowStyle_None));
 
-		g_ResourceStateManager = new ResourceStateManager();
-		g_ResourceManager = new ResourceManager(2);
-		g_PipelineManager = new PipelineManager();
+		g_ResourceStateManager	= new ResourceStateManager();
+		g_ResourceManager		= new ResourceManager(2);
+		g_ShaderSystem			= new ShaderSystem();
+		g_PipelineManager		= new PipelineManager();
 
 		m_Initialized = true;
 
@@ -103,52 +105,8 @@ namespace RB
 			flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION; // | D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #endif
 
-			GPtr<ID3DBlob> vs, ps, error;
-			//HRESULT result = D3DCompileFromFile(L"test.hlsl", NULL, NULL, "vs_main", "vs_4_0", flags, 0, &vs, &error);
-			//if (result != S_OK)
-			//{
-			//	RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not compile vertex shader, error: %s", (char*)error->GetBufferPointer());
-			//}
-			//result = D3DCompileFromFile(L"test.hlsl", NULL, NULL, "ps_main", "ps_4_0", flags, 0, &ps, &error);
-			//if (result != S_OK)
-			//{
-			//	RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not compile vertex shader, error: %s", (char*)error->GetBufferPointer());
-			//}
-
-			void* vs_data;
-			size_t vs_length;
-
-			void* ps_data;
-			size_t ps_length;
-
-			std::ifstream stream(OBJ_FILE_LOCATION, std::ios::in | std::ios::binary);
-
-			if (stream.is_open())
-			{
-				uint64_t start = SHADER_LUT[VS_VertexColor].offsetInFile;
-				uint64_t end = SHADER_LUT[VS_VertexColor].offsetInFile + SHADER_LUT[VS_VertexColor].lengthInFile;
-
-				stream.seekg(start, std::ios::beg);
-				vs_length = end - start;
-				vs_data = new char[vs_length];
-				stream.read((char*) vs_data, vs_length);
-				//s[end - start] = 0;
-
-				start = SHADER_LUT[PS_VertexColor].offsetInFile;
-				end = SHADER_LUT[PS_VertexColor].offsetInFile + SHADER_LUT[PS_VertexColor].lengthInFile;
-
-				stream.seekg(start, std::ios::beg);
-				ps_length = end - start;
-				ps_data = new char[ps_length];
-				stream.read((char*) ps_data, ps_length);
-				//s[end - start] = 0;
-
-				stream.close();
-			}
-			else
-			{
-				RB_ASSERT_ALWAYS(LOGTAG_MAIN, "Could not open file");
-			}
+			ShaderBlob* vs_blob = g_ShaderSystem->GetShaderBlob(VS_VertexColor);
+			ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(PS_VertexColor);
 
 			D3D12_ROOT_SIGNATURE_DESC signature_desc = {};
 			signature_desc.NumParameters		= 0;
@@ -199,8 +157,8 @@ namespace RB
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 			pso_desc.pRootSignature			= _RootSignature.Get();
-			pso_desc.VS						= { vs_data, vs_length }; //{ vs->GetBufferPointer(), vs->GetBufferSize() };
-			pso_desc.PS						= { ps_data, ps_length }; //{ ps->GetBufferPointer(), ps->GetBufferSize() };
+			pso_desc.VS						= { vs_blob->m_ShaderBlob, vs_blob->m_ShaderBlobSize }; //{ vs->GetBufferPointer(), vs->GetBufferSize() };
+			pso_desc.PS						= { ps_blob->m_ShaderBlob, ps_blob->m_ShaderBlobSize }; //{ ps->GetBufferPointer(), ps->GetBufferSize() };
 			//pso_desc.StreamOutput			= ;
 			pso_desc.BlendState				= blend_desc;
 			pso_desc.SampleMask				= UINT_MAX;
@@ -307,6 +265,7 @@ namespace RB
 		_GraphicsQueue->WaitUntilEmpty();
 
 		delete g_PipelineManager;
+		delete g_ShaderSystem;
 		delete g_ResourceStateManager;
 		delete g_ResourceManager;
 
