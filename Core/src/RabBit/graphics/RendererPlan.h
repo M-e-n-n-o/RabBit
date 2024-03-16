@@ -79,44 +79,33 @@ namespace RB::Graphics
 		Reflection
 	};
 
-	enum class RenderInterfaceType
-	{
-		Raster,
-		Compute,
-		Raytracing
-	};
-
 	class RenderInterface
 	{
-		// Standard render things are already in the base render interface, like copy
-
 		void CopyResource();
 
 		void SetShaderInput(uint32_t slot); // SRV
 		void SetShaderOutput(uint32_t slot); // UAV
-	};
 
-	class RasterInterface : RenderInterface
-	{
 		void SetVertexData();
 		void SetStencilValue();
 		void SetRenderTexture();
 		void Draw();
-	};
 
-	class ComputeInterface : RenderInterface
-	{
 		void Dispatch();
+
 		// etc.
 	};
+
+	class Mat4;
+	class Light;
 
 	class RenderPass;
 
 	// Some sort of builder class
 	struct RenderPassConfig
 	{
-		// Define which render entry types this pass may receive, if it should only run when another pass needs it, which command list type it needs, and if it is async compute compatible (assert for only compute command lists!)
-		RenderPassConfig(uint32_t renderEntryTypes, bool onlyExecutedWhenDependedOn, bool isAsyncCompatible, RenderInterfaceType interfaceType);
+		// Define if it should only run when another pass needs it, and if it is async compute compatible
+		RenderPassConfig(char* name, bool onlyExecutedWhenDependedOn, bool isAsyncCompatible);
 
 		void AddPassDependency(RenderPassType type);
 
@@ -126,21 +115,45 @@ namespace RB::Graphics
 		// Maybe it should also be possible to add multiple rendertexture outputs?
 		// Or maybe not only possible to output rendertextures, but also buffers?
 		void ConfigureOutput(RenderTextureDesc* desc);
-
-		// Where will the settings of different renderpasses be, and how can passes access the settings of different passes?
-		// - Maybe a renderpass can set the number of settings it can have (0 being the lowest setting).
-		//   A context, or another pass, can then get/modify the setting by, for example, increasing to the next value.
 	};
 
 	class CommandList;
 	class RenderTexture;
 
+	// Contains most of the time RenderEntries, but maybe also cameraData and/or lights, or any info that the renderpass needs of the current frame really
+	typedef void RenderPassContext;
+
+	class Scene;
+
 	class RenderPass
 	{
 		static RenderPassConfig GetConfiguration();
 
-		void Render(RenderInterface* renderInterface, RenderTexture** outputTextures, RenderTexture** workingTextures, RenderPass** dependencies)
+		// Executed on the main thread after the game logic update
+		// This method just gives the needed context of the current frame to the renderpass (as the renderpass will run next frame as it is 1 frame behind)
+		// Maybe does some preprocessing before the actual Render() call to, for example,
+		// determine which RenderEntries this pass needs, so the RenderThread does not need to do this. 
+		// But it can maybe also determine if the pass needs to run at all even (if AO for example is disabled and this is the AO pass)
+		RenderPassContext* ContextSubmit(Scene* scene);
+
+		void Render(RenderPassContext* renderContext, RenderInterface* renderInterface, RenderTexture** outputTextures, RenderTexture** workingTextures, RenderPass** dependencies)
 	};
+
+	// Determines in which order which RenderPass is executed (the names are linked to the names given to RenderPassConfig::name)
+	char* _RenderOrder
+	{
+		// First command list
+		"GBuffer",
+		"AO",
+		"Reflection",
+		"Shadow",
+		"ApplyLighting",
+
+		// Second command list
+		"Upscale",
+		"PostProcessing (ToneMap)",
+		"UI"
+	}
 
 	class RenderRect
 	{
@@ -177,7 +190,7 @@ namespace RB::Graphics
 		void RenderContexts(RenderEntry* entries)
 		{
 			/*
-				First render the different render contexts.
+				First render the different render contexts (in order of the _RenderOrder).
 				After each context then something with the color and ui outputs has to be done, but what?
 					- Merge the color and UI together and use as input for next render context (probably worst solution)
 					- Copy the UI with the UI of the next render context
@@ -188,5 +201,27 @@ namespace RB::Graphics
 				add a finalize path which "upscales/downscales", with a sampler in the pixel shader, to the actual swapchain backbuffer.
 			*/
 		}
+
+		// Where will the settings of different renderpasses be, and how can passes access the settings of different passes?
+		// - Maybe a renderpass can set the number of settings it can have (0 being the lowest setting).
+		//   A context, or another pass, can then get/modify the setting by, for example, increasing to the next value
+		//	 (but how would you the  for example choose between XeGTAO or HBAO+, this is personal preference. Maybe a
+		//   method index and quality index?).
+		// - Changing rendersettings can also mean adding or removing renderpasses.
 	};
+
+	/*
+		Very helpful presentation about using different commandlists and queues (also how many executecommandlists per frame)
+		https://gpuopen.com/wp-content/uploads/2016/03/Practical_DX12_Programming_Model_and_Hardware_Capabilities.pdf
+
+		Our plan:
+		- We have one commandlist which will get filled and simply execute that in 1 executecommandlists call
+
+		If we would in the future then see that there is down-time on the GPU between frames, look into the following
+
+		Future improvements:
+		- Maybe give each renderpass its own commandlist it can fill (this also means each renderpass on its own CPU thread)
+		- Then finally call executecommandlists on 1 thread (this thread can maybe bundle a few commandlists together into 1
+		  executecommandlists call so it can do work at the same time.
+	*/
 }

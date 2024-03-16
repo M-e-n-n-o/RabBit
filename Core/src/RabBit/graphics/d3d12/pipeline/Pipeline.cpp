@@ -55,28 +55,28 @@ namespace RB::Graphics::D3D12
 	}
 
 	// TODO Put this in a render interface, as we can not create an entire pipeline from just the shader blobs
-	void PipelineManager::CreateGraphicsPipelineFromShaderBlobs(ShaderBlob* vertex_blob, ShaderBlob* pixel_blob)
-	{
-		ID3D12ShaderReflection* vref = vertex_blob->m_ReflectionData.Get();
-		ID3D12ShaderReflection* pref = pixel_blob->m_ReflectionData.Get();
+	//void PipelineManager::CreateGraphicsPipelineFromShaderBlobs(ShaderBlob* vertex_blob, ShaderBlob* pixel_blob)
+	//{
+	//	ID3D12ShaderReflection* vref = vertex_blob->m_ReflectionData.Get();
+	//	ID3D12ShaderReflection* pref = pixel_blob->m_ReflectionData.Get();
 
-		D3D12_SHADER_DESC vdesc;
-		vref->GetDesc(&vdesc);
+	//	D3D12_SHADER_DESC vdesc;
+	//	vref->GetDesc(&vdesc);
 
-		D3D12_SHADER_DESC pdesc;
-		pref->GetDesc(&pdesc);
+	//	D3D12_SHADER_DESC pdesc;
+	//	pref->GetDesc(&pdesc);
 
-		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, (D3D12_SHADER_VERSION_TYPE)((vdesc.Version & 0xFFFF0000) >> 16) == D3D12_SHADER_VERSION_TYPE::D3D12_SHVER_VERTEX_SHADER,
-			"Can not create pipeline from shader blob as the inputted vertex shader is not a vertex shader");
-		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, (D3D12_SHADER_VERSION_TYPE)((pdesc.Version & 0xFFFF0000) >> 16) == D3D12_SHADER_VERSION_TYPE::D3D12_SHVER_PIXEL_SHADER,
-			"Can not create pipeline from shader blob as the inputted pixel shader is not a pixel shader");
+	//	RB_ASSERT_FATAL(LOGTAG_GRAPHICS, (D3D12_SHADER_VERSION_TYPE)((vdesc.Version & 0xFFFF0000) >> 16) == D3D12_SHADER_VERSION_TYPE::D3D12_SHVER_VERTEX_SHADER,
+	//		"Can not create pipeline from shader blob as the inputted vertex shader is not a vertex shader");
+	//	RB_ASSERT_FATAL(LOGTAG_GRAPHICS, (D3D12_SHADER_VERSION_TYPE)((pdesc.Version & 0xFFFF0000) >> 16) == D3D12_SHADER_VERSION_TYPE::D3D12_SHVER_PIXEL_SHADER,
+	//		"Can not create pipeline from shader blob as the inputted pixel shader is not a pixel shader");
 
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC pso = {};
-		pso.NodeMask			= 0;
-		pso.VS					= { vertex_blob->m_ShaderBlob, vertex_blob->m_ShaderBlobSize };
-		pso.PS					= { pixel_blob->m_ShaderBlob, pixel_blob->m_ShaderBlobSize };
-		pso.BlendState			= 
-	}
+	//	D3D12_GRAPHICS_PIPELINE_STATE_DESC pso = {};
+	//	pso.NodeMask			= 0;
+	//	pso.VS					= { vertex_blob->m_ShaderBlob, vertex_blob->m_ShaderBlobSize };
+	//	pso.PS					= { pixel_blob->m_ShaderBlob, pixel_blob->m_ShaderBlobSize };
+	//	pso.BlendState			= 
+	//}
 
 	uint64_t PipelineManager::GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc)
 	{

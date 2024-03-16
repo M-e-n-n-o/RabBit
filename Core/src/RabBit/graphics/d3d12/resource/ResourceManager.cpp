@@ -237,7 +237,7 @@ namespace RB::Graphics::D3D12
 
 	ResourceManager* g_ResourceManager = nullptr;
 
-	ResourceManager::ResourceManager(uint32_t total_back_buffers)
+	ResourceManager::ResourceManager()
 	{
 		//m_ResourceUploaders = new ResourceUploader*[total_back_buffers];
 		//for (int i = 0; i < total_back_buffers; ++i)

@@ -27,6 +27,7 @@ namespace RB::Graphics
 		args.extendedStyle	= NULL;
 		args.style			= WS_OVERLAPPEDWINDOW;
 		args.borderless		= false;
+		//args.windowName		= (wchar_t*) ALLOC_STACK(sizeof(wchar_t) * strlen(window_name) + 1);
 		args.windowName		= new wchar_t[strlen(window_name) + 1];
 		CharToWchar(window_name, args.windowName);
 

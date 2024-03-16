@@ -9,6 +9,8 @@
 #include "graphics/d3d12/resource/ResourceStateManager.h"
 #include "graphics/d3d12/pipeline/Pipeline.h"
 #include "graphics/d3d12/shaders/ShaderSystem.h"
+#include "graphics/RenderInterface.h"
+#include "graphics/Renderer.h"
 
 #include "input/events/WindowEvent.h"
 #include "input/events/KeyEvent.h"
@@ -26,6 +28,8 @@ using namespace RB::Input;
 
 namespace RB
 {
+	Renderer* _Renderer = nullptr;
+
 	DeviceQueue* _GraphicsQueue = nullptr;
 	uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
@@ -40,7 +44,6 @@ namespace RB
 	GPtr<ID3D12PipelineState> _Pso;
 	GPtr<ID3D12RootSignature> _RootSignature;
 	GPtr<ID3D12Resource> _VertexRes;
-	GPtr<ID3D12Resource> _UploadResource;
 	D3D12_VERTEX_BUFFER_VIEW _VaoView;
 
 	float _Value = 0;
@@ -69,17 +72,15 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
 		RB_LOG(LOGTAG_MAIN, "");
 
-		g_GraphicsDevice = new GraphicsDevice();
+		Renderer::SetAPI(RenderAPI::D3D12);
+		_Renderer = Renderer::Create();
 
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
-		m_Windows.push_back(new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_None));
-		m_Windows.push_back(new Graphics::Window("Test", 1280, 720, kWindowStyle_None));
+		m_Windows.push_back(new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
+		m_Windows.push_back(new Graphics::Window("Test", 1280, 720, kWindowStyle_Default));
 
-		g_ResourceStateManager	= new ResourceStateManager();
-		g_ResourceManager		= new ResourceManager(2);
-		g_ShaderSystem			= new ShaderSystem();
-		g_PipelineManager		= new PipelineManager();
+		RenderInterface* i = RenderInterface::Create();
 
 		m_Initialized = true;
 
@@ -181,17 +182,17 @@ namespace RB
 		// VAO
 		{
 			_VertexRes = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
-			_UploadResource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
+			GPtr<ID3D12Resource> upload_resource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 			float* upload_memory;
-			_UploadResource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
+			upload_resource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
 			memcpy(upload_memory, _VertexData, sizeof(_VertexData));
-			_UploadResource->Unmap(0, nullptr);
+			upload_resource->Unmap(0, nullptr);
 
 			CommandList* command_list = _GraphicsQueue->GetCommandList();
 			ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
 
-			d3d_list->CopyResource(_VertexRes.Get(), _UploadResource.Get());
+			d3d_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
 
 			uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
 			_GraphicsQueue->WaitForFenceValue(fence_value);
@@ -206,13 +207,14 @@ namespace RB
 			_Value += 0.01f;
 			_Value = fmodf(_Value, 1);
 
-			// Update application
-			OnUpdate();
 
 			// Render
 			StartRenderFrame();
 			Render();
 			FinishRenderFrame();
+
+			// Start rendering previous frame
+			_Renderer->StartRenderFrame();
 
 			// Poll inputs and update windows
 			for (Graphics::Window* window : m_Windows)
@@ -226,6 +228,12 @@ namespace RB
 					m_CheckWindows = true;
 				}
 			}
+
+			// Do game logic of the current frame
+			OnUpdate();
+
+			// Sync with the rendering of previous frame
+			_Renderer->FinishRenderFrame();
 
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)
@@ -249,6 +257,7 @@ namespace RB
 				m_CheckWindows = false;
 			}
 
+
 			m_FrameIndex++;
 		}
 	}
@@ -264,18 +273,13 @@ namespace RB
 
 		_GraphicsQueue->WaitUntilEmpty();
 
-		delete g_PipelineManager;
-		delete g_ShaderSystem;
-		delete g_ResourceStateManager;
-		delete g_ResourceManager;
-
 		for (int i = 0; i < m_Windows.size(); i++)
 		{
 			delete m_Windows[i];
 		}
 		m_Windows.clear();
 
-		delete g_GraphicsDevice;	
+		delete _Renderer;	
 
 		RB_LOG(LOGTAG_MAIN, "");
 		RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");

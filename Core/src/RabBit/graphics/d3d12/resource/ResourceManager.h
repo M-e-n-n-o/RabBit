@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "Resource.h"
+#include "RenderResourceD3D12.h"
 
 #include <d3d12.h>
 
@@ -38,17 +38,19 @@ namespace RB::Graphics::D3D12
 	class ResourceManager
 	{
 	public:
-		ResourceManager(uint32_t total_back_buffers);	
+		ResourceManager(/*uint32_t total_back_buffers*/);
 		~ResourceManager();
 
 		void StartFrame(uint32_t back_buffer_index);
 		void EndFrame();
 
-		UploadAllocation UploadData(void* data, uint32_t size, uint32_t alignment);
+		void ScheduleUpload(GPtr<ID3D12Resource> resource, void* data, uint32_t size);
 
-		void MarkAsUsed(Resource* resource);
+		//UploadAllocation UploadData(void* data, uint32_t size, uint32_t alignment);
 
-		void MarkForDelete(Resource* resource);
+		//void MarkAsUsed(Resource* resource);
+
+		//void MarkForDelete(Resource* resource);
 
 		void CreateTexture2D();
 
@@ -59,8 +61,8 @@ namespace RB::Graphics::D3D12
 			D3D12_HEAP_FLAGS heap_flags = D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATES start_state = D3D12_RESOURCE_STATE_COMMON, const D3D12_CLEAR_VALUE* clear_value = nullptr);
 
 	private:
-		ResourceUploader**	m_ResourceUploaders;
-		ResourceUploader*	m_ActiveResourceUploader;
+		ResourceUploader**			m_ResourceUploaders;
+		ResourceUploader*			m_ActiveResourceUploader;
 	};
 
 	extern ResourceManager* g_ResourceManager;

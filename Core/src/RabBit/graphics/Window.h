@@ -12,7 +12,7 @@ namespace RB::Graphics
 
 	enum WindowStyle : uint32_t
 	{
-		kWindowStyle_None				= (0),
+		kWindowStyle_Default			= (0),
 		kWindowStyle_Borderless			= (1 << 0),
 		kWindowStyle_SemiTransparent	= (1 << 1)
 	};
