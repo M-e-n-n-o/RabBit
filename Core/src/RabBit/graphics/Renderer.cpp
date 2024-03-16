@@ -10,8 +10,7 @@ namespace RB::Graphics
 	DWORD WINAPI RenderLoop(PVOID param);
 
 	Renderer::Renderer()
-		: m_RenderInterface(nullptr)
-		, m_RenderState(RenderThreadState::Idle)
+		: m_RenderState(RenderThreadState::Idle)
 	{
 		InitializeConditionVariable(&m_KickCV);
 		InitializeCriticalSection(&m_KickCS);
@@ -35,18 +34,6 @@ namespace RB::Graphics
 		CloseHandle(m_RenderThread);
 		DeleteCriticalSection(&m_KickCS);
 		DeleteCriticalSection(&m_SyncCS);
-
-		SAFE_DELETE(m_RenderInterface);
-	}
-	
-	RenderInterface* Renderer::GetRenderInterface()
-	{
-		if (m_RenderInterface == nullptr)
-		{
-			m_RenderInterface = RenderInterface::Create();
-		}
-
-		return m_RenderInterface;
 	}
 
 	void Renderer::StartRenderFrame()
@@ -129,6 +116,18 @@ namespace RB::Graphics
 				we place a GPU barrier on the current' frame commandlist 7, that contains upscaling, post and UI rendering,
 				but we also place a CPU barrier on frame i-2' commandlist 2 that waits until the current backbuffer is available again
 				(commandlist 2 contains the copy to backbuffer command list of the backbuffer that we want to use here again, because we have 2 backbuffers).
+
+
+				BUT HOW TO DO SYNC POINTS WITH MULTIPLE VIEW CONTEXTS??
+					- Do all offscreen contexts first (only game, upscaling, post and UI rendering, so no backbuffer)
+					- Then do the main context
+
+				The CPU/GPU syncs need to be renderAPI independent, so we are probably going to do these in
+				the RendererD3D12 implementation via the:
+					- Renderer::GetRenderInterface				(creates/reuses a command list from the commandQueue)
+					- Renderer::ExecuteRenderInterface			(executeCommandList)
+					- Renderer::SyncCpuWithRenderInterface		(cpu-gpu sync)
+					- Renderer::SyncGpuWithRenderInterface		(gpu-gpu sync)
 			*/
 
 			// Notify that render thread is done with the frame

@@ -22,6 +22,7 @@ namespace RB::Graphics::D3D12
 
 		// TODO add Just-In-Time upload (so only upload the data onto the upload resource and copy it 
 		// over into the actual resource when it is being rendered for the first time.
+		// Later, we need to do resource creation on a different thread
 
 		// TODO 
 		// - Hoe kom ik nu bij de commandlist om een copy resource te doen vanaf de upload resource naar de echte resource?

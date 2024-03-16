@@ -27,25 +27,24 @@ namespace RB::Graphics
 		virtual ~Renderer();
 
 		static void SetAPI(RenderAPI api) { s_Api = api; }
-		static RenderAPI GetAPI() { return s_Api; }
+		inline static RenderAPI GetAPI() { return s_Api; }
 
 		// We do not want the renderer to be fully implemented per render API to avoid duplicate code, 
 		// so we want as little pure virtual methods as needed (maybe just the constructor and destructor is already good enough).
 		
+		//void SubmitViewContext();
+
 		void StartRenderFrame();
 		void FinishRenderFrame();
 
-		//void RenderContexts(RenderEntry* entries);
-		//void AddContext(RenderContext* context);
-		//void RemoveContext(RenderContext* context);
 
 		static Renderer* Create();
 
 	protected:
-		RenderInterface* GetRenderInterface();
-
-		RenderInterface* m_RenderInterface;
-		//RenderInterface* m_ComputeInterface;
+		virtual RenderInterface* GetRenderInterface() = 0;
+		virtual uint32_t ExecuteRenderInterface() = 0;
+		virtual void SyncCpuWithRenderInterface(uint32_t id) = 0;
+		virtual void SyncGpuWithRenderInterface(uint32_t id) = 0;
 
 	private:
 		inline static RenderAPI s_Api = RenderAPI::None;

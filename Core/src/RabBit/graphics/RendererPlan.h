@@ -22,7 +22,7 @@ namespace RB::Graphics
 	{
 		None						= (1 << 0);
 		ClearAtFrameStart			= (1 << 1);
-		ClearAtRenderContextStart	= (1 << 2);
+		ClearAtViewContextStart		= (1 << 2);
 		ClearAtRenderPassStart		= (1 << 3);
 		Keep1FrameHistory			= (1 << 4);
 	};
@@ -123,20 +123,21 @@ namespace RB::Graphics
 	// Contains most of the time RenderEntries, but maybe also cameraData and/or lights, or any info that the renderpass needs of the current frame really
 	typedef void RenderPassContext;
 
-	class Scene;
+	class ViewContext
 
 	class RenderPass
 	{
 		static RenderPassConfig GetConfiguration();
 
 		// Executed on the main thread after the game logic update
-		// This method just gives the needed context of the current frame to the renderpass (as the renderpass will run next frame as it is 1 frame behind)
+		// This method just gives the needed context of the current frame' viewcontext to the renderpass (as the renderpass will run next frame as it is 1 frame behind)
+		// This method will run for every ViewContext, so we can change things depening on the type of view context, so lower quality for example.
 		// Maybe does some preprocessing before the actual Render() call to, for example,
 		// determine which RenderEntries this pass needs, so the RenderThread does not need to do this. 
 		// But it can maybe also determine if the pass needs to run at all even (if AO for example is disabled and this is the AO pass)
-		RenderPassContext* ContextSubmit(Scene* scene);
+		RenderPassContext* ContextSubmit(ViewContext* viewContext);
 
-		void Render(RenderPassContext* renderContext, RenderInterface* renderInterface, RenderTexture** outputTextures, RenderTexture** workingTextures, RenderPass** dependencies)
+		void Render(RenderPassContext* renderPassContext, RenderInterface* renderInterface, RenderTexture** outputTextures, RenderTexture** workingTextures, RenderPass** dependencies)
 	};
 
 	// Determines in which order which RenderPass is executed (the names are linked to the names given to RenderPassConfig::name)
@@ -169,9 +170,16 @@ namespace RB::Graphics
 
 	class Float4x4;
 
-	class RenderContext
+	enum class ViewContextType
 	{
-		RenderPass* passes;	// A rendercontext should also be able to have overwrites (offsets of setting enums) of each RenderPass
+		Main,
+		OffscreenHighQuality,
+		OffscreenLowQuality
+	};
+
+	class ViewContext
+	{
+		ViewContextType type;
 		Float4x4 viewProjection;
 		RenderRect renderRect; // Render location
 		RenderTexture colorOutput;
@@ -185,7 +193,7 @@ namespace RB::Graphics
 
 	class Renderer
 	{
-		RenderContext* contexts;
+		ViewContext* contexts;
 
 		void RenderContexts(RenderEntry* entries)
 		{
