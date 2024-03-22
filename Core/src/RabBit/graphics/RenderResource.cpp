@@ -15,5 +15,7 @@ namespace RB::Graphics
 			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the Renderer for the set graphics API");
 			break;
 		}
+
+		return nullptr;
 	}
 }

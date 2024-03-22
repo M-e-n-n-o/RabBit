@@ -1,7 +1,6 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "CommandList.h"
 
 // DirectX 12 specific headers.
 #include <d3d12.h>
@@ -17,34 +16,34 @@ namespace RB::Graphics::D3D12
 
 		uint64_t SignalFence();
 		bool IsFenceReached(uint64_t fence_value);
-		void WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
-		void WaitUntilEmpty(uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
+		void CpuWaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
+		void CpuWaitUntilIdle(uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
 
-		CommandList* GetCommandList();
-		//GPtr<ID3D12GraphicsCommandList2> GetCommandList();
+		GPtr<ID3D12GraphicsCommandList2> GetCommandList();
 
-		uint64_t ExecuteCommandList(CommandList* command_list);
-		uint64_t ExecuteCommandLists(uint32_t num_command_lists, CommandList** command_lists);
+		uint64_t ExecuteCommandList(GPtr<ID3D12GraphicsCommandList2> command_list);
+		uint64_t ExecuteCommandLists(uint32_t num_command_lists, GPtr<ID3D12GraphicsCommandList2>* command_lists);
 
 		GPtr<ID3D12CommandQueue> GetCommandQueue() const { return m_CommandQueue; }
 
 	private:
 		void CreateFence();
-		void UpdateAvailableCommandLists();
+		void UpdateAvailableCommandAllocators();
 
-		struct CommandListEntry
+		struct CommandAllocatorEntry
 		{
 			uint64_t fenceValue;
-			CommandList* commandList;
+			GPtr<ID3D12CommandAllocator> commandAllocator;
 		};
 
-		D3D12_COMMAND_LIST_TYPE			m_Type;
-		GPtr<ID3D12CommandQueue>		m_CommandQueue;
-		GPtr<ID3D12Fence>				m_Fence;
-		uint64_t						m_FenceValue;
-		HANDLE							m_FenceEventHandle;
+		D3D12_COMMAND_LIST_TYPE					m_Type;
+		GPtr<ID3D12CommandQueue>				m_CommandQueue;
+		GPtr<ID3D12Fence>						m_Fence;
+		uint64_t								m_FenceValue;
+		HANDLE									m_FenceEventHandle;
 
-		List<CommandList*>				m_AvailableCommandLists;
-		List<CommandListEntry>			m_RunningCommandLists;
+		Queue<GPtr<ID3D12GraphicsCommandList2>>	m_CommandListQueue;
+		Queue<GPtr<ID3D12CommandAllocator>>		m_AvailableCommandAllocators;
+		List<CommandAllocatorEntry>				m_RunningCommandAllocators;
 	};
 }

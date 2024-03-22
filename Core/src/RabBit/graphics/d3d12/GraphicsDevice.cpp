@@ -89,17 +89,17 @@ namespace RB::Graphics::D3D12
 	{
 		if (m_CopyQueue)
 		{
-			m_CopyQueue->WaitUntilEmpty();
+			m_CopyQueue->CpuWaitUntilIdle();
 		}
 
 		if (m_ComputeQueue)
 		{
-			m_CopyQueue->WaitUntilEmpty();
+			m_CopyQueue->CpuWaitUntilIdle();
 		}
 
 		if (m_GraphicsQueue)
 		{
-			m_GraphicsQueue->WaitUntilEmpty();
+			m_GraphicsQueue->CpuWaitUntilIdle();
 		}
 	}
 

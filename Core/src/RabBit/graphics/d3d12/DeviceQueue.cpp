@@ -20,59 +20,67 @@ namespace RB::Graphics::D3D12
 
 	DeviceQueue::~DeviceQueue()
 	{
-		WaitUntilEmpty();
-		UpdateAvailableCommandLists();
-		
-		for (uint32_t i = 0; i < m_AvailableCommandLists.size(); ++i)
-		{
-			delete m_AvailableCommandLists[i];
-		}
+		CpuWaitUntilIdle();
 
 		CloseHandle(m_FenceEventHandle);
 	}
 
-	void DeviceQueue::WaitUntilEmpty(uint64_t max_duration_ms)
+	void DeviceQueue::CpuWaitUntilIdle(uint64_t max_duration_ms)
 	{
 		uint64_t fence_value_for_signal = SignalFence();
-		WaitForFenceValue(fence_value_for_signal, max_duration_ms);
+		CpuWaitForFenceValue(fence_value_for_signal, max_duration_ms);
 	}
 
-	CommandList* DeviceQueue::GetCommandList()
+	GPtr<ID3D12GraphicsCommandList2> DeviceQueue::GetCommandList()
 	{
-		CommandList* command_list = nullptr;
+		GPtr< ID3D12CommandAllocator> command_allocator = nullptr;
+		GPtr<ID3D12GraphicsCommandList2> command_list = nullptr;
 
-		UpdateAvailableCommandLists();
+		UpdateAvailableCommandAllocators();
 
-		if (m_AvailableCommandLists.empty())
+		if (m_AvailableCommandAllocators.empty())
 		{
-			GPtr<ID3D12CommandAllocator> d3d_command_allocator;
-			GPtr<ID3D12GraphicsCommandList2> d3d_command_list;
-
-			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandAllocator(m_Type, IID_PPV_ARGS(&d3d_command_allocator)), "Could not create command allocator");
-			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandList(0, m_Type, d3d_command_allocator.Get(), nullptr, IID_PPV_ARGS(&d3d_command_list)), "Could not create command list");
-		
-			command_list = new CommandList(d3d_command_list, d3d_command_allocator);
+			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandAllocator(m_Type, IID_PPV_ARGS(&command_allocator)), 
+				"Could not create command allocator");
 		}
 		else
 		{
-			command_list = m_AvailableCommandLists[0];
-			m_AvailableCommandLists.erase(m_AvailableCommandLists.begin());
+			command_allocator = m_AvailableCommandAllocators.front();
+			m_AvailableCommandAllocators.pop();
 
-			command_list->Reset();
+			RB_ASSERT_FATAL_RELEASE_D3D(command_allocator->Reset(), "Could not reset command allocator");
 		}
+
+		if (m_CommandListQueue.empty())
+		{
+			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandList(0, m_Type, command_allocator.Get(), nullptr, IID_PPV_ARGS(&command_list)), 
+				"Could not create command list");
+		}
+		else
+		{
+			command_list = m_CommandListQueue.front();
+			m_CommandListQueue.pop();
+
+			RB_ASSERT_FATAL_RELEASE_D3D(command_list->Reset(command_allocator.Get(), nullptr), 
+				"Could not reset command list");
+		}
+
+		// Link the command allocator to the command list to retrieve back in the ExecuteCommandLists
+		RB_ASSERT_FATAL_RELEASE_D3D(command_list->SetPrivateDataInterface(__uuidof(ID3D12CommandAllocator), command_allocator.Get()), 
+			"Could not set the command allocator as private data in the command list");
 
 		return command_list;
 	}
 
-	void DeviceQueue::UpdateAvailableCommandLists()
+	void DeviceQueue::UpdateAvailableCommandAllocators()
 	{
-		auto itr = m_RunningCommandLists.begin();
-		while (itr != m_RunningCommandLists.end())
+		auto itr = m_RunningCommandAllocators.begin();
+		while (itr != m_RunningCommandAllocators.end())
 		{
 			if (IsFenceReached(itr->fenceValue))
 			{
-				m_AvailableCommandLists.push_back(itr->commandList);
-				itr = m_RunningCommandLists.erase(itr);
+				m_AvailableCommandAllocators.push(itr->commandAllocator);
+				itr = m_RunningCommandAllocators.erase(itr);
 			}
 			else
 			{
@@ -81,32 +89,41 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	uint64_t DeviceQueue::ExecuteCommandList(CommandList* command_list)
+	uint64_t DeviceQueue::ExecuteCommandList(GPtr<ID3D12GraphicsCommandList2> command_list)
 	{
-		CommandList* ptr[] = { command_list };
+		GPtr<ID3D12GraphicsCommandList2> ptr[] = { command_list };
 
 		return ExecuteCommandLists(1, ptr);
 	}
 
-	uint64_t DeviceQueue::ExecuteCommandLists(uint32_t num_command_lists, CommandList** command_lists)
+	uint64_t DeviceQueue::ExecuteCommandLists(uint32_t num_command_lists, GPtr<ID3D12GraphicsCommandList2>* command_lists)
 	{
-		ID3D12CommandList** d3d_lists = (ID3D12CommandList**)alloca(sizeof(ID3D12CommandList*) * num_command_lists);
+		ID3D12CommandList** lists = (ID3D12CommandList**)alloca(sizeof(ID3D12CommandList*) * num_command_lists);
+		ID3D12CommandAllocator** allocators = (ID3D12CommandAllocator**)alloca(sizeof(ID3D12CommandAllocator*) * num_command_lists);
 
-		// Close the command lists
 		for (uint32_t i = 0; i < num_command_lists; ++i)
 		{
-			command_lists[i]->GetCommandList()->Close();
+			lists[i] = command_lists[i].Get();
 
-			d3d_lists[i] = command_lists[i]->GetCommandList();
+			// Close the command lists
+			RB_ASSERT_FATAL_RELEASE_D3D(command_lists[i]->Close(),
+				"Could not close the command list");
+
+			// Retrieve the command allocators
+			UINT data_size = sizeof(allocators[i]);
+			RB_ASSERT_FATAL_RELEASE_D3D(command_lists[i]->GetPrivateData(__uuidof(ID3D12CommandAllocator), &data_size, &allocators[i]),
+				"Could not retrieve the command allocator from the command list");
 		}
 
 		// Execute command lists
-		m_CommandQueue->ExecuteCommandLists(num_command_lists, d3d_lists);
+		m_CommandQueue->ExecuteCommandLists(num_command_lists, lists);
 		uint64_t fence_value = SignalFence();
 
+		// Set the command allocators as busy
 		for (uint32_t i = 0; i < num_command_lists; ++i)
 		{
-			m_RunningCommandLists.push_back({ fence_value, command_lists[i] });
+			m_RunningCommandAllocators.push_back({ fence_value, allocators[i] });
+			allocators[i]->Release();
 		}
 
 		return fence_value;
@@ -134,7 +151,7 @@ namespace RB::Graphics::D3D12
 		return m_Fence->GetCompletedValue() >= fence_value;
 	}
 
-	void DeviceQueue::WaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms)
+	void DeviceQueue::CpuWaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms)
 	{
 		if (IsFenceReached(fence_value))
 		{

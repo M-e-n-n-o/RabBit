@@ -20,6 +20,9 @@ namespace RB::Graphics
 		virtual bool MarkedForDelete() const = 0;
 		virtual bool AllowedCpuReads() const = 0;
 		virtual bool AllowedCpuWrites() const = 0;
+
+	protected:
+		RenderResource() = default;
 	};
 
 	class Buffer : public RenderResource
@@ -28,6 +31,9 @@ namespace RB::Graphics
 		virtual ~Buffer() = default;
 
 		virtual uint32_t GetWidth() const = 0;
+
+	protected:
+		Buffer() = default;
 	};
 
 	class StructuredBuffer : public Buffer
@@ -38,7 +44,12 @@ namespace RB::Graphics
 	class VertexBuffer : public Buffer
 	{
 	public:
+		virtual ~VertexBuffer() = default;
+		
 		static VertexBuffer* Create(const char* name, void* data, uint64_t data_size);
+
+	protected:
+		VertexBuffer() = default;
 	};
 
 	class IndexBuffer : public Buffer

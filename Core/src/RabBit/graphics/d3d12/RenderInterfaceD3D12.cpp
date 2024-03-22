@@ -3,7 +3,28 @@
 
 namespace RB::Graphics::D3D12
 {
-	void RenderInterfaceD3D12::Flush()
+	RenderInterfaceD3D12::RenderInterfaceD3D12()
+	{
+	}
+
+	void RenderInterfaceD3D12::SetCommandList(ID3D12GraphicsCommandList2* command_list)
+	{
+	}
+
+	void RenderInterfaceD3D12::InvalidateState()
+	{
+	}
+
+	uint32_t RenderInterfaceD3D12::ExecuteInternal()
+	{
+		return 0;
+	}
+
+	void RenderInterfaceD3D12::SyncCpuWithGpu(uint32_t id)
+	{
+	}
+
+	void RenderInterfaceD3D12::SyncGpuWithGpu(uint32_t id)
 	{
 	}
 
@@ -35,7 +56,11 @@ namespace RB::Graphics::D3D12
 	{
 	}
 
-	void RenderInterfaceD3D12::Draw()
+	void RenderInterfaceD3D12::DrawInternal()
+	{
+	}
+
+	void RenderInterfaceD3D12::DispatchInternal()
 	{
 	}
 }

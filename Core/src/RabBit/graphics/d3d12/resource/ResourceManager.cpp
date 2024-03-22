@@ -263,6 +263,26 @@ namespace RB::Graphics::D3D12
 		m_ActiveResourceUploader->Reset();
 	}
 
+	void ResourceManager::WaitUntilResourceCreated(GpuResource* resource)
+	{
+		// FUTURE TODO:
+		// - Tell the resource creation thread something is waiting on the resource so it gets a higher priority 
+		// - Wait on the resource creation thread until the resource is created
+	}
+
+	GpuResource* ResourceManager::CreateTexture2D(const wchar_t* name, uint64_t size, void* data)
+	{
+		// FUTURE TODO: Make this deferred and create and upload the actual resource and resource data on a different thread
+
+		// TODO Upload the data
+		
+		GpuResource* resource = new GpuResource();
+		resource->SetResource(g_ResourceManager->CreateCommittedResource(name, CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_HEAP_TYPE_DEFAULT,
+			D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, D3D12_RESOURCE_STATE_COPY_DEST));
+
+		return resource;
+	}
+
 	GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,
 		D3D12_HEAP_FLAGS heap_flags, D3D12_RESOURCE_STATES start_state, const D3D12_CLEAR_VALUE* clear_value)
 	{

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "RenderResourceD3D12.h"
+#include "GpuResource.h"
 
 #include <d3d12.h>
 
@@ -48,11 +48,9 @@ namespace RB::Graphics::D3D12
 
 		//UploadAllocation UploadData(void* data, uint32_t size, uint32_t alignment);
 
-		//void MarkAsUsed(Resource* resource);
+		void WaitUntilResourceCreated(GpuResource* resource);
 
-		//void MarkForDelete(Resource* resource);
-
-		void CreateTexture2D();
+		GpuResource* CreateTexture2D(const wchar_t* name, uint64_t size, void* data);
 
 		// -----------------------------------------------------------------------------
 		//								RAW RESOUCE CREATION

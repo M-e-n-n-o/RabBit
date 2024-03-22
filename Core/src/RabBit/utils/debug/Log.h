@@ -11,6 +11,7 @@ namespace RB
 {
 	constexpr wchar_t* LOGTAG_MAIN		= L"Main";
 	constexpr wchar_t* LOGTAG_EVENT		= L"Event";
+	constexpr wchar_t* LOGTAG_ENTITY	= L"Entity";
 	constexpr wchar_t* LOGTAG_GRAPHICS	= L"Graphics";
 }
 

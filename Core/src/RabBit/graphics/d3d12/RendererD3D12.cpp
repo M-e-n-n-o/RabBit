@@ -25,4 +25,12 @@ namespace RB::Graphics::D3D12
 		delete g_ResourceManager;
 		delete g_GraphicsDevice;
 	}
+
+	void RendererD3D12::OnFrameStart()
+	{
+	}
+
+	void RendererD3D12::OnFrameEnd()
+	{
+	}
 }

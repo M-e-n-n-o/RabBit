@@ -17,8 +17,7 @@ namespace RB::Graphics::D3D12
 		wchar_t* res_name = (wchar_t*)ALLOC_STACK(sizeof(wchar_t) * strlen(m_Name) + 1);
 		CharToWchar(m_Name, res_name);
 
-		m_Resource = g_ResourceManager->CreateCommittedResource(res_name, CD3DX12_RESOURCE_DESC::Buffer(data_size), D3D12_HEAP_TYPE_DEFAULT,
-			D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, D3D12_RESOURCE_STATE_COPY_DEST);
+		m_Resource = g_ResourceManager->CreateTexture2D(res_name, data_size, data);
 
 		// TODO add Just-In-Time upload (so only upload the data onto the upload resource and copy it 
 		// over into the actual resource when it is being rendered for the first time.

@@ -8,6 +8,8 @@
 
 namespace RB::Graphics::D3D12
 {
+	class GpuResource;
+
 	class VertexBufferD3D12 : public VertexBuffer
 	{
 	public:
@@ -15,7 +17,7 @@ namespace RB::Graphics::D3D12
 
 		const char* GetName() const override { return m_Name; }
 
-		void* GetNativeResource() const override { return m_Resource.Get(); }
+		void* GetNativeResource() const override { return m_Resource; }
 
 		void* GetData() override { return nullptr; }
 		void WriteData(void* data, uint64_t data_size, uint32_t write_offset) override;
@@ -31,7 +33,7 @@ namespace RB::Graphics::D3D12
 
 	private:
 		const char*					m_Name;
-		GPtr<ID3D12Resource>		m_Resource;
+		GpuResource*				m_Resource;
 		D3D12_VERTEX_BUFFER_VIEW	m_View;
 		uint32_t					m_Size;
 	};

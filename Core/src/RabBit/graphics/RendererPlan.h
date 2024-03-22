@@ -134,7 +134,7 @@ namespace RB::Graphics
 		// This method will run for every ViewContext, so we can change things depening on the type of view context, so lower quality for example.
 		// Maybe does some preprocessing before the actual Render() call to, for example,
 		// determine which RenderEntries this pass needs, so the RenderThread does not need to do this. 
-		// But it can maybe also determine if the pass needs to run at all even (if AO for example is disabled and this is the AO pass)
+		// But it can maybe also determine if the pass needs to run at all even (if AO for example is disabled and this is the AO pass, or if there are no things to render)
 		RenderPassContext* ContextSubmit(ViewContext* viewContext);
 
 		void Render(RenderPassContext* renderPassContext, RenderInterface* renderInterface, RenderTexture** outputTextures, RenderTexture** workingTextures, RenderPass** dependencies)
@@ -172,7 +172,7 @@ namespace RB::Graphics
 
 	enum class ViewContextType
 	{
-		Main,
+		BackBuffer,
 		OffscreenHighQuality,
 		OffscreenLowQuality
 	};
@@ -182,13 +182,7 @@ namespace RB::Graphics
 		ViewContextType type;
 		Float4x4 viewProjection;
 		RenderRect renderRect; // Render location
-		RenderTexture colorOutput;
-		RenderTexture uiOutput;
-
-		void Render()
-		{
-			// Render all passes
-		}
+		RenderTexture output;
 	};
 
 	class Renderer

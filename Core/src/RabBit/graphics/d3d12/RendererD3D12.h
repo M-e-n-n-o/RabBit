@@ -13,5 +13,8 @@ namespace RB::Graphics::D3D12
 	public:
 		RendererD3D12();
 		~RendererD3D12();
+
+		virtual void OnFrameStart() override;
+		virtual void OnFrameEnd() override;
 	};
 }

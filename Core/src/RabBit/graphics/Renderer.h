@@ -1,5 +1,10 @@
 #pragma once
 
+namespace RB::Entity
+{
+	class Scene;
+}
+
 namespace RB::Graphics
 {
 	enum class RenderAPI
@@ -10,43 +15,59 @@ namespace RB::Graphics
 
 	class RenderInterface;
 
-	enum class RenderThreadState
-	{
-		Idle,
-		Running,
-		Waking,
-		Shutdown,
-		Terminated
-	};
 
 	// Fully static class
 	class Renderer
 	{
 	public:
-		Renderer();
+		enum class RenderThreadState
+		{
+			Idle,
+			Running,
+			Waking,
+			Terminated
+		};
+
+		enum class RenderThreadTaskType
+		{
+			None,
+			Shutdown,
+			FrameRender,
+			ResourceUploading
+
+			// TODO Also make a task for a resource resize (if the backbuffer needs to be resized)
+		};
+
 		virtual ~Renderer();
 
 		static void SetAPI(RenderAPI api) { s_Api = api; }
 		inline static RenderAPI GetAPI() { return s_Api; }
 
-		// We do not want the renderer to be fully implemented per render API to avoid duplicate code, 
-		// so we want as little pure virtual methods as needed (maybe just the constructor and destructor is already good enough).
-		
-		//void SubmitViewContext();
-
+		// Kick off frame render (is 1 frame behind game update)
 		void StartRenderFrame();
-		void FinishRenderFrame();
+		// Sync until render thread is finished with rendering frame (blocking call)
+		void SyncRenderFrame();
 
+		// Submits current frame relevant information of the scene to the renderer
+		void SubmitFrameContext(const Entity::Scene* const scene);
+
+		// Kick off resource uploading & texture streaming of the current' frame resources
+		void StartResourceUploading(const Entity::Scene* const scene);
+		// Tell the render thread we are waiting until the resource uploading is completed and wait until completed (blocking call)
+		void SyncResourceUploading();
 
 		static Renderer* Create();
 
 	protected:
-		virtual RenderInterface* GetRenderInterface() = 0;
-		virtual uint32_t ExecuteRenderInterface() = 0;
-		virtual void SyncCpuWithRenderInterface(uint32_t id) = 0;
-		virtual void SyncGpuWithRenderInterface(uint32_t id) = 0;
+		Renderer();
+
+		virtual void OnFrameStart() = 0;
+		virtual void OnFrameEnd() = 0;
 
 	private:
+		void SendRenderThreadTask(RenderThreadTaskType task_type);
+		void BlockUntilRenderThreadIdle();
+
 		inline static RenderAPI s_Api = RenderAPI::None;
 
 		extern friend DWORD WINAPI RenderLoop(PVOID param);
@@ -57,6 +78,8 @@ namespace RB::Graphics
 		CONDITION_VARIABLE	m_SyncCV;
 		CRITICAL_SECTION	m_SyncCS;
 
-		RenderThreadState	m_RenderState;
+		RenderThreadState	 m_RenderState;
+		RenderThreadTaskType m_RenderTaskType;
+		void*				 m_RenderTaskData;
 	};
 }

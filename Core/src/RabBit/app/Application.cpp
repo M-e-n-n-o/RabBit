@@ -12,6 +12,9 @@
 #include "graphics/RenderInterface.h"
 #include "graphics/Renderer.h"
 
+#include "entity/Scene.h"
+#include "entity/components/Mesh.h"
+
 #include "input/events/WindowEvent.h"
 #include "input/events/KeyEvent.h"
 #include "input/KeyCodes.h"
@@ -25,6 +28,7 @@ using namespace RB::Graphics::D3D12;
 using namespace RB::Graphics::D3D12::Window;
 using namespace RB::Input::Events;
 using namespace RB::Input;
+using namespace RB::Entity;
 
 namespace RB
 {
@@ -189,18 +193,22 @@ namespace RB
 			memcpy(upload_memory, _VertexData, sizeof(_VertexData));
 			upload_resource->Unmap(0, nullptr);
 
-			CommandList* command_list = _GraphicsQueue->GetCommandList();
-			ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
+			GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
 
-			d3d_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
+			command_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
 
 			uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
-			_GraphicsQueue->WaitForFenceValue(fence_value);
+			_GraphicsQueue->CpuWaitForFenceValue(fence_value);
 
 			_VaoView.BufferLocation = _VertexRes->GetGPUVirtualAddress();
 			_VaoView.SizeInBytes	= sizeof(_VertexData);
 			_VaoView.StrideInBytes	= sizeof(float) * 5;
 		}
+
+		Scene scene;
+		GameObject* obj = scene.CreateGameObject();
+		obj->AddComponent<Mesh>();
+		
 
 		while (!m_ShouldStop)
 		{
@@ -213,7 +221,7 @@ namespace RB
 			Render();
 			FinishRenderFrame();
 
-			// Start rendering previous frame
+			// Tell the render thread to start rendering previous frame
 			_Renderer->StartRenderFrame();
 
 			// Poll inputs and update windows
@@ -232,8 +240,17 @@ namespace RB
 			// Do game logic of the current frame
 			OnUpdate();
 
-			// Sync with the rendering of previous frame
-			_Renderer->FinishRenderFrame();
+			// Sync with the rendering
+			_Renderer->SyncRenderFrame();
+
+			// Tell the render thread to start uploading resources
+			_Renderer->StartResourceUploading(&scene);
+
+			// Submit the scene as context for rendering the next frame
+			_Renderer->SubmitFrameContext(&scene);
+
+			// Sync with resource uploading
+			_Renderer->SyncResourceUploading();
 
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)
@@ -257,7 +274,7 @@ namespace RB
 				m_CheckWindows = false;
 			}
 
-
+			// Update the frame index
 			m_FrameIndex++;
 		}
 	}
@@ -271,7 +288,7 @@ namespace RB
 		// Shutdown app user
 		OnStop();
 
-		_GraphicsQueue->WaitUntilEmpty();
+		_GraphicsQueue->CpuWaitUntilIdle();
 
 		for (int i = 0; i < m_Windows.size(); i++)
 		{
@@ -300,51 +317,50 @@ namespace RB
 			return;
 		}
 
-		CommandList* command_list = _GraphicsQueue->GetCommandList();
-		ID3D12GraphicsCommandList2* d3d_list = command_list->GetCommandList();
+		GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
 
 		auto back_buffer = window->GetSwapChain()->GetCurrentBackBuffer();
 
 		{
 			// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
 			uint64_t value = window->GetSwapChain()->GetCurrentBackBufferIndex();
-			_GraphicsQueue->WaitForFenceValue(_FenceValues[value]);
+			_GraphicsQueue->CpuWaitForFenceValue(_FenceValues[value]);
 
 			// Clear the render target
 			{
-				RB_PROFILE_GPU_SCOPED(d3d_list, "Clear");
+				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 					back_buffer.Get(),
 					D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
 				);
 
-				d3d_list->ResourceBarrier(1, &barrier);
+				command_list->ResourceBarrier(1, &barrier);
 
 				FLOAT clear_color[] = { _Value, 0.1f, 0.1f, 0.0f };
 
-				d3d_list->ClearRenderTargetView(window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+				command_list->ClearRenderTargetView(window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
 			}
 
 			// Draw
 			{
-				RB_PROFILE_GPU_SCOPED(d3d_list, "Draw");
+				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Draw");
 
-				d3d_list->SetPipelineState(_Pso.Get());
-				d3d_list->SetGraphicsRootSignature(_RootSignature.Get());
+				command_list->SetPipelineState(_Pso.Get());
+				command_list->SetGraphicsRootSignature(_RootSignature.Get());
 
 				// Input assembly
-				d3d_list->IASetVertexBuffers(0, 1, &_VaoView);
-				d3d_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				command_list->IASetVertexBuffers(0, 1, &_VaoView);
+				command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				
 				// Rasterizer state
-				d3d_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
-				d3d_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
+				command_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
+				command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
 
 				// Output merger
-				d3d_list->OMSetRenderTargets(1, &window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
+				command_list->OMSetRenderTargets(1, &window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
 
-				d3d_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
+				command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
 			}
 
 			// Present
@@ -356,7 +372,7 @@ namespace RB
 					D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
 				);
 
-				d3d_list->ResourceBarrier(1, &barrier);
+				command_list->ResourceBarrier(1, &barrier);
 
 				uint64_t value = window->GetSwapChain()->GetCurrentBackBufferIndex();
 				_FenceValues[value] = _GraphicsQueue->ExecuteCommandList(command_list);
