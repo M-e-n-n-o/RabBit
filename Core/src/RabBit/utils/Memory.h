@@ -23,8 +23,8 @@ namespace RB
 	#define ALLOC_STACK(size)		alloca(size)
 	#define ALLOC_HEAP(size)		malloc(size)
 
-	//#define SAFE_RELEASE(obj)		obj->Release();
-	#define SAFE_DELETE(obj)		if (obj) { delete obj; obj = nullptr; }
+	#define SAFE_RELEASE(obj)		(obj)->Release();
+	#define SAFE_DELETE(obj)		if ((obj)) { delete (obj); (obj) = nullptr; }
 
 	// Custom graphics pointer
 	template<class T>

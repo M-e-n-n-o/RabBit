@@ -251,36 +251,61 @@ namespace RB::Graphics::D3D12
 
 	ResourceManager::~ResourceManager()
 	{
-		//delete[] m_ResourceUploaders;
+		// Wait until all objects can be release
+		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end(); ++itr)
+		{
+			itr->first.queue->CpuWaitForFenceValue(itr->first.fenceValue);
+			itr = m_ObjsWaitingToFinishFlight.erase(itr);
+		}
 	}
 
-	void ResourceManager::StartFrame(uint32_t back_buffer_index)
+	void ResourceManager::StartFrame()
 	{
+
 	}
 
 	void ResourceManager::EndFrame()
 	{
-		m_ActiveResourceUploader->Reset();
+		// Check which tracked resources can be deleted
+		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end(); ++itr)
+		{
+			if (itr->first.queue->IsFenceReached(itr->first.fenceValue))
+			{
+				itr = m_ObjsWaitingToFinishFlight.erase(itr);
+			}
+		}
 	}
 
-	void ResourceManager::WaitUntilResourceCreated(GpuResource* resource)
+	void ResourceManager::MarkForDelete(GpuResource* resource)
 	{
-		// FUTURE TODO:
-		// - Tell the resource creation thread something is waiting on the resource so it gets a higher priority 
-		// - Wait on the resource creation thread until the resource is created
+		if (resource->m_Resource)
+		{
+			m_ObjsScheduledToReleaseAfterExecute.push_back(resource->m_Resource);
+		}
 	}
 
-	GpuResource* ResourceManager::CreateTexture2D(const wchar_t* name, uint64_t size, void* data)
+	void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
 	{
-		// FUTURE TODO: Make this deferred and create and upload the actual resource and resource data on a different thread
+		m_ObjsWaitingToFinishFlight.insert({ { queue, fence_value }, m_ObjsScheduledToReleaseAfterExecute });
+		m_ObjsScheduledToReleaseAfterExecute.clear();
+	}
 
-		// TODO Upload the data
+	bool ResourceManager::CreateUploadResource(GpuResource* out_resource, const wchar_t* name, uint64_t size)
+	{
+		// TODO: Make this deferred and create and upload the actual resource and resource data on a different thread
+		out_resource->SetResource(CreateCommittedResource(name, CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ));
 		
-		GpuResource* resource = new GpuResource();
-		resource->SetResource(g_ResourceManager->CreateCommittedResource(name, CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_HEAP_TYPE_DEFAULT,
-			D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, D3D12_RESOURCE_STATE_COPY_DEST));
+		// TODO Return if resource creation succeeded
+		return true;
+	}
 
-		return resource;
+	bool ResourceManager::CreateVertexResource(GpuResource* out_resource, const wchar_t* name, uint64_t size)
+	{
+		// TODO: Make this deferred and create and upload the actual resource and resource data on a different thread
+		out_resource->SetResource(CreateCommittedResource(name, CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, D3D12_RESOURCE_STATE_COPY_DEST));
+		
+		// TODO Return if resource creation succeeded
+		return true;
 	}
 
 	GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,

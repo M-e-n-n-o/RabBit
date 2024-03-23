@@ -2,7 +2,24 @@
 
 namespace RB::Graphics
 {
-	// TODO Create D3D12 implementation classes of these
+	// Note: When changing the primitive types, max sure to also update
+
+	constexpr uint32_t kPrimitiveTypeCount = 2;
+
+	enum class RenderResourceType : uint32_t
+	{
+		Unknown					= (0 << 0),
+
+		// Primitive types
+		Buffer					= (1 << 0),
+		Texture					= (1 << 1),
+
+		// Implementation types
+		StructuredBuffer		= (1 << 2) | Buffer,
+		VertexBuffer			= (1 << 3) | Buffer,
+		IndexBuffer				= (1 << 4) | Buffer,
+		Texture2D				= (1 << 5) | Texture
+	};
 
 	class RenderResource
 	{
@@ -13,16 +30,22 @@ namespace RB::Graphics
 
 		virtual void* GetNativeResource() const = 0;
 
-		virtual void* GetData() = 0;
-		virtual void WriteData(void* data, uint64_t size, uint32_t write_offset) = 0;
+		virtual void* GetData() const = 0;
+		virtual uint32_t GetSize() const = 0;
+		//virtual void WriteData(void* data, uint64_t size, uint32_t write_offset) = 0;
 
-		virtual bool IsInFlight() const = 0;
-		virtual bool MarkedForDelete() const = 0;
-		virtual bool AllowedCpuReads() const = 0;
-		virtual bool AllowedCpuWrites() const = 0;
+		//virtual bool IsInFlight() const = 0;
+		//virtual bool MarkedForDelete() const = 0;
+		//virtual bool AllowedCpuReads() const = 0;
+		//virtual bool AllowedCpuWrites() const = 0;
+
+		RenderResourceType GetType() const { return m_Type; }
+		RenderResourceType GetPrimitiveType() const;
 
 	protected:
-		RenderResource() = default;
+		RenderResource(RenderResourceType type): m_Type(type) {}
+
+		RenderResourceType m_Type;
 	};
 
 	class Buffer : public RenderResource
@@ -30,10 +53,8 @@ namespace RB::Graphics
 	public:
 		virtual ~Buffer() = default;
 
-		virtual uint32_t GetWidth() const = 0;
-
 	protected:
-		Buffer() = default;
+		Buffer(RenderResourceType type): RenderResource(type) {}
 	};
 
 	class StructuredBuffer : public Buffer
@@ -49,7 +70,7 @@ namespace RB::Graphics
 		static VertexBuffer* Create(const char* name, void* data, uint64_t data_size);
 
 	protected:
-		VertexBuffer() = default;
+		VertexBuffer() : Buffer(RenderResourceType::VertexBuffer) {}
 	};
 
 	class IndexBuffer : public Buffer

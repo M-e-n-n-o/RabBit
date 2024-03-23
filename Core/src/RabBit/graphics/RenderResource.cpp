@@ -18,4 +18,9 @@ namespace RB::Graphics
 
 		return nullptr;
 	}
+
+	RenderResourceType RenderResource::GetPrimitiveType() const
+	{
+		return (RenderResourceType)(((1 << kPrimitiveTypeCount) - 1) & ((uint32_t)m_Type >> -1));
+	}
 }

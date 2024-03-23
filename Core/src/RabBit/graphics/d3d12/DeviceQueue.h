@@ -14,9 +14,13 @@ namespace RB::Graphics::D3D12
 		DeviceQueue(D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, D3D12_COMMAND_QUEUE_FLAGS flags);
 		~DeviceQueue();
 
+		D3D12_COMMAND_LIST_TYPE GetType() const { return m_Type; }
+
 		uint64_t SignalFence();
 		bool IsFenceReached(uint64_t fence_value);
 		void CpuWaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
+		void GpuWaitForFenceValue(uint64_t fence_value);
+		void GpuWaitForFenceValue(GPtr<ID3D12Fence> fence, uint64_t fence_value);
 		void CpuWaitUntilIdle(uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
 
 		GPtr<ID3D12GraphicsCommandList2> GetCommandList();
@@ -25,6 +29,7 @@ namespace RB::Graphics::D3D12
 		uint64_t ExecuteCommandLists(uint32_t num_command_lists, GPtr<ID3D12GraphicsCommandList2>* command_lists);
 
 		GPtr<ID3D12CommandQueue> GetCommandQueue() const { return m_CommandQueue; }
+		GPtr<ID3D12Fence> GetFence() const { return m_Fence; }
 
 	private:
 		void CreateFence();

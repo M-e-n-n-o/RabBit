@@ -33,7 +33,7 @@ namespace RB::Entity
 		}
 
 		id = m_NextID++;
-		m_IDs.insert({ T::GetComponentTag(), id });
+		m_IDs.emplace({ T::GetComponentTag(), id });
 		return id;
 	}
 

@@ -9,6 +9,9 @@
 
 
 #include "entity/components/Mesh.h"
+#include "d3d12/GraphicsDevice.h"
+#include "d3d12/DeviceQueue.h"
+#include "RenderInterface.h"
 
 
 
@@ -20,6 +23,9 @@ namespace RB::Graphics
 		: m_RenderState(RenderThreadState::Idle)
 		, m_RenderTaskType(RenderThreadTaskType::None)
 	{
+		m_GraphicsInterface = RenderInterface::Create(false);
+		m_CopyInterface = RenderInterface::Create(true);
+
 		InitializeConditionVariable(&m_KickCV);
 		InitializeCriticalSection(&m_KickCS);
 
@@ -40,6 +46,9 @@ namespace RB::Graphics
 		CloseHandle(m_RenderThread);
 		DeleteCriticalSection(&m_KickCS);
 		DeleteCriticalSection(&m_SyncCS);
+
+		delete m_GraphicsInterface;
+		delete m_CopyInterface;
 	}
 
 	void Renderer::SubmitFrameContext(const Entity::Scene* const scene)
@@ -48,13 +57,13 @@ namespace RB::Graphics
 		// Also create the render entries? Or should those just be passed in?
 	}
 
-	void Renderer::StartResourceUploading(const Entity::Scene* const scene /*, uint32_t min_time_to_upload_ms*/)
+	void Renderer::StartResourceStreaming(const Entity::Scene* const scene /*, uint32_t min_time_to_upload_ms*/)
 	{
 		m_RenderTaskData = (void*) scene;
-		SendRenderThreadTask(RenderThreadTaskType::ResourceUploading);
+		SendRenderThreadTask(RenderThreadTaskType::ResourceStreaming);
 	}
 
-	void Renderer::SyncResourceUploading()
+	void Renderer::SyncResourceStreaming()
 	{
 		// TODO Tell the render thread the main thread is waiting for the uploading to stop
 
@@ -144,6 +153,8 @@ namespace RB::Graphics
 
 				// Render
 
+
+
 				// Preset
 
 				/*
@@ -177,7 +188,7 @@ namespace RB::Graphics
 			}
 			break;
 
-			case Renderer::RenderThreadTaskType::ResourceUploading:
+			case Renderer::RenderThreadTaskType::ResourceStreaming:
 			{
 				/*
 					(Slowly) Upload needed resources for next frame, like new vertex data or textures.
@@ -197,24 +208,17 @@ namespace RB::Graphics
 
 				for (const Entity::Mesh* mesh : meshes)
 				{
-					bool uploaded = false;
-					for (int i = 0; i < already_uploaded.size(); ++i)
-					{
-						if (mesh == already_uploaded[i])
-						{
-							uploaded = true;
-							break;
-						}
-					}
-
-					if (uploaded)
+					if (std::find(already_uploaded.begin(), already_uploaded.end(), mesh) != already_uploaded.end())
 					{
 						continue;
 					}
 
-
+					r->m_CopyInterface->UploadDataToResource(mesh->GetVertexBuffer(), mesh->GetVertexBuffer()->GetData(), mesh->GetVertexBuffer()->GetSize());
+					already_uploaded.push_back(mesh);
 				}
 
+				Shared<RIExecutionGuard> guard = r->m_CopyInterface->ExecuteOnGpu();
+				r->m_GraphicsInterface->GpuWaitOn(guard.get());
 			}
 			break;
 

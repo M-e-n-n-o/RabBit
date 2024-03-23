@@ -28,9 +28,11 @@ namespace RB::Graphics::D3D12
 
 	void RendererD3D12::OnFrameStart()
 	{
+		g_ResourceManager->StartFrame();
 	}
 
 	void RendererD3D12::OnFrameEnd()
 	{
+		g_ResourceManager->EndFrame();
 	}
 }

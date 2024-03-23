@@ -9,21 +9,16 @@ namespace RB::Graphics::D3D12
 {
 	class ResourceManager;
 
-	enum class GpuResourceType
-	{
-		Texture,
-		Buffer,
-		Vertex
-	};
-
 	class GpuResource
 	{
-	private:
-		GpuResource();
 	public:
+		GpuResource();
+		~GpuResource();
 
-		// Waits until the actual resource is created and available
+		// Should only be called on the render thread!
 		GPtr<ID3D12Resource> GetResource();
+
+		bool IsValid() const;
 
 		void MarkAsUsed();
 		void MarkForDelete();
@@ -34,6 +29,5 @@ namespace RB::Graphics::D3D12
 		void SetResource(GPtr<ID3D12Resource> resource);
 
 		GPtr<ID3D12Resource> m_Resource;
-		GpuResourceType		 m_Type;
 	};
 }

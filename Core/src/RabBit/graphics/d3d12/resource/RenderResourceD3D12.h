@@ -14,20 +14,15 @@ namespace RB::Graphics::D3D12
 	{
 	public:
 		VertexBufferD3D12(const char* name, void* data, uint64_t data_size);
+		~VertexBufferD3D12();
 
 		const char* GetName() const override { return m_Name; }
+		
+		virtual void* GetData() const override { return m_Data; }
 
 		void* GetNativeResource() const override { return m_Resource; }
 
-		void* GetData() override { return nullptr; }
-		void WriteData(void* data, uint64_t data_size, uint32_t write_offset) override;
-
-		bool IsInFlight() const override;
-		bool MarkedForDelete() const override;
-		bool AllowedCpuReads() const override { return false; }
-		bool AllowedCpuWrites() const override { return false; }
-
-		uint32_t GetWidth() const override { return m_Size; }
+		uint32_t GetSize() const override { return m_Size; }
 
 		D3D12_VERTEX_BUFFER_VIEW GetView() const { return m_View; }
 
@@ -36,5 +31,6 @@ namespace RB::Graphics::D3D12
 		GpuResource*				m_Resource;
 		D3D12_VERTEX_BUFFER_VIEW	m_View;
 		uint32_t					m_Size;
+		void*						m_Data;
 	};
 }

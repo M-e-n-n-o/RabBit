@@ -2,6 +2,8 @@
 
 #include "RabBitCommon.h"
 #include "GpuResource.h"
+#include "graphics/d3d12/DeviceQueue.h"
+#include "graphics/RenderInterface.h"
 
 #include <d3d12.h>
 
@@ -38,19 +40,19 @@ namespace RB::Graphics::D3D12
 	class ResourceManager
 	{
 	public:
-		ResourceManager(/*uint32_t total_back_buffers*/);
+		ResourceManager();
 		~ResourceManager();
 
-		void StartFrame(uint32_t back_buffer_index);
+		void StartFrame();
 		void EndFrame();
 
-		void ScheduleUpload(GPtr<ID3D12Resource> resource, void* data, uint32_t size);
+		void MarkForDelete(GpuResource* resource);
+		void OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value);
 
-		//UploadAllocation UploadData(void* data, uint32_t size, uint32_t alignment);
+		bool CreateUploadResource(GpuResource* out_resource, const wchar_t* name, uint64_t size);
+		bool CreateVertexResource(GpuResource* out_resource, const wchar_t* name, uint64_t size);
 
-		void WaitUntilResourceCreated(GpuResource* resource);
-
-		GpuResource* CreateTexture2D(const wchar_t* name, uint64_t size, void* data);
+	private:
 
 		// -----------------------------------------------------------------------------
 		//								RAW RESOUCE CREATION
@@ -59,8 +61,14 @@ namespace RB::Graphics::D3D12
 			D3D12_HEAP_FLAGS heap_flags = D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATES start_state = D3D12_RESOURCE_STATE_COMMON, const D3D12_CLEAR_VALUE* clear_value = nullptr);
 
 	private:
-		ResourceUploader**			m_ResourceUploaders;
-		ResourceUploader*			m_ActiveResourceUploader;
+		struct FencePair
+		{
+			DeviceQueue* queue;
+			uint64_t fenceValue;
+		};
+
+		UnorderedMap<FencePair, List<GPtr<ID3D12Object>>> m_ObjsWaitingToFinishFlight;
+		List<GPtr<ID3D12Object>> m_ObjsScheduledToReleaseAfterExecute;
 	};
 
 	extern ResourceManager* g_ResourceManager;

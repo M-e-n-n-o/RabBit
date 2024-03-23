@@ -1,42 +1,69 @@
 #pragma once
 
 #include "graphics/RenderInterface.h"
-#include "DeviceQueue.h"
 
 namespace RB::Graphics::D3D12
 {
+	class DeviceQueue;
+	class GpuResource;
+
+	class RIExecutionGuardD3D12 : public RIExecutionGuard
+	{
+	public:
+		RIExecutionGuardD3D12(uint64_t fence_value, DeviceQueue* queue);
+
+		virtual bool IsFinishedRendering() override;
+		virtual void WaitUntilFinishedRendering() override;
+
+	private:
+		uint64_t m_FenceValue;
+		DeviceQueue* m_Queue;
+
+		friend class RenderInterfaceD3D12;
+	};
+
 	class RenderInterfaceD3D12 : public RenderInterface
 	{
 	public:
-		RenderInterfaceD3D12();
+		RenderInterfaceD3D12(bool allow_only_copy_operations);
 
 		// The render interface does not own the command list, so it does not get a shared pointer
-		void SetCommandList(ID3D12GraphicsCommandList2* command_list);
+		//void SetCommandList(ID3D12GraphicsCommandList2* command_list);
 
 		void InvalidateState() override;
 
 		// This method executes the command list and sets a new internal valid command list
 		// Returns the execute ID (on which can be waited)
-		uint32_t ExecuteInternal() override;
-		void SyncCpuWithGpu(uint32_t id) override;
-		void SyncGpuWithGpu(uint32_t id) override;
+		Shared<RIExecutionGuard> ExecuteInternal() override;
+		void GpuWaitOn(RIExecutionGuard* guard) override;
 
-		void TransitionResource(RenderResource* resource, ResourceState state) override;
-		void FlushBarriers() override;
+		//void TransitionResource(RenderResource* resource, ResourceState state) override;
+		void FlushResourceBarriers() override;
 
-		void EnableWireframeMode() override;
-		void DisableWireframeMode() override;
+		//void SetVertexShader(uint32_t shader_index) override;
+		//void SetPixelShader(uint32_t shader_index) override;
 
-		void SetCullMode() override;
+		void SetVertexBuffer(RenderResource* vertex_resource) override;
 
-		void SetVertexShader(uint32_t shader_index) override;
-		void SetPixelShader(uint32_t shader_index) override;
+		void CopyResource(RenderResource* src, RenderResource* dest) override;
+
+		void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
 		void DrawInternal() override;
 		void DispatchInternal() override;
 
 	private:
+		bool ValidateResource(RenderResource* res);
+		void SetNewCommandList();
+		void InternalCopyBuffer(GpuResource* src, GpuResource* dest);
 
-		ID3D12GraphicsCommandList2* m_CommandList;
+		bool								m_CopyOperationsOnly;
+		DeviceQueue*						m_Queue;
+		GPtr<ID3D12GraphicsCommandList2>	m_CommandList;
+
+		struct RenderDesc
+		{
+
+		};
 	};
 }

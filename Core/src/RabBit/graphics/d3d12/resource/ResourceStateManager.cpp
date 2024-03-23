@@ -49,23 +49,6 @@ namespace RB::Graphics::D3D12
 		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::Transition(resource, from_state, to_state, subresource));
 	}
 
-	void ResourceStateManager::TransitionResourceDirect(ID3D12GraphicsCommandList* command_list, ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource)
-	{
-		D3D12_RESOURCE_STATES from_state;
-		bool found = GetCurrentState(resource, subresource, from_state);
-
-		if (!found)
-		{
-			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not find the current state of the resource, possibly as it is not being tracked yet");
-			return;
-		}
-
-		D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, from_state, to_state, subresource);
-		command_list->ResourceBarrier(1, &barrier);
-
-		UpdateResourceState(resource, subresource, to_state);
-	}
-
 	void ResourceStateManager::InsertUAVBarrier(ID3D12Resource* resource)
 	{
 		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(resource));

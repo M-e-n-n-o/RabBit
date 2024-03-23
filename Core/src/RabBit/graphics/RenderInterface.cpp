@@ -6,7 +6,7 @@
 
 namespace RB::Graphics
 {
-	uint32_t RenderInterface::ExecuteOnGpu()
+	Shared<RIExecutionGuard> RenderInterface::ExecuteOnGpu()
 	{
 		m_TotalDraws = 0;
 		return ExecuteInternal();
@@ -39,12 +39,12 @@ namespace RB::Graphics
 		}
 	}
 
-	RenderInterface* RenderInterface::Create()
+	RenderInterface* RenderInterface::Create(bool allow_only_copy_operations)
 	{
 		switch (Renderer::GetAPI())
 		{
 		case RenderAPI::D3D12:
-			return new D3D12::RenderInterfaceD3D12();
+			return new D3D12::RenderInterfaceD3D12(allow_only_copy_operations);
 		default:
 			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the render interface for the set graphics API");
 			break;

@@ -84,7 +84,7 @@ namespace RB
 		m_Windows.push_back(new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
 		m_Windows.push_back(new Graphics::Window("Test", 1280, 720, kWindowStyle_Default));
 
-		RenderInterface* i = RenderInterface::Create();
+		RenderInterface* i = RenderInterface::Create(false);
 
 		m_Initialized = true;
 
@@ -244,13 +244,13 @@ namespace RB
 			_Renderer->SyncRenderFrame();
 
 			// Tell the render thread to start uploading resources
-			_Renderer->StartResourceUploading(&scene);
+			_Renderer->StartResourceStreaming(&scene);
 
 			// Submit the scene as context for rendering the next frame
 			_Renderer->SubmitFrameContext(&scene);
 
 			// Sync with resource uploading
-			_Renderer->SyncResourceUploading();
+			_Renderer->SyncResourceStreaming();
 
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)

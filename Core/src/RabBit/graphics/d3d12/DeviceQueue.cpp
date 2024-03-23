@@ -161,4 +161,14 @@ namespace RB::Graphics::D3D12
 		RB_ASSERT_FATAL_RELEASE_D3D(m_Fence->SetEventOnCompletion(fence_value, m_FenceEventHandle), "Could not hang event on fence");
 		::WaitForSingleObject(m_FenceEventHandle, static_cast<DWORD>(max_duration_ms));
 	}
+
+	void DeviceQueue::GpuWaitForFenceValue(uint64_t fence_value)
+	{
+		GpuWaitForFenceValue(m_Fence, fence_value);
+	}
+	
+	void DeviceQueue::GpuWaitForFenceValue(GPtr<ID3D12Fence> fence, uint64_t fence_value)
+	{
+		m_CommandQueue->Wait(fence.Get(), fence_value);
+	}
 }

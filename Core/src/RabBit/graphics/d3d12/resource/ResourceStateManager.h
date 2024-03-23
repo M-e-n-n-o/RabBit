@@ -17,8 +17,6 @@ namespace RB::Graphics::D3D12
 		void InsertResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier);
 
 		void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
-        // Not recommended to use in production
-		void TransitionResourceDirect(ID3D12GraphicsCommandList* command_list, ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 
 		void InsertUAVBarrier(ID3D12Resource* resource);
 		void InsertAliasBarrier(ID3D12Resource* before, ID3D12Resource* after);
