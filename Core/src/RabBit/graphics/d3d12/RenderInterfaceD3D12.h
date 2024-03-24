@@ -43,12 +43,16 @@ namespace RB::Graphics::D3D12
 		//void SetVertexShader(uint32_t shader_index) override;
 		//void SetPixelShader(uint32_t shader_index) override;
 
-		void SetVertexBuffer(RenderResource* vertex_resource) override;
+		void SetScissorRect(const Math::Int4& scissor_rect) override;
+
+		void SetVertexBuffer(uint32_t slot, RenderResource* vertex_resource) override;
+		void SetVertexBuffers(uint32_t start_slot, RenderResource** vertex_resources, uint32_t resource_count) override;
 
 		void CopyResource(RenderResource* src, RenderResource* dest) override;
 
 		void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
+		// CHECK IF ALL ESSENTIAL STATES ARE SET!!!
 		void DrawInternal() override;
 		void DispatchInternal() override;
 
@@ -61,9 +65,12 @@ namespace RB::Graphics::D3D12
 		DeviceQueue*						m_Queue;
 		GPtr<ID3D12GraphicsCommandList2>	m_CommandList;
 
-		struct RenderDesc
+		struct RenderState
 		{
-
+			bool vertexBufferSet		= false;
+			bool scissorSetExplicitly	= false;
 		};
+
+		RenderState m_RenderState;
 	};
 }

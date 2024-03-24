@@ -2,7 +2,7 @@
 #include "RenderInterfaceD3D12.h"
 #include "DeviceQueue.h"
 #include "resource/ResourceManager.h"
-#include "graphics/RenderResource.h"
+#include "resource/RenderResourceD3D12.h"
 #include "resource/ResourceStateManager.h"
 #include "GraphicsDevice.h"
 
@@ -30,6 +30,7 @@ namespace RB::Graphics::D3D12
 
 	RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
 		: m_CopyOperationsOnly(allow_only_copy_operations)
+		, m_RenderState()
 	{
 		if (allow_only_copy_operations)
 			m_Queue = g_GraphicsDevice->GetComputeQueue();
@@ -41,7 +42,7 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::InvalidateState()
 	{
-		// TODO
+		m_RenderState = {};
 	}
 
 	Shared<RIExecutionGuard> RenderInterfaceD3D12::ExecuteInternal()
@@ -72,21 +73,48 @@ namespace RB::Graphics::D3D12
 		m_CommandList = m_Queue->GetCommandList();
 	}
 
-	void RenderInterfaceD3D12::SetVertexBuffer(RenderResource* vertex_resource)
+	void RenderInterfaceD3D12::SetScissorRect(const Math::Int4& scissor_rect)
 	{
-		if (vertex_resource->GetType() != RenderResourceType::VertexBuffer)
+		D3D12_RECT rect = {};
+		rect.left	= scissor_rect.x;
+		rect.right	= scissor_rect.y;
+		rect.top	= scissor_rect.z;
+		rect.bottom = scissor_rect.w;
+
+		m_CommandList->RSSetScissorRects(1, &rect);
+
+		m_RenderState.scissorSetExplicitly = true;
+	}
+
+	void RenderInterfaceD3D12::SetVertexBuffer(uint32_t slot, RenderResource* vertex_resource)
+	{
+		RenderResource* resources[] = { vertex_resource };
+		SetVertexBuffers(slot, resources, 1);
+	}
+
+	void RenderInterfaceD3D12::SetVertexBuffers(uint32_t start_slot, RenderResource** vertex_resources, uint32_t resource_count)
+	{
+		D3D12_VERTEX_BUFFER_VIEW* views = (D3D12_VERTEX_BUFFER_VIEW*)ALLOC_STACK(sizeof(D3D12_VERTEX_BUFFER_VIEW) * resource_count);
+
+		for (uint32_t res_idx = 0; res_idx < resource_count; ++res_idx)
 		{
-			RB_LOG_ERROR(LOGTAG_GRAPHICS, "The passed in resource was not a vertex buffer");
-			return;
+			if (vertex_resources[res_idx]->GetType() != RenderResourceType::VertexBuffer)
+			{
+				RB_LOG_ERROR(LOGTAG_GRAPHICS, "Passed in resource %d was not a vertex buffer", res_idx);
+				return;
+			}
+
+			if (!ValidateResource(vertex_resources[res_idx]))
+			{
+				RB_LOG_WARN(LOGTAG_GRAPHICS, "Vertex buffer was not valid when calling SetVertexBuffer, so it does not contain any data right now");
+			}
+
+			views[res_idx] = ((VertexBufferD3D12*)vertex_resources[res_idx])->GetView();
 		}
 
-		if (!ValidateResource(vertex_resource))
-		{
-			RB_LOG_WARN(LOGTAG_GRAPHICS, "Vertex buffer was not valid when calling SetVertexBuffer");
-		}
+		m_CommandList->IASetVertexBuffers(start_slot, resource_count, views);
 
-		// TODO Get the input layout from the resource to determine on fill in the correct parameters
-		m_CommandList->IASetVertexBuffers();
+		m_RenderState.vertexBufferSet = true;
 	}
 
 	void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dest)

@@ -2,6 +2,11 @@
 
 #include "ResourceState.h"
 
+namespace RB::Math
+{
+	struct Int4;
+}
+
 namespace RB::Graphics
 {
 	#define INTERMEDIATE_EXECUTE_THRESHOLD 500
@@ -39,7 +44,14 @@ namespace RB::Graphics
 		//virtual void SetVertexShader(uint32_t shader_index) = 0;
 		//virtual void SetPixelShader(uint32_t shader_index) = 0;
 
-		virtual void SetVertexBuffer(RenderResource* vertex_resource) = 0;
+		virtual void SetScissorRect(const Math::Int4& scissor_rect) = 0;
+
+		// ALSO SET THE VIEWPORT (AND SCISSOR IN THIS CALL IF THEY HAVE NOT YET BEEN EXPLICITELY SET)!!!
+		//virtual void SetRenderTarget(uint32_t slot, RenderResource* render_target) = 0;
+		//virtual void SetRenderTargets(uint32_t start_slot, RenderResource** render_targets) = 0;
+
+		virtual void SetVertexBuffer(uint32_t slot, RenderResource* vertex_resource) = 0;
+		virtual void SetVertexBuffers(uint32_t start_slot, RenderResource** vertex_resources, uint32_t resource_count) = 0;
 
 		virtual void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) = 0;
 

@@ -17,25 +17,6 @@ namespace RB::Graphics::D3D12
 		(keep all vertex data in memory, stream textures and shader inputs)
 	*/
 
-	class ResourceUploader;
-
-	// Increase if planning to upload more data to the GPU than the following bytes at a time
-	const uint32_t kUploadPageSize = 4096;
-
-
-	// NOTE: THE WAY THIS IS SET UP, WHEN ESSENTIALLY UPLOADING DATA EVERY FRAME, THAT DATA WILL BE DOUBLE BUFFERED, DO WE REALLY WANT AND NEED THIS????
-	// It is preferably to not use this upload allocation directly for a draw/compute call, but to copy the data first 
-	// into a more stable resource, as this resource will reset after every 'total_back_buffers' frames (+ is an upload resource, so less performance).
-	// However, if the data should change every frame, using this resource directly in a draw/compute call can be better.
-	struct UploadAllocation
-	{
-		GPtr<ID3D12Resource>		entireUploadResource;
-		D3D12_GPU_VIRTUAL_ADDRESS	offsetedGpuAddress;
-		uint64_t					offsetInResource;
-		uint64_t					maxWriteSize;
-		void*						cpuWriteLocation;
-	};
-
 	// Global resource manager
 	class ResourceManager
 	{
