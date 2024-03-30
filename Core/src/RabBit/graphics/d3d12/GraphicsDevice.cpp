@@ -33,9 +33,13 @@ namespace RB::Graphics::D3D12
 		SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 #ifdef RB_CONFIG_DEBUG
-		GPtr<ID3D12Debug> debug_interface;
+		GPtr<ID3D12Debug1> debug_interface;
 		RB_ASSERT_FATAL_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)), "Could not get the debug interface");
 		debug_interface->EnableDebugLayer();
+
+		// Enable these for full validation (very slow)
+		//debug_interface->SetEnableGPUBasedValidation(TRUE);
+		//debug_interface->SetEnableSynchronizedCommandQueueValidation(TRUE);
 #endif
 
 		CreateFactory();
