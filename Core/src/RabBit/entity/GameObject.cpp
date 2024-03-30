@@ -30,7 +30,8 @@ namespace RB::Entity
 			}
 		}
 	}
-	void GameObject::AppendComponentsWithTypeOf(ComponentID comp_id, List<ObjectComponent*>& list) const
+
+	void GameObject::AppendComponentsWithTypeOf(ComponentID comp_id, List<const ObjectComponent*>& list) const
 	{
 		auto itr = m_Components.find(comp_id);
 		if (itr == m_Components.end())

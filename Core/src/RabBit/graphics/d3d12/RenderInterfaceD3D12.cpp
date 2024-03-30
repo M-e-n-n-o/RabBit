@@ -175,6 +175,14 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
+	void RenderInterfaceD3D12::DrawInternal()
+	{
+	}
+
+	void RenderInterfaceD3D12::DispatchInternal()
+	{
+	}
+
 	void RenderInterfaceD3D12::InternalCopyBuffer(GpuResource* src, GpuResource* dest)
 	{
 		g_ResourceStateManager->TransitionResource(src->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_SOURCE);

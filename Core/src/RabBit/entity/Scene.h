@@ -18,16 +18,16 @@ namespace RB::Entity
 		List<GameObject*> GetGameObjects() const;
 
 		template<class T>
-		List<const T*> GetComponentsWithTypeOf() const;
+		List<const ObjectComponent*> GetComponentsWithTypeOf() const;
 
 	private:
 		List<GameObject*> m_GameObjects;
 	};
 
 	template<class T>
-	inline List<const T*> Scene::GetComponentsWithTypeOf() const
+	inline List<const ObjectComponent*> Scene::GetComponentsWithTypeOf() const
 	{
-		List<const T*> list;
+		List<const ObjectComponent*> list;
 
 		ComponentID id = g_ComponentRegister->GetComponentID<T>();
 
@@ -39,7 +39,7 @@ namespace RB::Entity
 
 		for (const GameObject* obj : m_GameObjects)
 		{
-			obj->AppendComponentsWithTypeOf<T>(id, list);
+			obj->AppendComponentsWithTypeOf(id, list);
 		}
 
 		return list;

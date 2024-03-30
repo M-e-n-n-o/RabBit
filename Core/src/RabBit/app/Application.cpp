@@ -185,24 +185,24 @@ namespace RB
 
 		// VAO
 		{
-			_VertexRes = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
-			GPtr<ID3D12Resource> upload_resource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
+			//_VertexRes = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
+			//GPtr<ID3D12Resource> upload_resource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
 
-			float* upload_memory;
-			upload_resource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
-			memcpy(upload_memory, _VertexData, sizeof(_VertexData));
-			upload_resource->Unmap(0, nullptr);
+			//float* upload_memory;
+			//upload_resource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
+			//memcpy(upload_memory, _VertexData, sizeof(_VertexData));
+			//upload_resource->Unmap(0, nullptr);
 
-			GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
+			//GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
 
-			command_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
+			//command_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
 
-			uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
-			_GraphicsQueue->CpuWaitForFenceValue(fence_value);
+			//uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
+			//_GraphicsQueue->CpuWaitForFenceValue(fence_value);
 
-			_VaoView.BufferLocation = _VertexRes->GetGPUVirtualAddress();
-			_VaoView.SizeInBytes	= sizeof(_VertexData);
-			_VaoView.StrideInBytes	= sizeof(float) * 5;
+			//_VaoView.BufferLocation = _VertexRes->GetGPUVirtualAddress();
+			//_VaoView.SizeInBytes	= sizeof(_VertexData);
+			//_VaoView.StrideInBytes	= sizeof(float) * 5;
 		}
 
 		Scene scene;

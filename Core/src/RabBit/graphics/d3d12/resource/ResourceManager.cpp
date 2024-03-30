@@ -245,9 +245,11 @@ namespace RB::Graphics::D3D12
 	ResourceManager::~ResourceManager()
 	{
 		// Wait until all objects can be release
-		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end(); ++itr)
+		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end();)
 		{
-			itr->first.queue->CpuWaitForFenceValue(itr->first.fenceValue);
+			itr->first->queue->CpuWaitForFenceValue(itr->first->fenceValue);
+			
+			delete itr->first;
 			itr = m_ObjsWaitingToFinishFlight.erase(itr);
 		}
 	}
@@ -260,11 +262,16 @@ namespace RB::Graphics::D3D12
 	void ResourceManager::EndFrame()
 	{
 		// Check which tracked resources can be deleted
-		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end(); ++itr)
+		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end();)
 		{
-			if (itr->first.queue->IsFenceReached(itr->first.fenceValue))
+			if (itr->first->queue->IsFenceReached(itr->first->fenceValue))
 			{
+				delete itr->first;
 				itr = m_ObjsWaitingToFinishFlight.erase(itr);
+			}
+			else
+			{
+				++itr;
 			}
 		}
 	}
@@ -279,7 +286,9 @@ namespace RB::Graphics::D3D12
 
 	void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
 	{
-		m_ObjsWaitingToFinishFlight.insert({ { queue, fence_value }, m_ObjsScheduledToReleaseAfterExecute });
+		FencePair* fence_pair = new FencePair{ queue, fence_value };
+
+		m_ObjsWaitingToFinishFlight.emplace(fence_pair, m_ObjsScheduledToReleaseAfterExecute);
 		m_ObjsScheduledToReleaseAfterExecute.clear();
 	}
 

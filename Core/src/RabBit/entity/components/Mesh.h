@@ -1,6 +1,6 @@
 #pragma once
 #include "RabBitCommon.h"
-#include "entity/ObjectComponent.cpp"
+#include "entity/ObjectComponent.h"
 #include "graphics/RenderResource.h"
 
 namespace RB::Entity

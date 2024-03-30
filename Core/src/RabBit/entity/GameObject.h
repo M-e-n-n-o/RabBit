@@ -17,7 +17,7 @@ namespace RB::Entity
 		template<class T, typename... Args>
 		T* AddComponent(Args... args);
 
-		void AppendComponentsWithTypeOf(ComponentID comp_id, List<ObjectComponent*>& list) const;
+		void AppendComponentsWithTypeOf(ComponentID comp_id, List<const ObjectComponent*>& list) const;
 
 	private:
 		UnorderedMap<ComponentID, List<ObjectComponent*>> m_Components;
@@ -26,14 +26,17 @@ namespace RB::Entity
 	template<class T, typename... Args>
 	inline T* GameObject::AddComponent(Args... args)
 	{
-		ObjectComponent* comp = new T(args...);
+		T* comp = new T(args...);
 
 		ComponentID tag = g_ComponentRegister->RegisterComponent<T>();
 
 		auto itr = m_Components.find(tag);
 		if (itr == m_Components.end())
 		{
-			m_Components.emplace({ tag, List<T>(comp) });
+			List<ObjectComponent*> list;
+			list.push_back(comp);
+
+			m_Components.emplace(tag, list);
 		}
 		else
 		{

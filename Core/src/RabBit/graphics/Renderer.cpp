@@ -204,10 +204,12 @@ namespace RB::Graphics
 
 				static List<const Entity::Mesh*> already_uploaded;
 
-				List<const Entity::Mesh*> meshes = scene->GetComponentsWithTypeOf<Entity::Mesh>();
+				List<const Entity::ObjectComponent*> meshes = scene->GetComponentsWithTypeOf<Entity::Mesh>();
 
-				for (const Entity::Mesh* mesh : meshes)
+				for (const Entity::ObjectComponent* obj : meshes)
 				{
+					const Entity::Mesh* mesh = (const Entity::Mesh*)obj;
+
 					if (std::find(already_uploaded.begin(), already_uploaded.end(), mesh) != already_uploaded.end())
 					{
 						continue;
