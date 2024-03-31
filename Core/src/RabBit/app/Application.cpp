@@ -244,13 +244,13 @@ namespace RB
 			_Renderer->SyncRenderFrame();
 
 			// Tell the render thread to start uploading resources
-			_Renderer->StartResourceStreaming(&scene);
+			_Renderer->StartResourceManagement(&scene);
 
 			// Submit the scene as context for rendering the next frame
 			_Renderer->SubmitFrameContext(&scene);
 
 			// Sync with resource uploading
-			_Renderer->SyncResourceStreaming();
+			_Renderer->SyncResourceManagement();
 
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)

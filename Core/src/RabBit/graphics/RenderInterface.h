@@ -5,6 +5,7 @@
 namespace RB::Math
 {
 	struct Int4;
+	struct Float4;
 }
 
 namespace RB::Graphics
@@ -43,6 +44,8 @@ namespace RB::Graphics
 
 		//virtual void SetVertexShader(uint32_t shader_index) = 0;
 		//virtual void SetPixelShader(uint32_t shader_index) = 0;
+
+		virtual void Clear(RenderResource* resource, const Math::Float4& color) = 0;
 
 		virtual void SetScissorRect(const Math::Int4& scissor_rect) = 0;
 

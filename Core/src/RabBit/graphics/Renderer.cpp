@@ -57,13 +57,13 @@ namespace RB::Graphics
 		// Also create the render entries? Or should those just be passed in?
 	}
 
-	void Renderer::StartResourceStreaming(const Entity::Scene* const scene /*, uint32_t min_time_to_upload_ms*/)
+	void Renderer::StartResourceManagement(const Entity::Scene* const scene /*, uint32_t min_time_to_upload_ms*/)
 	{
 		m_RenderTaskData = (void*) scene;
-		SendRenderThreadTask(RenderThreadTaskType::ResourceStreaming);
+		SendRenderThreadTask(RenderThreadTaskType::ResourceManagement);
 	}
 
-	void Renderer::SyncResourceStreaming()
+	void Renderer::SyncResourceManagement()
 	{
 		// TODO Tell the render thread the main thread is waiting for the uploading to stop
 
@@ -188,7 +188,7 @@ namespace RB::Graphics
 			}
 			break;
 
-			case Renderer::RenderThreadTaskType::ResourceStreaming:
+			case Renderer::RenderThreadTaskType::ResourceManagement:
 			{
 				/*
 					(Slowly) Upload needed resources for next frame, like new vertex data or textures.

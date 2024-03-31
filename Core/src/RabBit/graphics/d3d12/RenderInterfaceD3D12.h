@@ -43,6 +43,8 @@ namespace RB::Graphics::D3D12
 		//void SetVertexShader(uint32_t shader_index) override;
 		//void SetPixelShader(uint32_t shader_index) override;
 
+		void Clear(RenderResource* resource, const Math::Float4& color) override;
+
 		void SetScissorRect(const Math::Int4& scissor_rect) override;
 
 		void SetVertexBuffer(uint32_t slot, RenderResource* vertex_resource) override;

@@ -5,22 +5,36 @@
 
 namespace RB::Graphics
 {
-	VertexBuffer* VertexBuffer::Create(const char* name, void* data, uint64_t data_size)
+	RenderResourceType RenderResource::GetPrimitiveType() const
+	{
+		return (RenderResourceType)(((1 << kPrimitiveTypeCount) - 1) & ((uint32_t)m_Type >> -1));
+	}
+
+	VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint64_t data_size)
 	{
 		switch (Renderer::GetAPI())
 		{
 		case RenderAPI::D3D12:
-			return new D3D12::VertexBufferD3D12(name, data, data_size);
+			return new D3D12::VertexBufferD3D12(name, type, data, data_size);
 		default:
-			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the Renderer for the set graphics API");
+			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
 			break;
 		}
 
 		return nullptr;
 	}
-
-	RenderResourceType RenderResource::GetPrimitiveType() const
+	
+	Texture2D* Texture2D::Create(const char* name, void* internal_resource, uint32_t width, uint32_t height)
 	{
-		return (RenderResourceType)(((1 << kPrimitiveTypeCount) - 1) & ((uint32_t)m_Type >> -1));
+		switch (Renderer::GetAPI())
+		{
+		case RenderAPI::D3D12:
+			return new D3D12::Texture2DD3D12(name, internal_resource, width, height);
+		default:
+			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+			break;
+		}
+
+		return nullptr;
 	}
 }

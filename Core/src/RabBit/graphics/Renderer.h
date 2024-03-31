@@ -33,7 +33,7 @@ namespace RB::Graphics
 			None,
 			Shutdown,
 			FrameRender,
-			ResourceStreaming
+			ResourceManagement
 
 			// TODO Also make a task for a resource resize (if the backbuffer needs to be resized)
 		};
@@ -52,9 +52,9 @@ namespace RB::Graphics
 		void SubmitFrameContext(const Entity::Scene* const scene);
 
 		// Kick off resource uploading & texture streaming of the current' frame resources
-		void StartResourceStreaming(const Entity::Scene* const scene);
+		void StartResourceManagement(const Entity::Scene* const scene);
 		// Tell the render thread we are waiting until the resource uploading is completed and wait until completed (blocking call)
-		void SyncResourceStreaming();
+		void SyncResourceManagement();
 
 		static Renderer* Create();
 

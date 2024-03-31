@@ -4,6 +4,7 @@
 #include "resource/ResourceManager.h"
 #include "resource/RenderResourceD3D12.h"
 #include "resource/ResourceStateManager.h"
+#include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
 
 namespace RB::Graphics::D3D12
@@ -73,6 +74,11 @@ namespace RB::Graphics::D3D12
 		m_CommandList = m_Queue->GetCommandList();
 	}
 
+	void RenderInterfaceD3D12::Clear(RenderResource* resource, const Math::Float4& color)
+	{
+		//m_CommandList->ClearRenderTargetView
+	}
+
 	void RenderInterfaceD3D12::SetScissorRect(const Math::Int4& scissor_rect)
 	{
 		D3D12_RECT rect = {};
@@ -96,6 +102,8 @@ namespace RB::Graphics::D3D12
 	{
 		D3D12_VERTEX_BUFFER_VIEW* views = (D3D12_VERTEX_BUFFER_VIEW*)ALLOC_STACK(sizeof(D3D12_VERTEX_BUFFER_VIEW) * resource_count);
 
+		D3D_PRIMITIVE_TOPOLOGY type = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
 		for (uint32_t res_idx = 0; res_idx < resource_count; ++res_idx)
 		{
 			if (vertex_resources[res_idx]->GetType() != RenderResourceType::VertexBuffer)
@@ -109,10 +117,22 @@ namespace RB::Graphics::D3D12
 				RB_LOG_WARN(LOGTAG_GRAPHICS, "Vertex buffer was not valid when calling SetVertexBuffer, so it does not contain any data right now");
 			}
 
-			views[res_idx] = ((VertexBufferD3D12*)vertex_resources[res_idx])->GetView();
+			VertexBufferD3D12* vbo = (VertexBufferD3D12*)vertex_resources[res_idx];
+
+			views[res_idx] = vbo->GetView();
+
+			if (type != D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
+			{
+				RB_ASSERT_FATAL(LOGTAG_GRAPHICS, type == ConvertToD3D12Topology(vbo->GetTopologyType()), "The topology types of the passed in vertex buffers do not match");
+			}
+			else
+			{
+				type = ConvertToD3D12Topology(vbo->GetTopologyType());
+			}
 		}
 
 		m_CommandList->IASetVertexBuffers(start_slot, resource_count, views);
+		m_CommandList->IASetPrimitiveTopology(type);
 
 		m_RenderState.vertexBufferSet = true;
 	}

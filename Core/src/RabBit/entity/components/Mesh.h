@@ -20,7 +20,7 @@ namespace RB::Entity
 				0.5f, -0.5f,		0, 0, 1,
 			};
 
-			m_VertexBuffer = Graphics::VertexBuffer::Create("Triangle", data, sizeof(data));
+			m_VertexBuffer = Graphics::VertexBuffer::Create("Triangle", RB::Graphics::TopologyType::TriangleList, data, sizeof(data));
 		}
 
 		~Mesh()

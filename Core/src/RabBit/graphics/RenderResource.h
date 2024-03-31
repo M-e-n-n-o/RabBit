@@ -62,15 +62,22 @@ namespace RB::Graphics
 
 	};
 
+	enum class TopologyType
+	{
+		TriangleList
+	};
+
 	class VertexBuffer : public Buffer
 	{
 	public:
 		virtual ~VertexBuffer() = default;
 		
-		static VertexBuffer* Create(const char* name, void* data, uint64_t data_size);
+		virtual TopologyType GetTopologyType() const = 0;
+
+		static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint64_t data_size);
 
 	protected:
-		VertexBuffer() : Buffer(RenderResourceType::VertexBuffer) {}
+		VertexBuffer(): Buffer(RenderResourceType::VertexBuffer) {}
 	};
 
 	class IndexBuffer : public Buffer
@@ -81,17 +88,29 @@ namespace RB::Graphics
 	class Texture : public RenderResource
 	{
 	public:
-		virtual bool IsDepthStencil() = 0;
-		virtual bool IsRenderTargetCompatible() = 0;
-		virtual bool AllowedRandomGpuWrites() = 0;
-		virtual bool AllowedGpuReads() = 0;
+		virtual ~Texture() = default;
+
+		virtual bool AllowedRenderTarget() const = 0;
+		//virtual bool AllowedDepthStencil() = 0;
+		//virtual bool AllowedRandomGpuWrites() = 0;
+		//virtual bool AllowedGpuReads() = 0;
+
+	protected:
+		Texture(RenderResourceType type): RenderResource(type) {}
 	};
 
 	class Texture2D : public Texture
 	{
 	public:
-		virtual uint32_t GetWidth() = 0;
-		virtual uint32_t GetHeight() = 0;
+		virtual ~Texture2D() = default;
+
+		virtual uint32_t GetWidth() const = 0;
+		virtual uint32_t GetHeight() const = 0;
+
+		static Texture2D* Create(const char* name, void* internal_resource, uint32_t width, uint32_t height);
+
+	protected:
+		Texture2D(): Texture(RenderResourceType::Texture2D) {}
 	};
 
 	class RenderTargetBundle

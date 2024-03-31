@@ -18,6 +18,8 @@ namespace RB::Graphics::D3D12
 		// Should only be called on the render thread!
 		GPtr<ID3D12Resource> GetResource();
 
+		void SetResource(GPtr<ID3D12Resource> resource);
+
 		bool IsValid() const;
 
 		void MarkAsUsed();
@@ -25,8 +27,6 @@ namespace RB::Graphics::D3D12
 
 	private:
 		friend class ResourceManager;
-
-		void SetResource(GPtr<ID3D12Resource> resource);
 
 		GPtr<ID3D12Resource> m_Resource;
 	};
