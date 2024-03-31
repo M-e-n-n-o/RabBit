@@ -68,7 +68,7 @@ void ShaderWriter::WriteOutShaders(const std::wstring& defines_folder, const std
 
 	// Start outputting to the defines file
 	std::wstring defines_file_name = defines_folder;
-	defines_file_name.append(L"/ShaderDefines.h");
+	defines_file_name.append(L"/codeGen/ShaderDefines.h");
 	std::ofstream defines_file(defines_file_name, std::ios::out | std::ios::trunc | std::ios::binary);
 
 	std::wstring start_output;

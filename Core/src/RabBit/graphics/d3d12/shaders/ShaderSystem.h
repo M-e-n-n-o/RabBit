@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "ShaderDefines.h"
+#include "codeGen/ShaderDefines.h"
 
 // DirectX 12 specific headers.
 #include <d3d12.h>

@@ -38,6 +38,9 @@ out/
 .vs/
 .vscode/
 
+# Ignore code generated folder
+Core/**/codeGen/
+
 # Exclusions
 !Core/external/**/*.lib
 !Core/external/**/*.dll

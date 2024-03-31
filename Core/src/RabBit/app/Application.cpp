@@ -21,7 +21,7 @@
 
 #include <d3dcompiler.h>
 #include <fstream>
-#include "graphics/d3d12/shaders/ShaderDefines.h"
+#include "graphics/d3d12/shaders/codeGen/ShaderDefines.h"
 
 using namespace RB::Graphics;
 using namespace RB::Graphics::D3D12;
