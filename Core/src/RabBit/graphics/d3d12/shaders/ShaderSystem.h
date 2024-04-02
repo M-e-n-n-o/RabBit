@@ -1,6 +1,8 @@
 #pragma once
 
 #include "RabBitCommon.h"
+
+// If you get an error that this file cannot be found, run the ShaderCompilerD3D12 project
 #include "codeGen/ShaderDefines.h"
 
 // DirectX 12 specific headers.

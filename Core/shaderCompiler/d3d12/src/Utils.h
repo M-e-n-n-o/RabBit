@@ -2,7 +2,8 @@
 #include <iostream>
 #include <string>
 
-#define LOG(message) std::wcout << message << std::endl
+#define LOGW(message) std::wcout << message << std::endl
+#define LOG(message) std::cout << message << std::endl
 
 #define EXIT_ON_FAIL_HR(hresult, error_message)			\
 		if (FAILED(hresult)) {							\

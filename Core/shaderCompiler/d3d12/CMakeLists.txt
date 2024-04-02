@@ -6,7 +6,7 @@ file(GLOB_RECURSE SC_SRC_FILES CONFIGURE_DEPENDS
 add_executable(ShaderCompilerD3D12 ${SC_SRC_FILES})
 
 target_include_directories(ShaderCompilerD3D12 PUBLIC 
-    "../external/DXC/inc"
+    "../../external/DXC/inc"
 )
 
 set(DXC_PATH ${EXTERNAL_PATH}/DXC)

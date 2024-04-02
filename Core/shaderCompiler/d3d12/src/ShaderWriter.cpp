@@ -36,10 +36,10 @@ ShaderWriter::ShaderWriter()
 {
 }
 
-void ShaderWriter::WriteOutShaders(const std::wstring& defines_folder, const std::wstring& bin_folder, const std::vector<Shader>& shaders)
+void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std::string& bin_folder, const std::vector<Shader>& shaders)
 {	
-	std::wstring bin_filename(bin_folder);
-	bin_filename.append(L"/Shaders.bin");
+	std::string bin_filename(bin_folder);
+	bin_filename.append("/Shaders.bin");
 
 	std::ofstream bin_file;
 	bin_file.open(bin_filename.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
@@ -66,10 +66,19 @@ void ShaderWriter::WriteOutShaders(const std::wstring& defines_folder, const std
 	// Close bin file
 	bin_file.close();
 
+
 	// Start outputting to the defines file
-	std::wstring defines_file_name = defines_folder;
-	defines_file_name.append(L"/codeGen/ShaderDefines.h");
+	std::string defines_file_name = defines_folder;
+	defines_file_name.append("/codeGen");
+
+	// Create the directory if it does not already exist
+	CreateDirectory(defines_file_name.c_str(), NULL);
+
+	defines_file_name.append("/ShaderDefines.h");
+
 	std::ofstream defines_file(defines_file_name, std::ios::out | std::ios::trunc | std::ios::binary);
+
+	LOG("Output location: " << defines_file_name);
 
 	std::wstring start_output;
 	start_output.append(SHADER_START);

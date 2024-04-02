@@ -22,9 +22,9 @@ void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>&
 
 int main()
 {
-	LOG(L"---------------- Starting RabBit's D3D12 shader compiler ----------------");
-	LOG(L"Shader files location: " << RB_SHADER_SOURCE);
-	LOG(L"");
+	LOGW(L"---------------- Starting RabBit's D3D12 shader compiler ----------------");
+	LOGW(L"Shader files location: " << RB_SHADER_SOURCE);
+	LOGW(L"");
 
 	// Check if the DLL's are loaded
 	HANDLE dxc_handle = GetModuleHandle("dxcompiler.dll");
@@ -38,12 +38,14 @@ int main()
 	Compiler compiler;
 	compiler.CompileFiles(files);
 
-	ShaderWriter writer;
-	writer.WriteOutShaders(ConvertAnsiToWide(RB_SHADER_SOURCE), ConvertAnsiToWide(RB_OUTPUT_FOLDER), compiler.GetCompiledShaders());
+	LOGW(L"");
 
-	LOG(L"");
-	LOG(L"-------------------------------------------------------------------------");
-	LOG(L"Succesfully finished compiling the shaders");
+	ShaderWriter writer;
+	writer.WriteOutShaders(RB_SHADER_SOURCE, RB_OUTPUT_FOLDER, compiler.GetCompiledShaders());
+
+	LOGW(L"");
+	LOGW(L"-------------------------------------------------------------------------");
+	LOGW(L"Succesfully finished compiling the shaders");
 }
 
 void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>& files)

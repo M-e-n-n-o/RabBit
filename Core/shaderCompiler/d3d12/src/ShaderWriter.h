@@ -6,5 +6,5 @@ class ShaderWriter
 public:
 	ShaderWriter();
 
-	void WriteOutShaders(const std::wstring& defines_folder, const std::wstring& bin_folder, const std::vector<Shader>& shaders);
+	void WriteOutShaders(const std::string& defines_folder, const std::string& bin_folder, const std::vector<Shader>& shaders);
 };

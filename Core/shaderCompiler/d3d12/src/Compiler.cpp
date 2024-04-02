@@ -28,7 +28,7 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 		status = m_Utils->LoadFile(file.c_str(), nullptr, &source_blob);
 		EXIT_ON_FAIL_HR(status, L"Failed to load file: " << file.c_str());
 
-		LOG(L"Got \"" << file.c_str() << "\"");
+		LOGW(L"Got \"" << file.c_str() << "\"");
 
 		DxcBuffer source;
 		source.Ptr		= source_blob->GetBufferPointer();
@@ -45,7 +45,7 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 
 		for (Shader& entry : entries)
 		{
-			LOG(L"Compiling: " << entry.entryName.c_str());
+			LOGW(L"Compiling: " << entry.entryName.c_str());
 
 			wchar_t* target;
 			switch (entry.stage)
