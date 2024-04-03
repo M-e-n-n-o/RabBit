@@ -9,6 +9,10 @@
 #include <d3d11.h>
 #include <d3d11on12.h>
 
+// Agility SDK constants (update the version number if the SDK version is ever upgraded!)
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 613; }
+extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\"; }
+
 namespace RB::Graphics::D3D12
 {
 	GraphicsDevice* g_GraphicsDevice = nullptr;

@@ -9,9 +9,6 @@ option(RABBIT_BUILD_TESTS "Build tests" ON)
 file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.cpp"
-
-    # D3D12
-    "external/D3DX12/*.h"
 )
 
 add_library(RabBit STATIC ${RABBIT_SRC_FILES})
@@ -34,6 +31,9 @@ target_include_directories(RabBit PUBLIC
     "src/RabBit"
     "external"
 
+    # D3D12
+    "external/D3D12/include"
+
     # WinPixEventRuntime
     "external/WinPixEventRuntime/Include/WinPixEventRuntime"
 
@@ -44,6 +44,7 @@ target_include_directories(RabBit PUBLIC
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
 # Library paths
+set(ENV{D3D_PATH} "${EXTERNAL_PATH}/D3D12")
 set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
 set(ENV{DXC_PATH} "${EXTERNAL_PATH}/DXC")
 
@@ -79,6 +80,16 @@ function(copyExternalLibraries)
             "${file_i}"
             $<TARGET_FILE_DIR:${APP_NAME}>)
     endforeach(file_i)
+
+    # Copy the D3D12 DLL's to a specific folder
+    add_custom_command(TARGET ${APP_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$ENV{D3D_PATH}/bin/x64/D3D12Core.dll"
+        "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/D3D12Core.dll")
+    add_custom_command(TARGET ${APP_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$ENV{D3D_PATH}/bin/x64/d3d12SDKLayers.dll"
+        "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/d3d12SDKLayers.dll")
 endfunction()
 
 # Add shader compiler

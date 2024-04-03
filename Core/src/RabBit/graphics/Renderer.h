@@ -61,6 +61,8 @@ namespace RB::Graphics
 	protected:
 		Renderer();
 
+		void Init();
+
 		virtual void OnFrameStart() = 0;
 		virtual void OnFrameEnd() = 0;
 

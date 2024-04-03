@@ -23,6 +23,11 @@ namespace RB::Graphics
 		: m_RenderState(RenderThreadState::Idle)
 		, m_RenderTaskType(RenderThreadTaskType::None)
 	{
+
+	}
+
+	void Renderer::Init()
+	{
 		m_GraphicsInterface = RenderInterface::Create(false);
 		m_CopyInterface = RenderInterface::Create(true);
 
