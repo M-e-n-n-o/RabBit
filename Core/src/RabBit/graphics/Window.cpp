@@ -58,43 +58,6 @@ namespace RB::Graphics
 		DestroyWindow();
 	}
 
-	void Window::Update()
-	{
-		m_NativeWindow->ProcessEvents();
-	}
-
-	void Window::Resize(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
-	{
-		SetWindowPos(m_NativeWindow->GetHandle(), HWND_TOP, x, y, width, height, NULL);
-	}
-
-	void Window::OnResize(uint32_t width, uint32_t height)
-	{
-		if (m_SwapChain->GetWidth() == width && m_SwapChain->GetHeight() == height)
-		{
-			return;
-		}
-
-		g_GraphicsDevice->WaitUntilIdle();
-
-		m_Minimized = (width == 0 && height == 0);
-
-		width  = std::max(1u, width);
-		height = std::max(1u, height);
-
-		m_SwapChain->Resize(width, height);
-	}
-
-	uint32_t Window::GetWidth() const
-	{
-		return m_SwapChain->GetWidth();
-	}
-
-	uint32_t Window::GetHeight() const
-	{
-		return m_SwapChain->GetHeight();
-	}
-
 	bool Window::IsSameWindow(void* window_handle) const
 	{
 		return window_handle == m_NativeWindow->GetHandle();
@@ -153,6 +116,7 @@ namespace RB::Graphics
 
 		case EventType::WindowClose:
 		{
+			m_IsValid = false;
 			DestroyWindow();
 		}
 		break;

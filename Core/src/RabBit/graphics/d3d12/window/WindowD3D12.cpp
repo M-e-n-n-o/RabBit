@@ -1,5 +1,10 @@
+#include "WindowD3D12.h"
+#include "WindowD3D12.h"
+#include "WindowD3D12.h"
+#include "WindowD3D12.h"
+#include "WindowD3D12.h"
 #include "RabBitCommon.h"
-#include "NativeWindow.h"
+#include "WindowD3D12.h"
 
 #include "input/events/WindowEvent.h"
 #include "input/events/MouseEvent.h"
@@ -13,19 +18,19 @@ namespace RB::Graphics::D3D12
 	// Window callback function
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-	NativeWindow::NativeWindow(const WindowArgs args)
+	WindowD3D12::WindowD3D12(const WindowArgs args)
 		: m_WindowHandle(nullptr)
 	{
 		RegisterWindowCLass(args.instance, args.className);
 		CreateWindow(args.instance, args.className, args.windowName, args.width, args.height, args.extendedStyle, args.style, args.borderless);
 	}
 
-	NativeWindow::~NativeWindow()
+	WindowD3D12::~WindowD3D12()
 	{
 		DestroyWindow(m_WindowHandle);
 	}
 
-	void NativeWindow::ProcessEvents()
+	void WindowD3D12::Update()
 	{
 		MSG message = {};
 		if (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
@@ -35,7 +40,54 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	void NativeWindow::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
+	uint32_t WindowD3D12::GetWidth() const
+	{
+		return m_SwapChain->GetWidth();
+	}
+
+	uint32_t WindowD3D12::GetHeight() const
+	{
+		return m_SwapChain->GetHeight();
+	}
+
+	void WindowD3D12::Resize(uint32_t width, uint32_t height, int32_t x, int32_t y)
+	{
+		// TODO: MAKE SURE THAT -1 MAKES SURE THAT THE WINDOW IS NOT MOVED!!!!
+		static_assert(false);
+
+		//SetWindowPos(m_NativeWindow->GetHandle(), HWND_TOP, x, y, width, height, NULL);
+	}
+
+	Graphics::Texture2D* WindowD3D12::GetCurrentBackBuffer()
+	{
+		return nullptr;
+	}
+
+	void WindowD3D12::OnResize(uint32_t width, uint32_t height)
+	{
+		if (m_SwapChain->GetWidth() == width && m_SwapChain->GetHeight() == height)
+		{
+			return;
+		}
+
+		g_GraphicsDevice->WaitUntilIdle();
+
+		m_Minimized = (width == 0 && height == 0);
+
+		width = std::max(1u, width);
+		height = std::max(1u, height);
+
+		m_SwapChain->Resize(width, height);
+	}
+
+	void WindowD3D12::DestroyWindow()
+	{
+		g_GraphicsDevice->WaitUntilIdle();
+
+		delete m_SwapChain;
+	}
+
+	void WindowD3D12::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
 	{
 		WNDCLASSEXW window_class = {};
 
@@ -56,7 +108,7 @@ namespace RB::Graphics::D3D12
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, SUCCEEDED(result), "Failed to register window");
 	}
 
-	void NativeWindow::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless)
+	void WindowD3D12::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless)
 	{
 		int screen_width	= ::GetSystemMetrics(SM_CXSCREEN);
 		int screen_height	= ::GetSystemMetrics(SM_CYSCREEN);
@@ -98,7 +150,7 @@ namespace RB::Graphics::D3D12
 		//SetLayeredWindowAttributes(m_WindowHandle, 0, 0xFF / 2, 0x02);
 	}
 
-	void NativeWindow::ShowWindow()
+	void WindowD3D12::ShowWindow()
 	{
 		::ShowWindow(m_WindowHandle, SW_SHOW);
 	}

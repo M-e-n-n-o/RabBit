@@ -41,8 +41,8 @@ namespace RB::Graphics
 		static Window* Create();
 
 	private:
-		void OnResize(uint32_t width, uint32_t height);
-		void DestroyWindow();
+		virtual void OnResize(uint32_t width, uint32_t height) = 0;
+		virtual void DestroyWindow() = 0;
 
 		bool m_Minimized;
 		bool m_IsValid;
