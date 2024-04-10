@@ -3,7 +3,7 @@
 #include "graphics/d3d12/GraphicsDevice.h"
 #include "graphics/d3d12/window/NativeWindow.h"
 
-namespace RB::Graphics::D3D12::Window
+namespace RB::Graphics::D3D12
 {
 	SwapChain::SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count, DXGI_FORMAT format, bool transparency_support)
 		: m_BackBufferCount(buffer_count)

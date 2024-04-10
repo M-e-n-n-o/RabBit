@@ -7,7 +7,12 @@ namespace RB::Graphics
 {
 	RenderResourceType RenderResource::GetPrimitiveType() const
 	{
-		return (RenderResourceType)(((1 << kPrimitiveTypeCount) - 1) & ((uint32_t)m_Type >> -1));
+		uint32_t last_primitive = (uint32_t)RenderResourceType::kLastPrimitiveType;
+		uint32_t and_value = last_primitive + (last_primitive - 1);
+
+		uint32_t primitive_type = (uint32_t)m_Type & and_value;
+
+		return (RenderResourceType) primitive_type;
 	}
 
 	VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint64_t data_size)

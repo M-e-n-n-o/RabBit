@@ -10,7 +10,7 @@
 #undef CreateWindow
 #endif
 
-namespace RB::Graphics::D3D12::Window
+namespace RB::Graphics::D3D12
 {
 	struct WindowArgs
 	{
@@ -24,11 +24,11 @@ namespace RB::Graphics::D3D12::Window
 		bool			borderless;
 	};
 
-	class NativeWindow
+	class WindowD3D12
 	{
 	public:
-		NativeWindow(const WindowArgs args);
-		~NativeWindow();
+		WindowD3D12(const WindowArgs args);
+		~WindowD3D12();
 
 		void ProcessEvents();
 

@@ -8,7 +8,7 @@
 using namespace RB::Input;
 using namespace RB::Input::Events;
 
-namespace RB::Graphics::D3D12::Window
+namespace RB::Graphics::D3D12
 {
 	// Window callback function
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);

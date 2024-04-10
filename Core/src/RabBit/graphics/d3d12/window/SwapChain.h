@@ -12,7 +12,7 @@
 // Direct Composition, for transparency support
 #include <dcomp.h>
 
-namespace RB::Graphics::D3D12::Window
+namespace RB::Graphics::D3D12
 {
 	enum class VsyncMode : uint8_t
 	{

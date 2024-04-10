@@ -1,14 +1,11 @@
 #include "RabBitCommon.h"
 #include "Window.h"
-#include "graphics/d3d12/GraphicsDevice.h"
-#include "graphics/d3d12/window/NativeWindow.h"
-#include "graphics/d3d12/window/SwapChain.h"
-#include "graphics/d3d12/DeviceQueue.h"
+#include "graphics/Renderer.h"
+#include "graphics/d3d12/window/WindowD3D12.h"
 #include "input/events/WindowEvent.h"
 
 using namespace RB::Input::Events;
 using namespace RB::Graphics::D3D12;
-using namespace RB::Graphics::D3D12::Window;
 
 namespace RB::Graphics
 {
@@ -163,5 +160,19 @@ namespace RB::Graphics
 		default:
 			break;
 		}
+	}
+	
+	Window* Window::Create()
+	{
+		switch (Renderer::GetAPI())
+		{
+		case RenderAPI::D3D12:
+			return new D3D12::WindowD3D12();
+		default:
+			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the render interface for the set graphics API");
+			break;
+		}
+
+		return nullptr;
 	}
 }

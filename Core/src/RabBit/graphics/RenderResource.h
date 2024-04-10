@@ -2,10 +2,6 @@
 
 namespace RB::Graphics
 {
-	// Note: When changing the primitive types, max sure to also update
-
-	constexpr uint32_t kPrimitiveTypeCount = 2;
-
 	enum class RenderResourceType : uint32_t
 	{
 		Unknown					= (0 << 0),
@@ -13,6 +9,8 @@ namespace RB::Graphics
 		// Primitive types
 		Buffer					= (1 << 0),
 		Texture					= (1 << 1),
+
+		kLastPrimitiveType		= Texture,
 
 		// Implementation types
 		StructuredBuffer		= (1 << 2) | Buffer,
