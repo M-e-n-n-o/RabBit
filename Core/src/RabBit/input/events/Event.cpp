@@ -32,6 +32,9 @@ namespace RB::Input::Events
 
 	void EventManager::InsertEvent(Event* event) 
 	{
+		// TODO Do not directly execute the events as some will have to be done on a separate thread (window resizing on render thread).
+		// So just put the events in a queue that will be executed in order when the necessary thread is ready to execute them.
+
 		m_LastEvents.insert(m_LastEvents.begin(), event);
 
 		for (EventListener* listener : m_Listeners)

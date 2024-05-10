@@ -13,7 +13,7 @@ Compiler::Compiler()
 	hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_Compiler));
 	EXIT_ON_FAIL_HR(hr, L"Failed to create compiler instance");
 
-	// Create default include handler (TODO Create our own)
+	// Create default include handler (Create our own when necessary!)
 	m_Utils->CreateDefaultIncludeHandler(&m_IncludeHandler);
 }
 

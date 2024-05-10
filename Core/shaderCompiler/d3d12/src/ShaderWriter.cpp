@@ -120,13 +120,4 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 	defines_file.close();
 
 	delete[] output;
-
-	/*
-		TODO:
-		- Maybe hide the ShaderBlobLookup class and the LUT in another file that is only included by the ShaderSystem class
-		- Add the shader reading logic to the ShaderSystem class
-		- Include handling to include other hlsl and .h files
-
-		https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
-	*/
 }

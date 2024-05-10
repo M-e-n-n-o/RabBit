@@ -98,6 +98,7 @@ namespace RB::Graphics::D3D12
 
 		//uint64_t seed = 0;
 
+		// Do not hash the shader blob, but just simply use the shader ID as that is unique to each shader!!!
 		////HashCombine(seed, (char*) desc.VS.pShaderBytecode);
 		////HashCombine(seed, (char*) desc.PS.pShaderBytecode);
 		////HashCombine(seed, (char*) desc.DS.pShaderBytecode);

@@ -173,7 +173,7 @@ namespace RB::Graphics::D3D12
 		case RenderResourceType::Buffer:
 		{
 			GpuResource* upload_res = new GpuResource();
-			g_ResourceManager->CreateUploadResource(upload_res, L"Upload resource", data_size);
+			g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", data_size);
 			
 			char* mapped_mem;
 			RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
@@ -220,21 +220,6 @@ namespace RB::Graphics::D3D12
 		{
 			return true;
 		}
-
-		wchar_t* wchar = new wchar_t[strlen(res->GetName()) + 1];
-		CharToWchar(res->GetName(), wchar);
-
-		switch (res->GetType())
-		{
-		case RenderResourceType::VertexBuffer: g_ResourceManager->CreateVertexResource(gpu_res, wchar, res->GetSize()); break;
-
-		case RenderResourceType::Unknown:
-		default:
-			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
-			break;
-		}
-		
-		delete[] wchar;
 
 		return false;
 	}

@@ -25,7 +25,7 @@ namespace RB::Graphics
 		args.style			= WS_OVERLAPPEDWINDOW;
 		args.borderless		= false;
 		//args.windowName		= (wchar_t*) ALLOC_STACK(sizeof(wchar_t) * strlen(window_name) + 1);
-		args.windowName		= new wchar_t[strlen(window_name) + 1]; // <- !! TODO: THIS IS A SMALL, NOT SO IMPORTANT, MEMORY LEAK, BUT I STILL NEED TO FIX THIS !!
+		args.windowName		= new wchar_t[strlen(window_name) + 1]; // <- !! TODO: THIS IS A SMALL, NOT SO IMPORTANT, MEMORY LEAK, BUT STILL NEED TO FIX THIS !!
 		CharToWchar(window_name, args.windowName);
 
 		if (window_style & kWindowStyle_Borderless)

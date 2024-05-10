@@ -28,7 +28,7 @@ namespace RB::Graphics::D3D12
 	}
 #endif
 
-	GraphicsDevice::GraphicsDevice()
+	GraphicsDevice::GraphicsDevice(bool enable_debug_layer)
 		: m_CopyQueue(nullptr)
 		, m_ComputeQueue(nullptr)
 		, m_GraphicsQueue(nullptr)
@@ -36,14 +36,17 @@ namespace RB::Graphics::D3D12
 		// Tell Windows that this thread is DPI aware so it does not automatically apply scaling
 		SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-#ifdef RB_CONFIG_DEBUG
-		GPtr<ID3D12Debug1> debug_interface;
-		RB_ASSERT_FATAL_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)), "Could not get the debug interface");
-		debug_interface->EnableDebugLayer();
+#if !defined(RB_CONFIG_DIST)
+		if (enable_debug_layer)
+		{
+			GPtr<ID3D12Debug1> debug_interface;
+			RB_ASSERT_FATAL_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)), "Could not get the debug interface");
+			debug_interface->EnableDebugLayer();
 
-		// Enable these for full validation (very slow)
-		//debug_interface->SetEnableGPUBasedValidation(TRUE);
-		//debug_interface->SetEnableSynchronizedCommandQueueValidation(TRUE);
+			// Enable these for full validation (very slow)
+			//debug_interface->SetEnableGPUBasedValidation(TRUE);
+			//debug_interface->SetEnableSynchronizedCommandQueueValidation(TRUE);
+		}
 #endif
 
 		CreateFactory();
@@ -51,7 +54,7 @@ namespace RB::Graphics::D3D12
 		CreateAdapter();
 		RB_LOG(LOGTAG_GRAPHICS, "-------- MONITOR INFORMATION --------");
 		CreateMonitors();
-		CreateDevice();
+		CreateDevice(enable_debug_layer);
 	}
 
 	GraphicsDevice::~GraphicsDevice()
@@ -199,7 +202,7 @@ namespace RB::Graphics::D3D12
 
 	void GraphicsDevice::CreateMonitors()
 	{
-		// TODO, to get all possible fullscreen resolutions, formats and refresh rate see:
+		// To get all possible fullscreen resolutions, formats and refresh rate see:
 		// https://learn.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgioutput1-getdisplaymodelist1
 
 		RB_LOG(LOGTAG_GRAPHICS, "Found the following monitors: ");
@@ -257,12 +260,17 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	void GraphicsDevice::CreateDevice()
+	void GraphicsDevice::CreateDevice(bool enable_debug_messages)
 	{
 		RB_ASSERT_FATAL_RELEASE_D3D(D3D12CreateDevice(m_NativeAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_NativeDevice)), "Could not create D3D12 device");
 
 		// Enable debug messages
-#ifdef RB_CONFIG_DEBUG
+#if !defined(RB_CONFIG_DIST)
+		if (!enable_debug_messages)
+		{
+			return;
+		}
+
 		GPtr<ID3D12InfoQueue> info_queue;
 		if (FAILED(m_NativeDevice.As(&info_queue)))
 		{

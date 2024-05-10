@@ -11,6 +11,7 @@ namespace RB::Graphics::D3D12
 		, m_Data(data)
 	{
 		m_Resource = new GpuResource();
+		g_ResourceManager->ScheduleCreateVertexResource(m_Resource, name, data_size);
 	}
 
 	VertexBufferD3D12::~VertexBufferD3D12()

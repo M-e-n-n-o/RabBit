@@ -52,7 +52,7 @@ namespace RB::Graphics::D3D12
 
 	void WindowD3D12::Resize(uint32_t width, uint32_t height, int32_t x, int32_t y)
 	{
-		// TODO: MAKE SURE THAT -1 MAKES SURE THAT THE WINDOW IS NOT MOVED!!!!
+		// TODO: MAKE SURE THAT -1 MAKES SURE THAT THE WINDOW IS CENTERED TO THE MONITOR
 		static_assert(false);
 
 		//SetWindowPos(m_NativeWindow->GetHandle(), HWND_TOP, x, y, width, height, NULL);

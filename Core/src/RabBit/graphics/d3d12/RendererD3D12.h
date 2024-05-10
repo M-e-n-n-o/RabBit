@@ -11,7 +11,7 @@ namespace RB::Graphics::D3D12
 	class RendererD3D12 : public Renderer
 	{
 	public:
-		RendererD3D12();
+		RendererD3D12(bool enable_validation_layer);
 		~RendererD3D12();
 
 		virtual void OnFrameStart() override;

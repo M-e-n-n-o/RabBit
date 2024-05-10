@@ -1,3 +1,4 @@
+#include "ResourceManager.h"
 #include "RabBitCommon.h"
 #include "../GraphicsDevice.h"
 #include "ResourceManager.h"
@@ -235,15 +236,39 @@ namespace RB::Graphics::D3D12
 	//								ResourceManager
 	// ----------------------------------------------------------------------------
 
+	DWORD WINAPI ResourceThread(PVOID param);
+
 	ResourceManager* g_ResourceManager = nullptr;
 
 	ResourceManager::ResourceManager()
+		: m_HighPriorityInsertIndex(0)
+		, m_CreatedResources(0)
+		, m_KickedThread(false)
 	{
+		InitializeConditionVariable(&m_KickCV);
+		InitializeCriticalSection(&m_SyncCS);
 
+		InitializeConditionVariable(&m_DoneCV);
+		InitializeCriticalSection(&m_DoneCS);
+
+		// Spawn resource creation thread
+		DWORD id;
+		m_ResourceCreationThread = CreateThread(NULL, 0, ResourceThread, (PVOID)this, 0, &id);
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_ResourceCreationThread != 0, "Failed to create resource creation thread");
+		SetThreadPriority(m_ResourceCreationThread, THREAD_PRIORITY_NORMAL);
 	}
 
 	ResourceManager::~ResourceManager()
 	{
+		// Schedule an empty create
+		ScheduleCreate(nullptr);
+
+		// Wait until resource creation thread has terminated
+		WaitForMultipleObjects(1, &m_ResourceCreationThread, TRUE, INFINITE);
+		CloseHandle(m_ResourceCreationThread);
+		DeleteCriticalSection(&m_SyncCS);
+		DeleteCriticalSection(&m_DoneCS);
+
 		// Wait until all objects can be release
 		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end();)
 		{
@@ -278,10 +303,13 @@ namespace RB::Graphics::D3D12
 
 	void ResourceManager::MarkForDelete(GpuResource* resource)
 	{
-		if (resource->m_Resource)
+		if (!resource->IsValid())
 		{
-			m_ObjsScheduledToReleaseAfterExecute.push_back(resource->m_Resource);
+			RB_LOG_WARN(LOGTAG_GRAPHICS, "Resource can not be deleted, it is not valid");
+			return;
 		}
+		
+		m_ObjsScheduledToReleaseAfterExecute.push_back(resource->m_Resource);
 	}
 
 	void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
@@ -292,22 +320,92 @@ namespace RB::Graphics::D3D12
 		m_ObjsScheduledToReleaseAfterExecute.clear();
 	}
 
-	bool ResourceManager::CreateUploadResource(GpuResource* out_resource, const wchar_t* name, uint64_t size)
+	bool ResourceManager::WaitUntilResourceValid(GpuResource* resource)
 	{
-		// TODO: Make this deferred and create and upload the actual resource and resource data on a different thread
-		out_resource->SetResource(CreateCommittedResource(name, CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ));
-		
-		// TODO Return if resource creation succeeded
+		EnterCriticalSection(&m_SyncCS);
+
+		// Find the resource in the scheduled creation list
+		auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](ResourceDesc* desc) -> bool
+			{
+				return desc->resource == resource;
+			});
+
+		if (itr == m_ScheduledCreations.end())
+		{
+			LeaveCriticalSection(&m_SyncCS);
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Resource was not scheduled for creation");
+			return false;
+		}
+
+		auto high_prio_itr = m_ScheduledCreations.begin() + m_HighPriorityInsertIndex;
+
+		if (itr > high_prio_itr)
+		{
+			// Make the resource high priority if not done already
+			itr = std::rotate(itr, itr + 1, high_prio_itr);
+			m_HighPriorityInsertIndex++;
+		}
+
+		EnterCriticalSection(&m_DoneCS);
+
+		// Add the last 1 because resource thread is already creating another resource when we are at this point, 
+		// so we should ignore the next created resource as that will not be the resource we need to wait on.
+		uint64_t wait_for = uint64_t(itr - m_ScheduledCreations.begin()) + (m_CreatedResources + 1) + 1;
+
+		LeaveCriticalSection(&m_SyncCS);
+
+		// Wait until the resource has been created
+		while (wait_for < m_CreatedResources)
+		{
+			SleepConditionVariableCS(&m_DoneCV, &m_DoneCS, INFINITE);
+		}
+
+		LeaveCriticalSection(&m_DoneCS);
+
 		return true;
 	}
 
-	bool ResourceManager::CreateVertexResource(GpuResource* out_resource, const wchar_t* name, uint64_t size)
+	void ResourceManager::ScheduleCreateUploadResource(GpuResource* resource, const char* name, uint64_t size)
 	{
-		// TODO: Make this deferred and create and upload the actual resource and resource data on a different thread
-		out_resource->SetResource(CreateCommittedResource(name, CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, D3D12_RESOURCE_STATE_COPY_DEST));
-		
-		// TODO Return if resource creation succeeded
-		return true;
+		wchar_t* wname = new wchar_t[strlen(name) + 1];
+		CharToWchar(name, wname);
+
+		ResourceDesc* desc = new ResourceDesc();
+		desc->type		= ResourceType::Upload;
+		desc->resource	= resource;
+		desc->name		= wname;
+		desc->size		= size;
+
+		ScheduleCreate(desc);
+	}
+
+	void ResourceManager::ScheduleCreateVertexResource(GpuResource* resource, const char* name, uint64_t size)
+	{
+		wchar_t* wname = new wchar_t[strlen(name) + 1];
+		CharToWchar(name, wname);
+
+		ResourceDesc* desc = new ResourceDesc();
+		desc->type		= ResourceType::Vertex;
+		desc->resource	= resource;
+		desc->name		= wname;
+		desc->size		= size;
+
+		ScheduleCreate(desc);
+	}
+
+	void ResourceManager::ScheduleCreate(ResourceDesc* desc)
+	{
+		EnterCriticalSection(&m_SyncCS);
+
+		if (desc != nullptr)
+		{
+			m_ScheduledCreations.push_back(desc);
+		}
+
+		m_KickedThread = true;
+
+		LeaveCriticalSection(&m_SyncCS);
+		WakeConditionVariable(&m_KickCV);
 	}
 
 	GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,
@@ -335,5 +433,87 @@ namespace RB::Graphics::D3D12
 		}
 
 		return resource;
+	}
+
+	DWORD WINAPI ResourceThread(PVOID param)
+	{
+		ResourceManager* r = (ResourceManager*) param;
+
+		// Loop through all scheduled resource creations
+		while (true)
+		{
+			EnterCriticalSection(&r->m_SyncCS);
+
+			// Wait until kick or just continue directly if there are more resources scheduled
+			while (!r->m_KickedThread && r->m_ScheduledCreations.empty())
+			{
+				SleepConditionVariableCS(&r->m_KickCV, &r->m_SyncCS, INFINITE);
+			}
+
+			r->m_KickedThread = false;
+
+			if (r->m_ScheduledCreations.empty())
+			{
+				break;
+			}
+
+			ResourceManager::ResourceDesc* res_desc = r->m_ScheduledCreations.front();
+			r->m_ScheduledCreations.erase(r->m_ScheduledCreations.begin());
+
+			if (r->m_HighPriorityInsertIndex > 0)
+			{
+				r->m_HighPriorityInsertIndex--;
+			}
+
+			LeaveCriticalSection(&r->m_SyncCS);
+
+			switch (res_desc->type)
+			{
+			case ResourceManager::ResourceType::Upload:
+			{
+				res_desc->resource->SetResource(
+					r->CreateCommittedResource(
+						res_desc->name, 
+						CD3DX12_RESOURCE_DESC::Buffer(res_desc->size), 
+						D3D12_HEAP_TYPE_UPLOAD, 
+						D3D12_HEAP_FLAG_NONE, 
+						D3D12_RESOURCE_STATE_GENERIC_READ));
+			}
+			break;
+
+			case ResourceManager::ResourceType::Vertex:
+			{
+				res_desc->resource->SetResource(
+					r->CreateCommittedResource(
+						res_desc->name,
+						CD3DX12_RESOURCE_DESC::Buffer(res_desc->size),
+						D3D12_HEAP_TYPE_DEFAULT,
+						D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+						D3D12_RESOURCE_STATE_COPY_DEST));
+			}
+			break;
+
+			default:
+			{
+				RB_LOG_ERROR(LOGTAG_GRAPHICS, "Not yet implemented resource creation of this type");
+			}
+			break;
+			}
+
+			delete[] res_desc->name;
+			delete res_desc;
+
+			// Notify that a resource has been created
+			{
+				EnterCriticalSection(&r->m_DoneCS);
+				r->m_CreatedResources++;
+				LeaveCriticalSection(&r->m_DoneCS);
+				WakeConditionVariable(&r->m_DoneCV);
+			}
+		}
+
+		RB_LOG(LOGTAG_GRAPHICS, "Resource thread terminating");
+
+		return 0;
 	}
 }

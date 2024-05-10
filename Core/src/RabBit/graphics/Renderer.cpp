@@ -18,6 +18,7 @@
 namespace RB::Graphics
 {
 	DWORD WINAPI RenderLoop(PVOID param);
+	DWORD WINAPI ResourceStreamLoop(PVOID param);
 
 	Renderer::Renderer()
 		: m_RenderState(RenderThreadState::Idle)
@@ -51,6 +52,8 @@ namespace RB::Graphics
 		CloseHandle(m_RenderThread);
 		DeleteCriticalSection(&m_KickCS);
 		DeleteCriticalSection(&m_SyncCS);
+
+		
 
 		delete m_GraphicsInterface;
 		delete m_CopyInterface;
@@ -108,12 +111,12 @@ namespace RB::Graphics
 		LeaveCriticalSection(&m_SyncCS);
 	}
 
-	Renderer* Renderer::Create()
+	Renderer* Renderer::Create(bool enable_validation_layer)
 	{
 		switch (Renderer::GetAPI())
 		{
 		case RenderAPI::D3D12:
-			return new D3D12::RendererD3D12();
+			return new D3D12::RendererD3D12(enable_validation_layer);
 		default:
 			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the Renderer for the set graphics API");
 			break;
@@ -247,5 +250,10 @@ namespace RB::Graphics
 		r->m_RenderState = Renderer::RenderThreadState::Terminated;
 
 		return 0;
+	}
+
+	DWORD WINAPI ResourceStreamLoop(PVOID param)
+	{
+		Renderer* r = (Renderer*)param;
 	}
 }

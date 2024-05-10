@@ -8,9 +8,9 @@
 
 namespace RB::Graphics::D3D12
 {
-	RendererD3D12::RendererD3D12()
+	RendererD3D12::RendererD3D12(bool enable_debug_layer)
 	{
-		g_GraphicsDevice		= new GraphicsDevice();
+		g_GraphicsDevice		= new GraphicsDevice(enable_debug_layer);
 		g_ResourceStateManager	= new ResourceStateManager();
 		g_ResourceManager		= new ResourceManager();
 		g_ShaderSystem			= new ShaderSystem();

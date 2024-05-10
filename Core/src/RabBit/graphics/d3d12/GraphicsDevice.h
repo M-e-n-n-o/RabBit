@@ -46,7 +46,7 @@ namespace RB::Graphics::D3D12
 	class GraphicsDevice
 	{
 	public:
-		GraphicsDevice();
+		GraphicsDevice(bool enable_debug_layer);
 		~GraphicsDevice();
 
 		bool IsFormatSupported(DXGI_FORMAT format);
@@ -73,7 +73,7 @@ namespace RB::Graphics::D3D12
 		void CreateFactory();
 		void CreateAdapter();
 		void CreateMonitors();
-		void CreateDevice();
+		void CreateDevice(bool enable_debug_messages);
 
 		GPtr<ID3D12Device2>			m_NativeDevice;
 		GPtr<IDXGIAdapter4>			m_NativeAdapter;

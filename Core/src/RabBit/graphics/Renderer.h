@@ -43,20 +43,23 @@ namespace RB::Graphics
 		static void SetAPI(RenderAPI api) { s_Api = api; }
 		inline static RenderAPI GetAPI() { return s_Api; }
 
-		// Kick off frame render (is 1 frame behind game update)
-		void StartRenderFrame();
-		// Sync until render thread is finished with rendering frame (blocking call)
-		void SyncRenderFrame();
+		//// Kick off frame render (is 1 frame behind game update)
+		//void StartRenderFrame();
+		//// Sync until render thread is finished with rendering frame (blocking call)
+		//void SyncRenderFrame();
 
 		// Submits current frame relevant information of the scene to the renderer
 		void SubmitFrameContext(const Entity::Scene* const scene);
 
-		// Kick off resource uploading & texture streaming of the current' frame resources
-		void StartResourceManagement(const Entity::Scene* const scene);
-		// Tell the render thread we are waiting until the resource uploading is completed and wait until completed (blocking call)
-		void SyncResourceManagement();
+		// Sync with the render thread (and optionally also wait until GPU is idle)
+		void SyncRenderThread(bool gpu_sync = false);
 
-		static Renderer* Create();
+		//// Kick off resource uploading & texture streaming of the current' frame resources
+		//void StartResourceManagement(const Entity::Scene* const scene);
+		//// Tell the render thread we are waiting until the resource uploading is completed and wait until completed (blocking call)
+		//void SyncResourceManagement();
+
+		static Renderer* Create(bool enable_validation_layer);
 
 	protected:
 		Renderer();
@@ -73,6 +76,7 @@ namespace RB::Graphics
 		inline static RenderAPI s_Api = RenderAPI::None;
 
 		extern friend DWORD WINAPI RenderLoop(PVOID param);
+		extern friend DWORD WINAPI ResourceStreamLoop(PVOID param);
 
 		HANDLE				m_RenderThread;
 		CONDITION_VARIABLE	m_KickCV;

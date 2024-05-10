@@ -30,8 +30,10 @@ namespace RB::Graphics::D3D12
 		void MarkForDelete(GpuResource* resource);
 		void OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value);
 
-		bool CreateUploadResource(GpuResource* out_resource, const wchar_t* name, uint64_t size);
-		bool CreateVertexResource(GpuResource* out_resource, const wchar_t* name, uint64_t size);
+		void ScheduleCreateUploadResource(GpuResource* resource, const char* name, uint64_t size);
+		void ScheduleCreateVertexResource(GpuResource* resource, const char* name, uint64_t size);
+
+		bool WaitUntilResourceValid(GpuResource* resource);
 
 	private:
 
@@ -49,6 +51,36 @@ namespace RB::Graphics::D3D12
 
 		UnorderedMap<FencePair*, List<GPtr<ID3D12Object>>> m_ObjsWaitingToFinishFlight;
 		List<GPtr<ID3D12Object>> m_ObjsScheduledToReleaseAfterExecute;
+
+		enum class ResourceType
+		{
+			Upload,
+			Vertex
+		};
+
+		struct ResourceDesc
+		{
+			ResourceType	type;
+			GpuResource*	resource;
+			const wchar_t*	name;
+			uint64_t		size;
+		};
+
+		List<ResourceDesc*> m_ScheduledCreations;
+		uint32_t			m_HighPriorityInsertIndex;
+
+		void ScheduleCreate(ResourceDesc* desc);
+
+		uint64_t			m_CreatedResources;
+
+		HANDLE				m_ResourceCreationThread;
+		CONDITION_VARIABLE	m_KickCV;
+		CRITICAL_SECTION	m_SyncCS;
+		CONDITION_VARIABLE	m_DoneCV;
+		CRITICAL_SECTION	m_DoneCS;
+		bool				m_KickedThread;
+
+		extern friend DWORD WINAPI ResourceThread(PVOID param);
 	};
 
 	extern ResourceManager* g_ResourceManager;

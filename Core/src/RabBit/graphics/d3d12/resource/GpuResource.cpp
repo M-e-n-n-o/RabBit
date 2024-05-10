@@ -11,14 +11,24 @@ namespace RB::Graphics::D3D12
 
 	GpuResource::~GpuResource()
 	{
-		g_ResourceManager->MarkForDelete(this);
+		if (IsValid())
+		{
+			g_ResourceManager->MarkForDelete(this);
+		}
 	}
 
 	GPtr<ID3D12Resource> GpuResource::GetResource()
 	{
-		// TODO when resources are created on a separate thread
-		// - Tell the resource creation thread something is waiting on the resource so it gets a higher priority 
-		// - Waits until the actual resource is created and available
+		if (IsValid())
+		{
+			return m_Resource;
+		}
+
+		if (!g_ResourceManager->WaitUntilResourceValid(this))
+		{
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Resource failed to get valid");
+			return nullptr;
+		}
 
 		return m_Resource;
 	}
