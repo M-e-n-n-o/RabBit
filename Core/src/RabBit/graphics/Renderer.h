@@ -15,27 +15,30 @@ namespace RB::Graphics
 
 	class RenderInterface;
 
-
 	// Fully static class
 	class Renderer
 	{
 	public:
-		enum class RenderThreadState
+		enum class ThreadState
 		{
 			Idle,
 			Running,
-			Waking,
 			Terminated
 		};
 
-		enum class RenderThreadTaskType
+		enum RenderThreadTaskType : uint8_t
 		{
-			None,
 			Shutdown,
-			FrameRender,
-			ResourceManagement
-
 			// TODO Also make a task for a resource resize (if the backbuffer needs to be resized)
+			RenderFrame,
+
+			Count
+		};
+
+		struct RenderTaskData
+		{
+			void*	 data;
+			uint64_t dataSize;
 		};
 
 		virtual ~Renderer();
@@ -43,21 +46,11 @@ namespace RB::Graphics
 		static void SetAPI(RenderAPI api) { s_Api = api; }
 		inline static RenderAPI GetAPI() { return s_Api; }
 
-		//// Kick off frame render (is 1 frame behind game update)
-		//void StartRenderFrame();
-		//// Sync until render thread is finished with rendering frame (blocking call)
-		//void SyncRenderFrame();
-
 		// Submits current frame relevant information of the scene to the renderer
 		void SubmitFrameContext(const Entity::Scene* const scene);
 
 		// Sync with the render thread (and optionally also wait until GPU is idle)
-		void SyncRenderThread(bool gpu_sync = false);
-
-		//// Kick off resource uploading & texture streaming of the current' frame resources
-		//void StartResourceManagement(const Entity::Scene* const scene);
-		//// Tell the render thread we are waiting until the resource uploading is completed and wait until completed (blocking call)
-		//void SyncResourceManagement();
+		void SyncRenderer(bool gpu_sync = false);
 
 		static Renderer* Create(bool enable_validation_layer);
 
@@ -69,9 +62,10 @@ namespace RB::Graphics
 		virtual void OnFrameStart() = 0;
 		virtual void OnFrameEnd() = 0;
 
+		virtual void SyncWithGpu() = 0;
+
 	private:
-		void SendRenderThreadTask(RenderThreadTaskType task_type);
-		void BlockUntilRenderThreadIdle();
+		void SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTaskData& task_data);
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 
@@ -79,16 +73,23 @@ namespace RB::Graphics
 		extern friend DWORD WINAPI ResourceStreamLoop(PVOID param);
 
 		HANDLE				m_RenderThread;
-		CONDITION_VARIABLE	m_KickCV;
-		CRITICAL_SECTION	m_KickCS;
-		CONDITION_VARIABLE	m_SyncCV;
-		CRITICAL_SECTION	m_SyncCS;
+		ThreadState			m_RenderState;
+		CONDITION_VARIABLE	m_RenderKickCV;
+		CRITICAL_SECTION	m_RenderKickCS;
+		CONDITION_VARIABLE	m_RenderSyncCV;
+		CRITICAL_SECTION	m_RenderSyncCS;
 
-		RenderThreadState	 m_RenderState;
-		RenderThreadTaskType m_RenderTaskType;
-		void*				 m_RenderTaskData;
+		HANDLE				m_StreamingThread;
+		ThreadState			m_StreamingState;
+		CONDITION_VARIABLE	m_StreamingKickCV;
+		CRITICAL_SECTION	m_StreamingKickCS;
+		CONDITION_VARIABLE	m_StreamingSyncCV;
+		CRITICAL_SECTION	m_StreamingSyncCS;
+		void*				m_SharedRenderStreamingData;
 
-		RenderInterface* m_CopyInterface;
-		RenderInterface* m_GraphicsInterface;
+		RenderTaskData		m_RenderTasks[RenderThreadTaskType::Count];
+
+		RenderInterface*	m_CopyInterface;
+		RenderInterface*	m_GraphicsInterface;
 	};
 }

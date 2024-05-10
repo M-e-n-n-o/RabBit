@@ -37,4 +37,9 @@ namespace RB::Graphics::D3D12
 	{
 		g_ResourceManager->EndFrame();
 	}
+	
+	void RendererD3D12::SyncWithGpu()
+	{
+		g_GraphicsDevice->WaitUntilIdle();
+	}
 }

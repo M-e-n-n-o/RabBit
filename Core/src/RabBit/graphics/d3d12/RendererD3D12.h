@@ -14,7 +14,9 @@ namespace RB::Graphics::D3D12
 		RendererD3D12(bool enable_validation_layer);
 		~RendererD3D12();
 
-		virtual void OnFrameStart() override;
-		virtual void OnFrameEnd() override;
+		void OnFrameStart() override;
+		void OnFrameEnd() override;
+
+		void SyncWithGpu() override;
 	};
 }

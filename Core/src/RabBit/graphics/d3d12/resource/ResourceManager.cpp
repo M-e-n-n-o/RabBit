@@ -255,6 +255,7 @@ namespace RB::Graphics::D3D12
 		DWORD id;
 		m_ResourceCreationThread = CreateThread(NULL, 0, ResourceThread, (PVOID)this, 0, &id);
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_ResourceCreationThread != 0, "Failed to create resource creation thread");
+		SetThreadDescription(m_ResourceCreationThread, L"Resource Creation Thread");
 		SetThreadPriority(m_ResourceCreationThread, THREAD_PRIORITY_NORMAL);
 	}
 

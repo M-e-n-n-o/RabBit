@@ -240,37 +240,8 @@ namespace RB
 			// Do game logic of the current frame
 			OnUpdate();
 
-
-
-			/*
-				Unlink the main thread from the render thread to get a more responsive application!
-
-				- The main thread just does the OnUpdate and SubmitFrameContext every frame without having to sync with the render thread
-				- The render thread will then just take the most recent frame submit and start rendering that
-
-				So we have a double buffer of the frame context, one is being used by the renderer to render the current frame,
-				and the other is updated every time the main thread does the SubmitFrameContext at its end an iteration.
-
-				The render thread still however needs time for its resource management, when?
-				- Maybe do the resource management on a different thread (resource streaming thread)? As it only needs to schedule things on the copy queue? 
-				  Or maybe not, as it might also want to generate mip maps, which is graphics queue? Or then maybe do actually let it only schedule things for the copy queue? 
-				  When do we then want to generate mips however? Or do we want to do that before running and write them to disk to read them later?
-			
-			
-			*/
-
-
-			//// Sync with the rendering
-			//_Renderer->SyncRenderFrame();
-
-			//// Tell the render thread to start uploading resources
-			//_Renderer->StartResourceManagement(&scene);
-
 			// Submit the scene as context for rendering the next frame
 			_Renderer->SubmitFrameContext(&scene);
-
-			//// Sync with resource uploading
-			//_Renderer->SyncResourceManagement();
 
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)
@@ -308,7 +279,7 @@ namespace RB
 		// Shutdown app user
 		OnStop();
 
-		_GraphicsQueue->CpuWaitUntilIdle();
+		_Renderer->SyncRenderer(true);
 
 		for (int i = 0; i < m_Windows.size(); i++)
 		{
