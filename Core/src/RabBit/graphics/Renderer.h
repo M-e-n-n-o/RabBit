@@ -19,28 +19,6 @@ namespace RB::Graphics
 	class Renderer
 	{
 	public:
-		enum class ThreadState
-		{
-			Idle,
-			Running,
-			Terminated
-		};
-
-		enum RenderThreadTaskType : uint8_t
-		{
-			Shutdown,
-			// TODO Also make a task for a resource resize (if the backbuffer needs to be resized)
-			RenderFrame,
-
-			Count
-		};
-
-		struct RenderTaskData
-		{
-			void*	 data;
-			uint64_t dataSize;
-		};
-
 		virtual ~Renderer();
 
 		static void SetAPI(RenderAPI api) { s_Api = api; }
@@ -64,36 +42,65 @@ namespace RB::Graphics
 
 		virtual void SyncWithGpu() = 0;
 
+	public:
+		enum class ThreadState
+		{
+			Idle,
+			Running,
+			Terminated
+		};
+
+		enum RenderThreadTaskType : uint8_t
+		{
+			Shutdown,
+			// TODO Also make a task for a resource resize (if the backbuffer needs to be resized)
+			RenderFrame,
+
+			Count
+		};
+
+		struct RenderTaskData
+		{
+			void* data;
+			uint64_t dataSize;
+		};
+
+		struct SharedRenderThreadContext
+		{
+			ThreadState			renderState;
+			CONDITION_VARIABLE	renderKickCV;
+			CRITICAL_SECTION	renderKickCS;
+			CONDITION_VARIABLE	renderSyncCV;
+			CRITICAL_SECTION	renderSyncCS;
+
+			const uint32_t		renderThreadTimeoutMs = 500;
+			double				performanceFreqMs;
+			uint64_t			renderCounterStart;
+
+			HANDLE				streamingThread;
+			ThreadState			streamingState;
+			CONDITION_VARIABLE	streamingKickCV;
+			CRITICAL_SECTION	streamingKickCS;
+			CONDITION_VARIABLE	streamingSyncCV;
+			CRITICAL_SECTION	streamingSyncCS;
+
+			RenderTaskData		renderTasks[RenderThreadTaskType::Count];
+			void*				sharedRenderStreamingData;
+
+			RenderInterface*	copyInterface;
+			RenderInterface*	graphicsInterface;
+
+			std::function<void()> OnRenderFrameStart;
+			std::function<void()> OnRenderFrameEnd;
+		};
+
 	private:
 		void SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTaskData& task_data);
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 
-		extern friend DWORD WINAPI RenderLoop(PVOID param);
-		extern friend DWORD WINAPI ResourceStreamLoop(PVOID param);
+		HANDLE						m_RenderThread;
+		SharedRenderThreadContext*	m_SharedContext;
 
-		HANDLE				m_RenderThread;
-		ThreadState			m_RenderState;
-		CONDITION_VARIABLE	m_RenderKickCV;
-		CRITICAL_SECTION	m_RenderKickCS;
-		CONDITION_VARIABLE	m_RenderSyncCV;
-		CRITICAL_SECTION	m_RenderSyncCS;
-
-		const uint32_t		m_RenderThreadTimeoutMs = 500;
-		double				m_PerformanceFreqMs;
-		uint64_t			m_RenderCounterStart;
-
-		HANDLE				m_StreamingThread;
-		ThreadState			m_StreamingState;
-		CONDITION_VARIABLE	m_StreamingKickCV;
-		CRITICAL_SECTION	m_StreamingKickCS;
-		CONDITION_VARIABLE	m_StreamingSyncCV;
-		CRITICAL_SECTION	m_StreamingSyncCS;
-		void*				m_SharedRenderStreamingData;
-
-		RenderTaskData		m_RenderTasks[RenderThreadTaskType::Count];
-
-		RenderInterface*	m_CopyInterface;
-		RenderInterface*	m_GraphicsInterface;
 	};
 }

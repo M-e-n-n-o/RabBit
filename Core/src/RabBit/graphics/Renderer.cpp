@@ -22,13 +22,24 @@ namespace RB::Graphics
 	DWORD WINAPI ResourceStreamLoop(PVOID param);
 
 	Renderer::Renderer()
-		: m_RenderState(ThreadState::Idle)
 	{
+
+	}
+
+	void Renderer::Init()
+	{
+		m_SharedContext	= new SharedRenderThreadContext();
+		m_SharedContext->graphicsInterface	= RenderInterface::Create(false);
+		m_SharedContext->copyInterface		= RenderInterface::Create(true);
+		m_SharedContext->renderState		= ThreadState::Idle;
+		m_SharedContext->OnRenderFrameStart = std::bind(&OnFrameStart, this);
+		m_SharedContext->OnRenderFrameEnd	= std::bind(&OnFrameEnd, this);
+
 		for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 		{
-			m_RenderTasks[task_type]			= {};
-			m_RenderTasks[task_type].data		= nullptr;
-			m_RenderTasks[task_type].dataSize	= 0;
+			m_SharedContext->renderTasks[task_type] = {};
+			m_SharedContext->renderTasks[task_type].data = nullptr;
+			m_SharedContext->renderTasks[task_type].dataSize = 0;
 		}
 
 		LARGE_INTEGER li;
@@ -37,21 +48,10 @@ namespace RB::Graphics
 			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not retrieve value from QueryPerformanceFrequency");
 		}
 
-		m_PerformanceFreqMs = double(li.QuadPart) / 1000.0;
-	}
-
-	void Renderer::Init()
-	{
-		m_GraphicsInterface = RenderInterface::Create(false);
-		m_CopyInterface = RenderInterface::Create(true);
-
-		InitializeConditionVariable(&m_RenderKickCV);
-		InitializeCriticalSection(&m_RenderKickCS);
-		InitializeConditionVariable(&m_RenderSyncCV);
-		InitializeCriticalSection(&m_RenderSyncCS);
+		m_SharedContext->performanceFreqMs = double(li.QuadPart) / 1000.0;
 
 		DWORD id;
-		m_RenderThread = CreateThread(NULL, 0, RenderLoop, (PVOID)this, 0, &id);
+		m_RenderThread = CreateThread(NULL, 0, RenderLoop, (PVOID)m_SharedContext, 0, &id);
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_RenderThread != 0, "Failed to create render thread");
 		SetThreadDescription(m_RenderThread, L"Render Thread");
 		SetThreadPriority(m_RenderThread, THREAD_PRIORITY_HIGHEST);
@@ -67,11 +67,10 @@ namespace RB::Graphics
 
 		WaitForMultipleObjects(1, &m_RenderThread, TRUE, INFINITE);
 		CloseHandle(m_RenderThread);
-		DeleteCriticalSection(&m_RenderKickCS);
-		DeleteCriticalSection(&m_RenderSyncCS);
 
-		delete m_GraphicsInterface;
-		delete m_CopyInterface;
+		delete m_SharedContext->graphicsInterface;
+		delete m_SharedContext->copyInterface;
+		delete m_SharedContext;
 	}
 
 	void Renderer::SubmitFrameContext(const Entity::Scene* const scene)
@@ -87,17 +86,17 @@ namespace RB::Graphics
 
 		// Sync with the renderer if it is stalling
 		{
-			EnterCriticalSection(&m_RenderKickCS);
-			ThreadState render_state  = m_RenderState;
-			uint64_t	counter_start = m_RenderCounterStart;
-			LeaveCriticalSection(&m_RenderKickCS);
+			EnterCriticalSection(&m_SharedContext->renderKickCS);
+			ThreadState render_state  = m_SharedContext->renderState;
+			uint64_t	counter_start = m_SharedContext->renderCounterStart;
+			LeaveCriticalSection(&m_SharedContext->renderKickCS);
 
 			if (render_state != ThreadState::Idle)
 			{
 				LARGE_INTEGER li;
 				QueryPerformanceCounter(&li);
 
-				if ((double(li.QuadPart - counter_start) / m_PerformanceFreqMs) > m_RenderThreadTimeoutMs)
+				if ((double(li.QuadPart - counter_start) / m_SharedContext->performanceFreqMs) > m_SharedContext->renderThreadTimeoutMs)
 				{
 					SyncRenderer(false);
 				}
@@ -110,14 +109,14 @@ namespace RB::Graphics
 	void Renderer::SyncRenderer(bool gpu_sync)
 	{
 		// Sync with render thread
-		EnterCriticalSection(&m_RenderSyncCS);
+		EnterCriticalSection(&m_SharedContext->renderSyncCS);
 
-		while (m_RenderState != ThreadState::Idle)
+		while (m_SharedContext->renderState != ThreadState::Idle)
 		{
-			SleepConditionVariableCS(&m_RenderSyncCV, &m_RenderSyncCS, INFINITE);
+			SleepConditionVariableCS(&m_SharedContext->renderSyncCV, &m_SharedContext->renderSyncCS, INFINITE);
 		}
 
-		LeaveCriticalSection(&m_RenderSyncCS);
+		LeaveCriticalSection(&m_SharedContext->renderSyncCS);
 
 		if (gpu_sync)
 		{
@@ -128,10 +127,10 @@ namespace RB::Graphics
 	void Renderer::SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTaskData& task_data)
 	{
 		// Kick render thread
-		EnterCriticalSection(&m_RenderKickCS);
-		m_RenderTasks[task_type] = task_data;
-		LeaveCriticalSection(&m_RenderKickCS);
-		WakeConditionVariable(&m_RenderKickCV);
+		EnterCriticalSection(&m_SharedContext->renderKickCS);
+		m_SharedContext->renderTasks[task_type] = task_data;
+		LeaveCriticalSection(&m_SharedContext->renderKickCS);
+		WakeConditionVariable(&m_SharedContext->renderKickCV);
 	}
 
 	Renderer* Renderer::Create(bool enable_validation_layer)
@@ -150,20 +149,25 @@ namespace RB::Graphics
 
 	DWORD WINAPI RenderLoop(PVOID param)
 	{
-		Renderer* r = (Renderer*)param;
+		Renderer::SharedRenderThreadContext* context = (Renderer::SharedRenderThreadContext*)param;
+
+		InitializeConditionVariable(&context->renderKickCV);
+		InitializeCriticalSection(&context->renderKickCS);
+		InitializeConditionVariable(&context->renderSyncCV);
+		InitializeCriticalSection(&context->renderSyncCS);
 
 		// Spawn the streaming thread
 		{
-			InitializeConditionVariable(&r->m_StreamingKickCV);
-			InitializeCriticalSection(&r->m_StreamingKickCS);
-			InitializeConditionVariable(&r->m_StreamingSyncCV);
-			InitializeCriticalSection(&r->m_StreamingSyncCS);
+			InitializeConditionVariable(&context->streamingKickCV);
+			InitializeCriticalSection(&context->streamingKickCS);
+			InitializeConditionVariable(&context->streamingSyncCV);
+			InitializeCriticalSection(&context->streamingSyncCS);
 
 			DWORD id;
-			r->m_StreamingThread = CreateThread(NULL, 0, ResourceStreamLoop, (PVOID)r, 0, &id);
-			RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, r->m_StreamingThread != 0, "Failed to create resource streaming thread");
-			SetThreadDescription(r->m_StreamingThread, L"Resource Streaming Thread");
-			SetThreadPriority(r->m_StreamingThread, THREAD_PRIORITY_HIGHEST);
+			context->streamingThread = CreateThread(NULL, 0, ResourceStreamLoop, (PVOID)context, 0, &id);
+			RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, context->streamingThread != 0, "Failed to create resource streaming thread");
+			SetThreadDescription(context->streamingThread, L"Resource Streaming Thread");
+			SetThreadPriority(context->streamingThread, THREAD_PRIORITY_HIGHEST);
 		}
 
 		bool stop = false;
@@ -171,11 +175,12 @@ namespace RB::Graphics
 		{
 			void* render_data[Renderer::RenderThreadTaskType::Count];
 
+			// Prepare
 			{
-				EnterCriticalSection(&r->m_RenderKickCS);
+				EnterCriticalSection(&context->renderKickCS);
 
 				// Reset timer
-				r->m_RenderCounterStart = 0;
+				context->renderCounterStart = 0;
 
 				// Wait until a new task is available
 				while (true)
@@ -183,7 +188,7 @@ namespace RB::Graphics
 					bool has_new_task = false;
 					for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 					{
-						if (r->m_RenderTasks[task_type].dataSize > 0)
+						if (context->renderTasks[task_type].dataSize > 0)
 						{
 							has_new_task = true;
 							break;
@@ -197,38 +202,39 @@ namespace RB::Graphics
 
 					// Notify the sync that we are starting to idle
 					{
-						EnterCriticalSection(&r->m_RenderSyncCS);
-						r->m_RenderState = Renderer::ThreadState::Idle;
-						LeaveCriticalSection(&r->m_RenderSyncCS);
-						WakeConditionVariable(&r->m_RenderSyncCV);
+						EnterCriticalSection(&context->renderSyncCS);
+						context->renderState = Renderer::ThreadState::Idle;
+						LeaveCriticalSection(&context->renderSyncCS);
+						WakeConditionVariable(&context->renderSyncCV);
 					}
 
-					SleepConditionVariableCS(&r->m_RenderKickCV, &r->m_RenderKickCS, INFINITE);
+					// Sleep
+					SleepConditionVariableCS(&context->renderKickCV, &context->renderKickCS, INFINITE);
 				}
 
-				r->m_RenderState = Renderer::ThreadState::Running;
+				context->renderState = Renderer::ThreadState::Running;
 
 				// Copy the task data
 				for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 				{
-					if (r->m_RenderTasks[task_type].dataSize <= 0)
+					if (context->renderTasks[task_type].dataSize <= 0)
 					{
 						continue;
 					}
 
-					render_data[task_type] = ALLOC_HEAP(r->m_RenderTasks[task_type].dataSize);
+					render_data[task_type] = ALLOC_HEAP(context->renderTasks[task_type].dataSize);
 
-					memcpy(render_data[task_type], r->m_RenderTasks[task_type].data, r->m_RenderTasks[task_type].dataSize);
+					memcpy(render_data[task_type], context->renderTasks[task_type].data, context->renderTasks[task_type].dataSize);
 
-					SAFE_DELETE(r->m_RenderTasks[task_type].data);
+					SAFE_DELETE(context->renderTasks[task_type].data);
 				}
 
 				// Start timer
 				LARGE_INTEGER li;
 				QueryPerformanceCounter(&li);
-				r->m_RenderCounterStart = li.QuadPart;
+				context->renderCounterStart = li.QuadPart;
 
-				LeaveCriticalSection(&r->m_RenderKickCS);
+				LeaveCriticalSection(&context->renderKickCS);
 			}
 
 			// Execute the tasks
@@ -247,26 +253,26 @@ namespace RB::Graphics
 
 					// Also stop streaming thread
 					{
-						EnterCriticalSection(&r->m_StreamingKickCS);
-						r->m_StreamingState = Renderer::ThreadState::Running;
-						r->m_SharedRenderStreamingData = nullptr;
-						LeaveCriticalSection(&r->m_StreamingKickCS);
-						WakeConditionVariable(&r->m_StreamingKickCV);
+						EnterCriticalSection(&context->streamingKickCS);
+						context->streamingState = Renderer::ThreadState::Running;
+						context->sharedRenderStreamingData = nullptr;
+						LeaveCriticalSection(&context->streamingKickCS);
+						WakeConditionVariable(&context->streamingKickCV);
 					}
 				}
 				break;
 
 				case Renderer::RenderThreadTaskType::RenderFrame:
 				{
-					r->OnFrameStart();
+					context->OnRenderFrameStart();
 
 					// Kick off streaming thread
 					{
-						EnterCriticalSection(&r->m_StreamingKickCS);
-						r->m_StreamingState = Renderer::ThreadState::Running;
-						r->m_SharedRenderStreamingData = render_data[task_type];
-						LeaveCriticalSection(&r->m_StreamingKickCS);
-						WakeConditionVariable(&r->m_StreamingKickCV);
+						EnterCriticalSection(&context->streamingKickCS);
+						context->streamingState = Renderer::ThreadState::Running;
+						context->sharedRenderStreamingData = render_data[task_type];
+						LeaveCriticalSection(&context->streamingKickCS);
+						WakeConditionVariable(&context->streamingKickCV);
 					}
 
 					// Render
@@ -302,19 +308,19 @@ namespace RB::Graphics
 
 					// Sync with streaming thread
 					{
-						EnterCriticalSection(&r->m_StreamingSyncCS);
+						EnterCriticalSection(&context->streamingSyncCS);
 
-						while (r->m_StreamingState != Renderer::ThreadState::Idle)
+						while (context->streamingState != Renderer::ThreadState::Idle)
 						{
-							SleepConditionVariableCS(&r->m_StreamingSyncCV, &r->m_StreamingSyncCS, INFINITE);
+							SleepConditionVariableCS(&context->streamingSyncCV, &context->streamingSyncCS, INFINITE);
 						}
 
-						r->m_SharedRenderStreamingData = nullptr;
+						context->sharedRenderStreamingData = nullptr;
 
-						LeaveCriticalSection(&r->m_StreamingSyncCS);
+						LeaveCriticalSection(&context->streamingSyncCS);
 					}
 
-					r->OnFrameEnd();
+					context->OnRenderFrameEnd();
 				}
 
 				default:
@@ -331,37 +337,41 @@ namespace RB::Graphics
 			}
 		}
 
-		WaitForMultipleObjects(1, &r->m_StreamingThread, TRUE, INFINITE);
-		CloseHandle(r->m_StreamingThread);
-		DeleteCriticalSection(&r->m_StreamingKickCS);
-		DeleteCriticalSection(&r->m_StreamingSyncCS);
+		// Wait for resource streaming thread
+		WaitForMultipleObjects(1, &context->streamingThread, TRUE, INFINITE);
+		CloseHandle(context->streamingThread);
+		DeleteCriticalSection(&context->streamingKickCS);
+		DeleteCriticalSection(&context->streamingSyncCS);
 
-		r->m_RenderState = Renderer::ThreadState::Terminated;
+		DeleteCriticalSection(&context->renderKickCS);
+		DeleteCriticalSection(&context->renderSyncCS);
+
+		context->renderState = Renderer::ThreadState::Terminated;
 
 		return 0;
 	}
 
 	DWORD WINAPI ResourceStreamLoop(PVOID param)
 	{
-		Renderer* r = (Renderer*)param;
+		Renderer::SharedRenderThreadContext* context = (Renderer::SharedRenderThreadContext*)param;
 
-		r->m_StreamingState = Renderer::ThreadState::Idle;
+		context->streamingState = Renderer::ThreadState::Idle;
 
 		while (true)
 		{
 			// Wait until kick from render thread
 			{
-				EnterCriticalSection(&r->m_StreamingKickCS);
+				EnterCriticalSection(&context->streamingKickCS);
 
-				while (r->m_StreamingState == Renderer::ThreadState::Idle)
+				while (context->streamingState == Renderer::ThreadState::Idle)
 				{
-					SleepConditionVariableCS(&r->m_StreamingKickCV, &r->m_StreamingKickCS, INFINITE);
+					SleepConditionVariableCS(&context->streamingKickCV, &context->streamingKickCS, INFINITE);
 				}
 
-				LeaveCriticalSection(&r->m_StreamingKickCS);
+				LeaveCriticalSection(&context->streamingKickCS);
 			}
 
-			if (r->m_SharedRenderStreamingData == nullptr)
+			if (context->sharedRenderStreamingData == nullptr)
 			{
 				// Terminate
 				break;
@@ -376,7 +386,7 @@ namespace RB::Graphics
 				*/
 
 
-				//r->m_SharedRenderStreamingData
+				//context->sharedRenderStreamingData
 
 
 				//case Renderer::RenderThreadTaskType::ResourceManagement:
@@ -418,14 +428,14 @@ namespace RB::Graphics
 
 			// Tell render thread we are finished
 			{
-				EnterCriticalSection(&r->m_StreamingSyncCS);
-				r->m_StreamingState = Renderer::ThreadState::Idle;
-				LeaveCriticalSection(&r->m_StreamingSyncCS);
-				WakeConditionVariable(&r->m_StreamingSyncCV);
+				EnterCriticalSection(&context->streamingSyncCS);
+				context->streamingState = Renderer::ThreadState::Idle;
+				LeaveCriticalSection(&context->streamingSyncCS);
+				WakeConditionVariable(&context->streamingSyncCV);
 			}
 		}
 
-		r->m_StreamingState = Renderer::ThreadState::Terminated;
+		context->streamingState = Renderer::ThreadState::Terminated;
 
 		return 0;
 	}
