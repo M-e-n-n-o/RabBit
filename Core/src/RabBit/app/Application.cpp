@@ -221,9 +221,6 @@ namespace RB
 			Render();
 			FinishRenderFrame();
 
-			// Tell the render thread to start rendering previous frame
-			_Renderer->StartRenderFrame();
-
 			// Poll inputs and update windows
 			for (Graphics::Window* window : m_Windows)
 			{

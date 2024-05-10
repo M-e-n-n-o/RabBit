@@ -30,6 +30,14 @@ namespace RB::Graphics
 			m_RenderTasks[task_type].data		= nullptr;
 			m_RenderTasks[task_type].dataSize	= 0;
 		}
+
+		LARGE_INTEGER li;
+		if (!QueryPerformanceFrequency(&li))
+		{
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not retrieve value from QueryPerformanceFrequency");
+		}
+
+		m_PerformanceFreqMs = double(li.QuadPart) / 1000.0;
 	}
 
 	void Renderer::Init()
@@ -76,6 +84,25 @@ namespace RB::Graphics
 		RenderTaskData data;
 		data.data = submitted_data;
 		data.dataSize = sizeof(submitted_data);
+
+		// Sync with the renderer if it is stalling
+		{
+			EnterCriticalSection(&m_RenderKickCS);
+			ThreadState render_state  = m_RenderState;
+			uint64_t	counter_start = m_RenderCounterStart;
+			LeaveCriticalSection(&m_RenderKickCS);
+
+			if (render_state != ThreadState::Idle)
+			{
+				LARGE_INTEGER li;
+				QueryPerformanceCounter(&li);
+
+				if ((double(li.QuadPart - counter_start) / m_PerformanceFreqMs) > m_RenderThreadTimeoutMs)
+				{
+					SyncRenderer(false);
+				}
+			}
+		}
 
 		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
 	}
@@ -147,6 +174,9 @@ namespace RB::Graphics
 			{
 				EnterCriticalSection(&r->m_RenderKickCS);
 
+				// Reset timer
+				r->m_RenderCounterStart = 0;
+
 				// Wait until a new task is available
 				while (true)
 				{
@@ -192,6 +222,11 @@ namespace RB::Graphics
 
 					SAFE_DELETE(r->m_RenderTasks[task_type].data);
 				}
+
+				// Start timer
+				LARGE_INTEGER li;
+				QueryPerformanceCounter(&li);
+				r->m_RenderCounterStart = li.QuadPart;
 
 				LeaveCriticalSection(&r->m_RenderKickCS);
 			}

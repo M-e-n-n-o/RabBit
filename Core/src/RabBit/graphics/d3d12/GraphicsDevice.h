@@ -59,7 +59,6 @@ namespace RB::Graphics::D3D12
 		// Not recommended to use for regular rendering (currently only used for Direct Composition)
 		GPtr<ID3D11On12Device> Get11On12();
 
-		// Multi-engine: https://learn.microsoft.com/en-us/windows/win32/direct3d12/user-mode-heap-synchronization
 		DeviceQueue* GetCopyQueue();
 		DeviceQueue* GetComputeQueue();
 		DeviceQueue* GetGraphicsQueue();

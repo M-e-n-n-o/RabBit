@@ -79,6 +79,10 @@ namespace RB::Graphics
 		CONDITION_VARIABLE	m_RenderSyncCV;
 		CRITICAL_SECTION	m_RenderSyncCS;
 
+		const uint32_t		m_RenderThreadTimeoutMs = 500;
+		double				m_PerformanceFreqMs;
+		uint64_t			m_RenderCounterStart;
+
 		HANDLE				m_StreamingThread;
 		ThreadState			m_StreamingState;
 		CONDITION_VARIABLE	m_StreamingKickCV;
