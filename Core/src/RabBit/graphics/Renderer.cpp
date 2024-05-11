@@ -84,6 +84,8 @@ namespace RB::Graphics
 		data.data = submitted_data;
 		data.dataSize = sizeof(submitted_data);
 
+		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
+
 		// Sync with the renderer if it is stalling
 		{
 			EnterCriticalSection(&m_SharedContext->renderKickCS);
@@ -98,12 +100,11 @@ namespace RB::Graphics
 
 				if ((double(li.QuadPart - counter_start) / m_SharedContext->performanceFreqMs) > m_SharedContext->renderThreadTimeoutMs)
 				{
+					RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
 					SyncRenderer(false);
 				}
 			}
 		}
-
-		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
 	}
 
 	void Renderer::SyncRenderer(bool gpu_sync)
