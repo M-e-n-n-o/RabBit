@@ -18,7 +18,7 @@ namespace RB::Graphics::D3D12
 
 		const char* GetName() const override { return m_Name; }
 		
-		virtual void* GetData() const override { return m_Data; }
+		void* GetData() const override { return m_Data; }
 
 		void* GetNativeResource() const override { return m_Resource; }
 
@@ -40,26 +40,29 @@ namespace RB::Graphics::D3D12
 	class Texture2DD3D12 : public Texture2D
 	{
 	public:
-		Texture2DD3D12(const char* name, void* internal_resource, uint32_t width, uint32_t height);
+		Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height);
 		~Texture2DD3D12();
 
-		virtual const char* GetName() const override { return m_Name; }
+		const char* GetName() const override { return m_Name; }
 
-		virtual void* GetNativeResource() const override { return m_Resource; }
+		void* GetNativeResource() const override { return m_Resource; }
 
-		virtual void* GetData() const override { return nullptr; }
+		RenderResourceFormat GetFormat() const override { return m_Format; }
 
-		virtual uint32_t GetSize() const override { return -1; }
+		void* GetData() const override { return nullptr; }
 
-		virtual bool AllowedRenderTarget() const override { return false; }
+		uint32_t GetSize() const override { return -1; }
 
-		virtual uint32_t GetWidth() const override { return m_Width; }
-		virtual uint32_t GetHeight() const override { return m_Height; }
+		bool AllowedRenderTarget() const override { return false; }
+
+		uint32_t GetWidth() const override { return m_Width; }
+		uint32_t GetHeight() const override { return m_Height; }
 
 	private:
-		const char*		m_Name;
-		GpuResource*	m_Resource;
-		uint32_t		m_Width;
-		uint32_t		m_Height;
+		const char*				m_Name;
+		GpuResource*			m_Resource;
+		uint32_t				m_Width;
+		uint32_t				m_Height;
+		RenderResourceFormat	m_Format;
 	};
 }

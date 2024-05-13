@@ -29,12 +29,12 @@ namespace RB::Graphics
 		return nullptr;
 	}
 	
-	Texture2D* Texture2D::Create(const char* name, void* internal_resource, uint32_t width, uint32_t height)
+	Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height)
 	{
 		switch (Renderer::GetAPI())
 		{
 		case RenderAPI::D3D12:
-			return new D3D12::Texture2DD3D12(name, internal_resource, width, height);
+			return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height);
 		default:
 			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
 			break;

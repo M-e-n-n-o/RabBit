@@ -22,10 +22,10 @@
 #include <d3dcompiler.h>
 #include <fstream>
 #include "graphics/d3d12/shaders/codeGen/ShaderDefines.h"
+#include "graphics/d3d12/UtilsD3D12.h"
 
 using namespace RB::Graphics;
 using namespace RB::Graphics::D3D12;
-using namespace RB::Graphics::D3D12::Window;
 using namespace RB::Input::Events;
 using namespace RB::Input;
 using namespace RB::Entity;
@@ -81,8 +81,8 @@ namespace RB
 
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
-		m_Windows.push_back(new Graphics::Window(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
-		m_Windows.push_back(new Graphics::Window("Test", 1280, 720, kWindowStyle_Default));
+		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
+		m_Windows.push_back(Window::Create("Test", 1280, 720, kWindowStyle_Default));
 
 		RenderInterface* i = RenderInterface::Create(false);
 
@@ -173,7 +173,7 @@ namespace RB
 			//pso_desc.IBStripCutValue		= D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
 			pso_desc.PrimitiveTopologyType	= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pso_desc.NumRenderTargets		= 1;
-			pso_desc.RTVFormats[0]			= GetPrimaryWindow()->GetSwapChain()->GetBackBufferFormat();
+			pso_desc.RTVFormats[0]			= ConvertToDXGIFormat(GetPrimaryWindow()->GetBackBufferFormat());
 			pso_desc.DSVFormat				= DXGI_FORMAT_UNKNOWN;
 			pso_desc.SampleDesc				= { 1, 0 };
 			pso_desc.NodeMask				= 0;
@@ -307,11 +307,11 @@ namespace RB
 
 		GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
 
-		auto back_buffer = window->GetSwapChain()->GetCurrentBackBuffer();
+		auto back_buffer = window->GetCurrentBackBuffer();
 
 		{
 			// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
-			uint64_t value = window->GetSwapChain()->GetCurrentBackBufferIndex();
+			uint64_t value = window->GetCurrentBackBufferIndex();
 			_GraphicsQueue->CpuWaitForFenceValue(_FenceValues[value]);
 
 			// Clear the render target
@@ -362,10 +362,10 @@ namespace RB
 
 				command_list->ResourceBarrier(1, &barrier);
 
-				uint64_t value = window->GetSwapChain()->GetCurrentBackBufferIndex();
+				uint64_t value = window->GetCurrentBackBufferIndex();
 				_FenceValues[value] = _GraphicsQueue->ExecuteCommandList(command_list);
 
-				window->GetSwapChain()->Present(VsyncMode::On);
+				window->Present(VsyncMode::On);
 			}
 
 		}

@@ -2,7 +2,6 @@
 
 #include "RabBitCommon.h"
 #include "graphics/Window.h"
-#include "SwapChain.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -14,16 +13,16 @@
 
 namespace RB::Graphics::D3D12
 {
+	class SwapChain;
+
 	struct WindowArgs
 	{
 		HINSTANCE		instance;
 		wchar_t*		className;
-		wchar_t*		windowName;
+		const char*		windowName;
 		uint32_t		width;
 		uint32_t		height;
-		DWORD			extendedStyle;
-		DWORD			style;
-		bool			borderless;
+		uint32_t		windowStyle;
 	};
 
 	class WindowD3D12 : public Window
@@ -34,13 +33,20 @@ namespace RB::Graphics::D3D12
 
 		void Update() override;
 
-		uint32_t GetWidth() const override;
-		uint32_t GetHeight() const override;
+		void Present(const VsyncMode& mode) override;
+
+		uint32_t GetWidth()		const override;
+		uint32_t GetHeight()	const override;
+		bool	 IsMinimized()	const override;
+		bool	 HasWindow()	const override;
+
+		bool IsSameWindow(void* window_handle) const override;
 
 		void Resize(uint32_t width, uint32_t height, int32_t x, int32_t y) override;
-		Graphics::Texture2D* GetCurrentBackBuffer() override;
 
-		void ShowWindow();
+		RenderResourceFormat GetBackBufferFormat() override;
+		uint32_t GetCurrentBackBufferIndex() override;
+		Graphics::Texture2D* GetCurrentBackBuffer() override;
 
 		HWND GetHandle() const { return m_WindowHandle; }
 
@@ -54,5 +60,8 @@ namespace RB::Graphics::D3D12
 
 		HWND		m_WindowHandle;
 		SwapChain*	m_SwapChain;
+
+		bool		m_IsValid;
+		bool		m_IsTearingSupported;
 	};
 }

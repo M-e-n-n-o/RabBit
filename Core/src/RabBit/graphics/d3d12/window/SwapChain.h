@@ -14,23 +14,14 @@
 
 namespace RB::Graphics::D3D12
 {
-	enum class VsyncMode : uint8_t
-	{
-		Off		= 0,
-		On		= 1,
-		Half	= 2,
-		Quarter	= 3,
-		Eighth	= 4
-	};
-
 	class SwapChain
 	{
 	public:
-		SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count = 2u,
+		SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, bool tearing_supported, const uint32_t buffer_count,
 			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, bool transparency_support = false);
 		~SwapChain();
 
-		void Present(const VsyncMode& vsync_mode);
+		void Present(uint32_t sync_interval, uint32_t present_flags);
 
 		void Resize(const uint32_t width, const uint32_t height);
 
@@ -64,7 +55,5 @@ namespace RB::Graphics::D3D12
 		uint32_t					m_Width;
 		uint32_t					m_Height;
 		DXGI_FORMAT					m_BackBufferFormat;
-
-		bool						m_IsTearingSupported;
 	};
 }

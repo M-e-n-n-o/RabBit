@@ -1,11 +1,10 @@
 #include "RabBitCommon.h"
 #include "SwapChain.h"
 #include "graphics/d3d12/GraphicsDevice.h"
-#include "graphics/d3d12/window/NativeWindow.h"
 
 namespace RB::Graphics::D3D12
 {
-	SwapChain::SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count, DXGI_FORMAT format, bool transparency_support)
+	SwapChain::SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, uint32_t width, uint32_t height, bool tearing_supported, uint32_t buffer_count, DXGI_FORMAT format, bool transparency_support)
 		: m_BackBufferCount(buffer_count)
 		, m_Width(width)
 		, m_Height(height)
@@ -13,8 +12,6 @@ namespace RB::Graphics::D3D12
 		, m_UseComposition(transparency_support)
 	{
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, g_GraphicsDevice->IsFormatSupported(format), "Device does not support passed in format, can not create SwapChain");
-
-		m_IsTearingSupported = g_GraphicsDevice->IsFeatureSupported(DXGI_FEATURE_PRESENT_ALLOW_TEARING); // And if exlusive fullscreen is not active
 
 		DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = {};
 		swap_chain_desc.Width		= width;
@@ -27,7 +24,7 @@ namespace RB::Graphics::D3D12
 		swap_chain_desc.Scaling		= DXGI_SCALING_STRETCH;
 		swap_chain_desc.SwapEffect	= DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		swap_chain_desc.AlphaMode	= m_UseComposition ? DXGI_ALPHA_MODE_PREMULTIPLIED : DXGI_ALPHA_MODE_UNSPECIFIED;
-		swap_chain_desc.Flags		= m_IsTearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+		swap_chain_desc.Flags		= tearing_supported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 
 		GPtr<IDXGISwapChain1> swap_chain1;
 
@@ -75,12 +72,8 @@ namespace RB::Graphics::D3D12
 		delete[] m_BackBuffers;
 	}
 
-	void SwapChain::Present(const VsyncMode& vsync_mode)
+	void SwapChain::Present(uint32_t sync_interval, uint32_t present_flags)
 	{
-		bool vsync_enabled = vsync_mode != VsyncMode::Off;
-		UINT sync_interval = (UINT) vsync_mode;
-		UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0; // DXGI_PRESENT_ALLOW_TEARING cannot be here in exclusive fullscreen!
-
 		RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->Present(sync_interval, present_flags), "Failed to present frame");
 
 		m_CurrentBackBufferIndex = m_NativeSwapChain->GetCurrentBackBufferIndex();

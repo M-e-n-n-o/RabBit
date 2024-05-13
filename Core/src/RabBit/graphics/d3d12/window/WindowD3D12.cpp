@@ -1,10 +1,9 @@
-#include "WindowD3D12.h"
-#include "WindowD3D12.h"
-#include "WindowD3D12.h"
-#include "WindowD3D12.h"
-#include "WindowD3D12.h"
 #include "RabBitCommon.h"
 #include "WindowD3D12.h"
+#include "SwapChain.h"
+#include "graphics/d3d12/GraphicsDevice.h"
+#include "graphics/d3d12/DeviceQueue.h"
+#include "graphics/d3d12/UtilsD3D12.h"
 
 #include "input/events/WindowEvent.h"
 #include "input/events/MouseEvent.h"
@@ -20,24 +19,77 @@ namespace RB::Graphics::D3D12
 
 	WindowD3D12::WindowD3D12(const WindowArgs args)
 		: m_WindowHandle(nullptr)
+		, m_IsValid(true)
 	{
+		m_IsTearingSupported = g_GraphicsDevice->IsFeatureSupported(DXGI_FEATURE_PRESENT_ALLOW_TEARING);
+
 		RegisterWindowCLass(args.instance, args.className);
-		CreateWindow(args.instance, args.className, args.windowName, args.width, args.height, args.extendedStyle, args.style, args.borderless);
+
+		DWORD style = WS_OVERLAPPEDWINDOW;
+		DWORD extended_style = NULL;
+
+		if (args.windowStyle & kWindowStyle_SemiTransparent)
+		{
+			extended_style = WS_EX_NOREDIRECTIONBITMAP;
+		}
+
+		// Create window
+		{
+			wchar_t* wchar_name = new wchar_t[strlen(args.windowName) + 1];
+			CharToWchar(args.windowName, wchar_name);
+
+			CreateWindow(args.instance, args.className, wchar_name, args.width, args.height, extended_style, style, args.windowStyle & kWindowStyle_Borderless > 0);
+
+			delete[] wchar_name;
+		}
+
+		// Create swapchain
+		{
+			// TODO Add the option for an HDR swapchain
+
+			m_SwapChain = new SwapChain(
+				g_GraphicsDevice->GetFactory(),
+				g_GraphicsDevice->GetGraphicsQueue()->GetCommandQueue(),
+				m_WindowHandle,
+				args.width, args.height,
+				m_IsTearingSupported,
+				BACK_BUFFER_COUNT,
+				DXGI_FORMAT_R8G8B8A8_UNORM,
+				(bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
+			);
+		}
+
+		::ShowWindow(m_WindowHandle, SW_SHOW);
 	}
 
 	WindowD3D12::~WindowD3D12()
 	{
-		DestroyWindow(m_WindowHandle);
+		DestroyWindow();
 	}
 
 	void WindowD3D12::Update()
 	{
+		if (ShouldClose())
+		{
+			RB_LOG(LOGTAG_WINDOWING, "Asked for window close");
+			DestroyWindow();
+		}
+
 		MSG message = {};
 		if (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 		}
+	}
+
+	void WindowD3D12::Present(const VsyncMode& mode)
+	{
+		bool vsync_enabled = mode != VsyncMode::Off;
+		UINT sync_interval = (UINT)mode;
+		UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0; // DXGI_PRESENT_ALLOW_TEARING cannot be here in exclusive fullscreen!
+
+		m_SwapChain->Present(sync_interval, present_flags);
 	}
 
 	uint32_t WindowD3D12::GetWidth() const
@@ -50,16 +102,48 @@ namespace RB::Graphics::D3D12
 		return m_SwapChain->GetHeight();
 	}
 
+	bool WindowD3D12::IsMinimized() const
+	{
+		return m_SwapChain->GetWidth() == 0 && m_SwapChain->GetHeight() == 0;
+	}
+
+	bool WindowD3D12::HasWindow() const
+	{
+		return m_IsValid;
+	}
+
+	bool WindowD3D12::IsSameWindow(void* window_handle) const
+	{
+		return window_handle == m_WindowHandle;
+	}
+
 	void WindowD3D12::Resize(uint32_t width, uint32_t height, int32_t x, int32_t y)
 	{
 		// TODO: MAKE SURE THAT -1 MAKES SURE THAT THE WINDOW IS CENTERED TO THE MONITOR
-		static_assert(false);
 
-		//SetWindowPos(m_NativeWindow->GetHandle(), HWND_TOP, x, y, width, height, NULL);
+		x = Math::Max(x, 0);
+		y = Math::Max(y, 0);
+
+		SetWindowPos(m_WindowHandle, HWND_TOP, x, y, width, height, NULL);
+	}
+
+	RenderResourceFormat WindowD3D12::GetBackBufferFormat()
+	{
+		return ConvertToEngineFormat(m_SwapChain->GetBackBufferFormat());
+	}
+
+	uint32_t WindowD3D12::GetCurrentBackBufferIndex()
+	{
+		return m_SwapChain->GetCurrentBackBufferIndex();
 	}
 
 	Graphics::Texture2D* WindowD3D12::GetCurrentBackBuffer()
 	{
+		GPtr<ID3D12Resource> backbuffer = m_SwapChain->GetCurrentBackBuffer();
+
+		// Finish this function!
+		static_assert(false);
+
 		return nullptr;
 	}
 
@@ -72,8 +156,6 @@ namespace RB::Graphics::D3D12
 
 		g_GraphicsDevice->WaitUntilIdle();
 
-		m_Minimized = (width == 0 && height == 0);
-
 		width = std::max(1u, width);
 		height = std::max(1u, height);
 
@@ -84,7 +166,13 @@ namespace RB::Graphics::D3D12
 	{
 		g_GraphicsDevice->WaitUntilIdle();
 
+		RB_LOG(LOGTAG_WINDOWING, "Destroying window");
+
+		m_IsValid = false;
+
 		delete m_SwapChain;
+
+		::DestroyWindow(m_WindowHandle);
 	}
 
 	void WindowD3D12::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
@@ -105,7 +193,7 @@ namespace RB::Graphics::D3D12
 		window_class.hIconSm		= ::LoadIcon(instance, "0");			// MAKEINTRESOURCE(APP_ICON)
 
 		HRESULT result = ::RegisterClassExW(&window_class);
-		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, SUCCEEDED(result), "Failed to register window");
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, SUCCEEDED(result), "Failed to register window");
 	}
 
 	void WindowD3D12::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless)
@@ -138,7 +226,7 @@ namespace RB::Graphics::D3D12
 			nullptr
 		);
 
-		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_WindowHandle, "Failed to create window");
+		RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_WindowHandle, "Failed to create window");
 
 		if (borderless)
 		{
@@ -148,11 +236,6 @@ namespace RB::Graphics::D3D12
 		//long wAttr = GetWindowLong(m_WindowHandle, GWL_EXSTYLE);
 		//SetWindowLong(m_WindowHandle, GWL_EXSTYLE, wAttr | WS_EX_LAYERED);
 		//SetLayeredWindowAttributes(m_WindowHandle, 0, 0xFF / 2, 0x02);
-	}
-
-	void WindowD3D12::ShowWindow()
-	{
-		::ShowWindow(m_WindowHandle, SW_SHOW);
 	}
 
 	LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)

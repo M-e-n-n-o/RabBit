@@ -2,6 +2,29 @@
 
 namespace RB::Graphics
 {
+	enum class RenderResourceFormat
+	{
+		Unkown,
+		R32G32B32A32_TYPELESS,
+		R32G32B32A32_FLOAT,
+		R16G16B16A16_FLOAT,
+		R32G32_FLOAT,
+		R8_UINT,
+		R32_UINT,
+		R8G8B8A8_TYPELESS,
+		R8G8B8A8_UNORM,
+		R8G8B8A8_SRGB,
+		R11G11B10_FLOAT,
+		R16G16_FLOAT,
+		R16G16_UINT,
+		R16_FLOAT,
+		R16_UINT,
+		R16_UNORM,
+		R16_SNORM,
+		R8_UNORM,
+		R32_FLOAT
+	};
+
 	enum class RenderResourceType : uint32_t
 	{
 		Unknown					= (0 << 0),
@@ -37,6 +60,8 @@ namespace RB::Graphics
 		//virtual bool AllowedCpuReads() const = 0;
 		//virtual bool AllowedCpuWrites() const = 0;
 
+		virtual RenderResourceFormat GetFormat() const = 0;
+
 		RenderResourceType GetType() const { return m_Type; }
 		RenderResourceType GetPrimitiveType() const;
 
@@ -70,6 +95,8 @@ namespace RB::Graphics
 	public:
 		virtual ~VertexBuffer() = default;
 		
+		RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
+
 		virtual TopologyType GetTopologyType() const = 0;
 
 		static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint64_t data_size);
@@ -105,7 +132,7 @@ namespace RB::Graphics
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 
-		static Texture2D* Create(const char* name, void* internal_resource, uint32_t width, uint32_t height);
+		static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height);
 
 	protected:
 		Texture2D(): Texture(RenderResourceType::Texture2D) {}
