@@ -63,5 +63,7 @@ namespace RB::Graphics::D3D12
 
 		bool		m_IsValid;
 		bool		m_IsTearingSupported;
+
+		Graphics::Texture2D* m_BackBuffers[BACK_BUFFER_COUNT];
 	};
 }

@@ -32,8 +32,8 @@ namespace RB::Graphics
 		m_SharedContext->graphicsInterface	= RenderInterface::Create(false);
 		m_SharedContext->copyInterface		= RenderInterface::Create(true);
 		m_SharedContext->renderState		= ThreadState::Idle;
-		m_SharedContext->OnRenderFrameStart = std::bind(&OnFrameStart, this);
-		m_SharedContext->OnRenderFrameEnd	= std::bind(&OnFrameEnd, this);
+		m_SharedContext->OnRenderFrameStart = std::bind(&Renderer::OnFrameStart, this);
+		m_SharedContext->OnRenderFrameEnd	= std::bind(&Renderer::OnFrameEnd, this);
 
 		for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 		{
@@ -78,7 +78,7 @@ namespace RB::Graphics
 		// Retrieve all camera's with a valid output location and create ViewContexts for them
 		// Also create the render entries? Or should those just be passed in?
 
-		void* submitted_data; // <- Make sure to allocate this on the heap (using new, not malloc!)
+		void* submitted_data = nullptr; // <- Make sure to allocate this on the heap (using new, not malloc!)
 
 		RenderTaskData data;
 		data.data = submitted_data;

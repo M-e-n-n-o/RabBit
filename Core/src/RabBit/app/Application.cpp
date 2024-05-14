@@ -9,6 +9,7 @@
 #include "graphics/d3d12/resource/ResourceStateManager.h"
 #include "graphics/d3d12/pipeline/Pipeline.h"
 #include "graphics/d3d12/shaders/ShaderSystem.h"
+#include "graphics/d3d12/resource/RenderResourceD3D12.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/Renderer.h"
 
@@ -217,9 +218,7 @@ namespace RB
 
 
 			// Render
-			StartRenderFrame();
 			Render();
-			FinishRenderFrame();
 
 			// Poll inputs and update windows
 			for (Graphics::Window* window : m_Windows)
@@ -291,11 +290,6 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "");
 	}
 
-	void Application::StartRenderFrame()
-	{
-
-	}
-
 	void Application::Render()
 	{
 		Graphics::Window* window = GetPrimaryWindow();
@@ -319,7 +313,7 @@ namespace RB
 				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-					back_buffer.Get(),
+					((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
 					D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
 				);
 
@@ -327,7 +321,7 @@ namespace RB
 
 				FLOAT clear_color[] = { _Value, 0.1f, 0.1f, 0.0f };
 
-				command_list->ClearRenderTargetView(window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), clear_color, 0, nullptr);
+				command_list->ClearRenderTargetView(((Texture2DD3D12*)back_buffer)->GetCpuHandle(), clear_color, 0, nullptr);
 			}
 
 			// Draw
@@ -346,7 +340,7 @@ namespace RB
 				command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
 
 				// Output merger
-				command_list->OMSetRenderTargets(1, &window->GetSwapChain()->GetCurrentDescriptorHandleCPU(), true, nullptr);
+				command_list->OMSetRenderTargets(1, &((Texture2DD3D12*)back_buffer)->GetCpuHandle(), true, nullptr);
 
 				command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
 			}
@@ -356,7 +350,7 @@ namespace RB
 				//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
 
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-					back_buffer.Get(),
+					((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
 					D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
 				);
 
@@ -369,11 +363,6 @@ namespace RB
 			}
 
 		}
-	}
-
-	void Application::FinishRenderFrame()
-	{
-
 	}
 
 	Graphics::Window* Application::GetPrimaryWindow() const

@@ -13,6 +13,7 @@ namespace RB::Graphics::D3D12
 	{
 	public:
 		GpuResource();
+		GpuResource(GPtr<ID3D12Resource> resource, bool transfer_ownership);
 		~GpuResource();
 
 		// Should only be called on the render thread!
@@ -29,5 +30,6 @@ namespace RB::Graphics::D3D12
 		friend class ResourceManager;
 
 		GPtr<ID3D12Resource> m_Resource;
+		bool				 m_OwnsResource;
 	};
 }

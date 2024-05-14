@@ -6,12 +6,19 @@ namespace RB::Graphics::D3D12
 {
 	GpuResource::GpuResource()
 		: m_Resource(nullptr)
+		, m_OwnsResource(true)
+	{
+	}
+
+	GpuResource::GpuResource(GPtr<ID3D12Resource> resource, bool transfer_ownership)
+		: m_Resource(resource)
+		, m_OwnsResource(transfer_ownership)
 	{
 	}
 
 	GpuResource::~GpuResource()
 	{
-		if (IsValid())
+		if (IsValid() && m_OwnsResource)
 		{
 			g_ResourceManager->MarkForDelete(this);
 		}

@@ -29,9 +29,7 @@ namespace RB
 		void Run();
 		void Shutdown();
 
-		void StartRenderFrame();
 		void Render();
-		void FinishRenderFrame();
 
 		void OnEvent(Input::Events::Event& event) override;
 

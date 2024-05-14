@@ -92,9 +92,9 @@ namespace RB::Input::Events
 	private:
 		List<EventListener*> m_Listeners;
 
-		static const int EVENT_HISTORY_COUNT = 5;
+		//static const int EVENT_HISTORY_COUNT = 5;
 
-		List<Event*> m_LastEvents;
+		//List<Event*> m_LastEvents;
 	};
 
 	extern EventManager* g_EventManager;
@@ -113,14 +113,21 @@ namespace RB::Input::Events
 			g_EventManager->RemoveListener(this);
 		}
 
-		virtual void OnEvent(Event& event) = 0;
-
 		bool ListensToCategory(const EventCategory cat) const
 		{
 			return (m_ListenerCategory & cat) > 0;
 		}
 
+		void ProcessEvents();
+
 	private:
-		EventCategory m_ListenerCategory;
+		void AddEvent(Event* e);
+
+		virtual void OnEvent(Event& event) = 0;
+
+		EventCategory	m_ListenerCategory;
+		List<Event*>	m_QueuedEvents;
+
+		friend class EventManager;
 	};
 }

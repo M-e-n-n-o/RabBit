@@ -58,11 +58,17 @@ namespace RB::Graphics::D3D12
 		uint32_t GetWidth() const override { return m_Width; }
 		uint32_t GetHeight() const override { return m_Height; }
 
+		void SetCpuHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) { m_CpuHandle = handle; }
+		D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle() { return m_CpuHandle; }
+
 	private:
-		const char*				m_Name;
-		GpuResource*			m_Resource;
-		uint32_t				m_Width;
-		uint32_t				m_Height;
-		RenderResourceFormat	m_Format;
+		const char*						m_Name;
+		GpuResource*					m_Resource;
+		uint32_t						m_Width;
+		uint32_t						m_Height;
+		RenderResourceFormat			m_Format;
+
+		// TODO Maybe make like a wrapper class for descriptors, just like with the resource
+		D3D12_CPU_DESCRIPTOR_HANDLE		m_CpuHandle;
 	};
 }

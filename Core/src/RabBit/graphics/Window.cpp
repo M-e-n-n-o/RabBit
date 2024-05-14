@@ -17,7 +17,7 @@ namespace RB::Graphics
 
 	Window::~Window()
 	{
-		DestroyWindow();
+		// Destroy window in implementation class!
 	}
 
 	bool Window::InFocus() const

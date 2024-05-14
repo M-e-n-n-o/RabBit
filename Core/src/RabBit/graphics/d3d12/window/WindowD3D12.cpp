@@ -4,6 +4,8 @@
 #include "graphics/d3d12/GraphicsDevice.h"
 #include "graphics/d3d12/DeviceQueue.h"
 #include "graphics/d3d12/UtilsD3D12.h"
+#include "graphics/d3d12/resource/GpuResource.h"
+#include "graphics/d3d12/resource/RenderResourceD3D12.h"
 
 #include "input/events/WindowEvent.h"
 #include "input/events/MouseEvent.h"
@@ -57,6 +59,11 @@ namespace RB::Graphics::D3D12
 				DXGI_FORMAT_R8G8B8A8_UNORM,
 				(bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
 			);
+
+			for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
+			{
+				m_BackBuffers[i] = nullptr;
+			}
 		}
 
 		::ShowWindow(m_WindowHandle, SW_SHOW);
@@ -65,6 +72,11 @@ namespace RB::Graphics::D3D12
 	WindowD3D12::~WindowD3D12()
 	{
 		DestroyWindow();
+
+		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
+		{
+			SAFE_DELETE(m_BackBuffers[i]);
+		}
 	}
 
 	void WindowD3D12::Update()
@@ -139,12 +151,18 @@ namespace RB::Graphics::D3D12
 
 	Graphics::Texture2D* WindowD3D12::GetCurrentBackBuffer()
 	{
-		GPtr<ID3D12Resource> backbuffer = m_SwapChain->GetCurrentBackBuffer();
+		uint32_t index = m_SwapChain->GetCurrentBackBufferIndex();
 
-		// Finish this function!
-		static_assert(false);
+		if (m_BackBuffers[index] == nullptr)
+		{
+			std::string name = "Backbuffer resource " + std::to_string(index);
+			GPtr<ID3D12Resource> backbuffer = m_SwapChain->GetCurrentBackBuffer();
+			m_BackBuffers[index] = Texture2D::Create(name.c_str(), new GpuResource(backbuffer, false), GetBackBufferFormat(), GetWidth(), GetHeight());
 
-		return nullptr;
+			((Texture2DD3D12*) m_BackBuffers[index])->SetCpuHandle(m_SwapChain->GetCurrentDescriptorHandleCPU());
+		}
+
+		return m_BackBuffers[index];
 	}
 
 	void WindowD3D12::OnResize(uint32_t width, uint32_t height)
