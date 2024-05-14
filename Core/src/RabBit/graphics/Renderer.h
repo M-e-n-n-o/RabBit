@@ -1,5 +1,7 @@
 #pragma once
 
+#include "input/events/Event.h"
+
 namespace RB::Entity
 {
 	class Scene;
@@ -16,7 +18,7 @@ namespace RB::Graphics
 	class RenderInterface;
 
 	// Fully static class
-	class Renderer
+	class Renderer : public Input::Events::EventListener
 	{
 	public:
 		virtual ~Renderer();
@@ -29,6 +31,8 @@ namespace RB::Graphics
 
 		// Sync with the render thread (and optionally also wait until GPU is idle)
 		void SyncRenderer(bool gpu_sync = false);
+
+		uint64_t GetRenderFrameIndex() const;
 
 		static Renderer* Create(bool enable_validation_layer);
 
@@ -53,7 +57,7 @@ namespace RB::Graphics
 		enum RenderThreadTaskType : uint8_t
 		{
 			Shutdown,
-			// TODO Also make a task for a resource resize (if the backbuffer needs to be resized)
+			HandleEvents,
 			RenderFrame,
 
 			Count
@@ -90,17 +94,25 @@ namespace RB::Graphics
 			RenderInterface*	copyInterface;
 			RenderInterface*	graphicsInterface;
 
+			uint64_t			renderFrameIndex;
+			CRITICAL_SECTION	renderFrameIndexCS;
+
 			std::function<void()> OnRenderFrameStart;
 			std::function<void()> OnRenderFrameEnd;
+			std::function<void()> ProcessEvents;
 		};
 
 	private:
+		// Should only be called from the render thread!
+		void OnEvent(Input::Events::Event& event) override;
+
 		void SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTaskData& task_data);
+
+		RenderTaskData GetDummyTaskData();
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 
 		HANDLE						m_RenderThread;
 		SharedRenderThreadContext*	m_SharedContext;
-
 	};
 }

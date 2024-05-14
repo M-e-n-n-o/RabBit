@@ -53,6 +53,8 @@ namespace RB
 
 	float _Value = 0;
 
+	Application* Application::s_Instance = nullptr;
+
 	Application::Application(AppInfo& info)
 		: EventListener(kEventCat_All)
 		, m_StartAppInfo(info)
@@ -62,6 +64,9 @@ namespace RB
 		, m_CheckWindows(false)
 				
 	{
+		RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
+		s_Instance = this;
+
 		RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
 		RB_LOG_RELEASE(LOGTAG_MAIN, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
 	}
@@ -138,7 +143,7 @@ namespace RB
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0  },
 				{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 2, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-			};		
+			};	
 
 			D3D12_RASTERIZER_DESC ras_desc = {};
 			ras_desc.FillMode				= D3D12_FILL_MODE_SOLID;
@@ -233,6 +238,9 @@ namespace RB
 				}
 			}
 
+			// Process the new received events
+			ProcessEvents();
+
 			// Do game logic of the current frame
 			OnUpdate();
 
@@ -242,6 +250,8 @@ namespace RB
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)
 			{
+				_Renderer->SyncRenderer(true);
+
 				for (int i = 0; i < m_Windows.size(); i++)
 				{
 					if (m_Windows[i]->ShouldClose() || !m_Windows[i]->HasWindow())
@@ -262,7 +272,7 @@ namespace RB
 			}
 
 			// Update the frame index
-			m_FrameIndex++;
+			++m_FrameIndex;
 		}
 	}
 
@@ -292,6 +302,9 @@ namespace RB
 
 	void Application::Render()
 	{
+		// Move this functionality into the render thread
+		static_assert(false);
+
 		Graphics::Window* window = GetPrimaryWindow();
 
 		if (window->IsMinimized())
@@ -412,6 +425,8 @@ namespace RB
 					}
 				}
 			}
+
+			return true;
 		}, event);
 
 		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
@@ -419,6 +434,9 @@ namespace RB
 		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
 		{
 			m_CheckWindows = true;
+
+			// Make sure to not set the event as processed as the render thread should also process this event
+			return false;
 		}, event);
 	}
 }

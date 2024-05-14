@@ -81,11 +81,12 @@ namespace RB::Graphics::D3D12
 
 	void WindowD3D12::Update()
 	{
-		if (ShouldClose())
-		{
-			RB_LOG(LOGTAG_WINDOWING, "Asked for window close");
-			DestroyWindow();
-		}
+		// Will this go wrong with the render thread??
+		//if (ShouldClose())
+		//{
+		//	RB_LOG(LOGTAG_WINDOWING, "Asked for window close");
+		//	DestroyWindow();
+		//}
 
 		MSG message = {};
 		if (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
@@ -262,14 +263,14 @@ namespace RB::Graphics::D3D12
 		{
 		case WM_PAINT:
 		{
-			Event* e = new WindowRenderEvent(hwnd);
+			WindowRenderEvent e(hwnd);
 			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 		{
-			Event* e = new KeyPressedEvent(static_cast<KeyCode>(wParam), false);
+			KeyPressedEvent e(static_cast<KeyCode>(wParam), false);
 			g_EventManager->InsertEvent(e);
 		}
 		break;
@@ -283,25 +284,25 @@ namespace RB::Graphics::D3D12
 			uint32_t width = client_rect.right - client_rect.left;
 			uint32_t height = client_rect.bottom - client_rect.top;
 
-			Event* e = new WindowResizeEvent(hwnd, width, height);
+			WindowResizeEvent e(hwnd, width, height);
 			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_SETFOCUS:
 		{
-			Event* e = new WindowOnFocusEvent(hwnd);
+			WindowOnFocusEvent e(hwnd);
 			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_KILLFOCUS:
 		{
-			Event* e = new WindowLostFocusEvent(hwnd);
+			WindowLostFocusEvent e(hwnd);
 			g_EventManager->InsertEvent(e);
 		}
 		break;
 		case WM_CLOSE:
 		{
-			Event* e = new WindowCloseRequestEvent(hwnd);
+			WindowCloseRequestEvent e(hwnd);
 			g_EventManager->InsertEvent(e);
 		}
 		break;

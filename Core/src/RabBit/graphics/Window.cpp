@@ -9,8 +9,7 @@ using namespace RB::Input::Events;
 namespace RB::Graphics
 {
 	Window::Window()
-		: EventListener(kEventCat_Window)
-		, m_AskedForClose(false)
+		: m_AskedForClose(false)
 		, m_InFocus(true)
 	{
 	}
@@ -30,21 +29,19 @@ namespace RB::Graphics
 		return m_AskedForClose;
 	}
 	
-	void Window::OnEvent(Event& event)
+	void Window::ProcessEvent(WindowEvent& window_event)
 	{
-		WindowEvent* window_event = static_cast<WindowEvent*>(&event);
-
 		// Only handle window events of this window
-		if (!IsSameWindow(window_event->GetWindowHandle()))
+		if (!IsSameWindow(window_event.GetWindowHandle()))
 		{
 			return;
 		}
 
-		switch (event.GetEventType())
+		switch (window_event.GetEventType())
 		{
 		case EventType::WindowResize:
 		{
-			WindowResizeEvent* resize_event = static_cast<WindowResizeEvent*>(&event);
+			WindowResizeEvent* resize_event = static_cast<WindowResizeEvent*>(&window_event);
 
 			uint32_t width = resize_event->GetWidth();
 			uint32_t height = resize_event->GetHeight();

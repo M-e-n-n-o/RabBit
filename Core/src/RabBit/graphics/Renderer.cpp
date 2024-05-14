@@ -2,6 +2,10 @@
 #include "RabBitCommon.h"
 #include "Renderer.h"
 #include "RenderInterface.h"
+#include "app/Application.h"
+#include "graphics/Window.h"
+#include "input/events/WindowEvent.h"
+
 #include "entity/Scene.h"
 #include "d3d12/RendererD3D12.h"
 
@@ -14,7 +18,7 @@
 #include "d3d12/DeviceQueue.h"
 #include "RenderInterface.h"
 
-
+using namespace RB::Input::Events;
 
 namespace RB::Graphics
 {
@@ -22,6 +26,7 @@ namespace RB::Graphics
 	DWORD WINAPI ResourceStreamLoop(PVOID param);
 
 	Renderer::Renderer()
+		: EventListener(kEventCat_Window)
 	{
 
 	}
@@ -34,6 +39,8 @@ namespace RB::Graphics
 		m_SharedContext->renderState		= ThreadState::Idle;
 		m_SharedContext->OnRenderFrameStart = std::bind(&Renderer::OnFrameStart, this);
 		m_SharedContext->OnRenderFrameEnd	= std::bind(&Renderer::OnFrameEnd, this);
+		m_SharedContext->ProcessEvents		= std::bind(&Renderer::ProcessEvents, this);
+		m_SharedContext->renderFrameIndex	= 0;
 
 		for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 		{
@@ -59,11 +66,7 @@ namespace RB::Graphics
 
 	Renderer::~Renderer()
 	{
-		RenderTaskData dummy_data = {};
-		dummy_data.data		= new uint8_t(0);
-		dummy_data.dataSize = sizeof(uint8_t);
-
-		SendRenderThreadTask(RenderThreadTaskType::Shutdown, dummy_data);
+		SendRenderThreadTask(RenderThreadTaskType::Shutdown, GetDummyTaskData());
 
 		WaitForMultipleObjects(1, &m_RenderThread, TRUE, INFINITE);
 		CloseHandle(m_RenderThread);
@@ -83,6 +86,9 @@ namespace RB::Graphics
 		RenderTaskData data;
 		data.data = submitted_data;
 		data.dataSize = sizeof(submitted_data);
+
+		// Also submit a new request to handle new window events
+		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTaskData());
 
 		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
 
@@ -125,6 +131,15 @@ namespace RB::Graphics
 		}
 	}
 
+	uint64_t Renderer::GetRenderFrameIndex() const
+	{
+		EnterCriticalSection(&m_SharedContext->renderFrameIndexCS);
+		uint64_t index = m_SharedContext->renderFrameIndex;
+		LeaveCriticalSection(&m_SharedContext->renderFrameIndexCS);
+
+		return index;
+	}
+
 	void Renderer::SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTaskData& task_data)
 	{
 		// Kick render thread
@@ -132,6 +147,24 @@ namespace RB::Graphics
 		m_SharedContext->renderTasks[task_type] = task_data;
 		LeaveCriticalSection(&m_SharedContext->renderKickCS);
 		WakeConditionVariable(&m_SharedContext->renderKickCV);
+	}
+
+	void Renderer::OnEvent(Event& event)
+	{
+		WindowEvent* window_event = static_cast<WindowEvent*>(&event);
+
+		Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
+		
+		window->ProcessEvent(*window_event);
+	}
+
+	Renderer::RenderTaskData Renderer::GetDummyTaskData()
+	{
+		RenderTaskData dummy = {};
+		dummy.data		= new uint8_t(0);
+		dummy.dataSize	= sizeof(uint8_t);
+
+		return dummy;
 	}
 
 	Renderer* Renderer::Create(bool enable_validation_layer)
@@ -156,6 +189,7 @@ namespace RB::Graphics
 		InitializeCriticalSection(&context->renderKickCS);
 		InitializeConditionVariable(&context->renderSyncCV);
 		InitializeCriticalSection(&context->renderSyncCS);
+		InitializeCriticalSection(&context->renderFrameIndexCS);
 
 		// Spawn the streaming thread
 		{
@@ -228,6 +262,7 @@ namespace RB::Graphics
 					memcpy(render_data[task_type], context->renderTasks[task_type].data, context->renderTasks[task_type].dataSize);
 
 					SAFE_DELETE(context->renderTasks[task_type].data);
+					context->renderTasks[task_type].dataSize = 0;
 				}
 
 				// Start timer
@@ -260,6 +295,12 @@ namespace RB::Graphics
 						LeaveCriticalSection(&context->streamingKickCS);
 						WakeConditionVariable(&context->streamingKickCV);
 					}
+				}
+				break;
+
+				case Renderer::RenderThreadTaskType::HandleEvents:
+				{
+					context->ProcessEvents();
 				}
 				break;
 
@@ -322,6 +363,13 @@ namespace RB::Graphics
 					}
 
 					context->OnRenderFrameEnd();
+
+					// Update the frame index
+					{
+						EnterCriticalSection(&context->renderFrameIndexCS);
+						++context->renderFrameIndex;
+						LeaveCriticalSection(&context->renderFrameIndexCS);
+					}
 				}
 
 				default:
@@ -346,6 +394,7 @@ namespace RB::Graphics
 
 		DeleteCriticalSection(&context->renderKickCS);
 		DeleteCriticalSection(&context->renderSyncCS);
+		DeleteCriticalSection(&context->renderFrameIndexCS);
 
 		context->renderState = Renderer::ThreadState::Terminated;
 

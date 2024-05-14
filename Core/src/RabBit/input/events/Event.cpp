@@ -3,6 +3,38 @@
 
 namespace RB::Input::Events
 {
+	// ----------------------------------------------------------------------------
+	//									Event
+	// ----------------------------------------------------------------------------
+
+	Event::Event()
+		: m_IsProcessed(false)
+	{
+	}
+
+	Event::~Event()
+	{
+	}
+
+	void Event::SetProcessed(bool processed)
+	{
+		m_IsProcessed = processed;
+	}
+
+	bool Event::IsProcessed()
+	{
+		return m_IsProcessed;
+	}
+
+	bool Event::IsInCategory(const EventCategory cat) const
+	{
+		return (GetCategoryFlags() & cat) > 0;
+	}
+
+	// ----------------------------------------------------------------------------
+	//								EventManager
+	// ----------------------------------------------------------------------------
+
 	EventManager* g_EventManager = nullptr;
 
 	EventManager::EventManager()
@@ -30,13 +62,13 @@ namespace RB::Input::Events
 		m_Listeners.erase(std::remove(m_Listeners.begin(), m_Listeners.end(), listener), m_Listeners.end());
 	}
 
-	void EventManager::InsertEvent(Event* event) 
+	void EventManager::InsertEvent(const Event& event) 
 	{
 		//m_LastEvents.insert(m_LastEvents.begin(), event);
 
 		for (EventListener* listener : m_Listeners)
 		{
-			if (listener->ListensToCategory((EventCategory) event->GetCategoryFlags()))
+			if (listener->ListensToCategory((EventCategory) event.GetCategoryFlags()))
 			{
 				listener->AddEvent(event);
 			}
@@ -53,8 +85,23 @@ namespace RB::Input::Events
 	//								EventListener
 	// ----------------------------------------------------------------------------
 	
+	EventListener::EventListener(EventCategory category)
+		: m_ListenerCategory(category)
+	{
+		InitializeCriticalSection(&m_CS);
+		g_EventManager->AddListener(this);
+	}
+
+	EventListener::~EventListener()
+	{
+		g_EventManager->RemoveListener(this);
+		DeleteCriticalSection(&m_CS);
+	}
+
 	void EventListener::ProcessEvents()
 	{
+		EnterCriticalSection(&m_CS);
+
 		for (auto itr = m_QueuedEvents.begin(); itr < m_QueuedEvents.end();)
 		{
 			Event* e = *itr;
@@ -71,10 +118,14 @@ namespace RB::Input::Events
 				++itr;
 			}
 		}
+
+		LeaveCriticalSection(&m_CS);
 	}
 	
-	void EventListener::AddEvent(Event* e)
+	void EventListener::AddEvent(const Event& e)
 	{
-		m_QueuedEvents.push_back(e);
+		EnterCriticalSection(&m_CS);
+		m_QueuedEvents.push_back(e.Clone());
+		LeaveCriticalSection(&m_CS);
 	}
 }

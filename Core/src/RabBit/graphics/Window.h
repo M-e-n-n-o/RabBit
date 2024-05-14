@@ -1,6 +1,6 @@
 #pragma once
 
-#include "input/events/Event.h"
+#include "input/events/WindowEvent.h"
 #include "graphics/RenderResource.h"
 
 namespace RB::Graphics
@@ -21,7 +21,7 @@ namespace RB::Graphics
 		Eighth	= 4
 	};
 
-	class Window : Input::Events::EventListener
+	class Window
 	{
 	public:
 		static const uint32_t BACK_BUFFER_COUNT = 2u;
@@ -49,7 +49,7 @@ namespace RB::Graphics
 		virtual uint32_t GetCurrentBackBufferIndex() = 0;
 		virtual Graphics::Texture2D* GetCurrentBackBuffer() = 0;
 
-		void OnEvent(Input::Events::Event& event);
+		void ProcessEvent(Input::Events::WindowEvent& event);
 
 		static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style);
 		

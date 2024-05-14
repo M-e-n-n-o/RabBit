@@ -24,37 +24,38 @@ namespace RB::Input::Events
 		kEventCat_All			= (kEventCat_Window | kEventCat_Input | kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton)
 	};
 
-	#define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\
+	#define DEFINE_CLASS_TYPE(classType, type) static EventType GetStaticType() { return EventType::type; }\
 								virtual EventType GetEventType() const override { return GetStaticType(); }\
-								virtual const char* GetName() const override { return #type; }
+								virtual const char* GetName() const override { return #type; }\
+								virtual Event* Clone() const override { return new classType(*this); }
 
 	#define RB_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
 	class Event
 	{
 	public:
-		virtual ~Event() = default;
+		Event();
+		virtual ~Event();
 
-		virtual EventType GetEventType() const = 0;
-		virtual const char* GetName() const = 0;
-		virtual int GetCategoryFlags() const = 0;
+		virtual EventType	GetEventType()		const = 0;
+		virtual const char* GetName()			const = 0;
+		virtual int			GetCategoryFlags()	const = 0;
+		virtual Event*		Clone()				const = 0;
 
-		void SetProcessed(bool processed) { m_IsProcessed = processed; }
-		bool IsProcessed() const { return m_IsProcessed; }
+		void SetProcessed(bool processed);
+		bool IsProcessed();
 
-		bool IsInCategory(const EventCategory cat) const
-		{
-			return (GetCategoryFlags() & cat) > 0;
-		}
+		bool IsInCategory(const EventCategory cat) const;
+
 
 	private:
-		bool m_IsProcessed = false;
+		bool m_IsProcessed;
 	};
 
 	class EmptyEvent : public Event
 	{
 	public:
-		EVENT_CLASS_TYPE(None)
+		DEFINE_CLASS_TYPE(EmptyEvent, None)
 		int GetCategoryFlags() const override { return kEventCat_None; }
 	};
 
@@ -65,9 +66,9 @@ namespace RB::Input::Events
 		{
 			if (event.GetEventType() == Type::GetStaticType())
 			{
-				event.SetProcessed(true);
-				func(static_cast<Type&>(event));
-				return true;
+				bool processed = func(static_cast<Type&>(event));
+				event.SetProcessed(processed);
+				return processed;
 			}
 		}
 
@@ -85,7 +86,7 @@ namespace RB::Input::Events
 		void AddListener(EventListener* listener);
 		void RemoveListener(EventListener* listener);
 
-		void InsertEvent(Event* event);
+		void InsertEvent(const Event& event);
 
 		//Event& GetPreviousEventPerCategory(const EventCategory& cat, uint8_t index);
 
@@ -102,16 +103,8 @@ namespace RB::Input::Events
 	class EventListener
 	{
 	public:
-		EventListener(EventCategory category)
-			: m_ListenerCategory(category)
-		{
-			g_EventManager->AddListener(this);
-		}
-
-		virtual ~EventListener()
-		{
-			g_EventManager->RemoveListener(this);
-		}
+		EventListener(EventCategory category);
+		virtual ~EventListener();
 
 		bool ListensToCategory(const EventCategory cat) const
 		{
@@ -121,12 +114,13 @@ namespace RB::Input::Events
 		void ProcessEvents();
 
 	private:
-		void AddEvent(Event* e);
+		void AddEvent(const Event& e);
 
 		virtual void OnEvent(Event& event) = 0;
 
-		EventCategory	m_ListenerCategory;
-		List<Event*>	m_QueuedEvents;
+		EventCategory		m_ListenerCategory;
+		List<Event*>		m_QueuedEvents;
+		CRITICAL_SECTION	m_CS;
 
 		friend class EventManager;
 	};

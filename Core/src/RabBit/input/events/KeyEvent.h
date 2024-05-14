@@ -27,7 +27,7 @@ namespace RB::Input::Events
 
 		bool IsRepeatEvent() const { return m_IsRepeat; }
 
-		EVENT_CLASS_TYPE(KeyPressed)
+		DEFINE_CLASS_TYPE(KeyPressedEvent, KeyPressed)
 
 	private:
 		bool m_IsRepeat;
@@ -39,7 +39,7 @@ namespace RB::Input::Events
 	public:
 		KeyReleasedEvent(const KeyCode keyCode) : KeyEvent(keyCode) {}
 
-		EVENT_CLASS_TYPE(KeyReleased)
+		DEFINE_CLASS_TYPE(KeyReleasedEvent, KeyReleased)
 	};
 
 
@@ -48,6 +48,6 @@ namespace RB::Input::Events
 	public:
 		KeyTypedEvent(const KeyCode keyCode) : KeyEvent(keyCode) {}
 
-		EVENT_CLASS_TYPE(KeyTyped)
+		DEFINE_CLASS_TYPE(KeyTypedEvent, KeyTyped)
 	};
 }

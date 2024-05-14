@@ -26,7 +26,7 @@ namespace RB::Input::Events
 	public:
 		WindowCreatedEvent(void* window_handle): WindowEvent(window_handle) {}
 
-		EVENT_CLASS_TYPE(WindowCreated)
+		DEFINE_CLASS_TYPE(WindowCreatedEvent, WindowCreated)
 	};
 
 	class WindowResizeEvent : public WindowEvent
@@ -37,7 +37,7 @@ namespace RB::Input::Events
 		uint32_t GetWidth() const { return m_Width; }
 		uint32_t GetHeight() const { return m_Height; }
 
-		EVENT_CLASS_TYPE(WindowResize)
+		DEFINE_CLASS_TYPE(WindowResizeEvent, WindowResize)
 
 	private:
 		uint32_t m_Width;
@@ -49,7 +49,7 @@ namespace RB::Input::Events
 	public:
 		WindowCloseEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		EVENT_CLASS_TYPE(WindowClose)
+		DEFINE_CLASS_TYPE(WindowCloseEvent, WindowClose)
 	};
 
 	class WindowCloseRequestEvent : public WindowEvent
@@ -57,7 +57,7 @@ namespace RB::Input::Events
 	public:
 		WindowCloseRequestEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		EVENT_CLASS_TYPE(WindowCloseRequest)
+		DEFINE_CLASS_TYPE(WindowCloseRequestEvent, WindowCloseRequest)
 	};
 
 	class WindowRenderEvent : public WindowEvent
@@ -65,7 +65,7 @@ namespace RB::Input::Events
 	public:
 		WindowRenderEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		EVENT_CLASS_TYPE(WindowRender)
+		DEFINE_CLASS_TYPE(WindowRenderEvent, WindowRender)
 	};
 
 	class WindowOnFocusEvent : public WindowEvent
@@ -73,7 +73,7 @@ namespace RB::Input::Events
 	public:
 		WindowOnFocusEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		EVENT_CLASS_TYPE(WindowFocus)
+		DEFINE_CLASS_TYPE(WindowOnFocusEvent, WindowFocus)
 	};
 
 	class WindowLostFocusEvent : public WindowEvent
@@ -81,6 +81,6 @@ namespace RB::Input::Events
 	public:
 		WindowLostFocusEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		EVENT_CLASS_TYPE(WindowLostFocus)
+		DEFINE_CLASS_TYPE(WindowLostFocusEvent, WindowLostFocus)
 	};
 }
