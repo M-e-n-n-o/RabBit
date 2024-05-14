@@ -90,8 +90,6 @@ namespace RB
 		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
 		m_Windows.push_back(Window::Create("Test", 1280, 720, kWindowStyle_Default));
 
-		RenderInterface* i = RenderInterface::Create(false);
-
 		m_Initialized = true;
 
 		RB_LOG(LOGTAG_MAIN, "");
@@ -211,9 +209,10 @@ namespace RB
 			//_VaoView.StrideInBytes	= sizeof(float) * 5;
 		}
 
+		// TODO Fix this, AddComponent breaks
 		Scene scene;
-		GameObject* obj = scene.CreateGameObject();
-		obj->AddComponent<Mesh>();
+		//GameObject* obj = scene.CreateGameObject();
+		//obj->AddComponent<Mesh>();
 		
 
 		while (!m_ShouldStop)
@@ -303,79 +302,79 @@ namespace RB
 	void Application::Render()
 	{
 		// Move this functionality into the render thread
-		static_assert(false);
+		//static_assert(false);
 
-		Graphics::Window* window = GetPrimaryWindow();
+		//Graphics::Window* window = GetPrimaryWindow();
 
-		if (window->IsMinimized())
-		{
-			return;
-		}
+		//if (window->IsMinimized())
+		//{
+		//	return;
+		//}
 
-		GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
+		//GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
 
-		auto back_buffer = window->GetCurrentBackBuffer();
+		//auto back_buffer = window->GetCurrentBackBuffer();
 
-		{
-			// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
-			uint64_t value = window->GetCurrentBackBufferIndex();
-			_GraphicsQueue->CpuWaitForFenceValue(_FenceValues[value]);
+		//{
+		//	// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
+		//	uint64_t value = window->GetCurrentBackBufferIndex();
+		//	_GraphicsQueue->CpuWaitForFenceValue(_FenceValues[value]);
 
-			// Clear the render target
-			{
-				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
+		//	// Clear the render target
+		//	{
+		//		RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
-				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-					((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
-					D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
-				);
+		//		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		//			((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
+		//			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
+		//		);
 
-				command_list->ResourceBarrier(1, &barrier);
+		//		command_list->ResourceBarrier(1, &barrier);
 
-				FLOAT clear_color[] = { _Value, 0.1f, 0.1f, 0.0f };
+		//		FLOAT clear_color[] = { _Value, 0.1f, 0.1f, 0.0f };
 
-				command_list->ClearRenderTargetView(((Texture2DD3D12*)back_buffer)->GetCpuHandle(), clear_color, 0, nullptr);
-			}
+		//		command_list->ClearRenderTargetView(((Texture2DD3D12*)back_buffer)->GetCpuHandle(), clear_color, 0, nullptr);
+		//	}
 
-			// Draw
-			{
-				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Draw");
+		//	// Draw
+		//	{
+		//		RB_PROFILE_GPU_SCOPED(command_list.Get(), "Draw");
 
-				command_list->SetPipelineState(_Pso.Get());
-				command_list->SetGraphicsRootSignature(_RootSignature.Get());
+		//		command_list->SetPipelineState(_Pso.Get());
+		//		command_list->SetGraphicsRootSignature(_RootSignature.Get());
 
-				// Input assembly
-				command_list->IASetVertexBuffers(0, 1, &_VaoView);
-				command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				
-				// Rasterizer state
-				command_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
-				command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
+		//		// Input assembly
+		//		command_list->IASetVertexBuffers(0, 1, &_VaoView);
+		//		command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		//		
+		//		// Rasterizer state
+		//		command_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
+		//		command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
 
-				// Output merger
-				command_list->OMSetRenderTargets(1, &((Texture2DD3D12*)back_buffer)->GetCpuHandle(), true, nullptr);
+		//		// Output merger
+		//		command_list->OMSetRenderTargets(1, &((Texture2DD3D12*)back_buffer)->GetCpuHandle(), true, nullptr);
 
-				command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
-			}
+		//		command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
+		//	}
 
-			// Present
-			{
-				//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
+		//	// Present
+		//	{
+		//		//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
 
-				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-					((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
-					D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
-				);
+		//		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		//			((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
+		//			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
+		//		);
 
-				command_list->ResourceBarrier(1, &barrier);
+		//		command_list->ResourceBarrier(1, &barrier);
 
-				uint64_t value = window->GetCurrentBackBufferIndex();
-				_FenceValues[value] = _GraphicsQueue->ExecuteCommandList(command_list);
+		//		uint64_t value = window->GetCurrentBackBufferIndex();
+		//		_FenceValues[value] = _GraphicsQueue->ExecuteCommandList(command_list);
 
-				window->Present(VsyncMode::On);
-			}
+		//		window->Present(VsyncMode::On);
+		//	}
 
-		}
+		//}
 	}
 
 	Graphics::Window* Application::GetPrimaryWindow() const

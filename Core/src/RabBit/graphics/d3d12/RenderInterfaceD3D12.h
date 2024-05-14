@@ -54,9 +54,11 @@ namespace RB::Graphics::D3D12
 
 		void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
-		// CHECK IF ALL ESSENTIAL STATES ARE SET!!!
+		// TODO CHECK IF ALL ESSENTIAL STATES ARE SET!!!
 		void DrawInternal() override;
 		void DispatchInternal() override;
+
+		GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
 	private:
 		bool ValidateResource(RenderResource* res);

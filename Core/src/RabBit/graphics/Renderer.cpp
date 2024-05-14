@@ -17,6 +17,10 @@
 #include "d3d12/GraphicsDevice.h"
 #include "d3d12/DeviceQueue.h"
 #include "RenderInterface.h"
+#include "d3d12/resource/GpuResource.h"
+#include "d3d12/resource/RenderResourceD3D12.h"
+#include "d3d12/GraphicsDevice.h"
+#include "d3d12/RenderInterfaceD3D12.h"
 
 using namespace RB::Input::Events;
 
@@ -81,14 +85,14 @@ namespace RB::Graphics
 		// Retrieve all camera's with a valid output location and create ViewContexts for them
 		// Also create the render entries? Or should those just be passed in?
 
-		void* submitted_data = nullptr; // <- Make sure to allocate this on the heap (using new, not malloc!)
+		void* submitted_data = new uint8_t(1); // <- Make sure to allocate this on the heap (using new, not malloc!)
+
+		// Also submit a new request to handle new window events
+		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTaskData());
 
 		RenderTaskData data;
 		data.data = submitted_data;
 		data.dataSize = sizeof(submitted_data);
-
-		// Also submit a new request to handle new window events
-		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTaskData());
 
 		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
 
@@ -161,7 +165,7 @@ namespace RB::Graphics
 	Renderer::RenderTaskData Renderer::GetDummyTaskData()
 	{
 		RenderTaskData dummy = {};
-		dummy.data		= new uint8_t(0);
+		dummy.data		= new uint8_t(1);
 		dummy.dataSize	= sizeof(uint8_t);
 
 		return dummy;
@@ -205,10 +209,22 @@ namespace RB::Graphics
 			SetThreadPriority(context->streamingThread, THREAD_PRIORITY_HIGHEST);
 		}
 
+
+
+		// TODO Remove!
+		uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
+
+
+
+
 		bool stop = false;
-		while (stop)
+		while (!stop)
 		{
 			void* render_data[Renderer::RenderThreadTaskType::Count];
+			for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
+			{
+				render_data[task_type] = nullptr;
+			}
 
 			// Prepare
 			{
@@ -321,6 +337,77 @@ namespace RB::Graphics
 
 					// Present
 
+					{
+						Graphics::Window* window = Application::GetInstance()->GetPrimaryWindow();
+
+						if (!window->IsMinimized())
+						{
+							auto back_buffer = window->GetCurrentBackBuffer();
+
+							GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
+
+							// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
+							uint64_t value = window->GetCurrentBackBufferIndex();
+							D3D12::g_GraphicsDevice->GetGraphicsQueue()->CpuWaitForFenceValue(_FenceValues[value]);
+
+
+							// Clear the render target
+							{
+								RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
+
+								CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+									((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
+									D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
+								);
+
+								command_list->ResourceBarrier(1, &barrier);
+
+								FLOAT clear_color[] = { 0.0f, 0.1f, 0.1f, 0.0f };
+
+								command_list->ClearRenderTargetView(((D3D12::Texture2DD3D12*)back_buffer)->GetCpuHandle(), clear_color, 0, nullptr);
+							}
+
+							// Draw
+							//{
+							//	RB_PROFILE_GPU_SCOPED(command_list.Get(), "Draw");
+
+							//	command_list->SetPipelineState(_Pso.Get());
+							//	command_list->SetGraphicsRootSignature(_RootSignature.Get());
+
+							//	// Input assembly
+							//	command_list->IASetVertexBuffers(0, 1, &_VaoView);
+							//	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+							//	// Rasterizer state
+							//	command_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
+							//	command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
+
+							//	// Output merger
+							//	command_list->OMSetRenderTargets(1, &((Texture2DD3D12*)back_buffer)->GetCpuHandle(), true, nullptr);
+
+							//	command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
+							//}
+
+							// Present
+							{
+								//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
+
+								CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+									((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
+									D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
+								);
+
+								command_list->ResourceBarrier(1, &barrier);
+
+								uint64_t value = window->GetCurrentBackBufferIndex();
+								_FenceValues[value] = D3D12::g_GraphicsDevice->GetGraphicsQueue()->ExecuteCommandList(command_list);
+
+								window->Present(VsyncMode::On);
+							}
+
+						}
+					}
+
 					/*
 						Rendering flow:
 						(command list 0, 1 & 2 are from frame i-2, 3, 4 & 5 are from frame i-1)
@@ -377,18 +464,22 @@ namespace RB::Graphics
 					break;
 				}
 
-				if (stop)
-				{
-					break;
-				}
-
 				SAFE_FREE( render_data[task_type]);
+			}
+
+			if (stop)
+			{
+				break;
 			}
 		}
 
 		// Wait for resource streaming thread
 		WaitForMultipleObjects(1, &context->streamingThread, TRUE, INFINITE);
 		CloseHandle(context->streamingThread);
+
+		// TODO Change this to something more abstract!!!!
+		D3D12::g_GraphicsDevice->WaitUntilIdle();
+
 		DeleteCriticalSection(&context->streamingKickCS);
 		DeleteCriticalSection(&context->streamingSyncCS);
 

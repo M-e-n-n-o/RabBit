@@ -76,7 +76,8 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::Clear(RenderResource* resource, const Math::Float4& color)
 	{
-		//m_CommandList->ClearRenderTargetView
+		FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
+		m_CommandList->ClearRenderTargetView(((D3D12::Texture2DD3D12*)resource)->GetCpuHandle(), clear_color, 0, nullptr);
 	}
 
 	void RenderInterfaceD3D12::SetScissorRect(const Math::Int4& scissor_rect)
