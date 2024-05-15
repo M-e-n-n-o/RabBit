@@ -38,7 +38,7 @@ namespace RB::Graphics::D3D12
 		uint32_t GetWidth()		const override;
 		uint32_t GetHeight()	const override;
 		bool	 IsMinimized()	const override;
-		bool	 HasWindow()	const override;
+		bool	 IsValid()		const override;
 
 		bool IsSameWindow(void* window_handle) const override;
 

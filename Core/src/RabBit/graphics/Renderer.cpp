@@ -100,14 +100,14 @@ namespace RB::Graphics
 
 		void* submitted_data = new uint8_t(1); // <- Make sure to allocate this on the heap (using new, not malloc!)
 
-		// Also submit a new request to handle new window events
-		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTaskData());
-
 		RenderTaskData data;
 		data.data = submitted_data;
 		data.dataSize = sizeof(submitted_data);
 
 		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
+
+		// Also submit a new request to handle new window events
+		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTaskData());
 
 		// Sync with the renderer if it is stalling
 		{
@@ -171,7 +171,7 @@ namespace RB::Graphics
 		WindowEvent* window_event = static_cast<WindowEvent*>(&event);
 
 		Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
-		
+
 		if (window)
 		{
 			window->ProcessEvent(*window_event);
@@ -361,7 +361,7 @@ namespace RB::Graphics
 					{
 						Graphics::Window* window = Application::GetInstance()->GetPrimaryWindow();
 
-						if (!window->IsMinimized())
+						if (window && !window->IsMinimized())
 						{
 							auto back_buffer = window->GetCurrentBackBuffer();
 

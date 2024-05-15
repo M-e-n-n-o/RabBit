@@ -71,23 +71,18 @@ namespace RB::Graphics::D3D12
 
 	WindowD3D12::~WindowD3D12()
 	{
-		DestroyWindow();
-
-		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
+		if (m_IsValid)
 		{
-			SAFE_DELETE(m_BackBuffers[i]);
+			RB_LOG_ERROR(LOGTAG_WINDOWING, "Deleting window while the actual window has not yet been destroyed");
 		}
+
+		RB_LOG(LOGTAG_WINDOWING, "Destroying window");
+
+		::DestroyWindow(m_WindowHandle);
 	}
 
 	void WindowD3D12::Update()
 	{
-		// Will this go wrong with the render thread??
-		//if (ShouldClose())
-		//{
-		//	RB_LOG(LOGTAG_WINDOWING, "Asked for window close");
-		//	DestroyWindow();
-		//}
-
 		MSG message = {};
 		if (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
 		{
@@ -120,7 +115,7 @@ namespace RB::Graphics::D3D12
 		return m_SwapChain->GetWidth() == 0 && m_SwapChain->GetHeight() == 0;
 	}
 
-	bool WindowD3D12::HasWindow() const
+	bool WindowD3D12::IsValid() const
 	{
 		return m_IsValid;
 	}
@@ -191,13 +186,16 @@ namespace RB::Graphics::D3D12
 	{
 		g_GraphicsDevice->WaitUntilIdle();
 
-		RB_LOG(LOGTAG_WINDOWING, "Destroying window");
+		RB_LOG(LOGTAG_WINDOWING, "Scheduled destroy of window");
 
 		m_IsValid = false;
 
-		delete m_SwapChain;
+		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
+		{
+			SAFE_DELETE(m_BackBuffers[i]);
+		}
 
-		::DestroyWindow(m_WindowHandle);
+		delete m_SwapChain;
 	}
 
 	void WindowD3D12::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
@@ -267,12 +265,6 @@ namespace RB::Graphics::D3D12
 	{
 		switch (message)
 		{
-		case WM_PAINT:
-		{
-			WindowRenderEvent e(hwnd);
-			g_EventManager->InsertEvent(e);
-		}
-		break;
 		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 		{

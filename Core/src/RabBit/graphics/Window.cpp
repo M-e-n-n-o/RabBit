@@ -9,8 +9,7 @@ using namespace RB::Input::Events;
 namespace RB::Graphics
 {
 	Window::Window()
-		: m_AskedForClose(false)
-		, m_InFocus(true)
+		: m_InFocus(true)
 	{
 	}
 
@@ -23,11 +22,6 @@ namespace RB::Graphics
 	{
 		return m_InFocus;
 	}
-
-	bool Window::ShouldClose() const
-	{
-		return m_AskedForClose;
-	}
 	
 	void Window::ProcessEvent(WindowEvent& window_event)
 	{
@@ -39,6 +33,22 @@ namespace RB::Graphics
 
 		switch (window_event.GetEventType())
 		{
+		case EventType::WindowCreated:
+		{
+			RB_LOG_ERROR(LOGTAG_WINDOWING, "We should not receive this Window Created event");
+
+			window_event.SetProcessed(true);
+		}
+		break;
+
+		case EventType::WindowMoved:
+		{
+			RB_LOG(LOGTAG_WINDOWING, "Moved");
+
+			window_event.SetProcessed(true);
+		}
+		break;
+
 		case EventType::WindowResize:
 		{
 			WindowResizeEvent* resize_event = static_cast<WindowResizeEvent*>(&window_event);
@@ -70,7 +80,7 @@ namespace RB::Graphics
 
 		case EventType::WindowCloseRequest:
 		{
-			m_AskedForClose = true;
+			DestroyWindow();
 
 			window_event.SetProcessed(true);
 		}
@@ -78,7 +88,7 @@ namespace RB::Graphics
 
 		case EventType::WindowClose:
 		{
-			DestroyWindow();
+			RB_LOG_ERROR(LOGTAG_WINDOWING, "Window::ProcessEvent should not get a WindowClose event!");
 
 			window_event.SetProcessed(true);
 		}

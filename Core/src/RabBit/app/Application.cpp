@@ -83,7 +83,7 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "");
 
 		Renderer::SetAPI(RenderAPI::D3D12);
-		_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
+		_Renderer = Renderer::Create(true); //std::strstr(launch_args, "-renderDebug"));
 
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
@@ -91,7 +91,6 @@ namespace RB
 		m_Windows.push_back(Window::Create("Test", 1280, 720, kWindowStyle_Default));
 
 		/*
-			- Fix the error spamming when closing one of the windows
 			- Fix the github workflow
 			- Start with the RenderPasses
 		*/
@@ -175,8 +174,8 @@ namespace RB
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 			pso_desc.pRootSignature			= _RootSignature.Get();
-			pso_desc.VS						= { vs_blob->m_ShaderBlob, vs_blob->m_ShaderBlobSize }; //{ vs->GetBufferPointer(), vs->GetBufferSize() };
-			pso_desc.PS						= { ps_blob->m_ShaderBlob, ps_blob->m_ShaderBlobSize }; //{ ps->GetBufferPointer(), ps->GetBufferSize() };
+			pso_desc.VS						= { vs_blob->m_ShaderBlob, vs_blob->m_ShaderBlobSize };
+			pso_desc.PS						= { ps_blob->m_ShaderBlob, ps_blob->m_ShaderBlobSize };
 			//pso_desc.StreamOutput			= ;
 			pso_desc.BlendState				= blend_desc;
 			pso_desc.SampleMask				= UINT_MAX;
@@ -218,7 +217,6 @@ namespace RB
 		//	_VaoView.StrideInBytes	= sizeof(float) * 5;
 		//}
 
-		// TODO Fix this, AddComponent breaks
 		Scene scene;
 		GameObject* obj = scene.CreateGameObject();
 		obj->AddComponent<Mesh>();
@@ -232,7 +230,7 @@ namespace RB
 			// Poll inputs and update windows
 			for (Graphics::Window* window : m_Windows)
 			{
-				if (window->HasWindow())
+				if (window->IsValid())
 				{
 					window->Update();
 				}
@@ -258,7 +256,7 @@ namespace RB
 
 				for (int i = 0; i < m_Windows.size(); i++)
 				{
-					if (m_Windows[i]->ShouldClose() || !m_Windows[i]->HasWindow())
+					if (!m_Windows[i]->IsValid())
 					{
 						delete m_Windows[i];
 						m_Windows.erase(m_Windows.begin() + i);
@@ -308,9 +306,15 @@ namespace RB
 		// TODO, should probably change this and being able to set primary windows
 
 		int index = 0;
-		while (!m_Windows[index]->HasWindow())
+		while (index < m_Windows.size() && !m_Windows[index]->IsValid())
 		{
 			index++;
+		}
+
+		if (index >= m_Windows.size())
+		{
+			RB_LOG_ERROR(LOGTAG_WINDOWING, "There is no primary window");
+			return nullptr;
 		}
 
 		return m_Windows[index];
@@ -347,16 +351,16 @@ namespace RB
 
 		BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
 		{
-			if (e.GetKeyCode() == KeyCode::K)
-			{
-				for (Graphics::Window* window : m_Windows)
-				{
-					if (window->HasWindow() && window->InFocus())
-					{
-						window->Resize(200, 200, 200, 100);
-					}
-				}
-			}
+			//if (e.GetKeyCode() == KeyCode::K)
+			//{
+			//	for (Graphics::Window* window : m_Windows)
+			//	{
+			//		if (window->IsValid() && window->InFocus())
+			//		{
+			//			window->Resize(200, 200, 200, 100);
+			//		}
+			//	}
+			//}
 
 			return true;
 		}, event);
@@ -367,8 +371,10 @@ namespace RB
 		{
 			m_CheckWindows = true;
 
-			// Make sure to not set the event as processed as the render thread should also process this event
-			return false;
+			return true;
 		}, event);
+
+		// Just set all events as processed for now
+		event.SetProcessed(true);
 	}
 }

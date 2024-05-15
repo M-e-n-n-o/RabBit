@@ -38,10 +38,9 @@ namespace RB::Graphics
 		virtual uint32_t GetHeight() const = 0;
 
 		virtual bool IsMinimized()	const = 0;
-		virtual bool HasWindow()	const = 0;
+		virtual bool IsValid()		const = 0;
 
 		bool InFocus()		const;
-		bool ShouldClose()	const;
 
 		virtual bool IsSameWindow(void* window_handle) const = 0;
 
@@ -60,7 +59,6 @@ namespace RB::Graphics
 	private:
 		virtual void OnResize(uint32_t width, uint32_t height) = 0;
 
-		bool m_AskedForClose;
 		bool m_InFocus;
 	};
 }

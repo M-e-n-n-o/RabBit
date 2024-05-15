@@ -60,14 +60,6 @@ namespace RB::Input::Events
 		DEFINE_CLASS_TYPE(WindowCloseRequestEvent, WindowCloseRequest)
 	};
 
-	class WindowRenderEvent : public WindowEvent
-	{
-	public:
-		WindowRenderEvent(void* window_handle) : WindowEvent(window_handle) {}
-
-		DEFINE_CLASS_TYPE(WindowRenderEvent, WindowRender)
-	};
-
 	class WindowOnFocusEvent : public WindowEvent
 	{
 	public:

@@ -60,8 +60,8 @@ namespace RB::Graphics
 		enum RenderThreadTaskType : uint8_t
 		{
 			Stop,
-			HandleEvents,
 			RenderFrame,
+			HandleEvents,
 
 			Count
 		};
