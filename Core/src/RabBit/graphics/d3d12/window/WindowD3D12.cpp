@@ -178,6 +178,12 @@ namespace RB::Graphics::D3D12
 		width = std::max(1u, width);
 		height = std::max(1u, height);
 
+		// Release backbuffer references
+		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
+		{
+			SAFE_DELETE(m_BackBuffers[i]);
+		}
+
 		m_SwapChain->Resize(width, height);
 	}
 

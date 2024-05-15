@@ -105,7 +105,7 @@ namespace RB::Graphics::D3D12
 
 		if (m_ComputeQueue)
 		{
-			m_CopyQueue->CpuWaitUntilIdle();
+			m_ComputeQueue->CpuWaitUntilIdle();
 		}
 
 		if (m_GraphicsQueue)

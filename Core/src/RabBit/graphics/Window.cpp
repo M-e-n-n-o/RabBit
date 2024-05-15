@@ -47,30 +47,40 @@ namespace RB::Graphics
 			uint32_t height = resize_event->GetHeight();
 
 			OnResize(width, height);
+
+			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowFocus:
 		{
 			m_InFocus = true;
+
+			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowLostFocus:
 		{
 			m_InFocus = false;
+
+			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowCloseRequest:
 		{
 			m_AskedForClose = true;
+
+			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowClose:
 		{
 			DestroyWindow();
+
+			window_event.SetProcessed(true);
 		}
 		break;
 

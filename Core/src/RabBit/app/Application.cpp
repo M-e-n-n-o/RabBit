@@ -220,10 +220,6 @@ namespace RB
 			_Value += 0.01f;
 			_Value = fmodf(_Value, 1);
 
-
-			// Render
-			Render();
-
 			// Poll inputs and update windows
 			for (Graphics::Window* window : m_Windows)
 			{
@@ -297,84 +293,6 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "");
 		RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
 		RB_LOG(LOGTAG_MAIN, "");
-	}
-
-	void Application::Render()
-	{
-		// Move this functionality into the render thread
-		//static_assert(false);
-
-		//Graphics::Window* window = GetPrimaryWindow();
-
-		//if (window->IsMinimized())
-		//{
-		//	return;
-		//}
-
-		//GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
-
-		//auto back_buffer = window->GetCurrentBackBuffer();
-
-		//{
-		//	// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
-		//	uint64_t value = window->GetCurrentBackBufferIndex();
-		//	_GraphicsQueue->CpuWaitForFenceValue(_FenceValues[value]);
-
-		//	// Clear the render target
-		//	{
-		//		RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
-
-		//		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		//			((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
-		//			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
-		//		);
-
-		//		command_list->ResourceBarrier(1, &barrier);
-
-		//		FLOAT clear_color[] = { _Value, 0.1f, 0.1f, 0.0f };
-
-		//		command_list->ClearRenderTargetView(((Texture2DD3D12*)back_buffer)->GetCpuHandle(), clear_color, 0, nullptr);
-		//	}
-
-		//	// Draw
-		//	{
-		//		RB_PROFILE_GPU_SCOPED(command_list.Get(), "Draw");
-
-		//		command_list->SetPipelineState(_Pso.Get());
-		//		command_list->SetGraphicsRootSignature(_RootSignature.Get());
-
-		//		// Input assembly
-		//		command_list->IASetVertexBuffers(0, 1, &_VaoView);
-		//		command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		//		
-		//		// Rasterizer state
-		//		command_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
-		//		command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
-
-		//		// Output merger
-		//		command_list->OMSetRenderTargets(1, &((Texture2DD3D12*)back_buffer)->GetCpuHandle(), true, nullptr);
-
-		//		command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
-		//	}
-
-		//	// Present
-		//	{
-		//		//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
-
-		//		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		//			((GpuResource*) back_buffer->GetNativeResource())->GetResource().Get(),
-		//			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
-		//		);
-
-		//		command_list->ResourceBarrier(1, &barrier);
-
-		//		uint64_t value = window->GetCurrentBackBufferIndex();
-		//		_FenceValues[value] = _GraphicsQueue->ExecuteCommandList(command_list);
-
-		//		window->Present(VsyncMode::On);
-		//	}
-
-		//}
 	}
 
 	Graphics::Window* Application::GetPrimaryWindow() const

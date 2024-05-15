@@ -38,8 +38,6 @@ namespace RB
 		static Application* GetInstance() { return s_Instance; }
 
 	private:
-		void Render();
-
 		virtual void OnStart() = 0;
 		virtual void OnUpdate() = 0;
 		virtual void OnStop() = 0;

@@ -212,7 +212,7 @@ namespace RB::Graphics
 
 
 		// TODO Remove!
-		uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
+		Shared<RIExecutionGuard> _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
 
 
@@ -348,7 +348,11 @@ namespace RB::Graphics
 
 							// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
 							uint64_t value = window->GetCurrentBackBufferIndex();
-							D3D12::g_GraphicsDevice->GetGraphicsQueue()->CpuWaitForFenceValue(_FenceValues[value]);
+							//D3D12::g_GraphicsDevice->GetGraphicsQueue()->CpuWaitForFenceValue(_FenceValues[value]);
+							if (_FenceValues[value])
+							{
+								_FenceValues[value]->WaitUntilFinishedRendering();
+							}
 
 
 							// Clear the render target
@@ -400,7 +404,8 @@ namespace RB::Graphics
 								command_list->ResourceBarrier(1, &barrier);
 
 								uint64_t value = window->GetCurrentBackBufferIndex();
-								_FenceValues[value] = D3D12::g_GraphicsDevice->GetGraphicsQueue()->ExecuteCommandList(command_list);
+								//_FenceValues[value] = D3D12::g_GraphicsDevice->GetGraphicsQueue()->ExecuteCommandList(command_list);
+								_FenceValues[value] = context->graphicsInterface->ExecuteOnGpu();
 
 								window->Present(VsyncMode::On);
 							}
@@ -458,6 +463,7 @@ namespace RB::Graphics
 						LeaveCriticalSection(&context->renderFrameIndexCS);
 					}
 				}
+				break;
 
 				default:
 					RB_LOG_WARN(LOGTAG_GRAPHICS, "Render task type not yet implemented");
