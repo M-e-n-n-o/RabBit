@@ -31,12 +31,15 @@ namespace RB::Graphics
 
 	Renderer::Renderer()
 		: EventListener(kEventCat_Window)
+		, m_IsShutdown(true)
 	{
 
 	}
 
 	void Renderer::Init()
 	{
+		m_IsShutdown = false;
+
 		m_SharedContext	= new SharedRenderThreadContext();
 		m_SharedContext->graphicsInterface	= RenderInterface::Create(false);
 		m_SharedContext->copyInterface		= RenderInterface::Create(true);
@@ -70,7 +73,17 @@ namespace RB::Graphics
 
 	Renderer::~Renderer()
 	{
-		SendRenderThreadTask(RenderThreadTaskType::Shutdown, GetDummyTaskData());
+		if (!m_IsShutdown)
+		{
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Deleting renderer before shutting it down!");
+		}
+	}
+
+	void Renderer::Shutdown()
+	{
+		m_IsShutdown = true;
+
+		SendRenderThreadTask(RenderThreadTaskType::Stop, GetDummyTaskData());
 
 		WaitForMultipleObjects(1, &m_RenderThread, TRUE, INFINITE);
 		CloseHandle(m_RenderThread);
@@ -159,7 +172,15 @@ namespace RB::Graphics
 
 		Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
 		
-		window->ProcessEvent(*window_event);
+		if (window)
+		{
+			window->ProcessEvent(*window_event);
+		}
+		else
+		{
+			// Set the event as processed anyway so it will go away and will not be spammed
+			window_event->SetProcessed(true);
+		}
 	}
 
 	Renderer::RenderTaskData Renderer::GetDummyTaskData()
@@ -299,7 +320,7 @@ namespace RB::Graphics
 
 				switch (task_type)
 				{
-				case Renderer::RenderThreadTaskType::Shutdown:
+				case Renderer::RenderThreadTaskType::Stop:
 				{
 					stop = true;
 

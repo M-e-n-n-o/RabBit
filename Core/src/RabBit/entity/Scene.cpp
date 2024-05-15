@@ -1,11 +1,13 @@
 #include "RabBitCommon.h"
 #include "Scene.h"
 #include "GameObject.h"
+#include "ComponentRegister.h"
 
 namespace RB::Entity
 {
 	Scene::Scene()
 	{
+		m_ComponentRegister = new ComponentRegister();
 	}
 
 	Scene::~Scene()
@@ -13,13 +15,14 @@ namespace RB::Entity
 		for (int i = 0; i < m_GameObjects.size(); ++i)
 		{
 			delete m_GameObjects[i];
-			i--;
 		}
+
+		delete m_ComponentRegister;
 	}
 
 	GameObject* Scene::CreateGameObject()
 	{
-		GameObject* obj = new GameObject();
+		GameObject* obj = new GameObject(m_ComponentRegister);
 		m_GameObjects.push_back(obj);
 
 		return obj;

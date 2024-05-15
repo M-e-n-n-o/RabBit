@@ -3,7 +3,7 @@
 
 namespace RB::Entity
 {
-	#define DEFINE_COMP_TAG(name) static const char* GetComponentTag() { return (name); }
+	#define DEFINE_COMP_TAG(name) static char* GetComponentTag() { return (name); }
 
 	class GameObject;
 

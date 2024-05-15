@@ -9,7 +9,7 @@ namespace RB::Entity
 	class GameObject
 	{
 	public:
-		GameObject();
+		GameObject(ComponentRegister* reg);
 		~GameObject();
 
 		void Update();
@@ -21,6 +21,8 @@ namespace RB::Entity
 
 	private:
 		UnorderedMap<ComponentID, List<ObjectComponent*>> m_Components;
+
+		ComponentRegister* m_Register;
 	};
 
 	template<class T, typename... Args>
@@ -28,7 +30,7 @@ namespace RB::Entity
 	{
 		T* comp = new T(args...);
 
-		ComponentID tag = g_ComponentRegister->RegisterComponent<T>();
+		ComponentID tag = m_Register->RegisterComponent<T>();
 
 		auto itr = m_Components.find(tag);
 		if (itr == m_Components.end())

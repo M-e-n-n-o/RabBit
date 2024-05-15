@@ -4,7 +4,8 @@
 
 namespace RB::Entity
 {
-	GameObject::GameObject()
+	GameObject::GameObject(ComponentRegister* reg)
+		: m_Register(reg)
 	{
 	}
 
@@ -15,7 +16,6 @@ namespace RB::Entity
 			for (int i = 0; i < itr->second.size(); ++i)
 			{
 				delete itr->second[i];
-				i--;
 			}
 		}
 	}

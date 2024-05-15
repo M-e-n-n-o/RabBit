@@ -489,8 +489,8 @@ namespace RB::Graphics::D3D12
 						res_desc->name,
 						CD3DX12_RESOURCE_DESC::Buffer(res_desc->size),
 						D3D12_HEAP_TYPE_DEFAULT,
-						D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-						D3D12_RESOURCE_STATE_COPY_DEST));
+						D3D12_HEAP_FLAG_NONE, //D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, // This flag is not allowed for commited resources as they are set automatically
+						D3D12_RESOURCE_STATE_COMMON)); //D3D12_RESOURCE_STATE_COPY_DEST)); // Buffers are always created in the common state
 			}
 			break;
 

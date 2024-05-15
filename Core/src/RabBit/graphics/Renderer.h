@@ -34,6 +34,9 @@ namespace RB::Graphics
 
 		uint64_t GetRenderFrameIndex() const;
 
+		// Also syncs with the render thread and GPU
+		void Shutdown();
+
 		static Renderer* Create(bool enable_validation_layer);
 
 	protected:
@@ -56,7 +59,7 @@ namespace RB::Graphics
 
 		enum RenderThreadTaskType : uint8_t
 		{
-			Shutdown,
+			Stop,
 			HandleEvents,
 			RenderFrame,
 
@@ -114,5 +117,6 @@ namespace RB::Graphics
 
 		HANDLE						m_RenderThread;
 		SharedRenderThreadContext*	m_SharedContext;
+		bool						m_IsShutdown;
 	};
 }

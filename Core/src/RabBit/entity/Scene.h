@@ -4,6 +4,8 @@
 
 namespace RB::Entity
 {
+	class ComponentRegister;
+
 	class Scene
 	{
 	public:
@@ -21,7 +23,8 @@ namespace RB::Entity
 		List<const ObjectComponent*> GetComponentsWithTypeOf() const;
 
 	private:
-		List<GameObject*> m_GameObjects;
+		List<GameObject*>  m_GameObjects;
+		ComponentRegister* m_ComponentRegister;
 	};
 
 	template<class T>

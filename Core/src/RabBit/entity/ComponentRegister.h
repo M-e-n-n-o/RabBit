@@ -19,7 +19,7 @@ namespace RB::Entity
 		ComponentID GetComponentID();
 
 	private:
-		UnorderedMap<const char*, ComponentID> m_IDs;
+		UnorderedMap<char*, ComponentID> m_IDs;
 		ComponentID m_NextID;
 	};
 
@@ -43,6 +43,4 @@ namespace RB::Entity
 		auto itr = m_IDs.find(T::GetComponentTag());
 		return itr != m_IDs.end() ? itr->second : -1;
 	}
-
-	extern ComponentRegister* g_ComponentRegister;
 }

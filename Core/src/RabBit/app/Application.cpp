@@ -83,12 +83,19 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "");
 
 		Renderer::SetAPI(RenderAPI::D3D12);
-		_Renderer = Renderer::Create(std::strstr("-renderDebug", launch_args));
+		_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
 
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
 		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
 		m_Windows.push_back(Window::Create("Test", 1280, 720, kWindowStyle_Default));
+
+		/*
+			- Fix the error spamming when closing one of the windows
+			- Fix the github workflow
+			- Start with the RenderPasses
+		*/
+		static_assert(false);
 
 		m_Initialized = true;
 
@@ -107,6 +114,8 @@ namespace RB
 
 	void Application::Run()
 	{
+		// TODO Move this all to a RenderPass
+
 		// Pipeline
 		{
 			UINT flags = D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
@@ -188,31 +197,31 @@ namespace RB
 		}
 
 		// VAO
-		{
-			//_VertexRes = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
-			//GPtr<ID3D12Resource> upload_resource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
+		//{
+		//	_VertexRes = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COMMON);
+		//	GPtr<ID3D12Resource> upload_resource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
 
-			//float* upload_memory;
-			//upload_resource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
-			//memcpy(upload_memory, _VertexData, sizeof(_VertexData));
-			//upload_resource->Unmap(0, nullptr);
+		//	float* upload_memory;
+		//	upload_resource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
+		//	memcpy(upload_memory, _VertexData, sizeof(_VertexData));
+		//	upload_resource->Unmap(0, nullptr);
 
-			//GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
+		//	GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
 
-			//command_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
+		//	command_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
 
-			//uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
-			//_GraphicsQueue->CpuWaitForFenceValue(fence_value);
+		//	uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
+		//	_GraphicsQueue->CpuWaitForFenceValue(fence_value);
 
-			//_VaoView.BufferLocation = _VertexRes->GetGPUVirtualAddress();
-			//_VaoView.SizeInBytes	= sizeof(_VertexData);
-			//_VaoView.StrideInBytes	= sizeof(float) * 5;
-		}
+		//	_VaoView.BufferLocation = _VertexRes->GetGPUVirtualAddress();
+		//	_VaoView.SizeInBytes	= sizeof(_VertexData);
+		//	_VaoView.StrideInBytes	= sizeof(float) * 5;
+		//}
 
 		// TODO Fix this, AddComponent breaks
 		Scene scene;
-		//GameObject* obj = scene.CreateGameObject();
-		//obj->AddComponent<Mesh>();
+		GameObject* obj = scene.CreateGameObject();
+		obj->AddComponent<Mesh>();
 		
 
 		while (!m_ShouldStop)
@@ -280,14 +289,13 @@ namespace RB
 		// Shutdown app user
 		OnStop();
 
-		_Renderer->SyncRenderer(true);
-
 		for (int i = 0; i < m_Windows.size(); i++)
 		{
 			delete m_Windows[i];
 		}
 		m_Windows.clear();
 
+		_Renderer->Shutdown();
 		delete _Renderer;	
 
 		RB_LOG(LOGTAG_MAIN, "");
@@ -298,7 +306,14 @@ namespace RB
 	Graphics::Window* Application::GetPrimaryWindow() const
 	{
 		// TODO, should probably change this and being able to set primary windows
-		return m_Windows[0];
+
+		int index = 0;
+		while (!m_Windows[index]->HasWindow())
+		{
+			index++;
+		}
+
+		return m_Windows[index];
 	}
 
 	Graphics::Window* Application::GetWindow(uint32_t index) const
