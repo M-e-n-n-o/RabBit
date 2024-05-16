@@ -27,6 +27,9 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Distribution
+    - name: Distribution build shaders
+      run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DIST}}
+
     - name: Distribution build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
 
@@ -50,6 +53,9 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Release
+    - name: Distribution build shaders
+      run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_RELEASE}}
+
     - name: Distribution build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_RELEASE}}
 
@@ -73,6 +79,9 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Debug
+    - name: Distribution build shaders
+      run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DEBUG}}
+    
     - name: Distribution build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DEBUG}}
 
