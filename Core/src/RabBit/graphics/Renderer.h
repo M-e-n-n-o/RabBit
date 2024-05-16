@@ -66,8 +66,9 @@ namespace RB::Graphics
 			Count
 		};
 
-		struct RenderTaskData
+		struct RenderTask
 		{
+			bool hasTask;
 			void* data;
 			uint64_t dataSize;
 		};
@@ -91,7 +92,7 @@ namespace RB::Graphics
 			CONDITION_VARIABLE	streamingSyncCV;
 			CRITICAL_SECTION	streamingSyncCS;
 
-			RenderTaskData		renderTasks[RenderThreadTaskType::Count];
+			RenderTask			renderTasks[RenderThreadTaskType::Count];
 			void*				sharedRenderStreamingData;
 
 			RenderInterface*	copyInterface;
@@ -109,9 +110,9 @@ namespace RB::Graphics
 		// Should only be called from the render thread!
 		void OnEvent(Input::Events::Event& event) override;
 
-		void SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTaskData& task_data);
+		void SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTask& task);
 
-		RenderTaskData GetDummyTaskData();
+		RenderTask GetDummyTask();
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 

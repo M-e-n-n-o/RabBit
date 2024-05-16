@@ -83,7 +83,7 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = true;
 
-		SendRenderThreadTask(RenderThreadTaskType::Stop, GetDummyTaskData());
+		SendRenderThreadTask(RenderThreadTaskType::Stop, GetDummyTask());
 
 		WaitForMultipleObjects(1, &m_RenderThread, TRUE, INFINITE);
 		CloseHandle(m_RenderThread);
@@ -98,16 +98,17 @@ namespace RB::Graphics
 		// Retrieve all camera's with a valid output location and create ViewContexts for them
 		// Also create the render entries? Or should those just be passed in?
 
-		void* submitted_data = new uint8_t(1); // <- Make sure to allocate this on the heap (using new, not malloc!)
+		void* submitted_data = new uint8_t(1); // <- Make sure to allocate this on the heap using new, not malloc!
 
-		RenderTaskData data;
-		data.data = submitted_data;
-		data.dataSize = sizeof(submitted_data);
+		RenderTask data;
+		data.hasTask	= true;
+		data.data		= submitted_data;
+		data.dataSize	= sizeof(submitted_data);
 
 		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
 
 		// Also submit a new request to handle new window events
-		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTaskData());
+		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTask());
 
 		// Sync with the renderer if it is stalling
 		{
@@ -157,12 +158,22 @@ namespace RB::Graphics
 		return index;
 	}
 
-	void Renderer::SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTaskData& task_data)
+	void Renderer::SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTask& task_data)
 	{
-		// Kick render thread
 		EnterCriticalSection(&m_SharedContext->renderKickCS);
+
+		RenderTask& task = m_SharedContext->renderTasks[task_type];
+
+		// If there was a previous task here already with some data, delete and overwrite
+		if (task.hasTask && task.dataSize > 0)
+		{
+			SAFE_DELETE(task.data);
+		}
+
 		m_SharedContext->renderTasks[task_type] = task_data;
 		LeaveCriticalSection(&m_SharedContext->renderKickCS);
+
+		// Kick render thread
 		WakeConditionVariable(&m_SharedContext->renderKickCV);
 	}
 
@@ -183,11 +194,12 @@ namespace RB::Graphics
 		}
 	}
 
-	Renderer::RenderTaskData Renderer::GetDummyTaskData()
+	Renderer::RenderTask Renderer::GetDummyTask()
 	{
-		RenderTaskData dummy = {};
-		dummy.data		= new uint8_t(1);
-		dummy.dataSize	= sizeof(uint8_t);
+		RenderTask dummy = {};
+		dummy.hasTask	= true;
+		dummy.data		= nullptr;
+		dummy.dataSize	= 0;
 
 		return dummy;
 	}
@@ -241,9 +253,11 @@ namespace RB::Graphics
 		bool stop = false;
 		while (!stop)
 		{
+			bool has_tasks[Renderer::RenderThreadTaskType::Count];
 			void* render_data[Renderer::RenderThreadTaskType::Count];
 			for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 			{
+				has_tasks[task_type] = false;
 				render_data[task_type] = nullptr;
 			}
 
@@ -260,10 +274,10 @@ namespace RB::Graphics
 					bool has_new_task = false;
 					for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 					{
-						if (context->renderTasks[task_type].dataSize > 0)
+						if (context->renderTasks[task_type].hasTask)
 						{
+							has_tasks[task_type] = true;
 							has_new_task = true;
-							break;
 						}
 					}
 
@@ -286,18 +300,18 @@ namespace RB::Graphics
 
 				context->renderState = Renderer::ThreadState::Running;
 
-				// Copy the task data
 				for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 				{
-					if (context->renderTasks[task_type].dataSize <= 0)
+					// Copy the task data if there is any
+					if (context->renderTasks[task_type].dataSize > 0)
 					{
-						continue;
+						render_data[task_type] = ALLOC_HEAP(context->renderTasks[task_type].dataSize);
+
+						memcpy(render_data[task_type], context->renderTasks[task_type].data, context->renderTasks[task_type].dataSize);
 					}
 
-					render_data[task_type] = ALLOC_HEAP(context->renderTasks[task_type].dataSize);
-
-					memcpy(render_data[task_type], context->renderTasks[task_type].data, context->renderTasks[task_type].dataSize);
-
+					// Reset the render task
+					context->renderTasks[task_type].hasTask = false;
 					SAFE_DELETE(context->renderTasks[task_type].data);
 					context->renderTasks[task_type].dataSize = 0;
 				}
@@ -313,7 +327,7 @@ namespace RB::Graphics
 			// Execute the tasks
 			for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
 			{
-				if (render_data[task_type] == nullptr)
+				if (!has_tasks[task_type])
 				{
 					continue;
 				}
