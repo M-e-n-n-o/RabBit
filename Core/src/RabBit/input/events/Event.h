@@ -42,14 +42,7 @@ namespace RB::Input::Events
 		virtual int			GetCategoryFlags()	const = 0;
 		virtual Event*		Clone()				const = 0;
 
-		void SetProcessed(bool processed);
-		bool IsProcessed();
-
 		bool IsInCategory(const EventCategory cat) const;
-
-
-	private:
-		bool m_IsProcessed;
 	};
 
 	class EmptyEvent : public Event
@@ -62,14 +55,10 @@ namespace RB::Input::Events
 	template<class Type, typename Function>
 	bool BindEvent(const Function& func, Event& event)
 	{
-		if (!event.IsProcessed())
+		if (event.GetEventType() == Type::GetStaticType())
 		{
-			if (event.GetEventType() == Type::GetStaticType())
-			{
-				bool processed = func(static_cast<Type&>(event));
-				event.SetProcessed(processed);
-				return processed;
-			}
+			func(static_cast<Type&>(event));
+			return true;
 		}
 
 		return false;

@@ -36,16 +36,12 @@ namespace RB::Graphics
 		case EventType::WindowCreated:
 		{
 			RB_LOG_ERROR(LOGTAG_WINDOWING, "We should not receive this Window Created event");
-
-			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowMoved:
 		{
 			RB_LOG(LOGTAG_WINDOWING, "Moved");
-
-			window_event.SetProcessed(true);
 		}
 		break;
 
@@ -57,40 +53,30 @@ namespace RB::Graphics
 			uint32_t height = resize_event->GetHeight();
 
 			OnResize(width, height);
-
-			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowFocus:
 		{
 			m_InFocus = true;
-
-			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowLostFocus:
 		{
 			m_InFocus = false;
-
-			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowCloseRequest:
 		{
 			DestroyWindow();
-
-			window_event.SetProcessed(true);
 		}
 		break;
 
 		case EventType::WindowClose:
 		{
 			RB_LOG_ERROR(LOGTAG_WINDOWING, "Window::ProcessEvent should not get a WindowClose event!");
-
-			window_event.SetProcessed(true);
 		}
 		break;
 

@@ -361,8 +361,6 @@ namespace RB
 			//		}
 			//	}
 			//}
-
-			return true;
 		}, event);
 
 		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
@@ -370,11 +368,6 @@ namespace RB
 		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
 		{
 			m_CheckWindows = true;
-
-			return true;
 		}, event);
-
-		// Just set all events as processed for now
-		event.SetProcessed(true);
 	}
 }

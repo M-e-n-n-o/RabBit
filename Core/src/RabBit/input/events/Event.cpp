@@ -8,22 +8,11 @@ namespace RB::Input::Events
 	// ----------------------------------------------------------------------------
 
 	Event::Event()
-		: m_IsProcessed(false)
 	{
 	}
 
 	Event::~Event()
 	{
-	}
-
-	void Event::SetProcessed(bool processed)
-	{
-		m_IsProcessed = processed;
-	}
-
-	bool Event::IsProcessed()
-	{
-		return m_IsProcessed;
 	}
 
 	bool Event::IsInCategory(const EventCategory cat) const
@@ -108,15 +97,8 @@ namespace RB::Input::Events
 
 			OnEvent(*e);
 
-			if (e->IsProcessed())
-			{
-				itr = m_QueuedEvents.erase(itr);
-				delete e;
-			}
-			else
-			{
-				++itr;
-			}
+			itr = m_QueuedEvents.erase(itr);
+			delete e;
 		}
 
 		LeaveCriticalSection(&m_CS);

@@ -187,11 +187,6 @@ namespace RB::Graphics
 		{
 			window->ProcessEvent(*window_event);
 		}
-		else
-		{
-			// Set the event as processed anyway so it will go away and will not be spammed
-			window_event->SetProcessed(true);
-		}
 	}
 
 	Renderer::RenderTask Renderer::GetDummyTask()
