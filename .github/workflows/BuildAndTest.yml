@@ -31,7 +31,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DIST}}
 
     - name: Run shader compiler
-      run: ${{github.workspace}}\out\Distribution\Core\shaderCompiler\d3d12\ShaderCompilerD3D12.exe
+      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\Distribution\ShaderCompilerD3D12.exe
 
     - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
@@ -60,7 +60,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_RELEASE}}
 
     - name: Run shader compiler
-      run: ${{github.workspace}}\out\Release\Core\shaderCompiler\d3d12\ShaderCompilerD3D12.exe
+      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\Release\ShaderCompilerD3D12.exe
 
     - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_RELEASE}}
@@ -89,7 +89,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DEBUG}}
     
     - name: Run shader compiler
-      run: ${{github.workspace}}\out\Debug\Core\shaderCompiler\d3d12\ShaderCompilerD3D12.exe
+      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\Debug\ShaderCompilerD3D12.exe
 
     - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DEBUG}}
