@@ -90,12 +90,6 @@ namespace RB
 		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
 		m_Windows.push_back(Window::Create("Test", 1280, 720, kWindowStyle_Default));
 
-		/*
-			- Fix the github workflow
-			- Start with the RenderPasses
-		*/
-		static_assert(false);
-
 		m_Initialized = true;
 
 		RB_LOG(LOGTAG_MAIN, "");

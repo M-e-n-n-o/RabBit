@@ -27,13 +27,16 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Distribution
-    - name: Distribution build shaders
+    - name: Build shader compiler
       run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DIST}}
 
-    - name: Distribution build
+    - name: Run shader compiler
+      run: ${{github.workspace}}/out/build/Distribution/Core/shaderCompiler/d3d12/ShaderCompilerD3D12.exe
+
+    - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
 
-    - name: Distribution tests
+    - name: Tests
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
 
@@ -53,13 +56,16 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Release
-    - name: Distribution build shaders
+    - name: Build shaders
       run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_RELEASE}}
 
-    - name: Distribution build
+    - name: Run shader compiler
+      run: ${{github.workspace}}/out/build/Release/Core/shaderCompiler/d3d12/ShaderCompilerD3D12.exe
+
+    - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_RELEASE}}
 
-    - name: Distribution tests
+    - name: Tests
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
 
@@ -79,12 +85,15 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Debug
-    - name: Distribution build shaders
+    - name: Build shaders
       run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DEBUG}}
     
-    - name: Distribution build
+    - name: Run shader compiler
+      run: ${{github.workspace}}/out/build/Debug/Core/shaderCompiler/d3d12/ShaderCompilerD3D12.exe
+
+    - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DEBUG}}
 
-    - name: Distribution tests
+    - name: Tests
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
