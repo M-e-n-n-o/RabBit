@@ -31,7 +31,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DIST}}
 
     - name: Run shader compiler
-      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\Distribution\ShaderCompilerD3D12.exe -shadersBin ${{github.workspace}}\out\Sample\Distribution
+      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\MinSizeRel\ShaderCompilerD3D12.exe -shadersBin ${{github.workspace}}\out\Sample\MinSizeRel
 
     - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
