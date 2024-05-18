@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <sstream>
 #include <regex>
+#include <cstring>
 
 #include <atlbase.h>
 #include <dxcapi.h>
@@ -20,10 +21,48 @@ void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>&
 
 */
 
-int main()
+int main(int argc, char* argv[])
 {
 	LOGW(L"---------------- Starting RabBit's D3D12 shader compiler ----------------");
-	LOGW(L"Shader files location: " << RB_SHADER_SOURCE);
+
+	std::string shader_files_dir;
+	std::string shader_bin_dir;
+
+	for (int i = 0; i < argc; i++)
+	{
+		if (std::strstr("-shadersDir", argv[i]))
+		{
+			if (i + 1 < argc)
+			{
+				shader_files_dir = argv[i + 1];
+			}
+		}
+
+		if (std::strstr("-shadersBin", argv[i]))
+		{
+			if (i + 1 < argc)
+			{
+				shader_bin_dir = argv[i + 1];
+			}
+		}
+	}
+
+	if (shader_files_dir.empty())
+	{
+		LOGW(L"Did not find the shader files directory from the launch arguments, using default");
+		shader_files_dir = RB_SHADER_SOURCE;
+	}
+
+	LOGW(L"Shader files directory: " << shader_files_dir.c_str());
+
+	if (shader_bin_dir.empty())
+	{
+		LOGW(L"Did not find the shader bin directory from the launch arguments, using default");
+		shader_bin_dir = RB_OUTPUT_FOLDER;
+	}
+
+	LOGW(L"Shader bin directory: " << shader_bin_dir.c_str());
+
 	LOGW(L"");
 
 	// Check if the DLL's are loaded
@@ -33,7 +72,7 @@ int main()
 	EXIT_ON_FAIL(dxil_handle, L"dxil.dll was not loaded");
 
 	std::vector<std::wstring> files;
-	RetrieveFiles(RB_SHADER_SOURCE, files);
+	RetrieveFiles(shader_files_dir, files);
 
 	Compiler compiler;
 	compiler.CompileFiles(files);
@@ -41,7 +80,7 @@ int main()
 	LOGW(L"");
 
 	ShaderWriter writer;
-	writer.WriteOutShaders(RB_SHADER_SOURCE, RB_OUTPUT_FOLDER, compiler.GetCompiledShaders());
+	writer.WriteOutShaders(shader_files_dir, shader_bin_dir, compiler.GetCompiledShaders());
 
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");
