@@ -41,9 +41,11 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 	std::string bin_filename(bin_folder);
 	bin_filename.append("/Shaders.bin");
 
+	CreateDirectory(bin_folder.c_str(), NULL);
+
 	std::ofstream bin_file;
-	bin_file.open(bin_filename.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
-	EXIT_ON_FAIL(bin_file.is_open(), "Could not open bin file");
+	bin_file.open(bin_filename.c_str(), std::fstream::out | std::fstream::trunc | std::fstream::binary);
+	EXIT_ON_FAIL(bin_file.is_open(), "Could not open bin directory/file");
 
 	std::vector<ShaderBlobLookup> shader_table;
 	uint64_t offset = 0;
