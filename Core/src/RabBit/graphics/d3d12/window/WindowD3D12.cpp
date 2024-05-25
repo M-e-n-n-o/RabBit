@@ -23,7 +23,7 @@ namespace RB::Graphics::D3D12
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
 	WindowD3D12::WindowD3D12(const WindowArgs args)
-		: Window(args.fullscreen)
+		: Window(false)
 		, m_WindowHandle(nullptr)
 		, m_IsValid(true)
 	{
@@ -81,7 +81,7 @@ namespace RB::Graphics::D3D12
 
 		if (args.fullscreen)
 		{
-			SetBorderless(true);
+			ToggleFullscreen();
 		}
 
 		::ShowWindow(m_WindowHandle, SW_SHOW);
