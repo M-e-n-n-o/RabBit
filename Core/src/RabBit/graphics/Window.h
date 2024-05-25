@@ -34,7 +34,9 @@ namespace RB::Graphics
 
 		virtual void Present(const VsyncMode& mode) = 0;
 
-		virtual Math::Float2 GetPosition() const = 0;
+		// Returns width, height, x pos, and y pos of entire window
+		virtual Math::Float4 GetWindowRectangle() const = 0;
+
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 
@@ -73,8 +75,6 @@ namespace RB::Graphics
 		bool			m_InFocus;
 
 		bool			m_IsFullscreen;
-		Math::Float2	m_OriginalPos;
-		uint32_t		m_OriginalWidth;
-		uint32_t		m_OriginalHeight;
+		Math::Float4	m_OriginalRect;
 	};
 }

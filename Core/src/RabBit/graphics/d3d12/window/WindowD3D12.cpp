@@ -109,12 +109,12 @@ namespace RB::Graphics::D3D12
 		m_SwapChain->Present(sync_interval, present_flags);
 	}
 
-	Math::Float2 WindowD3D12::GetPosition() const
+	Math::Float4 WindowD3D12::GetWindowRectangle() const
 	{
 		RECT window_rect;
 		GetWindowRect(m_WindowHandle, &window_rect);
 
-		return Math::Float2(window_rect.left, window_rect.top);
+		return Math::Float4(window_rect.right - window_rect.left, window_rect.bottom - window_rect.top, window_rect.left, window_rect.top);
 	}
 
 	uint32_t WindowD3D12::GetWidth() const

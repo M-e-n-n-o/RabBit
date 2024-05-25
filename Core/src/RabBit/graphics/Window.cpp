@@ -12,10 +12,9 @@ namespace RB::Graphics
 	Window::Window(bool is_fullscreen)
 		: m_InFocus(true)
 		, m_IsFullscreen(is_fullscreen)
-		, m_OriginalPos(-1, -1)
-		, m_OriginalWidth(0)
-		, m_OriginalHeight(0)
+		, m_OriginalRect(100, 100, -1, -1)
 	{
+
 	}
 
 	Window::~Window()
@@ -30,17 +29,17 @@ namespace RB::Graphics
 
 	void Window::ToggleFullscreen()
 	{
-		SetBorderless(!m_IsFullscreen);
 
 		if (m_IsFullscreen)
 		{
-			Resize(m_OriginalWidth, m_OriginalHeight, m_OriginalPos.x, m_OriginalPos.y);
+			SetBorderless(false);
+			Resize(m_OriginalRect.x, m_OriginalRect.y, m_OriginalRect.z, m_OriginalRect.w);
 		}
 		else
 		{
-			m_OriginalWidth  = GetWidth();
-			m_OriginalHeight = GetHeight();
-			m_OriginalPos    = GetPosition();
+			m_OriginalRect = GetWindowRectangle();
+
+			SetBorderless(true);
 
 			Math::Float2 res = GetParentDisplay()->GetResolution();
 			Resize(res.x, res.y);
@@ -139,8 +138,8 @@ namespace RB::Graphics
 			args.className		= L"RabBit WindowClass";
 			args.instance		= GetModuleHandle(nullptr);
 			args.fullscreen		= true;
-			args.width			= 1280;
-			args.height			= 720;
+			args.width			= 1;
+			args.height			= 1;
 			args.windowStyle	= window_style;
 			args.windowName		= window_name;
 
