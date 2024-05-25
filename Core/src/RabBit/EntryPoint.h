@@ -24,7 +24,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     RB::Input::Events::g_EventManager = new RB::Input::Events::EventManager();
 
     char args[100];
-    RB_ASSERT_FATAL_RELEASE(_countof(args) >= (wcslen(lpCmdLine) + 1), "Launch arguments copy should be made longer!");
+    RB_ASSERT_FATAL(_countof(args) >= (wcslen(lpCmdLine) + 1), "Launch arguments copy should be made longer!");
     RB::WcharToChar(lpCmdLine, args);
 
     auto* app = RB::CreateApplication(args);
