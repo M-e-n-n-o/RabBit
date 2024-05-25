@@ -513,6 +513,8 @@ namespace RB::Graphics
 		WaitForMultipleObjects(1, &context->streamingThread, TRUE, INFINITE);
 		CloseHandle(context->streamingThread);
 
+		RB_LOG(LOGTAG_GRAPHICS, "Render thread terminating");
+
 		// TODO Change this to something more abstract!!!!
 		D3D12::g_GraphicsDevice->WaitUntilIdle();
 
@@ -611,6 +613,8 @@ namespace RB::Graphics
 				WakeConditionVariable(&context->streamingSyncCV);
 			}
 		}
+
+		RB_LOG(LOGTAG_GRAPHICS, "Resource streaming thread terminating");
 
 		context->streamingState = Renderer::ThreadState::Terminated;
 

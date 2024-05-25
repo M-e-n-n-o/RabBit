@@ -513,7 +513,7 @@ namespace RB::Graphics::D3D12
 			}
 		}
 
-		RB_LOG(LOGTAG_GRAPHICS, "Resource thread terminating");
+		RB_LOG(LOGTAG_GRAPHICS, "Resource creation thread terminating");
 
 		return 0;
 	}

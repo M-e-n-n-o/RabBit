@@ -12,9 +12,8 @@ namespace RB::Graphics
 	Window::Window(bool is_fullscreen)
 		: m_InFocus(true)
 		, m_IsFullscreen(is_fullscreen)
-		, m_OriginalRect(100, 100, -1, -1)
+		, m_OriginalRect(0, 0, -1, -1)
 	{
-
 	}
 
 	Window::~Window()
@@ -29,7 +28,6 @@ namespace RB::Graphics
 
 	void Window::ToggleFullscreen()
 	{
-
 		if (m_IsFullscreen)
 		{
 			SetBorderless(false);
@@ -128,7 +126,7 @@ namespace RB::Graphics
 		}
 	}
 	
-	Window* Window::Create(const char* window_name, uint32_t window_style)
+	Window* Window::Create(const char* window_name, Display* display, uint32_t window_style)
 	{
 		switch (Renderer::GetAPI())
 		{
@@ -138,6 +136,7 @@ namespace RB::Graphics
 			args.className		= L"RabBit WindowClass";
 			args.instance		= GetModuleHandle(nullptr);
 			args.fullscreen		= true;
+			args.display		= display;
 			args.width			= 1;
 			args.height			= 1;
 			args.windowStyle	= window_style;
@@ -163,6 +162,7 @@ namespace RB::Graphics
 			args.className		= L"RabBit WindowClass";
 			args.instance		= GetModuleHandle(nullptr);
 			args.fullscreen		= false;
+			args.display		= nullptr;
 			args.width			= window_width;
 			args.height			= window_height;
 			args.windowStyle	= window_style;

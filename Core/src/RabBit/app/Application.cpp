@@ -65,7 +65,6 @@ namespace RB
 		, m_FrameIndex(0)
 		, m_CheckWindows(false)
 		, m_PrimaryWindowIndex(0)
-				
 	{
 		RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
 		s_Instance = this;
@@ -92,8 +91,8 @@ namespace RB
 
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
-		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent));
-		//m_Windows.push_back(Window::Create("Test", kWindowStyle_Default));
+		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
+		m_Windows.push_back(Window::Create("Test", m_Displays[0], kWindowStyle_SemiTransparent));
 
 		m_Initialized = true;
 

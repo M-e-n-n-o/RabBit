@@ -23,7 +23,7 @@ namespace RB::Graphics::D3D12
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
 	WindowD3D12::WindowD3D12(const WindowArgs args)
-		: Window(false)
+		: Window(args.fullscreen)
 		, m_WindowHandle(nullptr)
 		, m_IsValid(true)
 	{
@@ -39,12 +39,21 @@ namespace RB::Graphics::D3D12
 			extended_style = WS_EX_NOREDIRECTIONBITMAP;
 		}
 
+		uint32_t width = args.width;
+		uint32_t height = args.height;
+
+		if (args.fullscreen)
+		{
+			width = args.display->GetResolution().x;
+			height = args.display->GetResolution().y;
+		}
+
 		// Create window
 		{
 			wchar_t* wchar_name = new wchar_t[strlen(args.windowName) + 1];
 			CharToWchar(args.windowName, wchar_name);
 
-			CreateWindow(args.instance, args.className, wchar_name, args.width, args.height, extended_style, style);
+			CreateWindow(args.instance, args.className, wchar_name, width, height, extended_style, style);
 
 			delete[] wchar_name;
 		}
@@ -57,7 +66,7 @@ namespace RB::Graphics::D3D12
 				g_GraphicsDevice->GetFactory(),
 				g_GraphicsDevice->GetGraphicsQueue()->GetCommandQueue(),
 				m_WindowHandle,
-				args.width, args.height,
+				width, height,
 				m_IsTearingSupported,
 				BACK_BUFFER_COUNT,
 				DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -72,7 +81,7 @@ namespace RB::Graphics::D3D12
 
 		if (args.fullscreen)
 		{
-			ToggleFullscreen();
+			SetBorderless(true);
 		}
 
 		::ShowWindow(m_WindowHandle, SW_SHOW);
@@ -160,11 +169,11 @@ namespace RB::Graphics::D3D12
 	{
 		if (borderless)
 		{
-			SetWindowLong(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_POPUP);
+			SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_POPUP);
 		}
 		else
 		{
-			SetWindowLong(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+			SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
 		}
 	}
 
@@ -182,6 +191,16 @@ namespace RB::Graphics::D3D12
 	{
 		Math::Float2 display_res = GetParentDisplay()->GetResolution();
 
+		if (width == 0)
+		{
+			width = int(display_res.x / 2.0f);
+		}
+
+		if (height == 0)
+		{
+			height = int(display_res.y / 2.0f);
+		}
+
 		// When x or y is -1 that coordinate will be centered to the display
 
 		if (x == -1)
@@ -197,7 +216,7 @@ namespace RB::Graphics::D3D12
 		x = Math::Clamp(x, 0, int(display_res.x - (width / 2.0f)));
 		y = Math::Clamp(y, 0, int(display_res.y - (height / 2.0f)));
 
-		SetWindowPos(m_WindowHandle, HWND_TOP, x, y, width, height, SWP_ASYNCWINDOWPOS);
+		SetWindowPos(m_WindowHandle, HWND_TOP, x, y, width, height, SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED);
 	}
 
 	RenderResourceFormat WindowD3D12::GetBackBufferFormat()
@@ -315,10 +334,6 @@ namespace RB::Graphics::D3D12
 		);
 
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_WindowHandle, "Failed to create window");
-
-		//long wAttr = GetWindowLong(m_WindowHandle, GWL_EXSTYLE);
-		//SetWindowLong(m_WindowHandle, GWL_EXSTYLE, wAttr | WS_EX_LAYERED);
-		//SetLayeredWindowAttributes(m_WindowHandle, 0, 0xFF / 2, 0x02);
 	}
 
 	LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)

@@ -21,6 +21,7 @@ namespace RB::Graphics::D3D12
 		wchar_t*		className;
 		const char*		windowName;
 		bool			fullscreen;
+		Display*		display;
 		uint32_t		width;
 		uint32_t		height;
 		uint32_t		windowStyle;

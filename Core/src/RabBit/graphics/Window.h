@@ -58,7 +58,7 @@ namespace RB::Graphics
 
 		void ProcessEvent(Input::Events::WindowEvent& event);
 
-		static Window* Create(const char* window_name, uint32_t window_style);
+		static Window* Create(const char* window_name, Display* display, uint32_t window_style);
 		static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style);
 		
 	protected:
