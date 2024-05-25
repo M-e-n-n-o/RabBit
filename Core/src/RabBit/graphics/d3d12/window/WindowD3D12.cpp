@@ -1,6 +1,9 @@
+#include "WindowD3D12.h"
 #include "RabBitCommon.h"
 #include "WindowD3D12.h"
 #include "SwapChain.h"
+#include "app/Application.h"
+#include "graphics/Display.h"
 #include "graphics/d3d12/GraphicsDevice.h"
 #include "graphics/d3d12/DeviceQueue.h"
 #include "graphics/d3d12/UtilsD3D12.h"
@@ -20,7 +23,8 @@ namespace RB::Graphics::D3D12
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
 	WindowD3D12::WindowD3D12(const WindowArgs args)
-		: m_WindowHandle(nullptr)
+		: Window(false)
+		, m_WindowHandle(nullptr)
 		, m_IsValid(true)
 	{
 		m_IsTearingSupported = g_GraphicsDevice->IsFeatureSupported(DXGI_FEATURE_PRESENT_ALLOW_TEARING);
@@ -40,7 +44,7 @@ namespace RB::Graphics::D3D12
 			wchar_t* wchar_name = new wchar_t[strlen(args.windowName) + 1];
 			CharToWchar(args.windowName, wchar_name);
 
-			CreateWindow(args.instance, args.className, wchar_name, args.width, args.height, extended_style, style, args.windowStyle & kWindowStyle_Borderless > 0);
+			CreateWindow(args.instance, args.className, wchar_name, args.width, args.height, extended_style, style);
 
 			delete[] wchar_name;
 		}
@@ -64,6 +68,11 @@ namespace RB::Graphics::D3D12
 			{
 				m_BackBuffers[i] = nullptr;
 			}
+		}
+
+		if (args.fullscreen)
+		{
+			ToggleFullscreen();
 		}
 
 		::ShowWindow(m_WindowHandle, SW_SHOW);
@@ -120,19 +129,67 @@ namespace RB::Graphics::D3D12
 		return m_IsValid;
 	}
 
+	Display* WindowD3D12::GetParentDisplay()
+	{
+		List<Display*> displays = Application::GetInstance()->GetDisplays();
+
+		HMONITOR parent = MonitorFromWindow(m_WindowHandle, MONITOR_DEFAULTTONEAREST);
+
+		for (int i = 0; i < displays.size(); ++i)
+		{
+			if (displays[i]->GetNativeHandle() == parent)
+			{
+				return displays[i];
+			}
+		}
+
+		RB_LOG_WARN(LOGTAG_WINDOWING, "Could not find parent display");
+
+		return nullptr;
+	}
+
+	void WindowD3D12::SetBorderless(bool borderless)
+	{
+		if (borderless)
+		{
+			SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_POPUP);
+		}
+		else
+		{
+			SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+		}
+	}
+
 	bool WindowD3D12::IsSameWindow(void* window_handle) const
 	{
 		return window_handle == m_WindowHandle;
 	}
 
+	void* WindowD3D12::GetNativeWindowHandle() const
+	{
+		return m_WindowHandle;
+	}
+
 	void WindowD3D12::Resize(uint32_t width, uint32_t height, int32_t x, int32_t y)
 	{
-		// TODO: MAKE SURE THAT -1 MAKES SURE THAT THE WINDOW IS CENTERED TO THE MONITOR
+		Math::Float2 display_res = GetParentDisplay()->GetResolution();
 
-		x = Math::Max(x, 0);
-		y = Math::Max(y, 0);
+		// When x or y is -1 that coordinate will be centered to the display
 
-		SetWindowPos(m_WindowHandle, HWND_TOP, x, y, width, height, NULL);
+		if (x == -1)
+		{
+			x = int32_t((display_res.x / 2.0f) - (width / 2.0f));
+		}
+
+		if (y == -1)
+		{
+			y = int32_t((display_res.y / 2.0f) - (height / 2.0f));
+		}
+
+		x = Math::Clamp(x, 0, int(display_res.x - (width / 2.0f)));
+		y = Math::Clamp(y, 0, int(display_res.y - (height / 2.0f)));
+
+		SetWindowPos(m_WindowHandle, HWND_TOP, x, y, width, height, SWP_ASYNCWINDOWPOS);
 	}
 
 	RenderResourceFormat WindowD3D12::GetBackBufferFormat()
@@ -219,7 +276,7 @@ namespace RB::Graphics::D3D12
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, SUCCEEDED(result), "Failed to register window");
 	}
 
-	void WindowD3D12::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless)
+	void WindowD3D12::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style)
 	{
 		int screen_width	= ::GetSystemMetrics(SM_CXSCREEN);
 		int screen_height	= ::GetSystemMetrics(SM_CYSCREEN);
@@ -251,11 +308,6 @@ namespace RB::Graphics::D3D12
 
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_WindowHandle, "Failed to create window");
 
-		if (borderless)
-		{
-			SetWindowLong(m_WindowHandle, GWL_STYLE, NULL);
-		}
-
 		//long wAttr = GetWindowLong(m_WindowHandle, GWL_EXSTYLE);
 		//SetWindowLong(m_WindowHandle, GWL_EXSTYLE, wAttr | WS_EX_LAYERED);
 		//SetLayeredWindowAttributes(m_WindowHandle, 0, 0xFF / 2, 0x02);
@@ -282,7 +334,7 @@ namespace RB::Graphics::D3D12
 			uint32_t width = client_rect.right - client_rect.left;
 			uint32_t height = client_rect.bottom - client_rect.top;
 
-			WindowResizeEvent e(hwnd, width, height);
+			WindowResizeEvent e(hwnd, width, height, true);
 			g_EventManager->InsertEvent(e);
 		}
 		break;

@@ -370,7 +370,7 @@ namespace RB::Graphics
 					{
 						Graphics::Window* window = Application::GetInstance()->GetPrimaryWindow();
 
-						if (window && !window->IsMinimized())
+						if (window && window->IsValid() && !window->IsMinimized())
 						{
 							auto back_buffer = window->GetCurrentBackBuffer();
 

@@ -15,26 +15,6 @@
 namespace RB::Graphics::D3D12
 {
 	class DeviceQueue;
-	
-	struct MonitorInfo
-	{
-		enum Rotation
-		{
-			kRotation_None = 0,
-			kRotation_90,
-			kRotation_180,
-			kRotation_270
-		};
-
-		char*					name;
-		RB::Math::Float2		resolution;
-		Rotation				rotation;
-		uint32_t				bitsPerColor;
-		DXGI_COLOR_SPACE_TYPE	colorSpace;
-		float					minLuminance;
-		float					maxLuminance;
-		float					maxFullscreenLuminance;
-	};
 
 	struct GraphicsCardInfo
 	{
@@ -66,12 +46,10 @@ namespace RB::Graphics::D3D12
 		void WaitUntilIdle();
 
 		const GraphicsCardInfo GetGraphicsCardInfo() const { return m_GpuInfo; }
-		const List<MonitorInfo> GetMonitors() const { return m_Monitors; }
 
 	private:
 		void CreateFactory();
 		void CreateAdapter();
-		void CreateMonitors();
 		void CreateDevice(bool enable_debug_messages);
 
 		GPtr<ID3D12Device2>			m_NativeDevice;
@@ -88,7 +66,6 @@ namespace RB::Graphics::D3D12
 		DeviceQueue*				m_GraphicsQueue;
 
 		GraphicsCardInfo			m_GpuInfo;
-		List<MonitorInfo>			m_Monitors;
 	};
 
 	extern GraphicsDevice* g_GraphicsDevice;

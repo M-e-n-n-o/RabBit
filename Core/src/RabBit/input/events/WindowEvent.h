@@ -32,8 +32,14 @@ namespace RB::Input::Events
 	class WindowResizeEvent : public WindowEvent
 	{
 	public:
-		WindowResizeEvent(void* window_handle, uint32_t width, uint32_t height) : WindowEvent(window_handle), m_Width(width), m_Height(height) {}
+		WindowResizeEvent(void* window_handle, uint32_t width, uint32_t height, bool shouldResizeSwapChain = false)
+			: WindowEvent(window_handle)
+			, m_Width(width)
+			, m_Height(height) 
+			, m_ShouldResizeSwapChain(shouldResizeSwapChain)
+		{}
 
+		bool ShouldResizeSwapChain() const { return m_ShouldResizeSwapChain; }
 		uint32_t GetWidth() const { return m_Width; }
 		uint32_t GetHeight() const { return m_Height; }
 
@@ -42,6 +48,7 @@ namespace RB::Input::Events
 	private:
 		uint32_t m_Width;
 		uint32_t m_Height;
+		bool     m_ShouldResizeSwapChain;
 	};
 
 	class WindowCloseEvent : public WindowEvent

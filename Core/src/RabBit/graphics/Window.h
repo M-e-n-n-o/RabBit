@@ -8,8 +8,7 @@ namespace RB::Graphics
 	enum WindowStyle : uint32_t
 	{
 		kWindowStyle_Default			= (0),
-		kWindowStyle_Borderless			= (1 << 0),
-		kWindowStyle_SemiTransparent	= (1 << 1)
+		kWindowStyle_SemiTransparent	= (1 << 0)
 	};
 
 	enum class VsyncMode : uint8_t
@@ -20,6 +19,8 @@ namespace RB::Graphics
 		Quarter	= 3,
 		Eighth	= 4
 	};
+
+	class Display;
 
 	class Window
 	{
@@ -34,15 +35,22 @@ namespace RB::Graphics
 
 		virtual void Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1) = 0;
 
+		void ToggleFullscreen();
+
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 
 		virtual bool IsMinimized()	const = 0;
 		virtual bool IsValid()		const = 0;
 
-		bool InFocus()		const;
+		bool InFocus() const;
+
+		virtual Display* GetParentDisplay() = 0;
+
+		virtual void SetBorderless(bool borderless) = 0;
 
 		virtual bool IsSameWindow(void* window_handle) const = 0;
+		virtual void* GetNativeWindowHandle() const = 0;
 
 		virtual RenderResourceFormat GetBackBufferFormat() = 0;
 		virtual uint32_t GetCurrentBackBufferIndex() = 0;
@@ -50,15 +58,20 @@ namespace RB::Graphics
 
 		void ProcessEvent(Input::Events::WindowEvent& event);
 
+		static Window* Create(const char* window_name, uint32_t window_style);
 		static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style);
 		
 	protected:
-		Window();
+		Window(bool is_fullscreen);
 
 		virtual void DestroyWindow() = 0;
 	private:
 		virtual void OnResize(uint32_t width, uint32_t height) = 0;
 
-		bool m_InFocus;
+		bool		m_InFocus;
+
+		bool		m_IsFullscreen;
+		uint32_t	m_OriginalWidth;
+		uint32_t	m_OriginalHeight;
 	};
 }

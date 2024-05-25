@@ -10,6 +10,7 @@ namespace RB
 	namespace Graphics
 	{
 		class Window;
+		class Display;
 	}
 
 	struct AppInfo
@@ -29,9 +30,12 @@ namespace RB
 		void Run();
 		void Shutdown();
 
+		List<Graphics::Display*> GetDisplays() const { return m_Displays; }
+
 		Graphics::Window* GetPrimaryWindow() const;
 		Graphics::Window* GetWindow(uint32_t index) const;
 		Graphics::Window* FindWindow(void* window_handle) const;
+		int32_t			  FindWindowIndex(void* window_handle) const;
 
 		uint64_t GetFrameIndex() const { return m_FrameIndex; }
 
@@ -42,19 +46,24 @@ namespace RB
 		virtual void OnUpdate() = 0;
 		virtual void OnStop() = 0;
 
+		void UpdateInternal();
+
 		void OnEvent(Input::Events::Event& event) override;
 
-		const AppInfo			m_StartAppInfo;
+		const AppInfo				m_StartAppInfo;
 
-		bool					m_Initialized;
-		bool					m_ShouldStop;
+		bool						m_Initialized;
+		bool						m_ShouldStop;
 
-		uint64_t				m_FrameIndex;
+		uint64_t					m_FrameIndex;
 
-		List<Graphics::Window*>	m_Windows;
-		bool					m_CheckWindows;
+		List<Graphics::Display*>	m_Displays;
 
-		static Application*		s_Instance;
+		List<Graphics::Window*>		m_Windows;
+		int32_t						m_PrimaryWindowIndex;
+		bool						m_CheckWindows;
+
+		static Application*			s_Instance;
 	};
 
 	// To be defined in client

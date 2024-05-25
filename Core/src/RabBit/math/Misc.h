@@ -14,6 +14,18 @@ namespace RB::Math
 		return a > b ? a : b;
 	}
 
+	template<typename T>
+	inline T Min(T a, T b)
+	{
+		return a < b ? a : b;
+	}
+
+	template<typename T>
+	inline T Clamp(T value, T min, T max)
+	{
+		return Min(Max(value, min), max);
+	}
+
 	template <typename T>
 	inline T AlignUpWithMask(T value, size_t mask)
 	{

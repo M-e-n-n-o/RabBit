@@ -20,6 +20,7 @@ namespace RB::Graphics::D3D12
 		HINSTANCE		instance;
 		wchar_t*		className;
 		const char*		windowName;
+		bool			fullscreen;
 		uint32_t		width;
 		uint32_t		height;
 		uint32_t		windowStyle;
@@ -40,7 +41,12 @@ namespace RB::Graphics::D3D12
 		bool	 IsMinimized()	const override;
 		bool	 IsValid()		const override;
 
+		Display* GetParentDisplay() override;
+
+		void SetBorderless(bool borderless) override;
+
 		bool IsSameWindow(void* window_handle) const override;
+		void* GetNativeWindowHandle() const override;
 
 		void Resize(uint32_t width, uint32_t height, int32_t x, int32_t y) override;
 
@@ -56,7 +62,7 @@ namespace RB::Graphics::D3D12
 
 		void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
 
-		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style, bool borderless);
+		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style);
 
 		HWND		m_WindowHandle;
 		SwapChain*	m_SwapChain;

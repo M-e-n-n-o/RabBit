@@ -1,6 +1,7 @@
 #include "RabBitCommon.h"
 #include "Window.h"
 #include "graphics/Renderer.h"
+#include "graphics/Display.h"
 #include "graphics/d3d12/window/WindowD3D12.h"
 #include "input/events/WindowEvent.h"
 
@@ -8,8 +9,11 @@ using namespace RB::Input::Events;
 
 namespace RB::Graphics
 {
-	Window::Window()
+	Window::Window(bool is_fullscreen)
 		: m_InFocus(true)
+		, m_IsFullscreen(is_fullscreen)
+		, m_OriginalWidth(0)
+		, m_OriginalHeight(0)
 	{
 	}
 
@@ -21,6 +25,26 @@ namespace RB::Graphics
 	bool Window::InFocus() const
 	{
 		return m_InFocus;
+	}
+
+	void Window::ToggleFullscreen()
+	{
+		SetBorderless(!m_IsFullscreen);
+
+		if (m_IsFullscreen)
+		{
+			Resize(m_OriginalWidth, m_OriginalHeight);
+		}
+		else
+		{
+			m_OriginalWidth = GetWidth();
+			m_OriginalHeight = GetHeight();
+
+			Math::Float2 res = GetParentDisplay()->GetResolution();
+			Resize(res.x, res.y);
+		}
+
+		m_IsFullscreen = !m_IsFullscreen;
 	}
 	
 	void Window::ProcessEvent(WindowEvent& window_event)
@@ -52,7 +76,19 @@ namespace RB::Graphics
 			uint32_t width = resize_event->GetWidth();
 			uint32_t height = resize_event->GetHeight();
 
-			OnResize(width, height);
+			RB_LOG(LOGTAG_WINDOWING, "Resizing window to (%d x %d)", width, height);
+
+			if (resize_event->ShouldResizeSwapChain())
+			{
+				// Do the swapchain resize (window is already resized here)
+				OnResize(width, height);
+			}
+			else
+			{
+				// First resize the actual window, which will create another resize event which will resize the swapchain
+				Resize(width, height, -1, -1);
+			}
+
 		}
 		break;
 
@@ -85,6 +121,31 @@ namespace RB::Graphics
 		}
 	}
 	
+	Window* Window::Create(const char* window_name, uint32_t window_style)
+	{
+		switch (Renderer::GetAPI())
+		{
+		case RenderAPI::D3D12:
+		{
+			D3D12::WindowArgs args = {};
+			args.className		= L"RabBit WindowClass";
+			args.instance		= GetModuleHandle(nullptr);
+			args.fullscreen		= true;
+			args.width			= 1280;
+			args.height			= 720;
+			args.windowStyle	= window_style;
+			args.windowName		= window_name;
+
+			return new D3D12::WindowD3D12(args);
+		}
+		default:
+			RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the set graphics API");
+			break;
+		}
+
+		return nullptr;
+	}
+
 	Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style)
 	{
 		switch (Renderer::GetAPI())
@@ -94,6 +155,7 @@ namespace RB::Graphics
 			D3D12::WindowArgs args = {};
 			args.className		= L"RabBit WindowClass";
 			args.instance		= GetModuleHandle(nullptr);
+			args.fullscreen		= false;
 			args.width			= window_width;
 			args.height			= window_height;
 			args.windowStyle	= window_style;
@@ -102,7 +164,7 @@ namespace RB::Graphics
 			return new D3D12::WindowD3D12(args);
 		}
 		default:
-			RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the render interface for the set graphics API");
+			RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the set graphics API");
 			break;
 		}
 

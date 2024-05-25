@@ -12,6 +12,7 @@
 #include "graphics/d3d12/resource/RenderResourceD3D12.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/Renderer.h"
+#include "graphics/Display.h"
 
 #include "entity/Scene.h"
 #include "entity/components/Mesh.h"
@@ -19,6 +20,7 @@
 #include "input/events/WindowEvent.h"
 #include "input/events/KeyEvent.h"
 #include "input/KeyCodes.h"
+#include "input/Input.h"
 
 #include <d3dcompiler.h>
 #include <fstream>
@@ -62,6 +64,7 @@ namespace RB
 		, m_ShouldStop(false)
 		, m_FrameIndex(0)
 		, m_CheckWindows(false)
+		, m_PrimaryWindowIndex(0)
 				
 	{
 		RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
@@ -85,10 +88,12 @@ namespace RB
 		Renderer::SetAPI(RenderAPI::D3D12);
 		_Renderer = Renderer::Create(true); //std::strstr(launch_args, "-renderDebug"));
 
+		m_Displays = Display::CreateDisplays();
+
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
-		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
-		m_Windows.push_back(Window::Create("Test", 1280, 720, kWindowStyle_Default));
+		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent));
+		m_Windows.push_back(Window::Create("Test", kWindowStyle_Default));
 
 		m_Initialized = true;
 
@@ -237,7 +242,10 @@ namespace RB
 			// Process the new received events
 			ProcessEvents();
 
-			// Do game logic of the current frame
+			// Firstly update the engine itself
+			UpdateInternal();
+
+			// Secondly update the application
 			OnUpdate();
 
 			// Submit the scene as context for rendering the next frame
@@ -272,6 +280,11 @@ namespace RB
 		}
 	}
 
+	void Application::UpdateInternal()
+	{
+
+	}
+
 	void Application::Shutdown()
 	{
 		RB_LOG(LOGTAG_MAIN, "");
@@ -287,6 +300,12 @@ namespace RB
 		}
 		m_Windows.clear();
 
+		for (int i = 0; i < m_Displays.size(); i++)
+		{
+			delete m_Displays[i];
+		}
+		m_Displays.clear();
+
 		_Renderer->Shutdown();
 		delete _Renderer;	
 
@@ -297,21 +316,13 @@ namespace RB
 
 	Graphics::Window* Application::GetPrimaryWindow() const
 	{
-		// TODO, should probably change this and being able to set primary windows
-
-		int index = 0;
-		while (index < m_Windows.size() && !m_Windows[index]->IsValid())
-		{
-			index++;
-		}
-
-		if (index >= m_Windows.size())
+		if (m_PrimaryWindowIndex >= m_Windows.size() || m_PrimaryWindowIndex < 0)
 		{
 			RB_LOG_ERROR(LOGTAG_WINDOWING, "There is no primary window");
 			return nullptr;
 		}
 
-		return m_Windows[index];
+		return m_Windows[m_PrimaryWindowIndex];
 	}
 
 	Graphics::Window* Application::GetWindow(uint32_t index) const
@@ -336,6 +347,21 @@ namespace RB
 		return nullptr;
 	}
 
+	int32_t Application::FindWindowIndex(void* window_handle) const
+	{
+		for (int i = 0; i < m_Windows.size(); ++i)
+		{
+			if (m_Windows[i]->IsSameWindow(window_handle))
+			{
+				return i;
+			}
+		}
+
+		RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+
+		return -1;
+	}
+
 	void Application::OnEvent(Event& event)
 	{
 		if (!m_Initialized)
@@ -345,19 +371,27 @@ namespace RB
 
 		BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
 		{
-			//if (e.GetKeyCode() == KeyCode::K)
-			//{
-			//	for (Graphics::Window* window : m_Windows)
-			//	{
-			//		if (window->IsValid() && window->InFocus())
-			//		{
-			//			window->Resize(200, 200, 200, 100);
-			//		}
-			//	}
-			//}
+			if (e.GetKeyCode() == KeyCode::F11 ||
+				(e.GetKeyCode() == KeyCode::Enter && IsKeyDown(KeyCode::LeftAlt)))
+			{
+				GetPrimaryWindow()->ToggleFullscreen();
+			}
+
 		}, event);
 
 		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
+
+		
+		BindEvent<WindowOnFocusEvent>([this](WindowOnFocusEvent& focus_event)
+		{
+			int32_t window_index = FindWindowIndex(focus_event.GetWindowHandle());
+
+			if (window_index >= 0)
+			{
+				m_PrimaryWindowIndex = window_index;
+			}
+
+		}, event);
 
 		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
 		{
