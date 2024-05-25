@@ -232,3 +232,22 @@ float Float3::Angle(const Float3& first, const Float3& second)
 {
 	return acos(Dot(first, second) / (first.GetLength() * second.GetLength()));
 }
+
+// --------------------------------------------------------------------------
+//									FLOAT 4
+// --------------------------------------------------------------------------
+
+Float4::Float4()
+	: x(0.0f), y(0.0f), z(0.0f), w(0.0f)
+{
+}
+
+Float4::Float4(float xyzw)
+	: x(xyzw), y(xyzw), z(xyzw), w(xyzw)
+{
+}
+
+Float4::Float4(float x, float y, float z, float w)
+	: x(x), y(y), z(z), w(w)
+{
+}

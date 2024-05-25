@@ -36,10 +36,11 @@ namespace RB::Graphics::D3D12
 
 		void Present(const VsyncMode& mode) override;
 
-		uint32_t GetWidth()		const override;
-		uint32_t GetHeight()	const override;
-		bool	 IsMinimized()	const override;
-		bool	 IsValid()		const override;
+		Math::Float2 GetPosition()  const override;
+		uint32_t	 GetWidth()		const override;
+		uint32_t	 GetHeight()	const override;
+		bool		 IsMinimized()	const override;
+		bool		 IsValid()		const override;
 
 		Display* GetParentDisplay() override;
 

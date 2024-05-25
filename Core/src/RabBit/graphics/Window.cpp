@@ -12,6 +12,7 @@ namespace RB::Graphics
 	Window::Window(bool is_fullscreen)
 		: m_InFocus(true)
 		, m_IsFullscreen(is_fullscreen)
+		, m_OriginalPos(-1, -1)
 		, m_OriginalWidth(0)
 		, m_OriginalHeight(0)
 	{
@@ -33,12 +34,13 @@ namespace RB::Graphics
 
 		if (m_IsFullscreen)
 		{
-			Resize(m_OriginalWidth, m_OriginalHeight);
+			Resize(m_OriginalWidth, m_OriginalHeight, m_OriginalPos.x, m_OriginalPos.y);
 		}
 		else
 		{
-			m_OriginalWidth = GetWidth();
+			m_OriginalWidth  = GetWidth();
 			m_OriginalHeight = GetHeight();
+			m_OriginalPos    = GetPosition();
 
 			Math::Float2 res = GetParentDisplay()->GetResolution();
 			Resize(res.x, res.y);
@@ -66,6 +68,12 @@ namespace RB::Graphics
 		case EventType::WindowMoved:
 		{
 			RB_LOG(LOGTAG_WINDOWING, "Moved");
+		}
+		break;
+
+		case EventType::WindowFullscreenToggle:
+		{
+			ToggleFullscreen();
 		}
 		break;
 

@@ -93,7 +93,7 @@ namespace RB
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
 		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_SemiTransparent));
-		m_Windows.push_back(Window::Create("Test", kWindowStyle_Default));
+		//m_Windows.push_back(Window::Create("Test", kWindowStyle_Default));
 
 		m_Initialized = true;
 
@@ -372,9 +372,27 @@ namespace RB
 		BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
 		{
 			if (e.GetKeyCode() == KeyCode::F11 ||
-				(e.GetKeyCode() == KeyCode::Enter && IsKeyDown(KeyCode::LeftAlt)))
+				(IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::Enter))
 			{
-				GetPrimaryWindow()->ToggleFullscreen();
+				WindowFullscreenToggleEvent e(GetPrimaryWindow()->GetNativeWindowHandle());
+				g_EventManager->InsertEvent(e);
+			}
+
+			if (e.GetKeyCode() == KeyCode::A)
+			{
+				WindowResizeEvent e(GetPrimaryWindow()->GetNativeWindowHandle(), 300, 300);
+				g_EventManager->InsertEvent(e);
+			}
+
+			if (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
+			{
+				RB_LOG(LOGTAG_EVENT, "Instant close requested, requesting to close all windows..");
+
+				for (int i = 0; i < m_Windows.size(); i++)
+				{
+					WindowCloseRequestEvent e(m_Windows[i]->GetNativeWindowHandle());
+					g_EventManager->InsertEvent(e);
+				}
 			}
 
 		}, event);

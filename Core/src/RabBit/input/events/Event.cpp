@@ -55,6 +55,11 @@ namespace RB::Input::Events
 	{
 		//m_LastEvents.insert(m_LastEvents.begin(), event);
 
+		if (event.GetEventType() == EventType::WindowResize)
+		{
+			RB_LOG(LOGTAG_EVENT, "test");
+		}
+
 		for (EventListener* listener : m_Listeners)
 		{
 			if (listener->ListensToCategory((EventCategory) event.GetCategoryFlags()))

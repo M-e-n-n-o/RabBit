@@ -82,4 +82,12 @@ namespace RB::Input::Events
 
 		DEFINE_CLASS_TYPE(WindowLostFocusEvent, WindowLostFocus)
 	};
+
+	class WindowFullscreenToggleEvent : public WindowEvent
+	{
+	public:
+		WindowFullscreenToggleEvent(void* window_handle) : WindowEvent(window_handle) {}
+
+		DEFINE_CLASS_TYPE(WindowFullscreenToggleEvent, WindowFullscreenToggle)
+	};
 }

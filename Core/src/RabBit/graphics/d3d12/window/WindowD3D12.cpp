@@ -109,6 +109,14 @@ namespace RB::Graphics::D3D12
 		m_SwapChain->Present(sync_interval, present_flags);
 	}
 
+	Math::Float2 WindowD3D12::GetPosition() const
+	{
+		RECT window_rect;
+		GetWindowRect(m_WindowHandle, &window_rect);
+
+		return Math::Float2(window_rect.left, window_rect.top);
+	}
+
 	uint32_t WindowD3D12::GetWidth() const
 	{
 		return m_SwapChain->GetWidth();
@@ -152,11 +160,11 @@ namespace RB::Graphics::D3D12
 	{
 		if (borderless)
 		{
-			SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_POPUP);
+			SetWindowLong(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_POPUP);
 		}
 		else
 		{
-			SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+			SetWindowLong(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
 		}
 	}
 

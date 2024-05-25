@@ -2,6 +2,7 @@
 
 #include "input/events/WindowEvent.h"
 #include "graphics/RenderResource.h"
+#include "math/Vector.h"
 
 namespace RB::Graphics
 {
@@ -33,10 +34,7 @@ namespace RB::Graphics
 
 		virtual void Present(const VsyncMode& mode) = 0;
 
-		virtual void Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1) = 0;
-
-		void ToggleFullscreen();
-
+		virtual Math::Float2 GetPosition() const = 0;
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 
@@ -64,14 +62,19 @@ namespace RB::Graphics
 	protected:
 		Window(bool is_fullscreen);
 
+		// These should be called via events
+		void ToggleFullscreen();
+		virtual void Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1) = 0;
+
 		virtual void DestroyWindow() = 0;
 	private:
 		virtual void OnResize(uint32_t width, uint32_t height) = 0;
 
-		bool		m_InFocus;
+		bool			m_InFocus;
 
-		bool		m_IsFullscreen;
-		uint32_t	m_OriginalWidth;
-		uint32_t	m_OriginalHeight;
+		bool			m_IsFullscreen;
+		Math::Float2	m_OriginalPos;
+		uint32_t		m_OriginalWidth;
+		uint32_t		m_OriginalHeight;
 	};
 }

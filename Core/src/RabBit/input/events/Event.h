@@ -7,7 +7,7 @@ namespace RB::Input::Events
 	enum class EventType
 	{
 		None = 0,
-		WindowCreated, WindowCloseRequest, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
+		WindowCreated, WindowCloseRequest, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved, WindowFullscreenToggle,
 		KeyPressed, KeyReleased, KeyTyped,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
