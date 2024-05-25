@@ -2,6 +2,8 @@
 #include "DisplayD3D12.h"
 #include "graphics/d3d12/GraphicsDevice.h"
 
+#include <strsafe.h>
+
 namespace RB::Graphics::D3D12
 {
 	DisplayD3D12::DisplayD3D12(GPtr<IDXGIOutput> output, uint32_t output_index)
