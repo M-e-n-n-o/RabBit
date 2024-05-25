@@ -378,12 +378,6 @@ namespace RB
 				g_EventManager->InsertEvent(e);
 			}
 
-			if (e.GetKeyCode() == KeyCode::A)
-			{
-				WindowResizeEvent e(GetPrimaryWindow()->GetNativeWindowHandle(), 300, 300);
-				g_EventManager->InsertEvent(e);
-			}
-
 			if (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
 			{
 				RB_LOG(LOGTAG_EVENT, "Instant close requested, requesting to close all windows..");
