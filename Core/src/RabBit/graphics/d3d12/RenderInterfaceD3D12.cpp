@@ -115,7 +115,7 @@ namespace RB::Graphics::D3D12
 
 			if (!ValidateResource(vertex_resources[res_idx]))
 			{
-				RB_LOG_WARN(LOGTAG_GRAPHICS, "Vertex buffer was not valid when calling SetVertexBuffer, so it does not contain any data right now");
+				RB_LOG_WARN(LOGTAG_GRAPHICS, "Vertex buffer was not valid yet when calling SetVertexBuffer, so it probably does not contain any data right now");
 			}
 
 			VertexBufferD3D12* vbo = (VertexBufferD3D12*)vertex_resources[res_idx];
@@ -140,8 +140,6 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dest)
 	{
-		ValidateResource(dest);
-
 		if (src->GetType() != dest->GetType())
 		{
 			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Can not copy resource as the typed do not match");
@@ -167,8 +165,6 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
 	{
-		ValidateResource(resource);
-
 		switch (resource->GetPrimitiveType())
 		{
 		case RenderResourceType::Buffer:

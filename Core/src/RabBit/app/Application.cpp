@@ -91,8 +91,17 @@ namespace RB
 
 		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
-		m_Windows.push_back(Window::Create(m_StartAppInfo.name, m_StartAppInfo.windowWidth, m_StartAppInfo.windowHeight, kWindowStyle_Default));
-		m_Windows.push_back(Window::Create("Test", m_Displays[0], kWindowStyle_SemiTransparent));
+		for (const AppInfo::Window& window : m_StartAppInfo.windows)
+		{
+			if (window.fullscreen)
+			{
+				m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default));
+			}
+			else
+			{
+				m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default));
+			}
+		}
 
 		m_Initialized = true;
 
@@ -101,7 +110,7 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "");
 
 		// Initialize app user
-		RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.name);
+		RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.appName);
 		OnStart();
 
 		RB_LOG(LOGTAG_MAIN, "");
@@ -368,6 +377,8 @@ namespace RB
 			return;
 		}
 
+		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
+
 		BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
 		{
 			if (e.GetKeyCode() == KeyCode::F11 ||
@@ -389,9 +400,6 @@ namespace RB
 			}
 
 		}, event);
-
-		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
-
 		
 		BindEvent<WindowOnFocusEvent>([this](WindowOnFocusEvent& focus_event)
 		{

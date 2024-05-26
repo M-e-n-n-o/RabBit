@@ -39,6 +39,7 @@ namespace RB::Graphics
 
 		virtual void GpuWaitOn(RIExecutionGuard* guard) = 0;
 
+		// You should normally not have to manually transition resources, this will be done automatically
 		//virtual void TransitionResource(RenderResource* resource, ResourceState state) = 0;
 		virtual void FlushResourceBarriers() = 0;
 

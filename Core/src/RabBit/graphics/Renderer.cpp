@@ -47,6 +47,7 @@ namespace RB::Graphics
 		m_SharedContext->OnRenderFrameStart = std::bind(&Renderer::OnFrameStart, this);
 		m_SharedContext->OnRenderFrameEnd	= std::bind(&Renderer::OnFrameEnd, this);
 		m_SharedContext->ProcessEvents		= std::bind(&Renderer::ProcessEvents, this);
+		m_SharedContext->SyncWithGpu		= std::bind(&Renderer::SyncWithGpu, this);
 		m_SharedContext->renderFrameIndex	= 0;
 
 		for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
@@ -515,8 +516,7 @@ namespace RB::Graphics
 
 		RB_LOG(LOGTAG_GRAPHICS, "Render thread terminating");
 
-		// TODO Change this to something more abstract!!!!
-		D3D12::g_GraphicsDevice->WaitUntilIdle();
+		context->SyncWithGpu();
 
 		DeleteCriticalSection(&context->streamingKickCS);
 		DeleteCriticalSection(&context->streamingSyncCS);

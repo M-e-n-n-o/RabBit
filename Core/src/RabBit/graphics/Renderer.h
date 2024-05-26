@@ -104,6 +104,7 @@ namespace RB::Graphics
 			std::function<void()> OnRenderFrameStart;
 			std::function<void()> OnRenderFrameEnd;
 			std::function<void()> ProcessEvents;
+			std::function<void()> SyncWithGpu;
 		};
 
 	private:

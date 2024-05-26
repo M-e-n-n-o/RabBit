@@ -15,9 +15,17 @@ namespace RB
 
 	struct AppInfo
 	{
-		const char* name;
-		uint32_t windowWidth;
-		uint32_t windowHeight;
+		struct Window
+		{
+			const char* windowName;
+			bool		fullscreen;
+			uint32_t    windowWidth;
+			uint32_t    windowHeight;
+			bool		semiTransparent;
+		};
+
+		const char*		appName;
+		List<Window>	windows;
 	};
 
 	class Application : public Input::Events::EventListener

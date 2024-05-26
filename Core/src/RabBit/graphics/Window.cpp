@@ -40,7 +40,7 @@ namespace RB::Graphics
 			SetBorderless(true);
 
 			Math::Float2 res = GetParentDisplay()->GetResolution();
-			Resize(res.x, res.y);
+			Resize(res.x, res.y, 0, 0);
 		}
 
 		m_IsFullscreen = !m_IsFullscreen;
