@@ -97,14 +97,14 @@ namespace RB::Graphics
 	void Renderer::SubmitFrameContext(const Entity::Scene* const scene)
 	{
 		// Retrieve all camera's with a valid output location and create ViewContexts for them
-		// Also create the render entries? Or should those just be passed in?
+		// Then, for every view context, get the RenderPassContext from each RenderPass
 
-		void* submitted_data = new uint8_t(1); // <- Make sure to allocate this on the heap using new, not malloc!
+		void* view_contexts = new uint8_t(1); // <- Make sure to allocate this on the heap using new, not malloc!
 
 		RenderTask data;
 		data.hasTask	= true;
-		data.data		= submitted_data;
-		data.dataSize	= sizeof(submitted_data);
+		data.data		= view_contexts;
+		data.dataSize	= sizeof(view_contexts);
 
 		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
 

@@ -140,21 +140,24 @@ namespace RB::Graphics
 		void Render(RenderPassContext* renderPassContext, RenderInterface* renderInterface, RenderTexture** outputTextures, RenderTexture** workingTextures, RenderPass** dependencies)
 	};
 
-	// Determines in which order which RenderPass is executed (the names are linked to the names given to RenderPassConfig::name)
-	char* _RenderOrder
-	{
-		// First command list
-		"GBuffer",
-		"AO",
-		"Reflection",
-		"Shadow",
-		"ApplyLighting",
 
-		// Second command list
-		"Upscale",
-		"PostProcessing (ToneMap)",
-		"UI"
-	}
+	// DO AUTOMATIC ORDER OF RENDER PASSES, THIS SHOULD BE DO-ABLE
+
+	// Determines in which order which RenderPass is executed (the names are linked to the names given to RenderPassConfig::name)
+	//char* _RenderOrder
+	//{
+	//	// First command list
+	//	"GBuffer",
+	//	"AO",
+	//	"Reflection",
+	//	"Shadow",
+	//	"ApplyLighting",
+
+	//	// Second command list
+	//	"Upscale",
+	//	"PostProcessing (ToneMap)",
+	//	"UI"
+	//}
 
 	class RenderRect
 	{

@@ -78,6 +78,9 @@ namespace RB::Input::Events
 		: m_ListenerCategory(category)
 	{
 		InitializeCriticalSection(&m_CS);
+
+		m_QueuedEvents.reserve(10);
+
 		g_EventManager->AddListener(this);
 	}
 

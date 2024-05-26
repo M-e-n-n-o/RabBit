@@ -10,7 +10,7 @@ namespace RB::Math
 
 namespace RB::Graphics
 {
-	#define INTERMEDIATE_EXECUTE_THRESHOLD 500
+	#define INTERMEDIATE_EXECUTE_THRESHOLD 350
 
 	class RenderResource;
 	class RenderInterface;
