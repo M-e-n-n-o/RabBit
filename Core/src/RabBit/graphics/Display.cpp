@@ -31,7 +31,7 @@ namespace RB::Graphics
 
 		for (int i = 0; i < displays.size(); ++i)
 		{
-			RB_LOG(LOGTAG_WINDOWING, "\t%d. %s (%d x %d)", (int)i, displays[i]->GetName(), (int)(displays[i]->GetResolution().x), (int)(displays[i]->GetResolution().y));
+			RB_LOG(LOGTAG_WINDOWING, "\t%d. %s (%d x %d)", i + 1, displays[i]->GetName(), (int)(displays[i]->GetResolution().x), (int)(displays[i]->GetResolution().y));
 		}
 
 		return displays;
