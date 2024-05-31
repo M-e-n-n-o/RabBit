@@ -310,7 +310,7 @@ namespace RB::Graphics::D3D12
 			return;
 		}
 		
-		m_ObjsScheduledToReleaseAfterExecute.push_back(resource->m_Resource);
+		m_ObjsScheduledToReleaseAfterExecute.push_back(resource->GetResource());
 	}
 
 	void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
@@ -428,9 +428,6 @@ namespace RB::Graphics::D3D12
 			resource->SetName(name);
 
 			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, g_ResourceStateManager, "The resource state manager does not yet exist");
-
-			// Start tracking resources state
-			g_ResourceStateManager->StartTrackingResource(resource.Get(), start_state);
 		}
 
 		return resource;
@@ -472,25 +469,31 @@ namespace RB::Graphics::D3D12
 			{
 			case ResourceManager::ResourceType::Upload:
 			{
+				D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_GENERIC_READ;
+
 				res_desc->resource->SetResource(
 					r->CreateCommittedResource(
 						res_desc->name, 
 						CD3DX12_RESOURCE_DESC::Buffer(res_desc->size), 
 						D3D12_HEAP_TYPE_UPLOAD, 
 						D3D12_HEAP_FLAG_NONE, 
-						D3D12_RESOURCE_STATE_GENERIC_READ));
+						state),
+					state);
 			}
 			break;
 
 			case ResourceManager::ResourceType::Vertex:
 			{
+				D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON; //D3D12_RESOURCE_STATE_COPY_DEST // Buffers are always created in the common state
+
 				res_desc->resource->SetResource(
 					r->CreateCommittedResource(
 						res_desc->name,
 						CD3DX12_RESOURCE_DESC::Buffer(res_desc->size),
 						D3D12_HEAP_TYPE_DEFAULT,
 						D3D12_HEAP_FLAG_NONE, //D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, // This flag is not allowed for commited resources as they are set automatically
-						D3D12_RESOURCE_STATE_COMMON)); //D3D12_RESOURCE_STATE_COPY_DEST)); // Buffers are always created in the common state
+						state),
+					state);
 			}
 			break;
 

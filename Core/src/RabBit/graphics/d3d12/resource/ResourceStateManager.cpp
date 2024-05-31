@@ -1,5 +1,6 @@
 #include "RabBitCommon.h"
 #include "ResourceStateManager.h"
+#include "GpuResource.h"
 #include "../GraphicsDevice.h"
 
 namespace RB::Graphics::D3D12
@@ -9,54 +10,36 @@ namespace RB::Graphics::D3D12
 	ResourceStateManager::ResourceStateManager()
 	{
 	}
-	
-	void ResourceStateManager::StartTrackingResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES state)
-	{	
-		bool succes = m_ResourceStates.insert({ resource, ResourceState(state) }).second;
-
-		if (!succes)
-		{
-			RB_LOG_WARN(LOGTAG_GRAPHICS, "Could not start tracking the resource state, maybe this resource is already being tracked?");
-		}
-	}
-
-	void ResourceStateManager::StopTrackingResource(ID3D12Resource* resource)
-	{
-		m_ResourceStates.erase(resource);
-	}
 
 	void ResourceStateManager::InsertResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier)
 	{
 		m_PendingBarriers.push_back(barrier);
-
-		if (barrier.Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION)
-		{
-			UpdateResourceState(barrier.Transition.pResource, barrier.Transition.Subresource, barrier.Transition.StateAfter);
-		}
 	}
 
-	void ResourceStateManager::TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES to_state, uint32_t subresource)
+	void ResourceStateManager::TransitionResource(GpuResource* resource, D3D12_RESOURCE_STATES to_state)
 	{
-		D3D12_RESOURCE_STATES from_state;
-		bool found = GetCurrentState(resource, subresource, from_state);
-
-		if (!found)
+		if (resource->IsInState(to_state))
 		{
-			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not find the current state of the resource, possibly as it is not being tracked yet");
 			return;
 		}
 
-		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::Transition(resource, from_state, to_state, subresource));
+		ID3D12Resource* res = resource->GetResource().Get();
+
+		D3D12_RESOURCE_STATES old_state = resource->GetState();
+
+		resource->UpdateState(to_state);
+
+		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::Transition(res, old_state, to_state, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES));
 	}
 
-	void ResourceStateManager::InsertUAVBarrier(ID3D12Resource* resource)
+	void ResourceStateManager::InsertUAVBarrier(GpuResource* resource)
 	{
-		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(resource));
+		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(resource->GetResource().Get()));
 	}
 
-	void ResourceStateManager::InsertAliasBarrier(ID3D12Resource* before, ID3D12Resource* after)
+	void ResourceStateManager::InsertAliasBarrier(GpuResource* before, GpuResource* after)
 	{
-		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::Aliasing(before, after));
+		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::Aliasing(before->GetResource().Get(), after->GetResource().Get()));
 	}
 
 	void ResourceStateManager::FlushPendingTransitions(ID3D12GraphicsCommandList* command_list)
@@ -64,31 +47,5 @@ namespace RB::Graphics::D3D12
 		command_list->ResourceBarrier(m_PendingBarriers.size(), m_PendingBarriers.data());
 
 		m_PendingBarriers.clear();
-	}
-
-	bool ResourceStateManager::GetCurrentState(ID3D12Resource* resource, uint32_t subresource, D3D12_RESOURCE_STATES& out_state)
-	{
-		const auto itr = m_ResourceStates.find(resource);
-		
-		if (itr == m_ResourceStates.end())
-		{
-			out_state = D3D12_RESOURCE_STATE_COMMON;
-			return false;
-		}
-
-		out_state = itr->second.GetSubresourceState(subresource);
-		return true;
-	}
-
-	void ResourceStateManager::UpdateResourceState(ID3D12Resource* resource, uint32_t subresource, D3D12_RESOURCE_STATES state)
-	{
-		const auto itr = m_ResourceStates.find(resource);
-
-		if (itr == m_ResourceStates.end())
-		{
-			return;
-		}
-
-		itr->second.SetSubresourceState(subresource, state);
 	}
 }

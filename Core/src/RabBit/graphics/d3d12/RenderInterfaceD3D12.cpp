@@ -202,8 +202,8 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::InternalCopyBuffer(GpuResource* src, GpuResource* dest)
 	{
-		g_ResourceStateManager->TransitionResource(src->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_SOURCE);
-		g_ResourceStateManager->TransitionResource(dest->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_DEST);
+		g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		g_ResourceStateManager->TransitionResource(dest, D3D12_RESOURCE_STATE_COPY_DEST);
 		FlushResourceBarriers();
 
 		m_CommandList->CopyResource(dest->GetResource().Get(), src->GetResource().Get());
