@@ -13,16 +13,18 @@ namespace RB::Graphics::D3D12
 	class VertexBufferD3D12 : public VertexBuffer
 	{
 	public:
-		VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint64_t data_size);
+		VertexBufferD3D12(const char* name, const TopologyType& type, uint32_t vertex_count_per_instance, void* data, uint64_t data_size);
 		~VertexBufferD3D12();
 
 		const char* GetName() const override { return m_Name; }
-		
+
 		void* GetData() const override { return m_Data; }
 
 		void* GetNativeResource() const override { return m_Resource; }
 
 		uint32_t GetSize() const override { return m_Size; }
+
+		uint32_t GetVertexCountPerInstance() const override { return m_VertexCountPerInstance; }
 
 		TopologyType GetTopologyType() const override { return m_Type; }
 
@@ -33,6 +35,7 @@ namespace RB::Graphics::D3D12
 		GpuResource*				m_Resource;
 		D3D12_VERTEX_BUFFER_VIEW	m_View;
 		TopologyType				m_Type;
+		uint32_t					m_VertexCountPerInstance;
 		uint32_t					m_Size;
 		void*						m_Data;
 	};
@@ -59,7 +62,7 @@ namespace RB::Graphics::D3D12
 		uint32_t GetHeight() const override { return m_Height; }
 
 		void SetCpuHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) { m_CpuHandle = handle; }
-		D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle() { return m_CpuHandle; }
+		D3D12_CPU_DESCRIPTOR_HANDLE* GetCpuHandle() { return &m_CpuHandle; }
 
 	private:
 		const char*						m_Name;

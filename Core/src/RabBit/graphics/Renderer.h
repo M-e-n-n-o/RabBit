@@ -16,6 +16,7 @@ namespace RB::Graphics
 	};
 
 	class RenderInterface;
+	class RenderPass;
 
 	// Fully static class
 	class Renderer : public Input::Events::EventListener
@@ -75,6 +76,9 @@ namespace RB::Graphics
 
 		struct SharedRenderThreadContext
 		{
+			RenderPass**		renderPasses;
+			uint32_t			totalPasses;
+
 			ThreadState			renderState;
 			CONDITION_VARIABLE	renderKickCV;
 			CRITICAL_SECTION	renderKickCS;

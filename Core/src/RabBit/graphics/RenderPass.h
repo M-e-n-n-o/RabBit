@@ -1,8 +1,14 @@
 #pragma once
 
+namespace RB::Entity
+{
+	class Scene;
+}
+
 namespace RB::Graphics
 {
 	class ViewContext;
+	class RenderResource;
 	class RenderInterface;
 
 	enum class RenderPassType
@@ -22,6 +28,7 @@ namespace RB::Graphics
 
 	class RenderPassConfigBuilder
 	{
+	public:
 		RenderPassConfigBuilder(const RenderPassType& type, bool only_execute_when_depended_on);
 
 		RenderPassConfigBuilder& AddDependency(RenderPassType type);
@@ -36,6 +43,7 @@ namespace RB::Graphics
 		RenderPassConfig Build();
 
 	private:
+
 		RenderPassConfig m_Config;
 		uint32_t		 m_TotalDependencies;
 	};
@@ -61,14 +69,14 @@ namespace RB::Graphics
 		// lower quality for example. It can also do some preprocessing before the actual Render() call to, for example, 
 		// determine which RenderEntries this pass needs, so the RenderThread does not need to do this. But it can maybe 
 		// also determine if the pass needs to run at all even.
-		virtual RenderPassContext SubmitContext(ViewContext* view_context) = 0;
+		virtual RenderPassContext SubmitContext(ViewContext* view_context, const Entity::Scene* const scene) = 0;
 
 		// Executed on the render thread
-		//virtual void Render(RenderInterface* render_interface,
-		//					ViewContext* view_context,
-		//					RenderPassContext* context, 
-		//					RenderTexture** output_textures, 
-		//					RenderTexture** working_textures, 
-		//					RenderTexture** dependency_textures) = 0;
+		virtual void Render(RenderInterface* render_interface,
+							ViewContext* view_context,
+							RenderPassContext* context,
+							RenderResource** output_textures,
+							RenderResource** working_textures,
+							RenderResource** dependency_textures) = 0;
 	};
 }

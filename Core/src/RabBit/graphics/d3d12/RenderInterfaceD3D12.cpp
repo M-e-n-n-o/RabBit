@@ -4,6 +4,8 @@
 #include "resource/ResourceManager.h"
 #include "resource/RenderResourceD3D12.h"
 #include "resource/ResourceStateManager.h"
+#include "pipeline/Pipeline.h"
+#include "shaders/ShaderSystem.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
 
@@ -69,6 +71,64 @@ namespace RB::Graphics::D3D12
 		g_ResourceStateManager->FlushPendingTransitions(m_CommandList.Get());
 	}
 
+	void RenderInterfaceD3D12::SetRenderTarget(RenderTargetBundle* bundle)
+	{
+		uint32_t max_width = 0;
+		uint32_t max_height = 0;
+
+		D3D12_CPU_DESCRIPTOR_HANDLE color_handles[8];
+		
+		for (int i = 0; i < 8; ++i)
+		{
+			if (i < bundle->colorTargetsCount)
+			{
+				Texture2DD3D12* tex = (Texture2DD3D12*) bundle->colorTargets[i];
+				color_handles[i] = *tex->GetCpuHandle();
+
+				max_width = Math::Max(max_width, tex->GetWidth());
+				max_height = Math::Max(max_height, tex->GetHeight());
+
+				g_ResourceStateManager->TransitionResource((GpuResource*) tex->GetNativeResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+				m_RenderState.rtvFormats[i] = ConvertToDXGIFormat(tex->GetFormat());
+			}
+			else
+			{
+				m_RenderState.rtvFormats[i] = DXGI_FORMAT_UNKNOWN;
+			}
+		}
+
+		D3D12_CPU_DESCRIPTOR_HANDLE* depth_handle = nullptr;
+
+		Texture2D* depth_stencil = bundle->depthStencilTarget;
+		if (depth_stencil)
+		{
+			depth_handle = ((Texture2DD3D12*)depth_stencil)->GetCpuHandle();
+
+			// TODO Transition the depth stencil to the correct state
+
+			m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
+		}
+		
+		m_CommandList->OMSetRenderTargets(bundle->colorTargetsCount, color_handles, true, depth_handle);
+
+		m_RenderState.numRenderTargets = bundle->colorTargetsCount;
+
+		// Also set the scissor and rect
+		SetScissorRect(0, 0, LONG_MAX, LONG_MAX);
+		SetViewport(0, 0, max_width, max_height);
+	}
+
+	void RenderInterfaceD3D12::SetVertexShader(uint32_t shader_index)
+	{
+		m_RenderState.vsShader = shader_index;
+	}
+
+	void RenderInterfaceD3D12::SetPixelShader(uint32_t shader_index)
+	{
+		m_RenderState.psShader = shader_index;
+	}
+
 	void RenderInterfaceD3D12::SetNewCommandList()
 	{
 		m_CommandList = m_Queue->GetCommandList();
@@ -77,29 +137,136 @@ namespace RB::Graphics::D3D12
 	void RenderInterfaceD3D12::Clear(RenderResource* resource, const Math::Float4& color)
 	{
 		FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
-		m_CommandList->ClearRenderTargetView(((D3D12::Texture2DD3D12*)resource)->GetCpuHandle(), clear_color, 0, nullptr);
+		m_CommandList->ClearRenderTargetView(*((D3D12::Texture2DD3D12*)resource)->GetCpuHandle(), clear_color, 0, nullptr);
 	}
 
-	void RenderInterfaceD3D12::SetScissorRect(const Math::Int4& scissor_rect)
+	void RenderInterfaceD3D12::SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom)
 	{
 		D3D12_RECT rect = {};
-		rect.left	= scissor_rect.x;
-		rect.right	= scissor_rect.y;
-		rect.top	= scissor_rect.z;
-		rect.bottom = scissor_rect.w;
+		rect.left	= left;
+		rect.right	= right;
+		rect.top	= top;
+		rect.bottom = bottom;
 
 		m_CommandList->RSSetScissorRects(1, &rect);
 
-		m_RenderState.scissorSetExplicitly = true;
+		m_RenderState.scissorSet = true;
 	}
 
-	void RenderInterfaceD3D12::SetVertexBuffer(uint32_t slot, RenderResource* vertex_resource)
+	void RenderInterfaceD3D12::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+	{
+		D3D12_VIEWPORT viewport = {};
+		viewport.TopLeftX	= x;
+		viewport.TopLeftY	= y;
+		viewport.Width		= width;
+		viewport.Height		= height;
+		viewport.MinDepth	= D3D12_MIN_DEPTH;
+		viewport.MaxDepth	= D3D12_MAX_DEPTH;
+
+		m_CommandList->RSSetViewports(1, &viewport);
+
+		m_RenderState.viewportSet = true;
+	}
+
+	void RenderInterfaceD3D12::SetBlendMode(const BlendMode& mode)
+	{
+		D3D12_BLEND_DESC desc = {};
+
+		switch (mode)
+		{
+		case BlendMode::None:
+		{
+			desc.AlphaToCoverageEnable						= false;
+			desc.IndependentBlendEnable						= false;
+
+			for (int i = 0; i < _countof(desc.RenderTarget); ++i)
+			{
+				desc.RenderTarget[i].BlendEnable			= false;
+				desc.RenderTarget[i].LogicOpEnable			= false;
+				desc.RenderTarget[i].RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
+			}
+		}
+		break;
+
+		default:
+			RB_LOG_WARN(LOGTAG_GRAPHICS, "Did not yet implement this blend mode for the RenderInterfaceD3D12");
+			return;
+		}
+
+		m_RenderState.blendDesc = desc;
+		m_RenderState.blendingSet = true;
+	}
+
+	void RenderInterfaceD3D12::SetCullMode(const CullMode& mode)
+	{
+		D3D12_RASTERIZER_DESC desc = {};
+		desc.FillMode				= D3D12_FILL_MODE_SOLID;
+		desc.DepthClipEnable		= TRUE;
+		desc.FrontCounterClockwise	= FALSE;
+		desc.DepthBias				= D3D12_DEFAULT_DEPTH_BIAS;
+		desc.DepthBiasClamp			= D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+		desc.SlopeScaledDepthBias	= D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+		desc.MultisampleEnable		= FALSE;
+		desc.AntialiasedLineEnable	= FALSE;
+		desc.ForcedSampleCount		= 0;
+		desc.ConservativeRaster		= D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+		switch (mode)
+		{
+		case CullMode::None:  desc.CullMode = D3D12_CULL_MODE_NONE;  break;
+		case CullMode::Front: desc.CullMode = D3D12_CULL_MODE_FRONT; break;
+		case CullMode::Back:  desc.CullMode = D3D12_CULL_MODE_BACK;  break;
+
+		default:
+			RB_LOG_WARN(LOGTAG_GRAPHICS, "Did not yet implement this cull mode for the RenderInterfaceD3D12");
+			return;
+		}
+
+		m_RenderState.rasterizerSet = true;
+		m_RenderState.rasterizerDesc = desc;
+	}
+
+	void RenderInterfaceD3D12::SetDepthMode(const DepthMode& mode)
+	{
+		D3D12_DEPTH_STENCIL_DESC desc = {};
+		desc.StencilEnable					= FALSE;
+		desc.StencilReadMask				= 0;
+		desc.StencilWriteMask				= 0;
+		//desc.FrontFace.StencilFailOp		= ;
+		//desc.FrontFace.StencilDepthFailOp	= ;
+		//desc.FrontFace.StencilPassOp		= ;
+		//desc.FrontFace.StencilFunc		= ;
+		//desc.BackFace.StencilFailOp		= ;
+		//desc.BackFace.StencilDepthFailOp	= ;
+		//desc.BackFace.StencilPassOp		= ;
+		//desc.BackFace.StencilFunc			= ;
+
+		switch (mode)
+		{
+		case DepthMode::Disabled:
+		{
+			desc.DepthEnable	= FALSE;
+			desc.DepthWriteMask	= D3D12_DEPTH_WRITE_MASK_ZERO;
+			desc.DepthFunc		= D3D12_COMPARISON_FUNC_ALWAYS;
+		}
+		break;
+
+		default:
+			RB_LOG_WARN(LOGTAG_GRAPHICS, "Did not yet implement this depth mode for the RenderInterfaceD3D12");
+			return;
+		}
+
+		m_RenderState.depthStencilSet = true;
+		m_RenderState.depthStencilDesc = desc;
+	}
+
+	void RenderInterfaceD3D12::SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot)
 	{
 		RenderResource* resources[] = { vertex_resource };
-		SetVertexBuffers(slot, resources, 1);
+		SetVertexBuffers(resources, 1, slot);
 	}
 
-	void RenderInterfaceD3D12::SetVertexBuffers(uint32_t start_slot, RenderResource** vertex_resources, uint32_t resource_count)
+	void RenderInterfaceD3D12::SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot)
 	{
 		D3D12_VERTEX_BUFFER_VIEW* views = (D3D12_VERTEX_BUFFER_VIEW*)ALLOC_STACK(sizeof(D3D12_VERTEX_BUFFER_VIEW) * resource_count);
 
@@ -135,7 +302,19 @@ namespace RB::Graphics::D3D12
 		m_CommandList->IASetVertexBuffers(start_slot, resource_count, views);
 		m_CommandList->IASetPrimitiveTopology(type);
 
-		m_RenderState.vertexBufferSet = true;
+		VertexBufferD3D12* base_vbo = ((VertexBufferD3D12*)vertex_resources[0]);
+
+		m_RenderState.vertexCountPerInstance = base_vbo->GetVertexCountPerInstance();
+
+		switch (base_vbo->GetTopologyType())
+		{
+		case TopologyType::TriangleList: m_RenderState.vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; break;
+
+		default:
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Topology type not yet implemented");
+			m_RenderState.vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+			break;
+		}
 	}
 
 	void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dest)
@@ -194,6 +373,56 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DrawInternal()
 	{
+		#define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
+
+		CHECK_SET(m_RenderState.vertexBufferType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,"Cannot draw, vertex buffer was not set")
+		CHECK_SET(m_RenderState.numRenderTargets > 0,										"Cannot draw, vertex buffer was not set")
+		CHECK_SET(m_RenderState.scissorSet,													"Cannot draw, scissor was not set")
+		CHECK_SET(m_RenderState.viewportSet,												"Cannot draw, viewport was not set")
+		CHECK_SET(m_RenderState.vsShader >= 0 && m_RenderState.psShader >= 0,				"Cannot draw, vertex or pixel shader was not set yet")
+		CHECK_SET(m_RenderState.blendingSet,												"Cannot draw, blend mode was not set")
+		CHECK_SET(m_RenderState.rasterizerSet,												"Cannot draw, rasterizer was not set")
+		CHECK_SET(m_RenderState.depthStencilSet,											"Cannot draw, depth stencil was not set")
+			
+		#undef CHECK_SET
+
+		GPtr<ID3D12RootSignature> root_signature = g_PipelineManager->GetRootSignature(m_RenderState.vsShader, m_RenderState.psShader);
+		
+		List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader);
+
+		ShaderBlob* vs_blob = g_ShaderSystem->GetShaderBlob(m_RenderState.vsShader);
+		ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(m_RenderState.psShader);
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
+		pso_desc.pRootSignature			= root_signature.Get();
+		pso_desc.VS						= { vs_blob->shaderBlob, vs_blob->shaderBlobSize };
+		pso_desc.PS						= { ps_blob->shaderBlob, ps_blob->shaderBlobSize };
+		//pso_desc.DS					= ;
+		//pso_desc.HS					= ;
+		//pso_desc.GS					= ;
+		//pso_desc.StreamOutput			= ;
+		pso_desc.BlendState				= m_RenderState.blendDesc;
+		pso_desc.SampleMask				= UINT_MAX;
+		pso_desc.RasterizerState		= m_RenderState.rasterizerDesc;
+		pso_desc.DepthStencilState		= m_RenderState.depthStencilDesc;
+		pso_desc.InputLayout			= { input_elements.data(), (UINT) input_elements.size() };
+		//pso_desc.IBStripCutValue		= ;
+		pso_desc.PrimitiveTopologyType	= m_RenderState.vertexBufferType;
+		/*pso_desc.RTVFormats */		  memcpy(pso_desc.RTVFormats, m_RenderState.rtvFormats, sizeof(DXGI_FORMAT) * 8);
+		pso_desc.DSVFormat				= m_RenderState.dsvFormat;
+		pso_desc.SampleDesc				= { 1, 0 };
+		pso_desc.NodeMask				= 0;
+		//pso_desc.CachedPSO			= NULL;
+		pso_desc.Flags					= D3D12_PIPELINE_STATE_FLAG_NONE;
+
+		GPtr<ID3D12PipelineState> pso = g_PipelineManager->GetGraphicsPipeline(pso_desc, m_RenderState.vsShader, m_RenderState.psShader);
+
+		m_CommandList->SetPipelineState(pso.Get());
+		m_CommandList->SetGraphicsRootSignature(root_signature.Get());
+
+		FlushResourceBarriers();
+
+		m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, 0, 0);
 	}
 
 	void RenderInterfaceD3D12::DispatchInternal()

@@ -42,21 +42,27 @@ namespace RB::Graphics::D3D12
 		//void TransitionResource(RenderResource* resource, ResourceState state) override;
 		void FlushResourceBarriers() override;
 
-		//void SetVertexShader(uint32_t shader_index) override;
-		//void SetPixelShader(uint32_t shader_index) override;
+		void SetRenderTarget(RenderTargetBundle* bundle) override;
+
+		void SetVertexShader(uint32_t shader_index) override;
+		void SetPixelShader(uint32_t shader_index) override;
 
 		void Clear(RenderResource* resource, const Math::Float4& color) override;
 
-		void SetScissorRect(const Math::Int4& scissor_rect) override;
+		void SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom) override;
+		void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
 
-		void SetVertexBuffer(uint32_t slot, RenderResource* vertex_resource) override;
-		void SetVertexBuffers(uint32_t start_slot, RenderResource** vertex_resources, uint32_t resource_count) override;
+		void SetBlendMode(const BlendMode& mode) override;
+		void SetCullMode(const CullMode& mode) override;
+		void SetDepthMode(const DepthMode& mode) override;
+
+		void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot) override;
+		void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot) override;
 
 		void CopyResource(RenderResource* src, RenderResource* dest) override;
 
 		void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
-		// TODO CHECK IF ALL ESSENTIAL STATES ARE SET!!!
 		void DrawInternal() override;
 		void DispatchInternal() override;
 
@@ -73,8 +79,21 @@ namespace RB::Graphics::D3D12
 
 		struct RenderState
 		{
-			bool vertexBufferSet		= false;
-			bool scissorSetExplicitly	= false;
+			D3D12_PRIMITIVE_TOPOLOGY_TYPE	vertexBufferType		= D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+			uint32_t						vertexCountPerInstance	= 0;
+			bool							scissorSet				= false;
+			bool							viewportSet				= false;
+			uint32_t						numRenderTargets		= 0;
+			DXGI_FORMAT						rtvFormats[8];
+			DXGI_FORMAT						dsvFormat;
+			int32_t							vsShader				= -1;
+			int32_t							psShader				= -1;
+			bool							blendingSet				= false;
+			D3D12_BLEND_DESC				blendDesc				= {};
+			bool							rasterizerSet			= false;
+			D3D12_RASTERIZER_DESC			rasterizerDesc			= {};
+			bool							depthStencilSet			= false;
+			D3D12_DEPTH_STENCIL_DESC		depthStencilDesc		= {};
 		};
 
 		RenderState m_RenderState;

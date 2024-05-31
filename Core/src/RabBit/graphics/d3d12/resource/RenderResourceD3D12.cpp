@@ -5,9 +5,10 @@
 
 namespace RB::Graphics::D3D12
 {
-	VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint64_t data_size)
+	VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, uint32_t vertex_count_per_instance, void* data, uint64_t data_size)
 		: m_Name(name)
 		, m_Type(type)
+		, m_VertexCountPerInstance(vertex_count_per_instance)
 		, m_Size(data_size)
 		, m_Data(data)
 	{

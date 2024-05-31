@@ -1,11 +1,10 @@
 #pragma once
 #include "RabBitCommon.h"
 #include "GameObject.h"
+#include "ComponentRegister.h"
 
 namespace RB::Entity
 {
-	class ComponentRegister;
-
 	class Scene
 	{
 	public:
@@ -17,10 +16,10 @@ namespace RB::Entity
 
 		void UpdateScene();
 
-		List<GameObject*> GetGameObjects() const;
+		List<GameObject*> GetGameObjects();
 
 		template<class T>
-		List<const ObjectComponent*> GetComponentsWithTypeOf() const;
+		const List<const ObjectComponent*> GetComponentsWithTypeOf() const;
 
 	private:
 		List<GameObject*>  m_GameObjects;
@@ -28,11 +27,11 @@ namespace RB::Entity
 	};
 
 	template<class T>
-	inline List<const ObjectComponent*> Scene::GetComponentsWithTypeOf() const
+	inline const List<const ObjectComponent*> Scene::GetComponentsWithTypeOf() const
 	{
 		List<const ObjectComponent*> list;
 
-		ComponentID id = g_ComponentRegister->GetComponentID<T>();
+		ComponentID id = m_ComponentRegister->GetComponentID<T>();
 
 		if (id == -1)
 		{

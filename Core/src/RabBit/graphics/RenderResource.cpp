@@ -15,12 +15,12 @@ namespace RB::Graphics
 		return (RenderResourceType) primitive_type;
 	}
 
-	VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint64_t data_size)
+	VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, uint32_t vertex_count_per_instance, void* data, uint64_t data_size)
 	{
 		switch (Renderer::GetAPI())
 		{
 		case RenderAPI::D3D12:
-			return new D3D12::VertexBufferD3D12(name, type, data, data_size);
+			return new D3D12::VertexBufferD3D12(name, type, vertex_count_per_instance, data, data_size);
 		default:
 			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
 			break;

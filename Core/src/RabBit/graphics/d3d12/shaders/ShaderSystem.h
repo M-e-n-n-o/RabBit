@@ -14,9 +14,9 @@ namespace RB::Graphics::D3D12
 {
 	struct ShaderBlob
 	{
-		void*							m_ShaderBlob;
-		uint64_t						m_ShaderBlobSize;
-		GPtr<ID3D12ShaderReflection>	m_ReflectionData;
+		void*							shaderBlob;
+		uint64_t						shaderBlobSize;
+		GPtr<ID3D12ShaderReflection>	reflectionData;
 	};
 
 	class ShaderSystem

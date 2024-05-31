@@ -28,9 +28,9 @@ namespace RB::Graphics::D3D12
 			uint64_t end = SHADER_LUT[shader_index].offsetInFile + SHADER_LUT[shader_index].shaderBlobLength;
 
 			stream.seekg(start, std::ios::beg);
-			blob->m_ShaderBlobSize = end - start;
-			blob->m_ShaderBlob = new char[blob->m_ShaderBlobSize];
-			stream.read((char*)blob->m_ShaderBlob, blob->m_ShaderBlobSize);
+			blob->shaderBlobSize = end - start;
+			blob->shaderBlob = new char[blob->shaderBlobSize];
+			stream.read((char*)blob->shaderBlob, blob->shaderBlobSize);
 
 			// Read reflection blob
 			start = end;
@@ -45,10 +45,19 @@ namespace RB::Graphics::D3D12
 			stream.read((char*)reflection_data.Ptr, reflection_data.Size);
 
 			// Load reflection data
-			GPtr<ID3D12ShaderReflection> reflection;
-			RB_ASSERT_FATAL_RELEASE_D3D(m_DxcUtils->CreateReflection(&reflection_data, IID_PPV_ARGS(&reflection)), "Failed to load reflection data of shader: %d", shader_index);
+			RB_ASSERT_FATAL_RELEASE_D3D(m_DxcUtils->CreateReflection(&reflection_data, IID_PPV_ARGS(&blob->reflectionData)), "Failed to load reflection data of shader: %d", shader_index);
 
-			m_ShaderBlobs[shader_index] = blob;
+			delete[] reflection_data.Ptr;
+
+
+
+
+			D3D12_SIGNATURE_PARAMETER_DESC desc;
+			blob->reflectionData->GetInputParameterDesc(1, &desc);
+
+
+
+			RB_LOG(LOGTAG_GRAPHICS, "Register: %d", desc.Register);
 		}
 
 		stream.close();
@@ -60,6 +69,7 @@ namespace RB::Graphics::D3D12
 		{
 			if (m_ShaderBlobs[shader_index] != nullptr)
 			{
+				delete[] m_ShaderBlobs[shader_index]->shaderBlob;
 				delete m_ShaderBlobs[shader_index];
 			}
 		}

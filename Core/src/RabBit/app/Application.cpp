@@ -122,85 +122,85 @@ namespace RB
 	{
 		// TODO Move this all to a RenderPass
 
-		// Pipeline
-		{
-			UINT flags = D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
-#ifdef RB_CONFIG_DEBUG
-			flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION; // | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#endif
-
-			ShaderBlob* vs_blob = g_ShaderSystem->GetShaderBlob(VS_VertexColor);
-			ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(PS_VertexColor);
-
-			D3D12_ROOT_SIGNATURE_DESC signature_desc = {};
-			signature_desc.NumParameters		= 0;
-			signature_desc.pParameters			= nullptr;
-			signature_desc.NumStaticSamplers	= 0;
-			signature_desc.pStaticSamplers		= nullptr;
-			signature_desc.Flags				= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-			GPtr<ID3DBlob> root_signature_blob;
-			GPtr<ID3DBlob> error_blob;
-			RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeRootSignature(&signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &root_signature_blob, &error_blob), "Could not serialize root signature");
-
-			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&_RootSignature)), "Could not create root signature");
-
-			D3D12_BLEND_DESC blend_desc = {};
-			blend_desc.AlphaToCoverageEnable					= false;
-			blend_desc.IndependentBlendEnable					= false;
-			blend_desc.RenderTarget[0].BlendEnable				= false;
-			blend_desc.RenderTarget[0].LogicOpEnable			= false;
-			blend_desc.RenderTarget[0].RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
-
-			D3D12_INPUT_ELEMENT_DESC input_elements[] =
-			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0  },
-				{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 2, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-			};	
-
-			D3D12_RASTERIZER_DESC ras_desc = {};
-			ras_desc.FillMode				= D3D12_FILL_MODE_SOLID;
-			ras_desc.CullMode				= D3D12_CULL_MODE_NONE;
-			ras_desc.DepthClipEnable		= FALSE;
-			ras_desc.FrontCounterClockwise	= FALSE;
-			ras_desc.DepthBias				= D3D12_DEFAULT_DEPTH_BIAS;
-			ras_desc.DepthBiasClamp			= D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-			ras_desc.SlopeScaledDepthBias	= D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-			ras_desc.MultisampleEnable		= FALSE;
-			ras_desc.AntialiasedLineEnable	= FALSE;
-			ras_desc.ForcedSampleCount		= 0;
-			ras_desc.ConservativeRaster		= D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-
-			D3D12_DEPTH_STENCIL_DESC ds_desc = {};
-			ds_desc.DepthEnable				= FALSE;
-			ds_desc.DepthWriteMask			= D3D12_DEPTH_WRITE_MASK_ZERO;
-			ds_desc.DepthFunc				= D3D12_COMPARISON_FUNC_ALWAYS;
-			ds_desc.StencilEnable			= FALSE;
-			ds_desc.StencilReadMask			= 0;
-			ds_desc.StencilWriteMask		= 0;
-
-			D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
-			pso_desc.pRootSignature			= _RootSignature.Get();
-			pso_desc.VS						= { vs_blob->m_ShaderBlob, vs_blob->m_ShaderBlobSize };
-			pso_desc.PS						= { ps_blob->m_ShaderBlob, ps_blob->m_ShaderBlobSize };
-			//pso_desc.StreamOutput			= ;
-			pso_desc.BlendState				= blend_desc;
-			pso_desc.SampleMask				= UINT_MAX;
-			pso_desc.RasterizerState		= ras_desc;
-			pso_desc.DepthStencilState		= ds_desc;
-			pso_desc.InputLayout			= { input_elements, 2 };
-			//pso_desc.IBStripCutValue		= D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
-			pso_desc.PrimitiveTopologyType	= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-			pso_desc.NumRenderTargets		= 1;
-			pso_desc.RTVFormats[0]			= ConvertToDXGIFormat(GetPrimaryWindow()->GetBackBufferFormat());
-			pso_desc.DSVFormat				= DXGI_FORMAT_UNKNOWN;
-			pso_desc.SampleDesc				= { 1, 0 };
-			pso_desc.NodeMask				= 0;
-			//pso_desc.CachedPSO			= NULL;
-			pso_desc.Flags					= D3D12_PIPELINE_STATE_FLAG_NONE;
-
-			_Pso = g_PipelineManager->GetGraphicsPipeline(pso_desc);
-		}
+//		// Pipeline
+//		{
+//			UINT flags = D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
+//#ifdef RB_CONFIG_DEBUG
+//			flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION; // | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+//#endif
+//
+//			ShaderBlob* vs_blob = g_ShaderSystem->GetShaderBlob(VS_VertexColor);
+//			ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(PS_VertexColor);
+//
+//			D3D12_ROOT_SIGNATURE_DESC signature_desc = {};
+//			signature_desc.NumParameters		= 0;
+//			signature_desc.pParameters			= nullptr;
+//			signature_desc.NumStaticSamplers	= 0;
+//			signature_desc.pStaticSamplers		= nullptr;
+//			signature_desc.Flags				= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+//
+//			GPtr<ID3DBlob> root_signature_blob;
+//			GPtr<ID3DBlob> error_blob;
+//			RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeRootSignature(&signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &root_signature_blob, &error_blob), "Could not serialize root signature");
+//
+//			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&_RootSignature)), "Could not create root signature");
+//
+//			D3D12_BLEND_DESC blend_desc = {};
+//			blend_desc.AlphaToCoverageEnable					= false;
+//			blend_desc.IndependentBlendEnable					= false;
+//			blend_desc.RenderTarget[0].BlendEnable				= false;
+//			blend_desc.RenderTarget[0].LogicOpEnable			= false;
+//			blend_desc.RenderTarget[0].RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
+//
+//			D3D12_INPUT_ELEMENT_DESC input_elements[] =
+//			{
+//				{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0  },
+//				{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 2, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+//			};	
+//
+//			D3D12_RASTERIZER_DESC ras_desc = {};
+//			ras_desc.FillMode				= D3D12_FILL_MODE_SOLID;
+//			ras_desc.CullMode				= D3D12_CULL_MODE_NONE;
+//			ras_desc.DepthClipEnable		= FALSE;
+//			ras_desc.FrontCounterClockwise	= FALSE;
+//			ras_desc.DepthBias				= D3D12_DEFAULT_DEPTH_BIAS;
+//			ras_desc.DepthBiasClamp			= D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+//			ras_desc.SlopeScaledDepthBias	= D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+//			ras_desc.MultisampleEnable		= FALSE;
+//			ras_desc.AntialiasedLineEnable	= FALSE;
+//			ras_desc.ForcedSampleCount		= 0;
+//			ras_desc.ConservativeRaster		= D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+//
+//			D3D12_DEPTH_STENCIL_DESC ds_desc = {};
+//			ds_desc.DepthEnable				= FALSE;
+//			ds_desc.DepthWriteMask			= D3D12_DEPTH_WRITE_MASK_ZERO;
+//			ds_desc.DepthFunc				= D3D12_COMPARISON_FUNC_ALWAYS;
+//			ds_desc.StencilEnable			= FALSE;
+//			ds_desc.StencilReadMask			= 0;
+//			ds_desc.StencilWriteMask		= 0;
+//
+//			D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
+//			pso_desc.pRootSignature			= _RootSignature.Get();
+//			//pso_desc.VS						= { vs_blob->m_ShaderBlob, vs_blob->m_ShaderBlobSize };
+//			//pso_desc.PS						= { ps_blob->m_ShaderBlob, ps_blob->m_ShaderBlobSize };
+//			//pso_desc.StreamOutput			= ;
+//			pso_desc.BlendState				= blend_desc;
+//			pso_desc.SampleMask				= UINT_MAX;
+//			pso_desc.RasterizerState		= ras_desc;
+//			pso_desc.DepthStencilState		= ds_desc;
+//			pso_desc.InputLayout			= { input_elements, 2 };
+//			//pso_desc.IBStripCutValue		= D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
+//			pso_desc.PrimitiveTopologyType	= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+//			pso_desc.NumRenderTargets		= 1;
+//			pso_desc.RTVFormats[0]			= ConvertToDXGIFormat(GetPrimaryWindow()->GetBackBufferFormat());
+//			pso_desc.DSVFormat				= DXGI_FORMAT_UNKNOWN;
+//			pso_desc.SampleDesc				= { 1, 0 };
+//			pso_desc.NodeMask				= 0;
+//			//pso_desc.CachedPSO			= NULL;
+//			pso_desc.Flags					= D3D12_PIPELINE_STATE_FLAG_NONE;
+//
+//			//_Pso = g_PipelineManager->GetGraphicsPipeline(pso_desc);
+//		}
 
 		// VAO
 		//{

@@ -25,19 +25,10 @@ int main(int argc, char* argv[])
 {
 	LOGW(L"---------------- Starting RabBit's D3D12 shader compiler ----------------");
 
-	std::string shader_files_dir;
 	std::string shader_bin_dir;
 
 	for (int i = 0; i < argc; i++)
 	{
-		if (std::strstr("-shadersDir", argv[i]))
-		{
-			if (i + 1 < argc)
-			{
-				shader_files_dir = argv[i + 1];
-			}
-		}
-
 		if (std::strstr("-shadersBin", argv[i]))
 		{
 			if (i + 1 < argc)
@@ -47,12 +38,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (shader_files_dir.empty())
-	{
-		LOGW(L"Did not find the shader files directory from the launch arguments, using default");
-		shader_files_dir = RB_SHADER_SOURCE;
-	}
-
+	std::string shader_files_dir = RB_SHADER_SOURCE;
 	LOGW(L"Shader files directory: " << shader_files_dir.c_str());
 
 	if (shader_bin_dir.empty())
@@ -80,7 +66,7 @@ int main(int argc, char* argv[])
 	LOGW(L"");
 
 	ShaderWriter writer;
-	writer.WriteOutShaders(shader_files_dir, shader_bin_dir, compiler.GetCompiledShaders());
+	writer.WriteOutShaders(RB_GRAPHICS_FOLDER, shader_files_dir, shader_bin_dir, compiler.GetCompiledShaders());
 
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");

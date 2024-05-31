@@ -2,9 +2,11 @@
 
 #include "ResourceState.h"
 
+// If you get an error that this file cannot be found, run the ShaderCompiler project for the graphics API you are using
+#include "codeGen/ShaderDefines.h"
+
 namespace RB::Math
 {
-	struct Int4;
 	struct Float4;
 }
 
@@ -14,6 +16,24 @@ namespace RB::Graphics
 
 	class RenderResource;
 	class RenderInterface;
+	class RenderTargetBundle;
+
+	enum class BlendMode
+	{
+		None
+	};
+
+	enum class CullMode
+	{
+		None,
+		Front,
+		Back
+	};
+
+	enum class DepthMode
+	{
+		Disabled,
+	};
 
 	class RIExecutionGuard
 	{
@@ -43,19 +63,22 @@ namespace RB::Graphics
 		//virtual void TransitionResource(RenderResource* resource, ResourceState state) = 0;
 		virtual void FlushResourceBarriers() = 0;
 
-		//virtual void SetVertexShader(uint32_t shader_index) = 0;
-		//virtual void SetPixelShader(uint32_t shader_index) = 0;
+		virtual void SetVertexShader(uint32_t shader_index) = 0;
+		virtual void SetPixelShader(uint32_t shader_index) = 0;
 
 		virtual void Clear(RenderResource* resource, const Math::Float4& color) = 0;
 
-		virtual void SetScissorRect(const Math::Int4& scissor_rect) = 0;
+		virtual void SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom) = 0;
+		virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
 
-		// ALSO SET THE VIEWPORT (AND SCISSOR IN THIS CALL IF THEY HAVE NOT YET BEEN EXPLICITELY SET)!!!
-		//virtual void SetRenderTarget(uint32_t slot, RenderResource* render_target) = 0;
-		//virtual void SetRenderTargets(uint32_t start_slot, RenderResource** render_targets) = 0;
+		virtual void SetRenderTarget(RenderTargetBundle* bundle) = 0;
 
-		virtual void SetVertexBuffer(uint32_t slot, RenderResource* vertex_resource) = 0;
-		virtual void SetVertexBuffers(uint32_t start_slot, RenderResource** vertex_resources, uint32_t resource_count) = 0;
+		virtual void SetBlendMode(const BlendMode& mode) = 0;
+		virtual void SetCullMode(const CullMode& mode) = 0;
+		virtual void SetDepthMode(const DepthMode& mode) = 0;
+
+		virtual void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot = 0) = 0;
+		virtual void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot = 0) = 0;
 
 		virtual void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) = 0;
 

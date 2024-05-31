@@ -25,6 +25,7 @@
 
 #include "Core.h"
 
+#include "utils/Util.h"
 #include "utils/String.h"
 #include "utils/Container.h"
 #include "utils/Memory.h"

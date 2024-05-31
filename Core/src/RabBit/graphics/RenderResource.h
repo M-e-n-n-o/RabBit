@@ -94,12 +94,13 @@ namespace RB::Graphics
 	{
 	public:
 		virtual ~VertexBuffer() = default;
-		
+
 		RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
+		virtual uint32_t GetVertexCountPerInstance() const = 0;
 		virtual TopologyType GetTopologyType() const = 0;
 
-		static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint64_t data_size);
+		static VertexBuffer* Create(const char* name, const TopologyType& type, uint32_t vertex_count_per_instance, void* data, uint64_t data_size);
 
 	protected:
 		VertexBuffer(): Buffer(RenderResourceType::VertexBuffer) {}
@@ -138,11 +139,10 @@ namespace RB::Graphics
 		Texture2D(): Texture(RenderResourceType::Texture2D) {}
 	};
 
-	class RenderTargetBundle
+	struct RenderTargetBundle
 	{
-	public:
-		// 0 - 8
-		virtual Texture GetColorTarget(uint32_t index) = 0;
-		virtual Texture GetDepthStencilTarget() = 0;
+		Texture2D* colorTargets[8];
+		uint32_t   colorTargetsCount;
+		Texture2D* depthStencilTarget;
 	};
 }

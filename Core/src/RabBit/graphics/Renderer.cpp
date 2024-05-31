@@ -2,6 +2,7 @@
 #include "RabBitCommon.h"
 #include "Renderer.h"
 #include "RenderInterface.h"
+#include "RenderPass.h"
 #include "app/Application.h"
 #include "graphics/Window.h"
 #include "input/events/WindowEvent.h"
@@ -11,7 +12,7 @@
 
 #include <atomic>
 
-
+#include "passes/GBuffer.h"
 
 #include "entity/components/Mesh.h"
 #include "d3d12/GraphicsDevice.h"
@@ -33,7 +34,6 @@ namespace RB::Graphics
 		: EventListener(kEventCat_Window)
 		, m_IsShutdown(true)
 	{
-
 	}
 
 	void Renderer::Init()
@@ -65,6 +65,12 @@ namespace RB::Graphics
 
 		m_SharedContext->performanceFreqMs = double(li.QuadPart) / 1000.0;
 
+		// Set the render passes
+		m_SharedContext->totalPasses = 1;
+		m_SharedContext->renderPasses = (RenderPass**) ALLOC_HEAP(sizeof(RenderPass*) * m_SharedContext->totalPasses);
+		m_SharedContext->renderPasses[0] = new GBufferPass();
+
+		// Spawn the thread
 		DWORD id;
 		m_RenderThread = CreateThread(NULL, 0, RenderLoop, (PVOID)m_SharedContext, 0, &id);
 		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_RenderThread != 0, "Failed to create render thread");
@@ -89,6 +95,12 @@ namespace RB::Graphics
 		WaitForMultipleObjects(1, &m_RenderThread, TRUE, INFINITE);
 		CloseHandle(m_RenderThread);
 
+		for (int i = 0; i < m_SharedContext->totalPasses; ++i)
+		{
+			delete m_SharedContext->renderPasses[i];
+		}
+		SAFE_FREE(m_SharedContext->renderPasses);
+
 		delete m_SharedContext->graphicsInterface;
 		delete m_SharedContext->copyInterface;
 		delete m_SharedContext;
@@ -96,15 +108,19 @@ namespace RB::Graphics
 
 	void Renderer::SubmitFrameContext(const Entity::Scene* const scene)
 	{
-		// Retrieve all camera's with a valid output location and create ViewContexts for them
-		// Then, for every view context, get the RenderPassContext from each RenderPass
+		uint64_t data_size = sizeof(RenderPassContext) * m_SharedContext->totalPasses;
 
-		void* view_contexts = new uint8_t(1); // <- Make sure to allocate this on the heap using new, not malloc!
+		RenderPassContext* contexts = (RenderPassContext*)ALLOC_HEAP(data_size);
+
+		for (int i = 0; i < m_SharedContext->totalPasses; ++i)
+		{
+			contexts[i] = m_SharedContext->renderPasses[i]->SubmitContext(nullptr, scene);
+		}
 
 		RenderTask data;
 		data.hasTask	= true;
-		data.data		= view_contexts;
-		data.dataSize	= sizeof(view_contexts);
+		data.data		= contexts;
+		data.dataSize	= data_size;
 
 		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
 
@@ -168,7 +184,7 @@ namespace RB::Graphics
 		// If there was a previous task here already with some data, delete and overwrite
 		if (task.hasTask && task.dataSize > 0)
 		{
-			SAFE_DELETE(task.data);
+			SAFE_FREE(task.data);
 		}
 
 		m_SharedContext->renderTasks[task_type] = task_data;
@@ -308,7 +324,7 @@ namespace RB::Graphics
 
 					// Reset the render task
 					context->renderTasks[task_type].hasTask = false;
-					SAFE_DELETE(context->renderTasks[task_type].data);
+					SAFE_FREE(context->renderTasks[task_type].data);
 					context->renderTasks[task_type].dataSize = 0;
 				}
 
@@ -364,85 +380,136 @@ namespace RB::Graphics
 						WakeConditionVariable(&context->streamingKickCV);
 					}
 
-					// Render
+					Graphics::Window* window = Application::GetInstance()->GetPrimaryWindow();
+
+					if (window && window->IsValid() && !window->IsMinimized())
+					{
+						GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
+
+						Texture2D* back_buffer = window->GetCurrentBackBuffer();
+
+						uint64_t value = window->GetCurrentBackBufferIndex();
+						if (_FenceValues[value])
+						{
+							_FenceValues[value]->WaitUntilFinishedRendering();
+						}
+
+						// Clear the backbuffer
+						{
+							RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
+
+							context->graphicsInterface->Clear(back_buffer, { 0.0f, 0.1f, 0.1f, 0.0f });
+						}
+
+						RenderPassContext* contexts = (RenderPassContext*)render_data[task_type];
+
+						// Render the different passes
+						for (int i = 0; i < context->totalPasses; ++i)
+						{
+							RB_PROFILE_GPU_SCOPED(command_list.Get(), "Pass");
+
+							context->renderPasses[i]->Render(context->graphicsInterface, nullptr, &contexts[i], (RenderResource**) &back_buffer, nullptr, nullptr);
+
+							context->graphicsInterface->InvalidateState();
+						}
+
+						// Present
+						{
+							//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
+
+							CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+								((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
+								D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
+							);
+
+							((D3D12::GpuResource*)back_buffer->GetNativeResource())->UpdateState(D3D12_RESOURCE_STATE_PRESENT);
+
+							command_list->ResourceBarrier(1, &barrier);
+
+							uint64_t value = window->GetCurrentBackBufferIndex();
+							_FenceValues[value] = context->graphicsInterface->ExecuteOnGpu();
+
+							window->Present(VsyncMode::On);
+						}
+					}
 
 					// Present
 
-					{
-						Graphics::Window* window = Application::GetInstance()->GetPrimaryWindow();
+					//{
+					//	Graphics::Window* window = Application::GetInstance()->GetPrimaryWindow();
 
-						if (window && window->IsValid() && !window->IsMinimized())
-						{
-							auto back_buffer = window->GetCurrentBackBuffer();
+					//	if (window && window->IsValid() && !window->IsMinimized())
+					//	{
+					//		auto back_buffer = window->GetCurrentBackBuffer();
 
-							GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
+					//		GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
 
-							// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
-							uint64_t value = window->GetCurrentBackBufferIndex();
-							//D3D12::g_GraphicsDevice->GetGraphicsQueue()->CpuWaitForFenceValue(_FenceValues[value]);
-							if (_FenceValues[value])
-							{
-								_FenceValues[value]->WaitUntilFinishedRendering();
-							}
+					//		// Because we directly want to use the backbuffer, first make sure it is not being used by a previous frame anymore on the GPU by waiting on the fence
+					//		uint64_t value = window->GetCurrentBackBufferIndex();
+					//		//D3D12::g_GraphicsDevice->GetGraphicsQueue()->CpuWaitForFenceValue(_FenceValues[value]);
+					//		if (_FenceValues[value])
+					//		{
+					//			_FenceValues[value]->WaitUntilFinishedRendering();
+					//		}
 
 
-							// Clear the render target
-							{
-								RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
+					//		// Clear the render target
+					//		{
+					//			RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
-								CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-									((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
-									D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
-								);
+					//			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+					//				((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
+					//				D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
+					//			);
 
-								command_list->ResourceBarrier(1, &barrier);
+					//			command_list->ResourceBarrier(1, &barrier);
 
-								FLOAT clear_color[] = { 0.0f, 0.1f, 0.1f, 0.0f };
+					//			FLOAT clear_color[] = { 0.0f, 0.1f, 0.1f, 0.0f };
 
-								command_list->ClearRenderTargetView(((D3D12::Texture2DD3D12*)back_buffer)->GetCpuHandle(), clear_color, 0, nullptr);
-							}
+					//			command_list->ClearRenderTargetView(*((D3D12::Texture2DD3D12*)back_buffer)->GetCpuHandle(), clear_color, 0, nullptr);
+					//		}
 
-							// Draw
-							//{
-							//	RB_PROFILE_GPU_SCOPED(command_list.Get(), "Draw");
+					//		// Draw
+					//		//{
+					//		//	RB_PROFILE_GPU_SCOPED(command_list.Get(), "Draw");
 
-							//	command_list->SetPipelineState(_Pso.Get());
-							//	command_list->SetGraphicsRootSignature(_RootSignature.Get());
+					//		//	command_list->SetPipelineState(_Pso.Get());
+					//		//	command_list->SetGraphicsRootSignature(_RootSignature.Get());
 
-							//	// Input assembly
-							//	command_list->IASetVertexBuffers(0, 1, &_VaoView);
-							//	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+					//		//	// Input assembly
+					//		//	command_list->IASetVertexBuffers(0, 1, &_VaoView);
+					//		//	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-							//	// Rasterizer state
-							//	command_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
-							//	command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
+					//		//	// Rasterizer state
+					//		//	command_list->RSSetScissorRects(1, &CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX));
+					//			//command_list->RSSetViewports(1, &CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight())));
 
-							//	// Output merger
-							//	command_list->OMSetRenderTargets(1, &((Texture2DD3D12*)back_buffer)->GetCpuHandle(), true, nullptr);
+					//		//	// Output merger
+					//		//	command_list->OMSetRenderTargets(1, &((Texture2DD3D12*)back_buffer)->GetCpuHandle(), true, nullptr);
 
-							//	command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
-							//}
+					//		//	command_list->DrawInstanced(sizeof(_VertexData) / (sizeof(float) * 5), 1, 0, 0);
+					//		//}
 
-							// Present
-							{
-								//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
+					//		// Present
+					//		{
+					//			//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
 
-								CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-									((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
-									D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
-								);
+					//			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+					//				((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
+					//				D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
+					//			);
 
-								command_list->ResourceBarrier(1, &barrier);
+					//			command_list->ResourceBarrier(1, &barrier);
 
-								uint64_t value = window->GetCurrentBackBufferIndex();
-								//_FenceValues[value] = D3D12::g_GraphicsDevice->GetGraphicsQueue()->ExecuteCommandList(command_list);
-								_FenceValues[value] = context->graphicsInterface->ExecuteOnGpu();
+					//			uint64_t value = window->GetCurrentBackBufferIndex();
+					//			//_FenceValues[value] = D3D12::g_GraphicsDevice->GetGraphicsQueue()->ExecuteCommandList(command_list);
+					//			_FenceValues[value] = context->graphicsInterface->ExecuteOnGpu();
 
-								window->Present(VsyncMode::On);
-							}
+					//			window->Present(VsyncMode::On);
+					//		}
 
-						}
-					}
+					//	}
+					//}
 
 					/*
 						Rendering flow:
@@ -501,7 +568,7 @@ namespace RB::Graphics
 					break;
 				}
 
-				SAFE_FREE( render_data[task_type]);
+				SAFE_FREE(render_data[task_type]);
 			}
 
 			if (stop)
@@ -559,27 +626,34 @@ namespace RB::Graphics
 			// Do resource management/streaming
 			{
 				/*
-				 
-					!!!!! RESOURCE STREAMING THREAD SHOULD ONLY SCHEDULE THINGS ON THE COPY INTERFACE, NO GRAPHICS STUFF !!!!!!
-				
+					!!!!! RESOURCE STREAMING THREAD SHOULD ONLY SCHEDULE THINGS ON THE COPY INTERFACE, NO GRAPHICS STUFF !!!!!! 
+
+					(Slowly) Upload needed resources for next frame, like new vertex data or textures.
+					Constantly check if the main thread is waiting until this task is done, if so, finish uploading only the most crucial resources 
+					and then stop (so textures are not completely crucial, as we can use the lower mips as fallback, or even white textures).
+					Maybe an idea to give this task always a minimum amount of time to let it upload resources, because when maybe the main thread
+					is not doing a lot, this task will not get a lot of time actually uploading stuff.
+
+					Make sure to put a GPU wait after uploading the last resource of the task!
 				*/
 
 
-				//context->sharedRenderStreamingData
+				static_assert(false);
+				/*
+					HOE GAAN WE NU ALLEEN DE VERTEX DATA UPLOADEN???					
+				
+					- Eigenlijkt wil je de resource streaming kicken wanneeer SubmitFrameContext wordt aangeroepen (dus niet meer verbonden aan render thread
+					- Dan gaat de main thread gewoon langs alle RenderPasses om de contexten te submitten
+					- En dan kan de resource streaming alle benodigde dingen gaan doen (en krijgt het van de main thread de Scene)
+					- En dan synced de main thread met de streaming thread en gaat het pas naar het volgende frame als de streaming klaar is (op de CPU alleen natuurlijk)
+					- Dan ook alleen nog ff nadenken over hoeveel de streaming thread in 1x mag gaan doen? Moet het gelijk stoppen als de main thread op een sync wacht? Moet het een minimum aantal sowieso doen?
+
+					De resource streaming zal misschien wel in een andere klasse moeten gaan om het netjes te houden
+				*/
 
 
 				//case Renderer::RenderThreadTaskType::ResourceManagement:
 				//{
-				//	/*
-				//		(Slowly) Upload needed resources for next frame, like new vertex data or textures.
-				//		Constantly check if the main thread is waiting until this task is done, if so, finish uploading only the most crucial resources 
-				//		and then stop (so textures are not completely crucial, as we can use the lower mips as fallback, or even white textures).
-				//		Maybe an idea to give this task always a minimum amount of time to let it upload resources, because when maybe the main thread
-				//		is not doing a lot, this task will not get a lot of time actually uploading stuff.
-
-				//		Make sure to put a GPU wait after uploading the last resource of the task!
-				//	*/
-
 				//	const Entity::Scene* const scene = (Entity::Scene*)r->m_RenderTaskData;
 
 				//	static List<const Entity::Mesh*> already_uploaded;
