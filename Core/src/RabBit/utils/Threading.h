@@ -40,6 +40,8 @@ namespace RB
 		void		Sync(JobID job_id);
 		void		SyncAll();
 
+		bool		IsStalled(uint32_t stall_threshold_ms, JobID& out_id);
+
 		void		Cancel(JobID job_id);
 		void		CancelAll();
 
@@ -74,6 +76,9 @@ namespace RB
 			CONDITION_VARIABLE	completedCV;
 			CRITICAL_SECTION	completedCS;
 
+			uint64_t			counterStart;
+
+			JobID				currentJob;
 			List<Job>			pendingJobs;
 			uint32_t			highPriorityInsertIndex;
 			uint64_t			startedJobsCount;
@@ -89,6 +94,7 @@ namespace RB
 		HANDLE					m_ThreadHandle;
 		SharedContext*			m_SharedContext;
 		List<JobType>			m_JobTypes;
+		double					m_PerformanceFreqMs;
 
 		friend DWORD WINAPI WorkerThreadLoop(PVOID param);
 	};

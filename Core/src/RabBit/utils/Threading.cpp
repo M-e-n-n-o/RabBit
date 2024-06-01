@@ -7,13 +7,23 @@ namespace RB
 
 	WorkerThread::WorkerThread(const wchar_t* name, const ThreadPriority& priority)
 	{
+		LARGE_INTEGER li;
+		if (!QueryPerformanceFrequency(&li))
+		{
+			RB_LOG_ERROR(LOGTAG_MAIN, "Could not retrieve value from QueryPerformanceFrequency");
+		}
+
+		m_PerformanceFreqMs = double(li.QuadPart) / 1000.0;
+
 		m_SharedContext = new SharedContext();
 		m_SharedContext->name					 = name;
 		m_SharedContext->state					 = ThreadState::Idle;
+		m_SharedContext->currentJob				 = 0;
 		m_SharedContext->pendingJobs			 = {};
 		m_SharedContext->highPriorityInsertIndex = 0;
 		m_SharedContext->startedJobsCount		 = 0;
-		m_SharedContext->syncCompleted			= false;
+		m_SharedContext->syncCompleted			 = false;
+		m_SharedContext->counterStart			 = 0;
 
 		InitializeConditionVariable(&m_SharedContext->kickCV);
 		InitializeConditionVariable(&m_SharedContext->syncCV);
@@ -204,6 +214,30 @@ namespace RB
 		LeaveCriticalSection(&m_SharedContext->syncCS);
 	}
 
+	bool WorkerThread::IsStalled(uint32_t stall_threshold_ms, JobID& out_id)
+	{
+		EnterCriticalSection(&m_SharedContext->kickCS);
+		ThreadState state		  = m_SharedContext->state;
+		uint64_t	counter_start = m_SharedContext->counterStart;
+		JobID		current_job	  = m_SharedContext->currentJob;
+		LeaveCriticalSection(&m_SharedContext->kickCS);
+
+		if (state != ThreadState::Idle)
+		{
+			LARGE_INTEGER li;
+			QueryPerformanceCounter(&li);
+
+			if ((double(li.QuadPart - counter_start) / m_PerformanceFreqMs) > stall_threshold_ms)
+			{
+				RB_LOG(LOGTAG_MAIN, "Detected stall in thread: %s", m_SharedContext->name);
+				out_id = current_job;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	void WorkerThread::Cancel(JobID job_id)
 	{
 		EnterCriticalSection(&m_SharedContext->kickCS);
@@ -257,6 +291,11 @@ namespace RB
 			{
 				EnterCriticalSection(&context->kickCS);
 
+				// Reset the timer
+				context->counterStart = 0;
+
+				context->currentJob = 0;
+
 				// Only start waiting if there are no more jobs pending
 				if (context->pendingJobs.empty())
 				{
@@ -294,8 +333,15 @@ namespace RB
 				context->startedJobsCount++;
 				context->highPriorityInsertIndex = Math::Max((int)context->highPriorityInsertIndex - 1, 0);
 
+				context->currentJob = current_job.id;
+
 				// Refresh our state
 				context->state = WorkerThread::ThreadState::Running;
+
+				// Start timer
+				LARGE_INTEGER li;
+				QueryPerformanceCounter(&li);
+				context->counterStart = li.QuadPart;
 
 				LeaveCriticalSection(&context->kickCS);
 			}
