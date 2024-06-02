@@ -145,10 +145,13 @@ namespace RB
 
 		auto high_prio_itr = m_SharedContext->pendingJobs.begin() + m_SharedContext->highPriorityInsertIndex;
 
-		// Move the job to last place of the high priority queue
-		itr = std::rotate(itr, itr + 1, high_prio_itr);
+		if (itr > high_prio_itr)
+		{
+			// Move the job to last place of the high priority queue
+			std::rotate(high_prio_itr, itr, itr + 1);
 
-		m_SharedContext->highPriorityInsertIndex++;
+			m_SharedContext->highPriorityInsertIndex++;
+		}
 
 		LeaveCriticalSection(&m_SharedContext->kickCS);
 	}
@@ -229,7 +232,6 @@ namespace RB
 
 			if ((double(li.QuadPart - counter_start) / m_PerformanceFreqMs) > stall_threshold_ms)
 			{
-				RB_LOG(LOGTAG_MAIN, "Detected stall in thread: %s", m_SharedContext->name);
 				out_id = current_job;
 				return true;
 			}

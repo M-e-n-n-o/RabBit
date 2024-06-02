@@ -268,6 +268,8 @@ namespace RB::Graphics::D3D12
 
 	void WindowD3D12::DestroyWindow()
 	{
+		// The actual window gets destroyed when deleting the Window object, this should be done by the main thread
+
 		g_GraphicsDevice->WaitUntilIdle();
 
 		RB_LOG(LOGTAG_WINDOWING, "Scheduled destroy of window");

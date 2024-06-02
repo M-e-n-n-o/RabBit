@@ -343,7 +343,7 @@ namespace RB::Graphics::D3D12
 		if (itr > high_prio_itr)
 		{
 			// Make the resource high priority if not done already
-			itr = std::rotate(itr, itr + 1, high_prio_itr);
+			itr = std::rotate(high_prio_itr, itr, itr + 1);
 			m_HighPriorityInsertIndex++;
 		}
 
