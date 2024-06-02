@@ -4,6 +4,7 @@
 #include "GpuResource.h"
 #include "graphics/d3d12/DeviceQueue.h"
 #include "graphics/RenderInterface.h"
+#include "utils/Threading.h"
 
 #include <d3d12.h>
 
@@ -58,29 +59,30 @@ namespace RB::Graphics::D3D12
 			Vertex
 		};
 
-		struct ResourceDesc
+		struct ResourceCreationDesc
 		{
 			ResourceType	type;
 			GpuResource*	resource;
 			const wchar_t*	name;
 			uint64_t		size;
+
+			~ResourceCreationDesc()
+			{
+				delete[] name;
+			}
 		};
 
-		List<ResourceDesc*> m_ScheduledCreations;
-		uint32_t			m_HighPriorityInsertIndex;
+		struct Scheduled
+		{
+			GpuResource* resource;
+			JobID		 jobID;
+		};
 
-		void ScheduleCreate(ResourceDesc* desc);
+		WorkerThread*		m_CreationThread;
+		JobTypeID			m_CreationJob;
+		List<Scheduled>		m_ScheduledCreations;
 
-		uint64_t			m_CreatedResources;
-
-		HANDLE				m_ResourceCreationThread;
-		CONDITION_VARIABLE	m_KickCV;
-		CRITICAL_SECTION	m_SyncCS;
-		CONDITION_VARIABLE	m_DoneCV;
-		CRITICAL_SECTION	m_DoneCS;
-		bool				m_KickedThread;
-
-		extern friend DWORD WINAPI ResourceThread(PVOID param);
+		extern friend void CreationJob(JobData* data);
 	};
 
 	extern ResourceManager* g_ResourceManager;

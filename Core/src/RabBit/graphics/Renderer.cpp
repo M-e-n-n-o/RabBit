@@ -27,8 +27,11 @@ using namespace RB::Input::Events;
 
 namespace RB::Graphics
 {
-	DWORD WINAPI RenderLoop(PVOID param);
-	DWORD WINAPI ResourceStreamLoop(PVOID param);
+	//DWORD WINAPI RenderLoop(PVOID param);
+	//DWORD WINAPI ResourceStreamLoop(PVOID param);
+
+	void RenderJob(JobData* data);
+	void EventJob(JobData* data);
 
 	Renderer::Renderer()
 		: EventListener(kEventCat_Window)
@@ -40,42 +43,58 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = false;
 
-		m_SharedContext	= new SharedRenderThreadContext();
-		m_SharedContext->graphicsInterface	= RenderInterface::Create(false);
-		m_SharedContext->copyInterface		= RenderInterface::Create(true);
-		m_SharedContext->renderState		= ThreadState::Idle;
-		m_SharedContext->OnRenderFrameStart = std::bind(&Renderer::OnFrameStart, this);
-		m_SharedContext->OnRenderFrameEnd	= std::bind(&Renderer::OnFrameEnd, this);
-		m_SharedContext->ProcessEvents		= std::bind(&Renderer::ProcessEvents, this);
-		m_SharedContext->SyncWithGpu		= std::bind(&Renderer::SyncWithGpu, this);
-		m_SharedContext->renderFrameIndex	= 0;
+		m_CopyInterface		= RenderInterface::Create(true);
+		m_GraphicsInterface = RenderInterface::Create(false);
 
-		for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
-		{
-			m_SharedContext->renderTasks[task_type] = {};
-			m_SharedContext->renderTasks[task_type].data = nullptr;
-			m_SharedContext->renderTasks[task_type].dataSize = 0;
-		}
+		m_RenderThread = new WorkerThread(L"Render Thread", ThreadPriority::High);
 
-		LARGE_INTEGER li;
-		if (!QueryPerformanceFrequency(&li))
-		{
-			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not retrieve value from QueryPerformanceFrequency");
-		}
+		m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
+		m_EventJobType  = m_RenderThread->AddJobType(&EventJob,  true);
 
-		m_SharedContext->performanceFreqMs = double(li.QuadPart) / 1000.0;
+		m_RenderFrameIndex = 0;
+		InitializeCriticalSection(&m_RenderFrameIndexCS);
 
 		// Set the render passes
-		m_SharedContext->totalPasses = 1;
-		m_SharedContext->renderPasses = (RenderPass**) ALLOC_HEAP(sizeof(RenderPass*) * m_SharedContext->totalPasses);
-		m_SharedContext->renderPasses[0] = new GBufferPass();
+		m_TotalPasses = 1;
+		m_RenderPasses = (RenderPass**) ALLOC_HEAP(sizeof(RenderPass*) * m_TotalPasses);
+		m_RenderPasses[0] = new GBufferPass();
 
-		// Spawn the thread
-		DWORD id;
-		m_RenderThread = CreateThread(NULL, 0, RenderLoop, (PVOID)m_SharedContext, 0, &id);
-		RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_RenderThread != 0, "Failed to create render thread");
-		SetThreadDescription(m_RenderThread, L"Render Thread");
-		SetThreadPriority(m_RenderThread, THREAD_PRIORITY_HIGHEST);
+		//m_SharedContext	= new SharedRenderThreadContext();
+		//m_SharedContext->graphicsInterface	= RenderInterface::Create(false);
+		//m_SharedContext->copyInterface		= RenderInterface::Create(true);
+		//m_SharedContext->renderState		= ThreadState::Idle;
+		//m_SharedContext->OnRenderFrameStart = std::bind(&Renderer::OnFrameStart, this);
+		//m_SharedContext->OnRenderFrameEnd	= std::bind(&Renderer::OnFrameEnd, this);
+		//m_SharedContext->ProcessEvents		= std::bind(&Renderer::ProcessEvents, this);
+		//m_SharedContext->SyncWithGpu		= std::bind(&Renderer::SyncWithGpu, this);
+		//m_SharedContext->renderFrameIndex	= 0;
+
+		//for (uint8_t task_type = 0; task_type < Renderer::RenderThreadTaskType::Count; ++task_type)
+		//{
+		//	m_SharedContext->renderTasks[task_type] = {};
+		//	m_SharedContext->renderTasks[task_type].data = nullptr;
+		//	m_SharedContext->renderTasks[task_type].dataSize = 0;
+		//}
+
+		//LARGE_INTEGER li;
+		//if (!QueryPerformanceFrequency(&li))
+		//{
+		//	RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not retrieve value from QueryPerformanceFrequency");
+		//}
+
+		//m_SharedContext->performanceFreqMs = double(li.QuadPart) / 1000.0;
+
+		//// Set the render passes
+		//m_SharedContext->totalPasses = 1;
+		//m_SharedContext->renderPasses = (RenderPass**) ALLOC_HEAP(sizeof(RenderPass*) * m_SharedContext->totalPasses);
+		//m_SharedContext->renderPasses[0] = new GBufferPass();
+
+		//// Spawn the thread
+		//DWORD id;
+		//m_RenderThread = CreateThread(NULL, 0, RenderLoop, (PVOID)m_SharedContext, 0, &id);
+		//RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, m_RenderThread != 0, "Failed to create render thread");
+		//SetThreadDescription(m_RenderThread, L"Render Thread");
+		//SetThreadPriority(m_RenderThread, THREAD_PRIORITY_HIGHEST);
 	}
 
 	Renderer::~Renderer()
@@ -90,75 +109,137 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = true;
 
-		SendRenderThreadTask(RenderThreadTaskType::Stop, GetDummyTask());
+		// Blocks until render thread is completely idle
+		delete m_RenderThread;
 
-		WaitForMultipleObjects(1, &m_RenderThread, TRUE, INFINITE);
-		CloseHandle(m_RenderThread);
+		SyncWithGpu();
 
-		for (int i = 0; i < m_SharedContext->totalPasses; ++i)
+		for (int i = 0; i < m_TotalPasses; ++i)
 		{
-			delete m_SharedContext->renderPasses[i];
+			delete m_RenderPasses[i];
 		}
-		SAFE_FREE(m_SharedContext->renderPasses);
+		SAFE_FREE(m_RenderPasses);
 
-		delete m_SharedContext->graphicsInterface;
-		delete m_SharedContext->copyInterface;
-		delete m_SharedContext;
+		DeleteCriticalSection(&m_RenderFrameIndexCS);
+
+		delete m_GraphicsInterface;
+		delete m_CopyInterface;
+
+		//SendRenderThreadTask(RenderThreadTaskType::Stop, GetDummyTask());
+
+		//WaitForMultipleObjects(1, &m_RenderThread, TRUE, INFINITE);
+		//CloseHandle(m_RenderThread);
+
+		//for (int i = 0; i < m_SharedContext->totalPasses; ++i)
+		//{
+		//	delete m_SharedContext->renderPasses[i];
+		//}
+		//SAFE_FREE(m_SharedContext->renderPasses);
+
+		//delete m_SharedContext->graphicsInterface;
+		//delete m_SharedContext->copyInterface;
+		//delete m_SharedContext;
 	}
 
 	void Renderer::SubmitFrameContext(const Entity::Scene* const scene)
 	{
-		uint64_t data_size = sizeof(RenderPassContext) * m_SharedContext->totalPasses;
+		// Will be deleted after the render job has been completed
+		RenderPassContext* contexts = (RenderPassContext*) ALLOC_HEAP(sizeof(RenderPassContext) * m_TotalPasses);
 
-		RenderPassContext* contexts = (RenderPassContext*)ALLOC_HEAP(data_size);
-
-		for (int i = 0; i < m_SharedContext->totalPasses; ++i)
+		// Gather the contexts from all render passes
+		for (int i = 0; i < m_TotalPasses; ++i)
 		{
-			contexts[i] = m_SharedContext->renderPasses[i]->SubmitContext(nullptr, scene);
+			contexts[i] = m_RenderPasses[i]->SubmitContext(nullptr, scene);
 		}
 
-		RenderTask data;
-		data.hasTask	= true;
-		data.data		= contexts;
-		data.dataSize	= data_size;
-
-		SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
-
-		// Also submit a new request to handle new window events
-		SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTask());
-
-		// Sync with the renderer if it is stalling
+		// Schedule a render job (overwrites the previous render job if not yet picked up)
 		{
-			EnterCriticalSection(&m_SharedContext->renderKickCS);
-			ThreadState render_state  = m_SharedContext->renderState;
-			uint64_t	counter_start = m_SharedContext->renderCounterStart;
-			LeaveCriticalSection(&m_SharedContext->renderKickCS);
+			RenderContext* context = new RenderContext();
+			context->renderPasses		= m_RenderPasses;
+			context->renderPassContexts = contexts;
+			context->totalPasses		= m_TotalPasses;
+			context->graphicsInterface	= m_GraphicsInterface;
+			context->copyInterface		= m_CopyInterface;
+			context->renderFrameIndex	= &m_RenderFrameIndex;
+			context->renderFrameIndexCS = &m_RenderFrameIndexCS;
+			context->OnRenderFrameStart	= std::bind(&Renderer::OnFrameStart, this);
+			context->OnRenderFrameEnd	= std::bind(&Renderer::OnFrameEnd, this);
+			context->SyncWithGpu		= std::bind(&Renderer::SyncWithGpu, this);
 
-			if (render_state != ThreadState::Idle)
-			{
-				LARGE_INTEGER li;
-				QueryPerformanceCounter(&li);
-
-				if ((double(li.QuadPart - counter_start) / m_SharedContext->performanceFreqMs) > m_SharedContext->renderThreadTimeoutMs)
-				{
-					RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
-					SyncRenderer(false);
-				}
-			}
+			m_RenderThread->ScheduleJob(m_RenderJobType, context);
 		}
+
+		// Schedule an event handling job
+		{
+			EventContext* context = new EventContext();
+			context->ProcessEvents = std::bind(&Renderer::ProcessEvents, this);
+
+			m_RenderThread->ScheduleJob(m_EventJobType, context);
+		}
+
+		// Sync with the render thread on a stall
+		JobID stalling_job;
+		if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job))
+		{
+			RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
+			SyncRenderer(false);
+		}
+
+		
+
+		//uint64_t data_size = sizeof(RenderPassContext) * m_SharedContext->totalPasses;
+
+		//RenderPassContext* contexts = (RenderPassContext*)ALLOC_HEAP(data_size);
+
+		//for (int i = 0; i < m_SharedContext->totalPasses; ++i)
+		//{
+		//	contexts[i] = m_SharedContext->renderPasses[i]->SubmitContext(nullptr, scene);
+		//}
+
+		//RenderTask data;
+		//data.hasTask	= true;
+		//data.data		= contexts;
+		//data.dataSize	= data_size;
+
+		//SendRenderThreadTask(RenderThreadTaskType::RenderFrame, data);
+
+		//// Also submit a new request to handle new window events
+		//SendRenderThreadTask(RenderThreadTaskType::HandleEvents, GetDummyTask());
+
+		//// Sync with the renderer if it is stalling
+		//{
+		//	EnterCriticalSection(&m_SharedContext->renderKickCS);
+		//	ThreadState render_state  = m_SharedContext->renderState;
+		//	uint64_t	counter_start = m_SharedContext->renderCounterStart;
+		//	LeaveCriticalSection(&m_SharedContext->renderKickCS);
+
+		//	if (render_state != ThreadState::Idle)
+		//	{
+		//		LARGE_INTEGER li;
+		//		QueryPerformanceCounter(&li);
+
+		//		if ((double(li.QuadPart - counter_start) / m_SharedContext->performanceFreqMs) > m_SharedContext->renderThreadTimeoutMs)
+		//		{
+		//			RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
+		//			SyncRenderer(false);
+		//		}
+		//	}
+		//}
 	}
 
 	void Renderer::SyncRenderer(bool gpu_sync)
 	{
-		// Sync with render thread
-		EnterCriticalSection(&m_SharedContext->renderSyncCS);
+		m_RenderThread->SyncAll();
 
-		while (m_SharedContext->renderState != ThreadState::Idle)
-		{
-			SleepConditionVariableCS(&m_SharedContext->renderSyncCV, &m_SharedContext->renderSyncCS, INFINITE);
-		}
+		//// Sync with render thread
+		//EnterCriticalSection(&m_SharedContext->renderSyncCS);
 
-		LeaveCriticalSection(&m_SharedContext->renderSyncCS);
+		//while (m_SharedContext->renderState != ThreadState::Idle)
+		//{
+		//	SleepConditionVariableCS(&m_SharedContext->renderSyncCV, &m_SharedContext->renderSyncCS, INFINITE);
+		//}
+
+		//LeaveCriticalSection(&m_SharedContext->renderSyncCS);
 
 		if (gpu_sync)
 		{
@@ -168,9 +249,9 @@ namespace RB::Graphics
 
 	uint64_t Renderer::GetRenderFrameIndex() const
 	{
-		EnterCriticalSection(&m_SharedContext->renderFrameIndexCS);
-		uint64_t index = m_SharedContext->renderFrameIndex;
-		LeaveCriticalSection(&m_SharedContext->renderFrameIndexCS);
+		EnterCriticalSection(&m_RenderFrameIndexCS);
+		uint64_t index = m_RenderFrameIndex;
+		LeaveCriticalSection(&m_RenderFrameIndexCS);
 
 		return index;
 	}

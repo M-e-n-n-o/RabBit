@@ -29,18 +29,18 @@ namespace RB
 
 		// If overwritable is true, only 1 of this type of job can be scheduled at a time.
 		// So, if a job is scheduled that is already in the queue, the old job will be overwritten.
-		JobTypeID	AddJobType(JobFunction* function, bool overwritable = false);
+		JobTypeID	AddJobType(JobFunction function, bool overwritable = false);
 
-		// Job data will be free'd after finished/being overwritten
+		// Job data will be deleted after finished/being overwritten (so allocate JobData with new!!)
 		JobID		ScheduleJob(JobTypeID type_id, JobData* data);
 
 		void		PrioritizeJob(JobID job_id);
 
 		bool		IsFinished(JobID job_id);
+		bool		IsStalling(uint32_t stall_threshold_ms, JobID& out_id);
+
 		void		Sync(JobID job_id);
 		void		SyncAll();
-
-		bool		IsStalled(uint32_t stall_threshold_ms, JobID& out_id);
 
 		void		Cancel(JobID job_id);
 		void		CancelAll();
@@ -87,7 +87,7 @@ namespace RB
 
 		struct JobType
 		{
-			JobFunction*		function;
+			JobFunction			function;
 			bool				overwritable;
 		};
 

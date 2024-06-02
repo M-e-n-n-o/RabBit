@@ -68,7 +68,7 @@ namespace RB
 		delete m_SharedContext;
 	}
 
-	JobTypeID WorkerThread::AddJobType(JobFunction* function, bool overwritable)
+	JobTypeID WorkerThread::AddJobType(JobFunction function, bool overwritable)
 	{
 		JobType type = {};
 		type.function		= function;
@@ -95,7 +95,7 @@ namespace RB
 
 		Job job = {};
 		job.id		 = m_SharedContext->startedJobsCount + m_SharedContext->pendingJobs.size();
-		job.function = type.function;
+		job.function = &type.function;
 		job.data	 = data;
 
 		if (type.overwritable)
@@ -113,7 +113,7 @@ namespace RB
 			else
 			{
 				// Job data is overwritten
-				SAFE_FREE(itr->data);
+				SAFE_DELETE(itr->data);
 				itr->data = data;
 
 				job.id = itr->id;
@@ -189,7 +189,7 @@ namespace RB
 		
 		LeaveCriticalSection(&m_SharedContext->kickCS);
 
-		// Sync
+		// Sync wait until the wait_for task has been started and completed
 		{
 			EnterCriticalSection(&m_SharedContext->completedCS);
 
@@ -217,7 +217,7 @@ namespace RB
 		LeaveCriticalSection(&m_SharedContext->syncCS);
 	}
 
-	bool WorkerThread::IsStalled(uint32_t stall_threshold_ms, JobID& out_id)
+	bool WorkerThread::IsStalling(uint32_t stall_threshold_ms, JobID& out_id)
 	{
 		EnterCriticalSection(&m_SharedContext->kickCS);
 		ThreadState state		  = m_SharedContext->state;
@@ -252,7 +252,7 @@ namespace RB
 			return;
 		}
 
-		SAFE_FREE(itr->data);
+		SAFE_DELETE(itr->data);
 		m_SharedContext->pendingJobs.erase(itr);
 
 		LeaveCriticalSection(&m_SharedContext->kickCS);
@@ -264,7 +264,7 @@ namespace RB
 
 		for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
 		{
-			SAFE_FREE(m_SharedContext->pendingJobs[i].data);
+			SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
 		}
 		m_SharedContext->pendingJobs.clear();
 
@@ -351,7 +351,7 @@ namespace RB
 			// Do the job
 			{
 				(*current_job.function)(current_job.data);
-				SAFE_FREE(current_job.data);
+				SAFE_DELETE(current_job.data);
 			}
 
 			// Notify that we are done with a job
