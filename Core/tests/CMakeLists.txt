@@ -4,30 +4,28 @@ file(GLOB_RECURSE TEST_SRC_FILES CONFIGURE_DEPENDS
 )
 
 include(GoogleTest)
-add_executable(Test ${TEST_SRC_FILES})
+add_executable(EngineTest ${TEST_SRC_FILES})
 
 # Link RabBit & GoogleTest
-target_include_directories(Test PUBLIC 
+target_include_directories(EngineTest PUBLIC 
     "../src" 
     "../src/RabBit"
 )
-target_link_directories(Test PUBLIC 
+target_link_directories(EngineTest PUBLIC 
     RabBit
 )
-target_link_libraries(Test PRIVATE
+target_link_libraries(EngineTest PRIVATE
     RabBit
     gtest
 )
 
-gtest_discover_tests(Test
+gtest_discover_tests(EngineTest
     DISCOVERY_TIMEOUT
         240
 )
 
 # Add post build command to copy RabBit library to build location
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_custom_command(TARGET Test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:RabBit>/RabBit.lib"
-            $<TARGET_FILE_DIR:Test>)
-endif()
+add_custom_command(TARGET EngineTest POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE_DIR:RabBit>/RabBit.lib"
+        $<TARGET_FILE_DIR:EngineTest>)

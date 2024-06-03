@@ -2,9 +2,9 @@ name: Build & Tests
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "development" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "development" ]
 
 env:
   BUILD_CONFIG_DIST:    MinSizeRel
@@ -27,10 +27,16 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Distribution
-    - name: Distribution build
+    - name: Build shader compiler
+      run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DIST}}
+
+    - name: Run shader compiler
+      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\MinSizeRel\ShaderCompilerD3D12.exe -shadersBin ${{github.workspace}}\out\Sample\MinSizeRel
+
+    - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DIST}}
 
-    - name: Distribution tests
+    - name: Tests
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
 
@@ -50,10 +56,16 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Release
-    - name: Distribution build
+    - name: Build shaders
+      run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_RELEASE}}
+
+    - name: Run shader compiler
+      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\Release\ShaderCompilerD3D12.exe -shadersBin ${{github.workspace}}\out\Sample\Release
+
+    - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_RELEASE}}
 
-    - name: Distribution tests
+    - name: Tests
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
 
@@ -73,9 +85,15 @@ jobs:
       run: cmake -B ${{github.workspace}}/out
 
     # Debug
-    - name: Distribution build
+    - name: Build shaders
+      run: cmake --build ${{github.workspace}}/out --target ShaderCompilerD3D12 --config ${{env.BUILD_CONFIG_DEBUG}}
+    
+    - name: Run shader compiler
+      run: ${{github.workspace}}\out\Core\shaderCompiler\d3d12\Debug\ShaderCompilerD3D12.exe -shadersBin ${{github.workspace}}\out\Sample\Debug
+
+    - name: Build
       run: cmake --build ${{github.workspace}}/out --config ${{env.BUILD_CONFIG_DEBUG}}
 
-    - name: Distribution tests
+    - name: Tests
       working-directory: ${{github.workspace}}/out/Core/tests
       run: ctest
