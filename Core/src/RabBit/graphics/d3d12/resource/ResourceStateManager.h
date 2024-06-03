@@ -8,6 +8,7 @@ namespace RB::Graphics::D3D12
 {
     class GpuResource;
 
+	// TODO Make this class thread safe
 	class ResourceStateManager
 	{
 	public:

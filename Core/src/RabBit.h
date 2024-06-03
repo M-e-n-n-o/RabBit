@@ -60,4 +60,8 @@
 #include "RabBit/entity/GameObject.h"
 #include "RabBit/entity/components/Mesh.h"
 
+#include "RabBit/input/Input.h"
+#include "RabBit/input/KeyCodes.h"
+#include "RabBit/input/MouseCodes.h"
+
 #include "RabBit/math/Vector.h"

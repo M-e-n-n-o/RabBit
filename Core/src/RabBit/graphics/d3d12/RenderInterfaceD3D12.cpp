@@ -105,7 +105,7 @@ namespace RB::Graphics::D3D12
 		{
 			depth_handle = ((Texture2DD3D12*)depth_stencil)->GetCpuHandle();
 
-			// TODO Transition the depth stencil to the correct state
+			g_ResourceStateManager->TransitionResource((GpuResource*) depth_stencil->GetNativeResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
 			m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
 		}
