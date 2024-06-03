@@ -15,6 +15,13 @@ namespace RB::Graphics::D3D12
 
 		RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandQueue(&desc, IID_PPV_ARGS(&m_CommandQueue)), "Could not create command queue");
 
+		switch (type)
+		{
+		case D3D12_COMMAND_LIST_TYPE_DIRECT:  m_CommandQueue->SetName(L"Direct Queue"); break;
+		case D3D12_COMMAND_LIST_TYPE_COMPUTE: m_CommandQueue->SetName(L"Compute Queue"); break;
+		case D3D12_COMMAND_LIST_TYPE_COPY:    m_CommandQueue->SetName(L"Copy Queue"); break;
+		}
+
 		CreateFence();
 	}
 

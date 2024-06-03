@@ -18,7 +18,6 @@ namespace RB::Graphics
 
 	class RenderInterface;
 	class RenderPass;
-	struct RenderPassContext;
 
 	// Fully static class
 	class Renderer : public Input::Events::EventListener
@@ -35,7 +34,7 @@ namespace RB::Graphics
 		// Sync with the render thread (and optionally also wait until GPU is idle)
 		void SyncRenderer(bool gpu_sync = false);
 
-		uint64_t GetRenderFrameIndex() const;
+		uint64_t GetRenderFrameIndex();
 
 		// Also syncs with the render thread and GPU
 		void Shutdown();
@@ -52,84 +51,11 @@ namespace RB::Graphics
 
 		virtual void SyncWithGpu() = 0;
 
-	public:
-		//enum class ThreadState
-		//{
-		//	Idle,
-		//	Running,
-		//	Terminated
-		//};
-
-		//enum RenderThreadTaskType : uint8_t
-		//{
-		//	Stop,
-		//	RenderFrame,
-		//	HandleEvents,
-
-		//	Count
-		//};
-
-		//struct RenderTask
-		//{
-		//	bool hasTask;
-		//	void* data;
-		//	uint64_t dataSize;
-		//};
-
-		struct RenderContext
-		{
-			RenderPass**			renderPasses;
-			RenderPassContext*		renderPassContexts;
-			uint32_t				totalPasses;
-
-			//ThreadState			renderState;
-			//CONDITION_VARIABLE	renderKickCV;
-			//CRITICAL_SECTION	renderKickCS;
-			//CONDITION_VARIABLE	renderSyncCV;
-			//CRITICAL_SECTION	renderSyncCS;
-
-			//const uint32_t		renderThreadTimeoutMs = 500;
-			//double				performanceFreqMs;
-			//uint64_t			renderCounterStart;
-
-			//HANDLE				streamingThread;
-			//ThreadState			streamingState;
-			//CONDITION_VARIABLE	streamingKickCV;
-			//CRITICAL_SECTION	streamingKickCS;
-			//CONDITION_VARIABLE	streamingSyncCV;
-			//CRITICAL_SECTION	streamingSyncCS;
-
-			//RenderTask			renderTasks[RenderThreadTaskType::Count];
-			//void*				sharedRenderStreamingData;
-
-			RenderInterface*		copyInterface;
-			RenderInterface*		graphicsInterface;
-
-			uint64_t*				renderFrameIndex;
-			CRITICAL_SECTION*		renderFrameIndexCS;
-
-			std::function<void()>	OnRenderFrameStart;
-			std::function<void()>	OnRenderFrameEnd;
-			std::function<void()>	SyncWithGpu;
-
-			~RenderContext()
-			{
-				SAFE_FREE(renderPassContexts);
-			}
-		};
-
-		struct EventContext
-		{
-			std::function<void()> ProcessEvents;
-		};
-
 	private:
+		void StreamResources(const Entity::Scene* const scene);
+
 		// Should only be called from the render thread!
 		void OnEvent(Input::Events::Event& event) override;
-
-		//void SendRenderThreadTask(RenderThreadTaskType task_type, const RenderTask& task);
-
-		//RenderTask GetDummyTask();
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 
@@ -138,8 +64,8 @@ namespace RB::Graphics
 		JobTypeID			m_RenderJobType;
 		JobTypeID			m_EventJobType;
 
-		RenderInterface*	m_GraphicsInterface;
-		RenderInterface*	m_CopyInterface;
+		RenderInterface*	m_GraphicsInterface; // Used by the render passes
+		RenderInterface*	m_CopyInterface;	 // Used for resource streaming 
 		RenderPass**		m_RenderPasses;
 		uint32_t			m_TotalPasses;
 
@@ -147,9 +73,5 @@ namespace RB::Graphics
 		CRITICAL_SECTION	m_RenderFrameIndexCS;
 
 		const uint32_t		m_RenderThreadTimeoutMs = 500;
-
-
-		//HANDLE						m_RenderThread;
-		//SharedRenderThreadContext*	m_SharedContext;
 	};
 }

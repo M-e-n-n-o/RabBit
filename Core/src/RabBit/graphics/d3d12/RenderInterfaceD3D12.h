@@ -69,7 +69,6 @@ namespace RB::Graphics::D3D12
 		GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
 	private:
-		bool ValidateResource(RenderResource* res);
 		void SetNewCommandList();
 		void InternalCopyBuffer(GpuResource* src, GpuResource* dest);
 

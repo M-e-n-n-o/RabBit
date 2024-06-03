@@ -22,11 +22,12 @@ namespace RB
 		m_SharedContext->pendingJobs			 = {};
 		m_SharedContext->highPriorityInsertIndex = 0;
 		m_SharedContext->startedJobsCount		 = 0;
-		m_SharedContext->syncCompleted			 = false;
+		m_SharedContext->jobCompleted			 = false;
 		m_SharedContext->counterStart			 = 0;
 
 		InitializeConditionVariable(&m_SharedContext->kickCV);
 		InitializeConditionVariable(&m_SharedContext->syncCV);
+		InitializeConditionVariable(&m_SharedContext->startedCV);
 		InitializeConditionVariable(&m_SharedContext->completedCV);
 		InitializeCriticalSection(&m_SharedContext->kickCS);
 		InitializeCriticalSection(&m_SharedContext->syncCS);
@@ -79,7 +80,7 @@ namespace RB
 		return m_JobTypes.size() - 1;
 	}
 
-	JobID WorkerThread::ScheduleJob(JobTypeID type_id, JobData* data)
+	JobID WorkerThread::ScheduleJob(JobTypeID type_id, Shared<JobData> data)
 	{
 		if (type_id < 0 || type_id > m_JobTypes.size() - 1)
 		{
@@ -113,9 +114,7 @@ namespace RB
 			else
 			{
 				// Job data is overwritten
-				SAFE_DELETE(itr->data);
 				itr->data = data;
-
 				job.id = itr->id;
 			}
 		}
@@ -162,7 +161,7 @@ namespace RB
 
 		auto itr = FindJobBy(job_id);
 
-		if (itr == m_SharedContext->pendingJobs.end())
+		if (itr == m_SharedContext->pendingJobs.end() && m_SharedContext->currentJob != job_id)
 		{
 			LeaveCriticalSection(&m_SharedContext->kickCS);
 			return true;
@@ -177,28 +176,37 @@ namespace RB
 	{
 		EnterCriticalSection(&m_SharedContext->kickCS);
 
-		auto itr = FindJobBy(job_id);
-
-		if (itr == m_SharedContext->pendingJobs.end())
+		if (job_id != m_SharedContext->currentJob)
 		{
-			LeaveCriticalSection(&m_SharedContext->kickCS);
-			return;
+			auto itr = FindJobBy(job_id);
+
+			if (itr == m_SharedContext->pendingJobs.end())
+			{
+				LeaveCriticalSection(&m_SharedContext->kickCS);
+				return;
+			}
+
+			uint64_t wait_for = m_SharedContext->startedJobsCount + std::distance(m_SharedContext->pendingJobs.begin(), itr) + 1;
+
+			// Sleep until the job we are waiting for has started
+			while (m_SharedContext->startedJobsCount < wait_for)
+			{
+				SleepConditionVariableCS(&m_SharedContext->startedCV, &m_SharedContext->kickCS, INFINITE);
+			}
 		}
 
-		uint64_t wait_for = m_SharedContext->startedJobsCount + (std::distance(m_SharedContext->pendingJobs.begin(), itr) + 1);
-		
 		LeaveCriticalSection(&m_SharedContext->kickCS);
 
-		// Sync wait until the wait_for task has been started and completed
+		// Wait until the task has been completed
 		{
 			EnterCriticalSection(&m_SharedContext->completedCS);
 
-			do
-			{
-				m_SharedContext->syncCompleted = false;
-				SleepConditionVariableCS(&m_SharedContext->completedCV, &m_SharedContext->completedCS, INFINITE);
+			m_SharedContext->jobCompleted = false;
 
-			} while (m_SharedContext->startedJobsCount < wait_for || !m_SharedContext->syncCompleted);
+			while (!m_SharedContext->jobCompleted)
+			{
+				SleepConditionVariableCS(&m_SharedContext->completedCV, &m_SharedContext->completedCS, INFINITE);
+			}
 
 			LeaveCriticalSection(&m_SharedContext->completedCS);
 		}
@@ -252,7 +260,6 @@ namespace RB
 			return;
 		}
 
-		SAFE_DELETE(itr->data);
 		m_SharedContext->pendingJobs.erase(itr);
 
 		LeaveCriticalSection(&m_SharedContext->kickCS);
@@ -262,10 +269,6 @@ namespace RB
 	{
 		EnterCriticalSection(&m_SharedContext->kickCS);
 
-		for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
-		{
-			SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
-		}
 		m_SharedContext->pendingJobs.clear();
 
 		LeaveCriticalSection(&m_SharedContext->kickCS);
@@ -283,7 +286,7 @@ namespace RB
 	{
 		WorkerThread::SharedContext* context = (WorkerThread::SharedContext*) param;
 
-		RB_LOG(LOGTAG_MAIN, "Started worker thread: %s", context->name);
+		RB_LOG(LOGTAG_MAIN, "Started worker thread: %ws", context->name);
 
 		while (true)
 		{
@@ -346,18 +349,20 @@ namespace RB
 				context->counterStart = li.QuadPart;
 
 				LeaveCriticalSection(&context->kickCS);
+
+				// Notify we have started a new job
+				WakeConditionVariable(&context->startedCV);
 			}
 
 			// Do the job
 			{
 				(*current_job.function)(current_job.data);
-				SAFE_DELETE(current_job.data);
 			}
 
 			// Notify that we are done with a job
 			{
 				EnterCriticalSection(&context->completedCS);
-				context->syncCompleted = true;
+				context->jobCompleted = true;
 				LeaveCriticalSection(&context->completedCS);
 				WakeConditionVariable(&context->completedCV);
 			}

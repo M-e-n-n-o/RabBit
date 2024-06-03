@@ -56,4 +56,8 @@
 
 #include "RabBit/app/Application.h"
 
+#include "RabBit/entity/Scene.h"
+#include "RabBit/entity/GameObject.h"
+#include "RabBit/entity/components/Mesh.h"
+
 #include "RabBit/math/Vector.h"

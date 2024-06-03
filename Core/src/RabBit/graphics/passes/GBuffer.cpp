@@ -9,12 +9,23 @@
 
 namespace RB::Graphics
 {
+	struct GBufferEntry : public RenderPassEntry
+	{
+		VertexBuffer**  buffers;
+		uint32_t		totalBuffers;
+
+		~GBufferEntry()
+		{
+			delete buffers;
+		}
+	};
+
 	RenderPassConfig GBufferPass::GetConfiguration()
 	{
 		return RenderPassConfigBuilder(RenderPassType::GBuffer, false).Build();
 	}
 
-	RenderPassContext GBufferPass::SubmitContext(ViewContext* view_context, const Entity::Scene* const scene)
+	Shared<RenderPassEntry> GBufferPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene)
 	{
 		auto meshes = scene->GetComponentsWithTypeOf<Entity::Mesh>();
 
@@ -25,14 +36,14 @@ namespace RB::Graphics
 			buffers[i] = ((const Entity::Mesh*)meshes[i])->GetVertexBuffer();
 		}
 
-		RenderPassContext context = {};
-		context.entries		= buffers;
-		context.entryCount	= meshes.size();
+		Shared<GBufferEntry> entry = CreateShared<GBufferEntry>();
+		entry->buffers = buffers;
+		entry->totalBuffers = meshes.size();
 
-		return context;
+		return entry;
 	}
 
-	void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, RenderPassContext* context, 
+	void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, Shared<RenderPassEntry> entry_context,
 		RenderResource** output_textures, RenderResource** working_textures, RenderResource** dependency_textures)
 	{
 		render_interface->SetVertexShader(VS_VertexColor);
@@ -49,15 +60,15 @@ namespace RB::Graphics
 
 		render_interface->SetRenderTarget(&bundle);
 
-		for (int i = 0; i < context->entryCount; ++i)
+		Shared<GBufferEntry> entry = CastShared<GBufferEntry>(entry_context);
+
+		for (int i = 0; i < entry->totalBuffers; ++i)
 		{
-			VertexBuffer* buffer = ((VertexBuffer**)context->entries)[i];
+			VertexBuffer* buffer = entry->buffers[i];
 
 			render_interface->SetVertexBuffer(buffer);
 
 			render_interface->Draw();
 		}
-
-		SAFE_FREE(context->entries);
 	}
 }

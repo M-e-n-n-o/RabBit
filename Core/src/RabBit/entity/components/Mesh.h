@@ -10,17 +10,20 @@ namespace RB::Entity
 	public:
 		DEFINE_COMP_TAG("Mesh");
 
+		float m_Data[15];
+
 		Mesh()
 		{
-			float data[] =
-			{
+			float data[] = {
 				// Pos				Color
 				-0.5f, -0.5f,		1, 0, 0,
 				0, 0.5f,			0, 1, 0,
 				0.5f, -0.5f,		0, 0, 1,
 			};
 
-			m_VertexBuffer = Graphics::VertexBuffer::Create("Triangle", RB::Graphics::TopologyType::TriangleList, 5, data, sizeof(data));
+			memcpy(m_Data, data, sizeof(data));
+
+			m_VertexBuffer = Graphics::VertexBuffer::Create("Triangle", RB::Graphics::TopologyType::TriangleList, m_Data, sizeof(float) * 5, sizeof(m_Data));
 		}
 
 		~Mesh()

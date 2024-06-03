@@ -36,7 +36,7 @@ namespace RB::Graphics::D3D12
 		, m_RenderState()
 	{
 		if (allow_only_copy_operations)
-			m_Queue = g_GraphicsDevice->GetComputeQueue();
+			m_Queue = g_GraphicsDevice->GetCopyQueue();
 		else
 			m_Queue = g_GraphicsDevice->GetGraphicsQueue();
 
@@ -115,7 +115,7 @@ namespace RB::Graphics::D3D12
 		m_RenderState.numRenderTargets = bundle->colorTargetsCount;
 
 		// Also set the scissor and rect
-		SetScissorRect(0, 0, LONG_MAX, LONG_MAX);
+		SetScissorRect(0, LONG_MAX, 0, LONG_MAX);
 		SetViewport(0, 0, max_width, max_height);
 	}
 
@@ -136,6 +136,9 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::Clear(RenderResource* resource, const Math::Float4& color)
 	{
+		g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+		FlushResourceBarriers();
+
 		FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
 		m_CommandList->ClearRenderTargetView(*((D3D12::Texture2DD3D12*)resource)->GetCpuHandle(), clear_color, 0, nullptr);
 	}
@@ -280,11 +283,6 @@ namespace RB::Graphics::D3D12
 				return;
 			}
 
-			if (!ValidateResource(vertex_resources[res_idx]))
-			{
-				RB_LOG_WARN(LOGTAG_GRAPHICS, "Vertex buffer was not valid yet when calling SetVertexBuffer, so it probably does not contain any data right now");
-			}
-
 			VertexBufferD3D12* vbo = (VertexBufferD3D12*)vertex_resources[res_idx];
 
 			views[res_idx] = vbo->GetView();
@@ -408,6 +406,7 @@ namespace RB::Graphics::D3D12
 		pso_desc.InputLayout			= { input_elements.data(), (UINT) input_elements.size() };
 		//pso_desc.IBStripCutValue		= ;
 		pso_desc.PrimitiveTopologyType	= m_RenderState.vertexBufferType;
+		pso_desc.NumRenderTargets		= m_RenderState.numRenderTargets;
 		/*pso_desc.RTVFormats */		  memcpy(pso_desc.RTVFormats, m_RenderState.rtvFormats, sizeof(DXGI_FORMAT) * 8);
 		pso_desc.DSVFormat				= m_RenderState.dsvFormat;
 		pso_desc.SampleDesc				= { 1, 0 };
@@ -431,22 +430,20 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::InternalCopyBuffer(GpuResource* src, GpuResource* dest)
 	{
-		g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		g_ResourceStateManager->TransitionResource(dest, D3D12_RESOURCE_STATE_COPY_DEST);
-		FlushResourceBarriers();
-
-		m_CommandList->CopyResource(dest->GetResource().Get(), src->GetResource().Get());
-	}
-
-	bool RenderInterfaceD3D12::ValidateResource(RenderResource* res)
-	{
-		GpuResource* gpu_res = (GpuResource*)res->GetNativeResource();
-
-		if (gpu_res->IsValid())
+		if (!m_CopyOperationsOnly)
 		{
-			return true;
+			g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			g_ResourceStateManager->TransitionResource(dest, D3D12_RESOURCE_STATE_COPY_DEST);
+			FlushResourceBarriers();
+		}
+		else
+		{
+			// We do not need to transition resources to the copy state when using a dedicated copy commandlist.
+			// The resources however MUST be in the COMMON state, so check for that here.
+			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
+			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dest->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
 		}
 
-		return false;
+		m_CommandList->CopyResource(dest->GetResource().Get(), src->GetResource().Get());
 	}
 }

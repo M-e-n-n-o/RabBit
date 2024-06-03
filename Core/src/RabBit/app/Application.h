@@ -11,6 +11,12 @@ namespace RB
 	{
 		class Window;
 		class Display;
+		class Renderer;
+	}
+
+	namespace Entity
+	{
+		class Scene;
 	}
 
 	struct AppInfo
@@ -45,6 +51,8 @@ namespace RB
 		Graphics::Window* FindWindow(void* window_handle) const;
 		int32_t			  FindWindowIndex(void* window_handle) const;
 
+		Entity::Scene* GetScene() const { return m_Scene; }
+
 		uint64_t GetFrameIndex() const { return m_FrameIndex; }
 
 		static Application* GetInstance() { return s_Instance; }
@@ -70,6 +78,10 @@ namespace RB
 		List<Graphics::Window*>		m_Windows;
 		int32_t						m_PrimaryWindowIndex;
 		bool						m_CheckWindows;
+
+		Graphics::Renderer*			m_Renderer;
+
+		Entity::Scene*				m_Scene;
 
 		static Application*			s_Instance;
 	};

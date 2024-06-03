@@ -1,5 +1,8 @@
 #include <RabBit.h>
 
+using namespace RB;
+using namespace RB::Entity;
+
 class App : public RB::Application
 {
 public:
@@ -8,6 +11,9 @@ public:
 	void OnStart() override
 	{
 		RB_LOG("Hoiii");
+
+		GameObject* obj = GetScene()->CreateGameObject();
+		obj->AddComponent<Mesh>();
 	}
 
 	void OnUpdate() override
@@ -23,7 +29,7 @@ public:
 
 RB::Application* RB::CreateApplication(const char* launch_args)
 {
-	RB::AppInfo app_info	= {};
+	AppInfo app_info = {};
 	app_info.appName		= "RabBit App";
 
 	AppInfo::Window window1 = {};

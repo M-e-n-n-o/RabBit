@@ -13,7 +13,7 @@ namespace RB::Graphics::D3D12
 	class VertexBufferD3D12 : public VertexBuffer
 	{
 	public:
-		VertexBufferD3D12(const char* name, const TopologyType& type, uint32_t vertex_count_per_instance, void* data, uint64_t data_size);
+		VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
 		~VertexBufferD3D12();
 
 		const char* GetName() const override { return m_Name; }
@@ -24,18 +24,18 @@ namespace RB::Graphics::D3D12
 
 		uint32_t GetSize() const override { return m_Size; }
 
-		uint32_t GetVertexCountPerInstance() const override { return m_VertexCountPerInstance; }
+		uint32_t GetVertexCountPerInstance() const override { return m_Size / m_VertexSize; }
 
 		TopologyType GetTopologyType() const override { return m_Type; }
 
-		D3D12_VERTEX_BUFFER_VIEW GetView() const { return m_View; }
+		D3D12_VERTEX_BUFFER_VIEW GetView();
 
 	private:
 		const char*					m_Name;
 		GpuResource*				m_Resource;
 		D3D12_VERTEX_BUFFER_VIEW	m_View;
 		TopologyType				m_Type;
-		uint32_t					m_VertexCountPerInstance;
+		uint32_t					m_VertexSize;
 		uint32_t					m_Size;
 		void*						m_Data;
 	};

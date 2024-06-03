@@ -44,6 +44,11 @@ namespace RB::Graphics::D3D12
 
 	void ResourceStateManager::FlushPendingTransitions(ID3D12GraphicsCommandList* command_list)
 	{
+		if (m_PendingBarriers.empty())
+		{
+			return;
+		}
+
 		command_list->ResourceBarrier(m_PendingBarriers.size(), m_PendingBarriers.data());
 
 		m_PendingBarriers.clear();

@@ -49,15 +49,7 @@ namespace RB::Graphics::D3D12
 
 			delete[] reflection_data.Ptr;
 
-
-
-
-			D3D12_SIGNATURE_PARAMETER_DESC desc;
-			blob->reflectionData->GetInputParameterDesc(1, &desc);
-
-
-
-			RB_LOG(LOGTAG_GRAPHICS, "Register: %d", desc.Register);
+			m_ShaderBlobs[shader_index] = blob;
 		}
 
 		stream.close();

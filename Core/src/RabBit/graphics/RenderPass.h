@@ -48,12 +48,10 @@ namespace RB::Graphics
 		uint32_t		 m_TotalDependencies;
 	};
 
-	typedef void RenderPassEntry;
-
-	struct RenderPassContext
+	// Make sure to do all your deletes and free's in the destructor!
+	struct RenderPassEntry
 	{
-		uint32_t entryCount;
-		RenderPassEntry* entries;
+		virtual ~RenderPassEntry() = default;
 	};
 
 	class RenderPass
@@ -69,12 +67,12 @@ namespace RB::Graphics
 		// lower quality for example. It can also do some preprocessing before the actual Render() call to, for example, 
 		// determine which RenderEntries this pass needs, so the RenderThread does not need to do this. But it can maybe 
 		// also determine if the pass needs to run at all even.
-		virtual RenderPassContext SubmitContext(ViewContext* view_context, const Entity::Scene* const scene) = 0;
+		virtual Shared<RenderPassEntry> SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene) = 0;
 
 		// Executed on the render thread
 		virtual void Render(RenderInterface* render_interface,
 							ViewContext* view_context,
-							RenderPassContext* context,
+							Shared<RenderPassEntry> entry_context,
 							RenderResource** output_textures,
 							RenderResource** working_textures,
 							RenderResource** dependency_textures) = 0;

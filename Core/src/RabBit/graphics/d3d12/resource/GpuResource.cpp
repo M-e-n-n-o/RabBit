@@ -57,10 +57,7 @@ namespace RB::Graphics::D3D12
 
 	bool GpuResource::IsInState(D3D12_RESOURCE_STATES state) const
 	{
-		if (state == D3D12_RESOURCE_STATE_COMMON)
-			return m_State == state;
-		else
-			return ((int)m_State) & ((int)state) == state;
+		return m_State == state;
 	}
 
 	void GpuResource::SetResource(GPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES state)

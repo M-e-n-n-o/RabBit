@@ -24,8 +24,8 @@ namespace RB
 	#define ALLOC_HEAP(size)		malloc((size))
 
 	#define SAFE_RELEASE(obj)		(obj)->Release();
-	#define SAFE_DELETE(obj)		if ((obj)) { delete (obj); (obj) = nullptr; }
-	#define SAFE_FREE(obj)			if ((obj)) { free(obj); (obj) = nullptr; }
+	#define SAFE_DELETE(obj)		if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
+	#define SAFE_FREE(obj)			if ((obj) != nullptr) { free(obj); (obj) = nullptr; }
 
 	// Custom graphics pointer
 	template<class T>
@@ -38,6 +38,12 @@ namespace RB
 	constexpr Shared<T> CreateShared(Args&& ... args)
 	{
 		return std::make_shared<T>(std::forward<Args>(args)...);
+	}
+
+	template<typename T, typename T2>
+	constexpr Shared<T> CastShared(Shared<T2> base)
+	{
+		return std::dynamic_pointer_cast<T>(base);
 	}
 
 	// Custom unique pointer

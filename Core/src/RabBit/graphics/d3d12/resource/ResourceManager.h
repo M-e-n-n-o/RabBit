@@ -59,7 +59,7 @@ namespace RB::Graphics::D3D12
 			Vertex
 		};
 
-		struct ResourceCreationDesc
+		struct ResourceCreationDesc : public JobData
 		{
 			ResourceType	type;
 			GpuResource*	resource;
@@ -82,7 +82,7 @@ namespace RB::Graphics::D3D12
 		JobTypeID			m_CreationJob;
 		List<Scheduled>		m_ScheduledCreations;
 
-		extern friend void CreationJob(JobData* data);
+		extern friend void CreationJob(Shared<JobData> data);
 	};
 
 	extern ResourceManager* g_ResourceManager;

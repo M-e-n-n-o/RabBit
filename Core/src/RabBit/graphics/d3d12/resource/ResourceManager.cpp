@@ -236,7 +236,7 @@ namespace RB::Graphics::D3D12
 	//								ResourceManager
 	// ----------------------------------------------------------------------------
 
-	void CreationJob(JobData* data);
+	void CreationJob(Shared<JobData> data);
 
 	ResourceManager* g_ResourceManager = nullptr;
 
@@ -319,8 +319,8 @@ namespace RB::Graphics::D3D12
 	bool ResourceManager::WaitUntilResourceValid(GpuResource* resource)
 	{
 		// Find the scheduled creation
-		auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](Scheduled* scheduled) -> bool {
-			return resource == scheduled->resource;
+		auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool {
+			return resource == scheduled.resource;
 		});
 
 		if (itr == m_ScheduledCreations.end())
@@ -343,7 +343,7 @@ namespace RB::Graphics::D3D12
 		wchar_t* wname = new wchar_t[strlen(name) + 1];
 		CharToWchar(name, wname);
 
-		ResourceCreationDesc* desc = new ResourceCreationDesc();
+		Shared<ResourceCreationDesc> desc = CreateShared<ResourceCreationDesc>();
 		desc->type				 = ResourceType::Upload;
 		desc->resource			 = resource;
 		desc->name				 = wname;
@@ -358,7 +358,7 @@ namespace RB::Graphics::D3D12
 		wchar_t* wname = new wchar_t[strlen(name) + 1];
 		CharToWchar(name, wname);
 
-		ResourceCreationDesc* desc = new ResourceCreationDesc();
+		Shared<ResourceCreationDesc> desc = CreateShared<ResourceCreationDesc>();
 		desc->type		= ResourceType::Vertex;
 		desc->resource	= resource;
 		desc->name		= wname;
@@ -391,15 +391,15 @@ namespace RB::Graphics::D3D12
 		return resource;
 	}
 
-	void CreationJob(JobData* data)
+	void CreationJob(Shared<JobData> data)
 	{
-		ResourceManager::ResourceCreationDesc* creation_desc = (ResourceManager::ResourceCreationDesc*) data;
+		Shared<ResourceManager::ResourceCreationDesc> creation_desc = CastShared<ResourceManager::ResourceCreationDesc>(data);
 
 		switch (creation_desc->type)
 		{
 		case ResourceManager::ResourceType::Upload:
 		{
-			D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_GENERIC_READ;
+			D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
 
 			creation_desc->resource->SetResource(
 				g_ResourceManager->CreateCommittedResource(

@@ -14,10 +14,15 @@ namespace RB
 		Default	= Medium
 	};
 
+	// Make sure to do all your deletes and free's in the destructor!
+	struct JobData
+	{
+		virtual ~JobData() = default;
+	};
+
 	using JobTypeID		= uint32_t;
 	using JobID			= uint64_t;
-	using JobData		= void;
-	using JobFunction	= std::function<void(JobData*)>;
+	using JobFunction	= std::function<void(Shared<JobData>)>;
 
 	// This class itself is NOT threadsafe, should be owned/used by 1 thread at a time!
 	class WorkerThread
@@ -31,8 +36,7 @@ namespace RB
 		// So, if a job is scheduled that is already in the queue, the old job will be overwritten.
 		JobTypeID	AddJobType(JobFunction function, bool overwritable = false);
 
-		// Job data will be deleted after finished/being overwritten (so allocate JobData with new!!)
-		JobID		ScheduleJob(JobTypeID type_id, JobData* data);
+		JobID		ScheduleJob(JobTypeID type_id, Shared<JobData> data);
 
 		void		PrioritizeJob(JobID job_id);
 
@@ -50,7 +54,7 @@ namespace RB
 		{
 			JobID				id;
 			JobFunction*		function;
-			JobData*			data;
+			Shared<JobData>		data;
 		};
 
 		List<Job>::iterator FindJobBy(JobID id);
@@ -73,6 +77,7 @@ namespace RB
 			CRITICAL_SECTION	kickCS;
 			CONDITION_VARIABLE	syncCV;
 			CRITICAL_SECTION	syncCS;
+			CONDITION_VARIABLE	startedCV;
 			CONDITION_VARIABLE	completedCV;
 			CRITICAL_SECTION	completedCS;
 
@@ -82,7 +87,7 @@ namespace RB
 			List<Job>			pendingJobs;
 			uint32_t			highPriorityInsertIndex;
 			uint64_t			startedJobsCount;
-			bool				syncCompleted;
+			bool				jobCompleted;
 		};
 
 		struct JobType

@@ -2,59 +2,23 @@
 #include "Application.h"
 
 #include "graphics/Window.h"
-#include "graphics/d3d12/window/SwapChain.h"
-#include "graphics/d3d12/GraphicsDevice.h"
-#include "graphics/d3d12/DeviceQueue.h"
-#include "graphics/d3d12/resource/ResourceManager.h"
-#include "graphics/d3d12/resource/ResourceStateManager.h"
-#include "graphics/d3d12/pipeline/Pipeline.h"
-#include "graphics/d3d12/shaders/ShaderSystem.h"
-#include "graphics/d3d12/resource/RenderResourceD3D12.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
 
 #include "entity/Scene.h"
-#include "entity/components/Mesh.h"
 
-#include "input/events/WindowEvent.h"
 #include "input/events/KeyEvent.h"
 #include "input/KeyCodes.h"
 #include "input/Input.h"
 
-#include <d3dcompiler.h>
-#include <fstream>
-#include "graphics/d3d12/shaders/codeGen/ShaderDefines.h"
-#include "graphics/d3d12/UtilsD3D12.h"
-
 using namespace RB::Graphics;
-using namespace RB::Graphics::D3D12;
 using namespace RB::Input::Events;
 using namespace RB::Input;
 using namespace RB::Entity;
 
 namespace RB
 {
-	Renderer* _Renderer = nullptr;
-
-	DeviceQueue* _GraphicsQueue = nullptr;
-	uint32_t _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
-
-	float _VertexData[] =
-	{
-		// Pos				Color
-		-0.5f, -0.5f,		1, 0, 0,
-		0, 0.5f,			0, 1, 0,
-		0.5f, -0.5f,		0, 0, 1,
-	};
-
-	GPtr<ID3D12PipelineState> _Pso;
-	GPtr<ID3D12RootSignature> _RootSignature;
-	GPtr<ID3D12Resource> _VertexRes;
-	D3D12_VERTEX_BUFFER_VIEW _VaoView;
-
-	float _Value = 0;
-
 	Application* Application::s_Instance = nullptr;
 
 	Application::Application(AppInfo& info)
@@ -85,11 +49,9 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "");
 
 		Renderer::SetAPI(RenderAPI::D3D12);
-		_Renderer = Renderer::Create(true); //std::strstr(launch_args, "-renderDebug"));
+		m_Renderer = Renderer::Create(true); //std::strstr(launch_args, "-renderDebug"));
 
 		m_Displays = Display::CreateDisplays();
-
-		_GraphicsQueue = g_GraphicsDevice->GetGraphicsQueue();
 
 		for (const AppInfo::Window& window : m_StartAppInfo.windows)
 		{
@@ -102,6 +64,8 @@ namespace RB
 				m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default));
 			}
 		}
+
+		m_Scene = new Scene();
 
 		m_Initialized = true;
 
@@ -120,120 +84,8 @@ namespace RB
 
 	void Application::Run()
 	{
-		// TODO Move this all to a RenderPass
-
-//		// Pipeline
-//		{
-//			UINT flags = D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
-//#ifdef RB_CONFIG_DEBUG
-//			flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION; // | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-//#endif
-//
-//			ShaderBlob* vs_blob = g_ShaderSystem->GetShaderBlob(VS_VertexColor);
-//			ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(PS_VertexColor);
-//
-//			D3D12_ROOT_SIGNATURE_DESC signature_desc = {};
-//			signature_desc.NumParameters		= 0;
-//			signature_desc.pParameters			= nullptr;
-//			signature_desc.NumStaticSamplers	= 0;
-//			signature_desc.pStaticSamplers		= nullptr;
-//			signature_desc.Flags				= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-//
-//			GPtr<ID3DBlob> root_signature_blob;
-//			GPtr<ID3DBlob> error_blob;
-//			RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeRootSignature(&signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &root_signature_blob, &error_blob), "Could not serialize root signature");
-//
-//			RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&_RootSignature)), "Could not create root signature");
-//
-//			D3D12_BLEND_DESC blend_desc = {};
-//			blend_desc.AlphaToCoverageEnable					= false;
-//			blend_desc.IndependentBlendEnable					= false;
-//			blend_desc.RenderTarget[0].BlendEnable				= false;
-//			blend_desc.RenderTarget[0].LogicOpEnable			= false;
-//			blend_desc.RenderTarget[0].RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
-//
-//			D3D12_INPUT_ELEMENT_DESC input_elements[] =
-//			{
-//				{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0  },
-//				{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 2, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-//			};	
-//
-//			D3D12_RASTERIZER_DESC ras_desc = {};
-//			ras_desc.FillMode				= D3D12_FILL_MODE_SOLID;
-//			ras_desc.CullMode				= D3D12_CULL_MODE_NONE;
-//			ras_desc.DepthClipEnable		= FALSE;
-//			ras_desc.FrontCounterClockwise	= FALSE;
-//			ras_desc.DepthBias				= D3D12_DEFAULT_DEPTH_BIAS;
-//			ras_desc.DepthBiasClamp			= D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-//			ras_desc.SlopeScaledDepthBias	= D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-//			ras_desc.MultisampleEnable		= FALSE;
-//			ras_desc.AntialiasedLineEnable	= FALSE;
-//			ras_desc.ForcedSampleCount		= 0;
-//			ras_desc.ConservativeRaster		= D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-//
-//			D3D12_DEPTH_STENCIL_DESC ds_desc = {};
-//			ds_desc.DepthEnable				= FALSE;
-//			ds_desc.DepthWriteMask			= D3D12_DEPTH_WRITE_MASK_ZERO;
-//			ds_desc.DepthFunc				= D3D12_COMPARISON_FUNC_ALWAYS;
-//			ds_desc.StencilEnable			= FALSE;
-//			ds_desc.StencilReadMask			= 0;
-//			ds_desc.StencilWriteMask		= 0;
-//
-//			D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
-//			pso_desc.pRootSignature			= _RootSignature.Get();
-//			//pso_desc.VS						= { vs_blob->m_ShaderBlob, vs_blob->m_ShaderBlobSize };
-//			//pso_desc.PS						= { ps_blob->m_ShaderBlob, ps_blob->m_ShaderBlobSize };
-//			//pso_desc.StreamOutput			= ;
-//			pso_desc.BlendState				= blend_desc;
-//			pso_desc.SampleMask				= UINT_MAX;
-//			pso_desc.RasterizerState		= ras_desc;
-//			pso_desc.DepthStencilState		= ds_desc;
-//			pso_desc.InputLayout			= { input_elements, 2 };
-//			//pso_desc.IBStripCutValue		= D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
-//			pso_desc.PrimitiveTopologyType	= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-//			pso_desc.NumRenderTargets		= 1;
-//			pso_desc.RTVFormats[0]			= ConvertToDXGIFormat(GetPrimaryWindow()->GetBackBufferFormat());
-//			pso_desc.DSVFormat				= DXGI_FORMAT_UNKNOWN;
-//			pso_desc.SampleDesc				= { 1, 0 };
-//			pso_desc.NodeMask				= 0;
-//			//pso_desc.CachedPSO			= NULL;
-//			pso_desc.Flags					= D3D12_PIPELINE_STATE_FLAG_NONE;
-//
-//			//_Pso = g_PipelineManager->GetGraphicsPipeline(pso_desc);
-//		}
-
-		// VAO
-		//{
-		//	_VertexRes = g_ResourceManager->CreateCommittedResource(L"Vertex resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_COMMON);
-		//	GPtr<ID3D12Resource> upload_resource = g_ResourceManager->CreateCommittedResource(L"Vertex upload resource", CD3DX12_RESOURCE_DESC::Buffer(sizeof(_VertexData)), D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ);
-
-		//	float* upload_memory;
-		//	upload_resource->Map(0, nullptr, reinterpret_cast<void**>(&upload_memory));
-		//	memcpy(upload_memory, _VertexData, sizeof(_VertexData));
-		//	upload_resource->Unmap(0, nullptr);
-
-		//	GPtr<ID3D12GraphicsCommandList2> command_list = _GraphicsQueue->GetCommandList();
-
-		//	command_list->CopyResource(_VertexRes.Get(), upload_resource.Get());
-
-		//	uint64_t fence_value = _GraphicsQueue->ExecuteCommandList(command_list);
-		//	_GraphicsQueue->CpuWaitForFenceValue(fence_value);
-
-		//	_VaoView.BufferLocation = _VertexRes->GetGPUVirtualAddress();
-		//	_VaoView.SizeInBytes	= sizeof(_VertexData);
-		//	_VaoView.StrideInBytes	= sizeof(float) * 5;
-		//}
-
-		Scene scene;
-		GameObject* obj = scene.CreateGameObject();
-		obj->AddComponent<Mesh>();
-		
-
 		while (!m_ShouldStop)
 		{
-			_Value += 0.01f;
-			_Value = fmodf(_Value, 1);
-
 			// Poll inputs and update windows
 			for (Graphics::Window* window : m_Windows)
 			{
@@ -257,12 +109,12 @@ namespace RB
 			OnUpdate();
 
 			// Submit the scene as context for rendering the next frame
-			_Renderer->SubmitFrameContext(&scene);
+			m_Renderer->SubmitFrameContext(m_Scene);
 
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)
 			{
-				_Renderer->SyncRenderer(true);
+				m_Renderer->SyncRenderer(true);
 
 				for (int i = 0; i < m_Windows.size(); i++)
 				{
@@ -302,6 +154,8 @@ namespace RB
 		// Shutdown app user
 		OnStop();
 
+		delete m_Scene;
+
 		for (int i = 0; i < m_Windows.size(); i++)
 		{
 			delete m_Windows[i];
@@ -314,8 +168,8 @@ namespace RB
 		}
 		m_Displays.clear();
 
-		_Renderer->Shutdown();
-		delete _Renderer;	
+		m_Renderer->Shutdown();
+		delete m_Renderer;
 
 		RB_LOG(LOGTAG_MAIN, "");
 		RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
