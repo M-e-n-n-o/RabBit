@@ -19,6 +19,7 @@ namespace RB::Graphics
 
 	struct RenderPassConfig
 	{
+		const char*			friendlyName;
 		RenderPassType		type;
 		bool				onlyExecuteWhenDependedOn;
 		RenderPassType		dependencies[8];
@@ -29,7 +30,7 @@ namespace RB::Graphics
 	class RenderPassConfigBuilder
 	{
 	public:
-		RenderPassConfigBuilder(const RenderPassType& type, bool only_execute_when_depended_on);
+		RenderPassConfigBuilder(const RenderPassType& type, const char* friendly_name, bool only_execute_when_depended_on);
 
 		RenderPassConfigBuilder& AddDependency(RenderPassType type);
 
@@ -67,12 +68,12 @@ namespace RB::Graphics
 		// lower quality for example. It can also do some preprocessing before the actual Render() call to, for example, 
 		// determine which RenderEntries this pass needs, so the RenderThread does not need to do this. But it can maybe 
 		// also determine if the pass needs to run at all even.
-		virtual Shared<RenderPassEntry> SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene) = 0;
+		virtual RenderPassEntry* SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene) = 0;
 
 		// Executed on the render thread
 		virtual void Render(RenderInterface* render_interface,
 							ViewContext* view_context,
-							Shared<RenderPassEntry> entry_context,
+							RenderPassEntry* entry_context,
 							RenderResource** output_textures,
 							RenderResource** working_textures,
 							RenderResource** dependency_textures) = 0;

@@ -236,7 +236,7 @@ namespace RB::Graphics::D3D12
 	//								ResourceManager
 	// ----------------------------------------------------------------------------
 
-	void CreationJob(Shared<JobData> data);
+	void CreationJob(JobData* data);
 
 	ResourceManager* g_ResourceManager = nullptr;
 
@@ -343,7 +343,7 @@ namespace RB::Graphics::D3D12
 		wchar_t* wname = new wchar_t[strlen(name) + 1];
 		CharToWchar(name, wname);
 
-		Shared<ResourceCreationDesc> desc = CreateShared<ResourceCreationDesc>();
+		ResourceCreationDesc* desc = new ResourceCreationDesc();
 		desc->type				 = ResourceType::Upload;
 		desc->resource			 = resource;
 		desc->name				 = wname;
@@ -358,7 +358,7 @@ namespace RB::Graphics::D3D12
 		wchar_t* wname = new wchar_t[strlen(name) + 1];
 		CharToWchar(name, wname);
 
-		Shared<ResourceCreationDesc> desc = CreateShared<ResourceCreationDesc>();
+		ResourceCreationDesc* desc = new ResourceCreationDesc();
 		desc->type		= ResourceType::Vertex;
 		desc->resource	= resource;
 		desc->name		= wname;
@@ -391,9 +391,9 @@ namespace RB::Graphics::D3D12
 		return resource;
 	}
 
-	void CreationJob(Shared<JobData> data)
+	void CreationJob(JobData* data)
 	{
-		Shared<ResourceManager::ResourceCreationDesc> creation_desc = CastShared<ResourceManager::ResourceCreationDesc>(data);
+		ResourceManager::ResourceCreationDesc* creation_desc = (ResourceManager::ResourceCreationDesc*) data;
 
 		switch (creation_desc->type)
 		{

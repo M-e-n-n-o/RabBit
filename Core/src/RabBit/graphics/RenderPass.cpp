@@ -7,10 +7,11 @@ namespace RB::Graphics
 	//								RenderPassConfig
 	// ---------------------------------------------------------------------------
 
-	RenderPassConfigBuilder::RenderPassConfigBuilder(const RenderPassType& type, bool only_execute_when_depended_on)
+	RenderPassConfigBuilder::RenderPassConfigBuilder(const RenderPassType& type, const char* friendly_name, bool only_execute_when_depended_on)
 	{
 		m_Config = {};
 		m_Config.type = type;
+		m_Config.friendlyName = friendly_name;
 		m_Config.onlyExecuteWhenDependedOn = only_execute_when_depended_on;
 
 		m_TotalDependencies = 0;

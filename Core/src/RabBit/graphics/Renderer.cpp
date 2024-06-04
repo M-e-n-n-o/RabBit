@@ -27,13 +27,13 @@ using namespace RB::Input::Events;
 
 namespace RB::Graphics
 {
-	void RenderJob(Shared<JobData> data);
-	void EventJob(Shared<JobData> data);
+	void RenderJob(JobData* data);
+	void EventJob(JobData* data);
 
 	struct RenderContext : public JobData
 	{
 		RenderPass**					renderPasses;
-		List<Shared<RenderPassEntry>>	renderPassEntries;
+		RenderPassEntry**				renderPassEntries;
 		uint32_t						totalPasses;
 								 
 		RenderInterface*				graphicsInterface;
@@ -44,6 +44,15 @@ namespace RB::Graphics
 		std::function<void()>			OnRenderFrameStart;
 		std::function<void()>			OnRenderFrameEnd;
 		std::function<void()>			SyncWithGpu;
+
+		~RenderContext()
+		{
+			for (int i = 0; i < totalPasses; ++i)
+			{
+				SAFE_DELETE(renderPassEntries[i]);
+			}
+			SAFE_FREE(renderPassEntries);
+		}
 	};
 
 	struct EventContext : public JobData
@@ -109,7 +118,7 @@ namespace RB::Graphics
 
 	void Renderer::SubmitFrameContext(const Entity::Scene* const scene)
 	{
-		List<Shared<RenderPassEntry>> entries(m_TotalPasses);
+		RenderPassEntry** entries = (RenderPassEntry**) ALLOC_HEAP(sizeof(RenderPassEntry*) * m_TotalPasses);
 
 		// Gather the entries from all render passes
 		for (int i = 0; i < m_TotalPasses; i++)
@@ -119,7 +128,7 @@ namespace RB::Graphics
 
 		// Schedule a render job (overwrites the previous render job if not yet picked up)
 		{
-			Shared<RenderContext> context = CreateShared<RenderContext>();
+			RenderContext* context = new RenderContext();
 			context->renderPasses		= m_RenderPasses;
 			context->renderPassEntries	= entries;
 			context->totalPasses		= m_TotalPasses;
@@ -135,7 +144,7 @@ namespace RB::Graphics
 
 		// Schedule an event handling job
 		{
-			Shared<EventContext> context = CreateShared<EventContext>();
+			EventContext* context = new EventContext();
 			context->ProcessEvents = std::bind(&Renderer::ProcessEvents, this);
 
 			m_RenderThread->ScheduleJob(m_EventJobType, context);
@@ -242,18 +251,18 @@ namespace RB::Graphics
 		}
 	}
 
-	void EventJob(Shared<JobData> data)
+	void EventJob(JobData* data)
 	{
-		Shared<EventContext> context = CastShared<EventContext>(data);
+		EventContext* context = (EventContext*) data;
 		context->ProcessEvents();
 	}
 
 	// TODO Remove!
 	Shared<RIExecutionGuard> _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
 
-	void RenderJob(Shared<JobData> data)
+	void RenderJob(JobData* data)
 	{
-		Shared<RenderContext> context = CastShared<RenderContext>(data);
+		RenderContext* context = (RenderContext*) data;
 
 		context->OnRenderFrameStart();
 
@@ -262,6 +271,8 @@ namespace RB::Graphics
 		if (window && window->IsValid() && !window->IsMinimized())
 		{
 			GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
+
+			RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
 
 			Texture2D* back_buffer = window->GetCurrentBackBuffer();
 
@@ -281,7 +292,14 @@ namespace RB::Graphics
 			// Render the different passes
 			for (int i = 0; i < context->totalPasses; ++i)
 			{
-				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Pass");
+				RenderPassEntry* entry = context->renderPassEntries[i];
+
+				if (entry == nullptr)
+				{
+					continue;
+				}
+
+				RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[i]->GetConfiguration().friendlyName);
 
 				context->renderPasses[i]->Render(context->graphicsInterface, nullptr, context->renderPassEntries[i], (RenderResource**) &back_buffer, nullptr, nullptr);
 

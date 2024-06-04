@@ -22,10 +22,10 @@ namespace RB::Graphics
 
 	RenderPassConfig GBufferPass::GetConfiguration()
 	{
-		return RenderPassConfigBuilder(RenderPassType::GBuffer, false).Build();
+		return RenderPassConfigBuilder(RenderPassType::GBuffer, "GBuffer", false).Build();
 	}
 
-	Shared<RenderPassEntry> GBufferPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene)
+	RenderPassEntry* GBufferPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene)
 	{
 		auto meshes = scene->GetComponentsWithTypeOf<Entity::Mesh>();
 
@@ -36,14 +36,14 @@ namespace RB::Graphics
 			buffers[i] = ((const Entity::Mesh*)meshes[i])->GetVertexBuffer();
 		}
 
-		Shared<GBufferEntry> entry = CreateShared<GBufferEntry>();
+		GBufferEntry* entry = new GBufferEntry();
 		entry->buffers = buffers;
 		entry->totalBuffers = meshes.size();
 
 		return entry;
 	}
 
-	void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, Shared<RenderPassEntry> entry_context,
+	void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, RenderPassEntry* entry_context,
 		RenderResource** output_textures, RenderResource** working_textures, RenderResource** dependency_textures)
 	{
 		render_interface->SetVertexShader(VS_VertexColor);
@@ -60,7 +60,7 @@ namespace RB::Graphics
 
 		render_interface->SetRenderTarget(&bundle);
 
-		Shared<GBufferEntry> entry = CastShared<GBufferEntry>(entry_context);
+		GBufferEntry* entry = (GBufferEntry*) entry_context;
 
 		for (int i = 0; i < entry->totalBuffers; ++i)
 		{

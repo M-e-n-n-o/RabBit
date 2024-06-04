@@ -80,7 +80,7 @@ namespace RB
 		return m_JobTypes.size() - 1;
 	}
 
-	JobID WorkerThread::ScheduleJob(JobTypeID type_id, Shared<JobData> data)
+	JobID WorkerThread::ScheduleJob(JobTypeID type_id, JobData* data)
 	{
 		if (type_id < 0 || type_id > m_JobTypes.size() - 1)
 		{
@@ -114,6 +114,7 @@ namespace RB
 			else
 			{
 				// Job data is overwritten
+				SAFE_DELETE(itr->data);
 				itr->data = data;
 				job.id = itr->id;
 			}
@@ -260,6 +261,7 @@ namespace RB
 			return;
 		}
 
+		SAFE_DELETE(itr->data);
 		m_SharedContext->pendingJobs.erase(itr);
 
 		LeaveCriticalSection(&m_SharedContext->kickCS);
@@ -269,6 +271,10 @@ namespace RB
 	{
 		EnterCriticalSection(&m_SharedContext->kickCS);
 
+		for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
+		{
+			SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
+		}
 		m_SharedContext->pendingJobs.clear();
 
 		LeaveCriticalSection(&m_SharedContext->kickCS);
@@ -357,6 +363,7 @@ namespace RB
 			// Do the job
 			{
 				(*current_job.function)(current_job.data);
+				SAFE_DELETE(current_job.data);
 			}
 
 			// Notify that we are done with a job

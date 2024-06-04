@@ -14,8 +14,6 @@ namespace RB::Graphics::D3D12
 	* TODO: 
 	* - Track the resource sizes
 	* - Make is possible to easily create and alias (multiple) resources from 1 heap (all rendertargets in 1 big heap)
-	* - Make sure, there is a way to detect which resources should be deleted, and delete them (also remove from ResourceStateManager) 
-		(keep all vertex data in memory, stream textures and shader inputs)
 	*/
 
 	// Global resource manager
@@ -82,7 +80,7 @@ namespace RB::Graphics::D3D12
 		JobTypeID			m_CreationJob;
 		List<Scheduled>		m_ScheduledCreations;
 
-		extern friend void CreationJob(Shared<JobData> data);
+		extern friend void CreationJob(JobData* data);
 	};
 
 	extern ResourceManager* g_ResourceManager;

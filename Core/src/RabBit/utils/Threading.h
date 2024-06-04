@@ -22,7 +22,7 @@ namespace RB
 
 	using JobTypeID		= uint32_t;
 	using JobID			= uint64_t;
-	using JobFunction	= std::function<void(Shared<JobData>)>;
+	using JobFunction	= std::function<void(JobData*)>;
 
 	// This class itself is NOT threadsafe, should be owned/used by 1 thread at a time!
 	class WorkerThread
@@ -36,7 +36,8 @@ namespace RB
 		// So, if a job is scheduled that is already in the queue, the old job will be overwritten.
 		JobTypeID	AddJobType(JobFunction function, bool overwritable = false);
 
-		JobID		ScheduleJob(JobTypeID type_id, Shared<JobData> data);
+		// The JobData is deleted when the task is completed or has been overwritten (allocate the data with new!)
+		JobID		ScheduleJob(JobTypeID type_id, JobData* data);
 
 		void		PrioritizeJob(JobID job_id);
 
@@ -54,7 +55,7 @@ namespace RB
 		{
 			JobID				id;
 			JobFunction*		function;
-			Shared<JobData>		data;
+			JobData*			data;
 		};
 
 		List<Job>::iterator FindJobBy(JobID id);

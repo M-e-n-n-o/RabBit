@@ -50,6 +50,8 @@ namespace RB::Graphics::D3D12
 
 	Shared<RIExecutionGuard> RenderInterfaceD3D12::ExecuteInternal()
 	{
+		// TODO Maybe do the ExecuteCommandLists on a separate thread in the future?
+
 		uint64_t fence_value = m_Queue->ExecuteCommandList(m_CommandList);
 
 		g_ResourceManager->OnCommandListExecute(m_Queue, fence_value);
