@@ -4,7 +4,7 @@ v2p VS_VertexColor(vertexInfo input)
 {
     v2p output;
     output.position = float4(input.position, 0, 1);
-    output.color = input.color - 0.5f;
+    output.color = input.color;
     return output;
 }
 

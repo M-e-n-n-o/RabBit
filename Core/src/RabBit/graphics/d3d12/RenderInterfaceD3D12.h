@@ -69,6 +69,7 @@ namespace RB::Graphics::D3D12
 		GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
 	private:
+		void SetPipelineState();
 		void SetNewCommandList();
 		void InternalCopyBuffer(GpuResource* src, GpuResource* dest);
 
@@ -78,6 +79,8 @@ namespace RB::Graphics::D3D12
 
 		struct RenderState
 		{
+			bool							psoDirty				= true;
+
 			D3D12_PRIMITIVE_TOPOLOGY_TYPE	vertexBufferType		= D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 			uint32_t						vertexCountPerInstance	= 0;
 			bool							scissorSet				= false;

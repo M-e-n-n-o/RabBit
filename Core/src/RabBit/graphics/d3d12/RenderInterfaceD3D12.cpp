@@ -119,16 +119,20 @@ namespace RB::Graphics::D3D12
 		// Also set the scissor and rect
 		SetScissorRect(0, LONG_MAX, 0, LONG_MAX);
 		SetViewport(0, 0, max_width, max_height);
+
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetVertexShader(uint32_t shader_index)
 	{
 		m_RenderState.vsShader = shader_index;
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetPixelShader(uint32_t shader_index)
 	{
 		m_RenderState.psShader = shader_index;
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetNewCommandList()
@@ -156,6 +160,8 @@ namespace RB::Graphics::D3D12
 		m_CommandList->RSSetScissorRects(1, &rect);
 
 		m_RenderState.scissorSet = true;
+
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
@@ -171,6 +177,8 @@ namespace RB::Graphics::D3D12
 		m_CommandList->RSSetViewports(1, &viewport);
 
 		m_RenderState.viewportSet = true;
+
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetBlendMode(const BlendMode& mode)
@@ -200,6 +208,8 @@ namespace RB::Graphics::D3D12
 
 		m_RenderState.blendDesc = desc;
 		m_RenderState.blendingSet = true;
+
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetCullMode(const CullMode& mode)
@@ -229,6 +239,8 @@ namespace RB::Graphics::D3D12
 
 		m_RenderState.rasterizerSet = true;
 		m_RenderState.rasterizerDesc = desc;
+
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetDepthMode(const DepthMode& mode)
@@ -263,6 +275,8 @@ namespace RB::Graphics::D3D12
 
 		m_RenderState.depthStencilSet = true;
 		m_RenderState.depthStencilDesc = desc;
+
+		m_RenderState.psoDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot)
@@ -306,6 +320,8 @@ namespace RB::Graphics::D3D12
 
 		m_RenderState.vertexCountPerInstance = base_vbo->GetVertexCountPerInstance();
 
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE current_type = m_RenderState.vertexBufferType;
+
 		switch (base_vbo->GetTopologyType())
 		{
 		case TopologyType::TriangleList: m_RenderState.vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; break;
@@ -314,6 +330,11 @@ namespace RB::Graphics::D3D12
 			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Topology type not yet implemented");
 			m_RenderState.vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 			break;
+		}
+
+		if (current_type != m_RenderState.vertexBufferType)
+		{
+			m_RenderState.psoDirty = true;
 		}
 	}
 
@@ -373,6 +394,24 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DrawInternal()
 	{
+		if (m_RenderState.psoDirty)
+		{
+			SetPipelineState();
+
+			m_RenderState.psoDirty = false;
+		}
+
+		FlushResourceBarriers();
+
+		m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, 0, 0);
+	}
+
+	void RenderInterfaceD3D12::DispatchInternal()
+	{
+	}
+
+	void RenderInterfaceD3D12::SetPipelineState()
+	{
 		#define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
 
 		CHECK_SET(m_RenderState.vertexBufferType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,"Cannot draw, vertex buffer was not set")
@@ -419,15 +458,8 @@ namespace RB::Graphics::D3D12
 		GPtr<ID3D12PipelineState> pso = g_PipelineManager->GetGraphicsPipeline(pso_desc, m_RenderState.vsShader, m_RenderState.psShader);
 
 		m_CommandList->SetPipelineState(pso.Get());
+		// Call this before binding any resources to the pipeline (CBV, UAV, SRV, or Samplers)!
 		m_CommandList->SetGraphicsRootSignature(root_signature.Get());
-
-		FlushResourceBarriers();
-
-		m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, 0, 0);
-	}
-
-	void RenderInterfaceD3D12::DispatchInternal()
-	{
 	}
 
 	void RenderInterfaceD3D12::InternalCopyBuffer(GpuResource* src, GpuResource* dest)

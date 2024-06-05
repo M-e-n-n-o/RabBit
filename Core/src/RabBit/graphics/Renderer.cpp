@@ -272,38 +272,41 @@ namespace RB::Graphics
 		{
 			GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
 
-			RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
-
 			Texture2D* back_buffer = window->GetCurrentBackBuffer();
 
-			uint64_t value = window->GetCurrentBackBufferIndex();
-			if (_FenceValues[value])
+			// Render frame
 			{
-				_FenceValues[value]->WaitUntilFinishedRendering();
-			}
+				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
 
-			// Clear the backbuffer
-			{
-				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
-
-				context->graphicsInterface->Clear(back_buffer, { 0.0f, 0.1f, 0.1f, 0.0f });
-			}
-
-			// Render the different passes
-			for (int i = 0; i < context->totalPasses; ++i)
-			{
-				RenderPassEntry* entry = context->renderPassEntries[i];
-
-				if (entry == nullptr)
+				uint64_t value = window->GetCurrentBackBufferIndex();
+				if (_FenceValues[value])
 				{
-					continue;
+					_FenceValues[value]->WaitUntilFinishedRendering();
 				}
 
-				RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[i]->GetConfiguration().friendlyName);
+				// Clear the backbuffer
+				{
+					RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
-				context->renderPasses[i]->Render(context->graphicsInterface, nullptr, context->renderPassEntries[i], (RenderResource**) &back_buffer, nullptr, nullptr);
+					context->graphicsInterface->Clear(back_buffer, { 0.0f, 0.1f, 0.1f, 0.0f });
+				}
 
-				context->graphicsInterface->InvalidateState();
+				// Render the different passes
+				for (int i = 0; i < context->totalPasses; ++i)
+				{
+					RenderPassEntry* entry = context->renderPassEntries[i];
+
+					if (entry == nullptr)
+					{
+						continue;
+					}
+
+					RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[i]->GetConfiguration().friendlyName);
+
+					context->renderPasses[i]->Render(context->graphicsInterface, nullptr, context->renderPassEntries[i], (RenderResource**) &back_buffer, nullptr, nullptr);
+
+					context->graphicsInterface->InvalidateState();
+				}
 			}
 
 			// Present
