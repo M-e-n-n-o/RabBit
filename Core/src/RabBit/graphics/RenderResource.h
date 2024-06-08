@@ -97,9 +97,10 @@ namespace RB::Graphics
 
 		RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
-		virtual uint32_t GetVertexCountPerInstance() const = 0;
+		virtual uint32_t GetVertexCount() const = 0;
 		virtual TopologyType GetTopologyType() const = 0;
 
+		// Make sure to keep the data alive until the resource has been uploaded to the GPU!
 		static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
 
 	protected:

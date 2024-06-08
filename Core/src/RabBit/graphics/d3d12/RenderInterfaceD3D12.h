@@ -14,12 +14,12 @@ namespace RB::Graphics::D3D12
 	public:
 		RIExecutionGuardD3D12(uint64_t fence_value, DeviceQueue* queue);
 
-		virtual bool IsFinishedRendering() override;
-		virtual void WaitUntilFinishedRendering() override;
+		bool IsFinishedRendering() override;
+		void WaitUntilFinishedRendering() override;
 
 	private:
-		uint64_t m_FenceValue;
-		DeviceQueue* m_Queue;
+		uint64_t				m_FenceValue;
+		DeviceQueue*			m_Queue;
 
 		friend class RenderInterfaceD3D12;
 	};

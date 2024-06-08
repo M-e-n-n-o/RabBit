@@ -27,18 +27,44 @@ namespace RB::Graphics
 
 	RenderPassEntry* GBufferPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene)
 	{
-		auto meshes = scene->GetComponentsWithTypeOf<Entity::Mesh>();
+		auto mesh_renderers = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
 
-		VertexBuffer** buffers = (VertexBuffer**) ALLOC_HEAP(sizeof(VertexBuffer*) * meshes.size());
+		// Allocate for the worst case scenario amount of vertex buffers
+		VertexBuffer** buffers = (VertexBuffer**) ALLOC_HEAP(sizeof(VertexBuffer*) * mesh_renderers.size());
 
-		for (int i = 0; i < meshes.size(); ++i)
+		uint32_t total_meshes = 0;
+
+		for (int i = 0; i < mesh_renderers.size(); ++i)
 		{
-			buffers[i] = ((const Entity::Mesh*)meshes[i])->GetVertexBuffer();
+			const Entity::Mesh* mesh = ((const Entity::MeshRenderer*)mesh_renderers[i])->GetMesh();
+
+			if (!mesh->IsLatestDataUploaded())
+			{
+				continue;
+			}
+
+			bool already_inserted = false;
+			for (int j = 0; j < total_meshes; ++j)
+			{
+				if (buffers[j] == mesh->GetVertexBuffer())
+				{
+					already_inserted = true;
+					break;
+				}
+			}
+
+			if (already_inserted)
+			{
+				continue;
+			}
+
+			buffers[total_meshes] = mesh->GetVertexBuffer();
+			total_meshes++;
 		}
 
 		GBufferEntry* entry = new GBufferEntry();
 		entry->buffers = buffers;
-		entry->totalBuffers = meshes.size();
+		entry->totalBuffers = total_meshes;
 
 		return entry;
 	}

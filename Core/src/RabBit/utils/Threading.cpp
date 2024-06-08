@@ -22,12 +22,11 @@ namespace RB
 		m_SharedContext->pendingJobs			 = {};
 		m_SharedContext->highPriorityInsertIndex = 0;
 		m_SharedContext->startedJobsCount		 = 0;
-		m_SharedContext->jobCompleted			 = false;
+		m_SharedContext->completedJobsCount		 = 0;
 		m_SharedContext->counterStart			 = 0;
 
 		InitializeConditionVariable(&m_SharedContext->kickCV);
 		InitializeConditionVariable(&m_SharedContext->syncCV);
-		InitializeConditionVariable(&m_SharedContext->startedCV);
 		InitializeConditionVariable(&m_SharedContext->completedCV);
 		InitializeCriticalSection(&m_SharedContext->kickCS);
 		InitializeCriticalSection(&m_SharedContext->syncCS);
@@ -177,23 +176,20 @@ namespace RB
 	{
 		EnterCriticalSection(&m_SharedContext->kickCS);
 
+		uint64_t wait_for = m_SharedContext->startedJobsCount;
+
 		if (job_id != m_SharedContext->currentJob)
 		{
 			auto itr = FindJobBy(job_id);
 
 			if (itr == m_SharedContext->pendingJobs.end())
 			{
+				// Job not found
 				LeaveCriticalSection(&m_SharedContext->kickCS);
 				return;
 			}
 
-			uint64_t wait_for = m_SharedContext->startedJobsCount + std::distance(m_SharedContext->pendingJobs.begin(), itr) + 1;
-
-			// Sleep until the job we are waiting for has started
-			while (m_SharedContext->startedJobsCount < wait_for)
-			{
-				SleepConditionVariableCS(&m_SharedContext->startedCV, &m_SharedContext->kickCS, INFINITE);
-			}
+			wait_for += std::distance(m_SharedContext->pendingJobs.begin(), itr) + 1;
 		}
 
 		LeaveCriticalSection(&m_SharedContext->kickCS);
@@ -202,9 +198,7 @@ namespace RB
 		{
 			EnterCriticalSection(&m_SharedContext->completedCS);
 
-			m_SharedContext->jobCompleted = false;
-
-			while (!m_SharedContext->jobCompleted)
+			while (m_SharedContext->completedJobsCount < wait_for)
 			{
 				SleepConditionVariableCS(&m_SharedContext->completedCV, &m_SharedContext->completedCS, INFINITE);
 			}
@@ -355,9 +349,6 @@ namespace RB
 				context->counterStart = li.QuadPart;
 
 				LeaveCriticalSection(&context->kickCS);
-
-				// Notify we have started a new job
-				WakeConditionVariable(&context->startedCV);
 			}
 
 			// Do the job
@@ -369,7 +360,7 @@ namespace RB
 			// Notify that we are done with a job
 			{
 				EnterCriticalSection(&context->completedCS);
-				context->jobCompleted = true;
+				context->completedJobsCount++;
 				LeaveCriticalSection(&context->completedCS);
 				WakeConditionVariable(&context->completedCV);
 			}

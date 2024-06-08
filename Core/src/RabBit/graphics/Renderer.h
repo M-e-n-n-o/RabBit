@@ -72,6 +72,6 @@ namespace RB::Graphics
 		uint64_t			m_RenderFrameIndex;
 		CRITICAL_SECTION	m_RenderFrameIndexCS;
 
-		const uint32_t		m_RenderThreadTimeoutMs = 500;
+		const uint32_t		m_RenderThreadTimeoutMs = 100;
 	};
 }

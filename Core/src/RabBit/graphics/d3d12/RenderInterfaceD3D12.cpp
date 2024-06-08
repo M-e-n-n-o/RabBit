@@ -318,7 +318,7 @@ namespace RB::Graphics::D3D12
 
 		VertexBufferD3D12* base_vbo = ((VertexBufferD3D12*)vertex_resources[0]);
 
-		m_RenderState.vertexCountPerInstance = base_vbo->GetVertexCountPerInstance();
+		m_RenderState.vertexCountPerInstance = base_vbo->GetVertexCount();
 
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE current_type = m_RenderState.vertexBufferType;
 

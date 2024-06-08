@@ -78,7 +78,6 @@ namespace RB
 			CRITICAL_SECTION	kickCS;
 			CONDITION_VARIABLE	syncCV;
 			CRITICAL_SECTION	syncCS;
-			CONDITION_VARIABLE	startedCV;
 			CONDITION_VARIABLE	completedCV;
 			CRITICAL_SECTION	completedCS;
 
@@ -88,7 +87,7 @@ namespace RB
 			List<Job>			pendingJobs;
 			uint32_t			highPriorityInsertIndex;
 			uint64_t			startedJobsCount;
-			bool				jobCompleted;
+			uint64_t			completedJobsCount;
 		};
 
 		struct JobType

@@ -25,6 +25,7 @@ namespace RB
 
 	#define SAFE_RELEASE(obj)		(obj)->Release();
 	#define SAFE_DELETE(obj)		if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
+	#define SAFE_DELETE_ARR(obj)	if ((obj) != nullptr) { delete[] (obj); (obj) = nullptr; }
 	#define SAFE_FREE(obj)			if ((obj) != nullptr) { free(obj); (obj) = nullptr; }
 
 	// Custom graphics pointer

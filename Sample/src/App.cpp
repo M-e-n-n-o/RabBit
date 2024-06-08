@@ -13,7 +13,7 @@ public:
 		RB_LOG("Hoiii");
 
 		GameObject* obj = GetScene()->CreateGameObject();
-		obj->AddComponent<Mesh>();
+		obj->AddComponent<MeshRenderer>();
 	}
 
 	void OnUpdate() override
@@ -38,11 +38,11 @@ RB::Application* RB::CreateApplication(const char* launch_args)
 	window1.windowHeight	= 720;
 	app_info.windows.push_back(window1);
 
-	AppInfo::Window window2 = {};
-	window2.windowName		= "Window 2";
-	window2.fullscreen		= true;
-	window2.semiTransparent = true;
-	app_info.windows.push_back(window2);
+	//AppInfo::Window window2 = {};
+	//window2.windowName		= "Window 2";
+	//window2.fullscreen		= true;
+	//window2.semiTransparent = true;
+	//app_info.windows.push_back(window2);
 
 	return new App(app_info);
 }

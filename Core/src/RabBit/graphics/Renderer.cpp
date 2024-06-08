@@ -216,34 +216,40 @@ namespace RB::Graphics
 
 			(Slowly) Upload needed resources for next frame, like new vertex data or textures.
 			Constantly check if the main thread is waiting until this task is done, if so, finish uploading only the most crucial resources 
-			and then stop (so textures are not completely crucial, as we can use the lower mips as fallback, or even white textures).
+			and then stop (so textures are not completely crucial, as we can use the lower mips as fallback, or even white textures, so upload textures mip by mip).
 			Maybe an idea to give this task always a minimum amount of time to let it upload resources, because when maybe the main thread
 			is not doing a lot, this task will not get a lot of time actually uploading stuff.
 
-			Make sure to put a GPU wait after uploading the last resource of the task!
+			Do not forget to add GPU waits on the copy interface for the previous graphics interface before starting the texture copies!
+			Also do not forget to let the render thread sync with the resource streaming just before the streaming has been done!
+
+			TODO Maybe an idea to batch all some uploads together in a bigger upload resource?
 		*/
 
-		static List<const Entity::Mesh*> already_uploaded;
+		List<const Entity::ObjectComponent*> meshes = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
 
-		List<const Entity::ObjectComponent*> meshes = scene->GetComponentsWithTypeOf<Entity::Mesh>();
-
-		uint32_t uploaded = 0;
+		uint32_t uploaded_count = 0;
+		List<Entity::Mesh*> uploaded(meshes.size());
 
 		for (const Entity::ObjectComponent* obj : meshes)
 		{
-			const Entity::Mesh* mesh = (const Entity::Mesh*)obj;
+			Entity::Mesh* mesh = ((const Entity::MeshRenderer*)obj)->GetMesh();
 
-			if (std::find(already_uploaded.begin(), already_uploaded.end(), mesh) != already_uploaded.end())
+			if (mesh->IsLatestDataUploaded())
 			{
 				continue;
 			}
 
 			m_CopyInterface->UploadDataToResource(mesh->GetVertexBuffer(), mesh->GetVertexBuffer()->GetData(), mesh->GetVertexBuffer()->GetSize());
-			already_uploaded.push_back(mesh);
-			uploaded++;
+
+			uploaded[uploaded_count] = mesh;
+			uploaded_count++;
+
+			// TODO This is ofcourse not true, they are uploaded once the fence has been reached, but how to do this properly?
+			mesh->SetLatestDataUploaded(true);
 		}
 
-		if (uploaded > 0)
+		if (uploaded_count > 0)
 		{
 			// Make sure the graphics interface waits until the streaming has been completed before starting to render
 			Shared<RIExecutionGuard> guard = m_CopyInterface->ExecuteOnGpu();

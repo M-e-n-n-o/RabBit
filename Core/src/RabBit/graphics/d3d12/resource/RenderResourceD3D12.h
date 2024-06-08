@@ -24,7 +24,7 @@ namespace RB::Graphics::D3D12
 
 		uint32_t GetSize() const override { return m_Size; }
 
-		uint32_t GetVertexCountPerInstance() const override { return m_Size / m_VertexSize; }
+		uint32_t GetVertexCount() const override { return m_Size / m_VertexSize; }
 
 		TopologyType GetTopologyType() const override { return m_Type; }
 
