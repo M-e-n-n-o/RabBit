@@ -8,11 +8,12 @@ namespace RB::Graphics::D3D12
 {
 	class DeviceQueue;
 	class GpuResource;
+	class UploadAllocator;
 
-	class RIExecutionGuardD3D12 : public RIExecutionGuard
+	class GpuGuardD3D12 : public GpuGuard
 	{
 	public:
-		RIExecutionGuardD3D12(uint64_t fence_value, DeviceQueue* queue);
+		GpuGuardD3D12(uint64_t fence_value, DeviceQueue* queue);
 
 		bool IsFinishedRendering() override;
 		void WaitUntilFinishedRendering() override;
@@ -28,6 +29,7 @@ namespace RB::Graphics::D3D12
 	{
 	public:
 		RenderInterfaceD3D12(bool allow_only_copy_operations);
+		~RenderInterfaceD3D12();
 
 		// The render interface does not own the command list, so it does not get a shared pointer
 		//void SetCommandList(ID3D12GraphicsCommandList2* command_list);
@@ -36,13 +38,15 @@ namespace RB::Graphics::D3D12
 
 		// This method executes the command list and sets a new internal valid command list
 		// Returns the execute ID (on which can be waited)
-		Shared<RIExecutionGuard> ExecuteInternal() override;
-		void GpuWaitOn(RIExecutionGuard* guard) override;
+		Shared<GpuGuard> ExecuteInternal() override;
+		void GpuWaitOn(GpuGuard* guard) override;
 
 		//void TransitionResource(RenderResource* resource, ResourceState state) override;
 		void FlushResourceBarriers() override;
 
 		void SetRenderTarget(RenderTargetBundle* bundle) override;
+
+		void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) override;
 
 		void SetVertexShader(uint32_t shader_index) override;
 		void SetPixelShader(uint32_t shader_index) override;
@@ -69,6 +73,7 @@ namespace RB::Graphics::D3D12
 		GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
 	private:
+		void BindResources();
 		void SetPipelineState();
 		void SetNewCommandList();
 		void InternalCopyBuffer(GpuResource* src, GpuResource* dest);
@@ -80,7 +85,9 @@ namespace RB::Graphics::D3D12
 		struct RenderState
 		{
 			bool							psoDirty				= true;
+			bool							rootSignatureDirty		= true;
 
+			GPtr<ID3D12RootSignature>		rootSignature			= nullptr;
 			D3D12_PRIMITIVE_TOPOLOGY_TYPE	vertexBufferType		= D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 			uint32_t						vertexCountPerInstance	= 0;
 			bool							scissorSet				= false;
@@ -96,8 +103,20 @@ namespace RB::Graphics::D3D12
 			D3D12_RASTERIZER_DESC			rasterizerDesc			= {};
 			bool							depthStencilSet			= false;
 			D3D12_DEPTH_STENCIL_DESC		depthStencilDesc		= {};
+			
+			D3D12_GPU_VIRTUAL_ADDRESS		cbvAddresses[16];
 		};
 
 		RenderState m_RenderState;
+
+		struct UploadAllocatorPair
+		{
+			UploadAllocator* allocator;
+			uint64_t fenceValue;
+		};
+
+		Queue<UploadAllocator*>		m_AvailableCBVAllocators;
+		List<UploadAllocatorPair>	m_InFlightCBVAllocators;
+		UploadAllocator*			m_CurrentCBVAllocator;
 	};
 }

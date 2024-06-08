@@ -23,11 +23,11 @@ namespace RB::Graphics
 
 	class Display;
 
+	static const uint32_t BACK_BUFFER_COUNT = 2u;
+
 	class Window
 	{
 	public:
-		static const uint32_t BACK_BUFFER_COUNT = 2u;
-
 		virtual ~Window();
 
 		virtual void Update() = 0;

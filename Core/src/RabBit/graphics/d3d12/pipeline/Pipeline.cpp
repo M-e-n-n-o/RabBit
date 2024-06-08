@@ -73,14 +73,65 @@ namespace RB::Graphics::D3D12
 			return found->second;
 		}
 
-		//ShaderBlob* vs_blob = g_ShaderSystem->GetShaderBlob(vs_identifier);
-		//ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(ps_identifier);
+		GPtr<ID3D12ShaderReflection> vs_reflection = g_ShaderSystem->GetShaderBlob(vs_identifier)->reflectionData;
+		GPtr<ID3D12ShaderReflection> ps_reflection = g_ShaderSystem->GetShaderBlob(ps_identifier)->reflectionData;
 
-		// TODO create root signature based on the actual shader reflection data!
+		D3D12_SHADER_DESC vs_desc;
+		vs_reflection->GetDesc(&vs_desc);
+		D3D12_SHADER_DESC ps_desc;
+		ps_reflection->GetDesc(&ps_desc);
+
+		uint32_t referenced_cbvs = vs_desc.ConstantBuffers + ps_desc.ConstantBuffers;
+
+		// Only CBV's are supported currently.
+		// All constant buffers are inline for now.
+		uint32_t total_cbvs = 0;
+		D3D12_ROOT_PARAMETER* parameters	  = (D3D12_ROOT_PARAMETER*) ALLOC_STACK(sizeof(D3D12_ROOT_PARAMETER) * referenced_cbvs);
+		LPCSTR*				  parameter_names = (LPCSTR*)				ALLOC_STACK(sizeof(LPCSTR) * referenced_cbvs);
+
+		for (int i = 0; i < referenced_cbvs; ++i)
+		{
+			GPtr<ID3D12ShaderReflection>	reflection	= i < vs_desc.ConstantBuffers ? vs_reflection : ps_reflection;
+			uint32_t						subtract	= i < vs_desc.ConstantBuffers ? 0 : vs_desc.ConstantBuffers;
+			D3D12_SHADER_VISIBILITY			visibility	= i < vs_desc.ConstantBuffers ? D3D12_SHADER_VISIBILITY_VERTEX : D3D12_SHADER_VISIBILITY_PIXEL;
+
+			D3D12_SHADER_BUFFER_DESC buffer_desc;
+			reflection->GetConstantBufferByIndex(i - subtract)->GetDesc(&buffer_desc);
+
+			int32_t index = -1;
+			for (int j = 0; j < total_cbvs; ++j)
+			{
+				if (parameter_names[j] == buffer_desc.Name)
+				{
+					// Found the same CBV (so it's shared between multiple shader stages)
+					index = j;
+					break;
+				}
+			}
+
+			if (index >= 0)
+			{
+				parameters[index].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+			}
+			else
+			{
+				parameters[total_cbvs] = {};
+				parameters[total_cbvs].ParameterType			 = D3D12_ROOT_PARAMETER_TYPE_CBV;
+				parameters[total_cbvs].Descriptor.ShaderRegister = total_cbvs;
+				parameters[total_cbvs].Descriptor.RegisterSpace	 = 0;
+				parameters[total_cbvs].ShaderVisibility			 = visibility;
+
+				parameter_names[total_cbvs] = buffer_desc.Name;
+
+				total_cbvs++;
+			}
+		}
+
+		// TODO Expand the creation of root signatures based on the shader reflection data!
 		D3D12_ROOT_SIGNATURE_DESC desc = {};
 		desc.Flags				= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		desc.NumParameters		= 0;
-		desc.pParameters		= nullptr;
+		desc.NumParameters		= total_cbvs;
+		desc.pParameters		= parameters;
 		desc.NumStaticSamplers	= 0;
 		desc.pStaticSamplers	= nullptr;
 

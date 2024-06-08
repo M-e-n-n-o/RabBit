@@ -6,7 +6,7 @@
 
 namespace RB::Graphics
 {
-	Shared<RIExecutionGuard> RenderInterface::ExecuteOnGpu()
+	Shared<GpuGuard> RenderInterface::ExecuteOnGpu()
 	{
 		m_TotalDraws = 0;
 		return ExecuteInternal();

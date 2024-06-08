@@ -4,6 +4,7 @@
 #include "resource/ResourceManager.h"
 #include "resource/RenderResourceD3D12.h"
 #include "resource/ResourceStateManager.h"
+#include "resource/UploadAllocator.h"
 #include "pipeline/Pipeline.h"
 #include "shaders/ShaderSystem.h"
 #include "UtilsD3D12.h"
@@ -11,29 +12,30 @@
 
 namespace RB::Graphics::D3D12
 {
-	RIExecutionGuardD3D12::RIExecutionGuardD3D12(uint64_t fence_value, DeviceQueue* queue)
+	GpuGuardD3D12::GpuGuardD3D12(uint64_t fence_value, DeviceQueue* queue)
 		: m_FenceValue(fence_value)
 		, m_Queue(queue)
 	{
 	}
 
-	bool RIExecutionGuardD3D12::IsFinishedRendering()
+	bool GpuGuardD3D12::IsFinishedRendering()
 	{
 		return m_Queue->IsFenceReached(m_FenceValue);
 	}
 
-	void RIExecutionGuardD3D12::WaitUntilFinishedRendering()
+	void GpuGuardD3D12::WaitUntilFinishedRendering()
 	{
 		m_Queue->CpuWaitForFenceValue(m_FenceValue);
 	}
 
 	// ---------------------------------------------------------------------------
-	//								RIExecutionGuard
+	//								GpuGuard
 	// ---------------------------------------------------------------------------
 
 	RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
 		: m_CopyOperationsOnly(allow_only_copy_operations)
 		, m_RenderState()
+		, m_CurrentCBVAllocator(nullptr)
 	{
 		if (allow_only_copy_operations)
 			m_Queue = g_GraphicsDevice->GetCopyQueue();
@@ -43,28 +45,50 @@ namespace RB::Graphics::D3D12
 		SetNewCommandList();
 	}
 
+	RenderInterfaceD3D12::~RenderInterfaceD3D12()
+	{
+		SAFE_DELETE(m_CurrentCBVAllocator);
+
+		while (!m_AvailableCBVAllocators.empty())
+		{
+			SAFE_DELETE(m_AvailableCBVAllocators.front());
+			m_AvailableCBVAllocators.pop();
+		}
+
+		for (int i = 0; i < m_InFlightCBVAllocators.size(); ++i)
+		{
+			SAFE_DELETE(m_InFlightCBVAllocators[i].allocator);
+		}
+	}
+
 	void RenderInterfaceD3D12::InvalidateState()
 	{
 		m_RenderState = {};
 	}
 
-	Shared<RIExecutionGuard> RenderInterfaceD3D12::ExecuteInternal()
+	Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
 	{
 		// TODO Maybe do the ExecuteCommandLists on a separate thread in the future?
-
 		uint64_t fence_value = m_Queue->ExecuteCommandList(m_CommandList);
 
 		g_ResourceManager->OnCommandListExecute(m_Queue, fence_value);
 
+		if (m_CurrentCBVAllocator)
+		{
+			m_InFlightCBVAllocators.push_back({ m_CurrentCBVAllocator, fence_value });
+
+			m_CurrentCBVAllocator = nullptr;
+		}
+
 		InvalidateState();
 		SetNewCommandList();
 
-		return CreateShared<RIExecutionGuardD3D12>(fence_value, m_Queue);
+		return CreateShared<GpuGuardD3D12>(fence_value, m_Queue);
 	}
 
-	void RenderInterfaceD3D12::GpuWaitOn(RIExecutionGuard* guard)
+	void RenderInterfaceD3D12::GpuWaitOn(GpuGuard* guard)
 	{
-		RIExecutionGuardD3D12* d3d_guard = (RIExecutionGuardD3D12*) guard;
+		GpuGuardD3D12* d3d_guard = (GpuGuardD3D12*) guard;
 		m_Queue->GpuWaitForFenceValue(d3d_guard->m_Queue->GetFence(), d3d_guard->m_FenceValue);
 	}
 
@@ -123,16 +147,59 @@ namespace RB::Graphics::D3D12
 		m_RenderState.psoDirty = true;
 	}
 
+	void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
+	{
+		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.cbvAddresses), "Up the amount of possible CBV addresses");
+
+		if (m_CurrentCBVAllocator == nullptr)
+		{
+			// Update the available allocators
+			{
+				auto itr = m_InFlightCBVAllocators.begin();
+				while (itr != m_InFlightCBVAllocators.end())
+				{
+					if (m_Queue->IsFenceReached(itr->fenceValue))
+					{
+						m_AvailableCBVAllocators.push(itr->allocator);
+						itr = m_InFlightCBVAllocators.erase(itr);
+					}
+					else
+					{
+						++itr;
+					}
+				}
+			}
+
+			if (m_AvailableCBVAllocators.empty())
+			{
+				m_CurrentCBVAllocator = new UploadAllocator("CBV Upload Allocator", _64KB);
+			}
+			else
+			{
+				m_CurrentCBVAllocator = m_AvailableCBVAllocators.front();
+				m_AvailableCBVAllocators.pop();
+			}
+		}
+
+		UploadAllocation allocation = m_CurrentCBVAllocator->Allocate(data_size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+
+		memcpy(allocation.cpuWriteAddress, data, data_size);
+
+		m_RenderState.cbvAddresses[slot] = allocation.address;
+	}
+
 	void RenderInterfaceD3D12::SetVertexShader(uint32_t shader_index)
 	{
 		m_RenderState.vsShader = shader_index;
 		m_RenderState.psoDirty = true;
+		m_RenderState.rootSignatureDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetPixelShader(uint32_t shader_index)
 	{
 		m_RenderState.psShader = shader_index;
 		m_RenderState.psoDirty = true;
+		m_RenderState.rootSignatureDirty = true;
 	}
 
 	void RenderInterfaceD3D12::SetNewCommandList()
@@ -394,12 +461,12 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DrawInternal()
 	{
-		if (m_RenderState.psoDirty)
+		if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
 		{
 			SetPipelineState();
-
-			m_RenderState.psoDirty = false;
 		}
+
+		BindResources();
 
 		FlushResourceBarriers();
 
@@ -408,6 +475,17 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DispatchInternal()
 	{
+	}
+
+	void RenderInterfaceD3D12::BindResources()
+	{
+		for (int i = 0; i < _countof(m_RenderState.cbvAddresses); ++i)
+		{
+			if (m_RenderState.cbvAddresses[i] > 0)
+			{
+				m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + i, m_RenderState.cbvAddresses[i]);
+			}
+		}
 	}
 
 	void RenderInterfaceD3D12::SetPipelineState()
@@ -425,7 +503,12 @@ namespace RB::Graphics::D3D12
 			
 		#undef CHECK_SET
 
-		GPtr<ID3D12RootSignature> root_signature = g_PipelineManager->GetRootSignature(m_RenderState.vsShader, m_RenderState.psShader);
+		if (m_RenderState.rootSignatureDirty)
+		{
+			m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.vsShader, m_RenderState.psShader);
+
+			m_RenderState.rootSignatureDirty = false;
+		}
 		
 		List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader);
 
@@ -433,7 +516,7 @@ namespace RB::Graphics::D3D12
 		ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(m_RenderState.psShader);
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
-		pso_desc.pRootSignature			= root_signature.Get();
+		pso_desc.pRootSignature			= m_RenderState.rootSignature.Get();
 		pso_desc.VS						= { vs_blob->shaderBlob, vs_blob->shaderBlobSize };
 		pso_desc.PS						= { ps_blob->shaderBlob, ps_blob->shaderBlobSize };
 		//pso_desc.DS					= ;
@@ -459,7 +542,9 @@ namespace RB::Graphics::D3D12
 
 		m_CommandList->SetPipelineState(pso.Get());
 		// Call this before binding any resources to the pipeline (CBV, UAV, SRV, or Samplers)!
-		m_CommandList->SetGraphicsRootSignature(root_signature.Get());
+		m_CommandList->SetGraphicsRootSignature(m_RenderState.rootSignature.Get());
+
+		m_RenderState.psoDirty = false;
 	}
 
 	void RenderInterfaceD3D12::InternalCopyBuffer(GpuResource* src, GpuResource* dest)

@@ -7,6 +7,8 @@
 #include "entity/Scene.h"
 #include "entity/components/Mesh.h"
 
+#include "graphics/d3d12/shaders/shared/test2.h"
+
 namespace RB::Graphics
 {
 	struct GBufferEntry : public RenderPassEntry
@@ -62,6 +64,12 @@ namespace RB::Graphics
 			total_meshes++;
 		}
 
+		if (total_meshes == 0)
+		{
+			delete buffers;
+			return nullptr;
+		}
+
 		GBufferEntry* entry = new GBufferEntry();
 		entry->buffers = buffers;
 		entry->totalBuffers = total_meshes;
@@ -88,11 +96,20 @@ namespace RB::Graphics
 
 		GBufferEntry* entry = (GBufferEntry*) entry_context;
 
+		TransformCB transform;
+		transform.offset = { 0.75f, 0 };
+
+		ColorCB color;
+		color.color = { 0.0f, 1.0f, 0.0f };
+
 		for (int i = 0; i < entry->totalBuffers; ++i)
 		{
 			VertexBuffer* buffer = entry->buffers[i];
 
 			render_interface->SetVertexBuffer(buffer);
+
+			render_interface->SetConstantShaderData(0, &transform, sizeof(transform));
+			render_interface->SetConstantShaderData(1, &color, sizeof(color));
 
 			render_interface->Draw();
 		}

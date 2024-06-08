@@ -30,18 +30,18 @@ namespace RB::Graphics
 
 	struct RenderContext : public JobData
 	{
-		RenderPass**					renderPasses;
-		RenderPassEntry**				renderPassEntries;
-		uint32_t						totalPasses;
-								 
-		RenderInterface*				graphicsInterface;
-										
-		uint64_t*						renderFrameIndex;
-		CRITICAL_SECTION*				renderFrameIndexCS;
-										
-		std::function<void()>			OnRenderFrameStart;
-		std::function<void()>			OnRenderFrameEnd;
-		std::function<void()>			SyncWithGpu;
+		RenderPass**			renderPasses;
+		RenderPassEntry**		renderPassEntries;
+		uint32_t				totalPasses;
+						 
+		RenderInterface*		graphicsInterface;
+								
+		uint64_t*				renderFrameIndex;
+		CRITICAL_SECTION*		renderFrameIndexCS;
+								
+		std::function<void()>	OnRenderFrameStart;
+		std::function<void()>	OnRenderFrameEnd;
+		std::function<void()>	SyncWithGpu;
 
 		~RenderContext()
 		{
@@ -160,7 +160,7 @@ namespace RB::Graphics
 				m_StreamingPass->Render(m_CopyInterface, nullptr, entry, nullptr, nullptr, nullptr);
 
 				// Make sure the graphics interface waits until the streaming has been completed before starting to render
-				Shared<RIExecutionGuard> guard = m_CopyInterface->ExecuteOnGpu();
+				Shared<GpuGuard> guard = m_CopyInterface->ExecuteOnGpu();
 				m_GraphicsInterface->GpuWaitOn(guard.get());
 			}
 
@@ -228,7 +228,7 @@ namespace RB::Graphics
 	}
 
 	// TODO Remove!
-	Shared<RIExecutionGuard> _FenceValues[Graphics::Window::BACK_BUFFER_COUNT] = {};
+	Shared<GpuGuard> _FenceValues[BACK_BUFFER_COUNT] = {};
 
 	void RenderJob(JobData* data)
 	{

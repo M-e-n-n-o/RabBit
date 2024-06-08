@@ -35,16 +35,16 @@ namespace RB::Graphics
 		Disabled,
 	};
 
-	class RIExecutionGuard
+	class GpuGuard
 	{
 	public:
-		virtual ~RIExecutionGuard() = default;
+		virtual ~GpuGuard() = default;
 
 		virtual bool IsFinishedRendering() = 0;
 		virtual void WaitUntilFinishedRendering() = 0;
 
 	protected:
-		RIExecutionGuard() = default;
+		GpuGuard() = default;
 	};
 
 	class RenderInterface
@@ -55,13 +55,15 @@ namespace RB::Graphics
 		// Call after leaving from a third-party library that issues render commands
 		virtual void InvalidateState() = 0;
 
-		Shared<RIExecutionGuard> ExecuteOnGpu();
+		Shared<GpuGuard> ExecuteOnGpu();
 
-		virtual void GpuWaitOn(RIExecutionGuard* guard) = 0;
+		virtual void GpuWaitOn(GpuGuard* guard) = 0;
 
 		// You should normally not have to manually transition resources, this will be done automatically
 		//virtual void TransitionResource(RenderResource* resource, ResourceState state) = 0;
 		virtual void FlushResourceBarriers() = 0;
+
+		virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
 
 		virtual void SetVertexShader(uint32_t shader_index) = 0;
 		virtual void SetPixelShader(uint32_t shader_index) = 0;
@@ -96,7 +98,7 @@ namespace RB::Graphics
 
 		bool NeedsIntermediateExecute();
 
-		virtual Shared<RIExecutionGuard> ExecuteInternal() = 0;
+		virtual Shared<GpuGuard> ExecuteInternal() = 0;
 		virtual void DrawInternal() = 0;
 		virtual void DispatchInternal() = 0;
 

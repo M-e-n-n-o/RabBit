@@ -80,6 +80,12 @@ namespace RB::Graphics
 			mesh->SetLatestDataUploaded(true);
 		}
 
+		if (uploaded_count == 0)
+		{
+			delete buffers;
+			return nullptr;
+		}
+
 		StreamerEntry* entry = new StreamerEntry();
 		entry->buffers		= buffers;
 		entry->totalBuffers = uploaded_count;
