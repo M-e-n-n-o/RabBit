@@ -12,7 +12,7 @@ namespace RB::Entity
 	public:
 		virtual ~ObjectComponent() = default;
 
-		virtual void Update() = 0;
+		virtual void Update() {}
 
 	protected:
 		GameObject* m_GameObject;

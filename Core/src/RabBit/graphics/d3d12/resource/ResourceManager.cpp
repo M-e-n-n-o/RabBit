@@ -218,6 +218,21 @@ namespace RB::Graphics::D3D12
 		m_ScheduledCreations.push_back({ resource, m_CreationThread->ScheduleJob(m_CreationJob, desc) });
 	}
 
+	void ResourceManager::ScheduleCreateIndexResource(GpuResource* resource, const char* name, uint64_t size)
+	{
+		// Is deleted in destructor of ResourceCreationDesc
+		wchar_t* wname = new wchar_t[strlen(name) + 1];
+		CharToWchar(name, wname);
+
+		ResourceCreationDesc* desc = new ResourceCreationDesc();
+		desc->type		= ResourceType::Index;
+		desc->resource	= resource;
+		desc->name		= wname;
+		desc->size		= size;
+
+		m_ScheduledCreations.push_back({ resource, m_CreationThread->ScheduleJob(m_CreationJob, desc) });
+	}
+
 	GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,
 		D3D12_HEAP_FLAGS heap_flags, D3D12_RESOURCE_STATES start_state, const D3D12_CLEAR_VALUE* clear_value)
 	{
@@ -264,6 +279,7 @@ namespace RB::Graphics::D3D12
 		break;
 
 		case ResourceManager::ResourceType::Vertex:
+		case ResourceManager::ResourceType::Index:
 		{
 			D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON; //D3D12_RESOURCE_STATE_COPY_DEST // Buffers are always created in the common state
 

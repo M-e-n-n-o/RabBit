@@ -52,7 +52,7 @@ namespace RB::Graphics
 		virtual void* GetNativeResource() const = 0;
 
 		virtual void* GetData() const = 0;
-		virtual uint32_t GetSize() const = 0;
+		virtual uint64_t GetSize() const = 0;
 		//virtual void WriteData(void* data, uint64_t size, uint32_t write_offset) = 0;
 
 		//virtual bool IsInFlight() const = 0;
@@ -97,7 +97,7 @@ namespace RB::Graphics
 
 		RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
-		virtual uint32_t GetVertexCount() const = 0;
+		virtual uint32_t GetVertexElementCount() const = 0;
 		virtual TopologyType GetTopologyType() const = 0;
 
 		// Make sure to keep the data alive until the resource has been uploaded to the GPU!
@@ -109,7 +109,18 @@ namespace RB::Graphics
 
 	class IndexBuffer : public Buffer
 	{
+	public:
+		virtual ~IndexBuffer() = default;
 
+		RenderResourceFormat GetFormat() const override { return RenderResourceFormat::R16_UINT; }
+
+		virtual uint64_t GetIndexCount() const = 0;
+
+		// Make sure to keep the data alive until the resource has been uploaded to the GPU!
+		static IndexBuffer* Create(const char* name, uint16_t* data, uint64_t data_size);
+
+	protected:
+		IndexBuffer(): Buffer(RenderResourceType::IndexBuffer) {}
 	};
 
 	class Texture : public RenderResource

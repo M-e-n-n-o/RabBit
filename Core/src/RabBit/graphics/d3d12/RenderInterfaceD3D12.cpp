@@ -172,7 +172,7 @@ namespace RB::Graphics::D3D12
 
 			if (m_AvailableCBVAllocators.empty())
 			{
-				m_CurrentCBVAllocator = new UploadAllocator("CBV Upload Allocator", _64KB);
+				m_CurrentCBVAllocator = new UploadAllocator("CBV Upload Allocator", k64KB);
 			}
 			else
 			{
@@ -346,6 +346,15 @@ namespace RB::Graphics::D3D12
 		m_RenderState.psoDirty = true;
 	}
 
+	void RenderInterfaceD3D12::SetIndexBuffer(RenderResource* index_resource)
+	{
+		IndexBufferD3D12* ib = (IndexBufferD3D12*) index_resource;
+
+		m_CommandList->IASetIndexBuffer(&ib->GetView());
+
+		m_RenderState.indexCountPerInstance = ib->GetIndexCount();
+	}
+
 	void RenderInterfaceD3D12::SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot)
 	{
 		RenderResource* resources[] = { vertex_resource };
@@ -385,7 +394,7 @@ namespace RB::Graphics::D3D12
 
 		VertexBufferD3D12* base_vbo = ((VertexBufferD3D12*)vertex_resources[0]);
 
-		m_RenderState.vertexCountPerInstance = base_vbo->GetVertexCount();
+		m_RenderState.vertexCountPerInstance = base_vbo->GetVertexElementCount();
 
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE current_type = m_RenderState.vertexBufferType;
 
@@ -470,7 +479,14 @@ namespace RB::Graphics::D3D12
 
 		FlushResourceBarriers();
 
-		m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, 0, 0);
+		if (m_RenderState.indexCountPerInstance > 0)
+		{
+			m_CommandList->DrawIndexedInstanced(m_RenderState.indexCountPerInstance, 1, 0, 0, 0);
+		}
+		else
+		{
+			m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, 0, 0);
+		}
 	}
 
 	void RenderInterfaceD3D12::DispatchInternal()

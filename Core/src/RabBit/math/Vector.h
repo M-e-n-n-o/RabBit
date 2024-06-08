@@ -31,7 +31,6 @@ namespace RB::Math
 		Int2 operator/(const Int2& other)  const;
 		Int2 operator/(const int32_t& other) const;
 
-	public:
 		static Int2 Cross(const Int2& first, const Int2& second);
 
 		static float Dot(const Int2& first, const Int2& second);
@@ -69,7 +68,6 @@ namespace RB::Math
 		Int4 operator/(const Int4& other)  const;
 		Int4 operator/(const int32_t& other) const;
 
-	public:
 		static Int4 Cross(const Int4& first, const Int4& second);
 
 		static int32_t Dot(const Int4& first, const Int4& second);
@@ -105,7 +103,6 @@ namespace RB::Math
 		Float2 operator/(const Float2& other)  const;
 		Float2 operator/(const float& other) const;
 
-	public:
 		//static Float2 Cross(const Float2& first, const Float2& second);
 
 		static float Dot(const Float2& first, const Float2& second);
@@ -142,7 +139,6 @@ namespace RB::Math
 		Float3 operator/(const Float3& other)  const;
 		Float3 operator/(const float& other) const;
 
-	public:
 		static Float3 Cross(const Float3& first, const Float3& second);
 
 		static float Dot(const Float3& first, const Float3& second);
@@ -180,7 +176,6 @@ namespace RB::Math
 	//	Float4 operator/(const Float4& other)  const;
 	//	Float4 operator/(const float& other) const;
 
-	//public:
 	//	static Float4 Cross(const Float4& first, const Float4& second);
 
 	//	static float Dot(const Float4& first, const Float4& second);

@@ -79,11 +79,6 @@ namespace RB::Entity
 			delete m_Mesh;
 		}
 
-		void Update() override
-		{
-
-		}
-
 		Mesh* GetMesh() const
 		{
 			return m_Mesh;

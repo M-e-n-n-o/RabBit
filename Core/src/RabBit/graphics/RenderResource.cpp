@@ -28,6 +28,20 @@ namespace RB::Graphics
 
 		return nullptr;
 	}
+
+	IndexBuffer* IndexBuffer::Create(const char* name, uint16_t* data, uint64_t data_size)
+	{
+		switch (Renderer::GetAPI())
+		{
+		case RenderAPI::D3D12:
+			return new D3D12::IndexBufferD3D12(name, data, data_size);
+		default:
+			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+			break;
+		}
+
+		return nullptr;
+	}
 	
 	Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height)
 	{

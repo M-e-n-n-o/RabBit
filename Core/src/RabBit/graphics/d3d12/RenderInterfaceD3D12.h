@@ -60,6 +60,7 @@ namespace RB::Graphics::D3D12
 		void SetCullMode(const CullMode& mode) override;
 		void SetDepthMode(const DepthMode& mode) override;
 
+		void SetIndexBuffer(RenderResource* index_resource) override;
 		void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot) override;
 		void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot) override;
 
@@ -90,6 +91,7 @@ namespace RB::Graphics::D3D12
 			GPtr<ID3D12RootSignature>		rootSignature			= nullptr;
 			D3D12_PRIMITIVE_TOPOLOGY_TYPE	vertexBufferType		= D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 			uint32_t						vertexCountPerInstance	= 0;
+			uint32_t						indexCountPerInstance	= 0;
 			bool							scissorSet				= false;
 			bool							viewportSet				= false;
 			uint32_t						numRenderTargets		= 0;

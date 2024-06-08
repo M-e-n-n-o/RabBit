@@ -79,6 +79,7 @@ namespace RB::Graphics
 		virtual void SetCullMode(const CullMode& mode) = 0;
 		virtual void SetDepthMode(const DepthMode& mode) = 0;
 
+		virtual void SetIndexBuffer(RenderResource* index_resource) = 0;
 		virtual void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot = 0) = 0;
 		virtual void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot = 0) = 0;
 

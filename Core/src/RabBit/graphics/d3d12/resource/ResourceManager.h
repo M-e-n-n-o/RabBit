@@ -31,6 +31,7 @@ namespace RB::Graphics::D3D12
 
 		void ScheduleCreateUploadResource(GpuResource* resource, const char* name, uint64_t size);
 		void ScheduleCreateVertexResource(GpuResource* resource, const char* name, uint64_t size);
+		void ScheduleCreateIndexResource(GpuResource* resource, const char* name, uint64_t size);
 
 		bool WaitUntilResourceValid(GpuResource* resource);
 
@@ -54,7 +55,8 @@ namespace RB::Graphics::D3D12
 		enum class ResourceType
 		{
 			Upload,
-			Vertex
+			Vertex,
+			Index
 		};
 
 		struct ResourceCreationDesc : public JobData

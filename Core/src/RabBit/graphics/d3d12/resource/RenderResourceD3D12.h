@@ -22,9 +22,9 @@ namespace RB::Graphics::D3D12
 
 		void* GetNativeResource() const override { return m_Resource; }
 
-		uint32_t GetSize() const override { return m_Size; }
+		uint64_t GetSize() const override { return m_Size; }
 
-		uint32_t GetVertexCount() const override { return m_Size / m_VertexSize; }
+		uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
 
 		TopologyType GetTopologyType() const override { return m_Type; }
 
@@ -36,7 +36,33 @@ namespace RB::Graphics::D3D12
 		D3D12_VERTEX_BUFFER_VIEW	m_View;
 		TopologyType				m_Type;
 		uint32_t					m_VertexSize;
-		uint32_t					m_Size;
+		uint64_t					m_Size;
+		void*						m_Data;
+	};
+
+	class IndexBufferD3D12 : public IndexBuffer
+	{
+	public:
+		IndexBufferD3D12(const char* name, uint16_t* data, uint64_t data_size);
+		~IndexBufferD3D12();
+
+		const char* GetName() const override { return m_Name; }
+
+		void* GetData() const override { return m_Data; }
+
+		void* GetNativeResource() const override { return m_Resource; }
+
+		uint64_t GetSize() const override { return m_Size; }
+
+		uint64_t GetIndexCount() const override { return m_Size / sizeof(uint16_t); }
+
+		D3D12_INDEX_BUFFER_VIEW GetView();
+
+	private:
+		const char*					m_Name;
+		GpuResource*				m_Resource;
+		D3D12_INDEX_BUFFER_VIEW		m_View;
+		uint64_t					m_Size;
 		void*						m_Data;
 	};
 
@@ -54,7 +80,7 @@ namespace RB::Graphics::D3D12
 
 		void* GetData() const override { return nullptr; }
 
-		uint32_t GetSize() const override { return -1; }
+		uint64_t GetSize() const override { return 0; }
 
 		bool AllowedRenderTarget() const override { return false; }
 

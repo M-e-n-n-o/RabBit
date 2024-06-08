@@ -34,6 +34,32 @@ namespace RB::Graphics::D3D12
 		return m_View;
 	}
 
+	IndexBufferD3D12::IndexBufferD3D12(const char* name, uint16_t* data, uint64_t data_size)
+		: m_Name(name)
+		, m_Size(data_size)
+		, m_Data(data)
+	{
+		m_Resource = new GpuResource();
+		g_ResourceManager->ScheduleCreateIndexResource(m_Resource, name, data_size);
+	}
+
+	IndexBufferD3D12::~IndexBufferD3D12()
+	{
+		SAFE_DELETE(m_Resource);
+	}
+
+	D3D12_INDEX_BUFFER_VIEW IndexBufferD3D12::GetView()
+	{
+		if (m_View.SizeInBytes == 0)
+		{
+			m_View.BufferLocation = m_Resource->GetResource()->GetGPUVirtualAddress();
+			m_View.SizeInBytes	  = m_Size;
+			m_View.Format		  = ConvertToDXGIFormat(GetFormat());
+		}
+
+		return m_View;
+	}
+
 	Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height)
 		: m_Name(name)
 		, m_Resource((GpuResource*) internal_resource)
