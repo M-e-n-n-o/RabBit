@@ -14,6 +14,7 @@ namespace RB::Graphics
 	enum class RenderPassType
 	{
 		None,
+		Streamer,
 		GBuffer,
 	};
 

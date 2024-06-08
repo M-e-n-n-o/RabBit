@@ -1,4 +1,3 @@
-#include "Renderer.h"
 #include "RabBitCommon.h"
 #include "Renderer.h"
 #include "RenderInterface.h"
@@ -13,11 +12,10 @@
 #include <atomic>
 
 #include "passes/GBuffer.h"
+#include "passes/Streamer.h"
 
-#include "entity/components/Mesh.h"
 #include "d3d12/GraphicsDevice.h"
 #include "d3d12/DeviceQueue.h"
-#include "RenderInterface.h"
 #include "d3d12/resource/GpuResource.h"
 #include "d3d12/resource/RenderResourceD3D12.h"
 #include "d3d12/GraphicsDevice.h"
@@ -85,6 +83,8 @@ namespace RB::Graphics
 		m_TotalPasses = 1;
 		m_RenderPasses = (RenderPass**) ALLOC_HEAP(sizeof(RenderPass*) * m_TotalPasses);
 		m_RenderPasses[0] = new GBufferPass();
+
+		m_StreamingPass = new StreamerPass();
 	}
 
 	Renderer::~Renderer()
@@ -109,6 +109,7 @@ namespace RB::Graphics
 			delete m_RenderPasses[i];
 		}
 		SAFE_FREE(m_RenderPasses);
+		delete m_StreamingPass;
 
 		DeleteCriticalSection(&m_RenderFrameIndexCS);
 
@@ -116,7 +117,7 @@ namespace RB::Graphics
 		delete m_CopyInterface;
 	}
 
-	void Renderer::SubmitFrameContext(const Entity::Scene* const scene)
+	void Renderer::SubmitFrame(const Entity::Scene* const scene)
 	{
 		RenderPassEntry** entries = (RenderPassEntry**) ALLOC_HEAP(sizeof(RenderPassEntry*) * m_TotalPasses);
 
@@ -150,9 +151,20 @@ namespace RB::Graphics
 			m_RenderThread->ScheduleJob(m_EventJobType, context);
 		}
 
-		// Stream some resources on the main thread (maybe in the future do this on a different thread?)
+		// Stream resources to the GPU on the main thread (maybe in the future do this on a different thread?)
 		{
-			StreamResources(scene);
+			RenderPassEntry* entry = m_StreamingPass->SubmitEntry(nullptr, scene);
+
+			if (entry != nullptr)
+			{
+				m_StreamingPass->Render(m_CopyInterface, nullptr, entry, nullptr, nullptr, nullptr);
+
+				// Make sure the graphics interface waits until the streaming has been completed before starting to render
+				Shared<RIExecutionGuard> guard = m_CopyInterface->ExecuteOnGpu();
+				m_GraphicsInterface->GpuWaitOn(guard.get());
+			}
+
+			SAFE_DELETE(entry);
 		}
 
 		// Sync with the render thread on a stall
@@ -207,54 +219,6 @@ namespace RB::Graphics
 		}
 
 		return nullptr;
-	}
-
-	void Renderer::StreamResources(const Entity::Scene* const scene)
-	{
-		/*
-			!!!!! RESOURCE STREAMING THREAD SHOULD ONLY SCHEDULE THINGS ON THE COPY INTERFACE, NO GRAPHICS STUFF !!!!!! 
-
-			(Slowly) Upload needed resources for next frame, like new vertex data or textures.
-			Constantly check if the main thread is waiting until this task is done, if so, finish uploading only the most crucial resources 
-			and then stop (so textures are not completely crucial, as we can use the lower mips as fallback, or even white textures, so upload textures mip by mip).
-			Maybe an idea to give this task always a minimum amount of time to let it upload resources, because when maybe the main thread
-			is not doing a lot, this task will not get a lot of time actually uploading stuff.
-
-			Do not forget to add GPU waits on the copy interface for the previous graphics interface before starting the texture copies!
-			Also do not forget to let the render thread sync with the resource streaming just before the streaming has been done!
-
-			TODO Maybe an idea to batch all some uploads together in a bigger upload resource?
-		*/
-
-		List<const Entity::ObjectComponent*> meshes = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
-
-		uint32_t uploaded_count = 0;
-		List<Entity::Mesh*> uploaded(meshes.size());
-
-		for (const Entity::ObjectComponent* obj : meshes)
-		{
-			Entity::Mesh* mesh = ((const Entity::MeshRenderer*)obj)->GetMesh();
-
-			if (mesh->IsLatestDataUploaded())
-			{
-				continue;
-			}
-
-			m_CopyInterface->UploadDataToResource(mesh->GetVertexBuffer(), mesh->GetVertexBuffer()->GetData(), mesh->GetVertexBuffer()->GetSize());
-
-			uploaded[uploaded_count] = mesh;
-			uploaded_count++;
-
-			// TODO This is ofcourse not true, they are uploaded once the fence has been reached, but how to do this properly?
-			mesh->SetLatestDataUploaded(true);
-		}
-
-		if (uploaded_count > 0)
-		{
-			// Make sure the graphics interface waits until the streaming has been completed before starting to render
-			Shared<RIExecutionGuard> guard = m_CopyInterface->ExecuteOnGpu();
-			m_GraphicsInterface->GpuWaitOn(guard.get());
-		}
 	}
 
 	void EventJob(JobData* data)

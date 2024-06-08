@@ -80,6 +80,8 @@ namespace RB::Graphics::D3D12
 		JobTypeID			m_CreationJob;
 		List<Scheduled>		m_ScheduledCreations;
 
+		CRITICAL_SECTION	m_CS;
+
 		extern friend void CreationJob(JobData* data);
 	};
 

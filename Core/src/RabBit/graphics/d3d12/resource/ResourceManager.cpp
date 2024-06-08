@@ -242,6 +242,8 @@ namespace RB::Graphics::D3D12
 
 	ResourceManager::ResourceManager()
 	{
+		InitializeCriticalSection(&m_CS);
+
 		m_CreationThread = new WorkerThread(L"Resource Creation Thread", ThreadPriority::Medium);
 
 		m_CreationJob = m_CreationThread->AddJobType(&CreationJob, false);
@@ -260,6 +262,8 @@ namespace RB::Graphics::D3D12
 			delete itr->first;
 			itr = m_ObjsWaitingToFinishFlight.erase(itr);
 		}
+
+		DeleteCriticalSection(&m_CS);
 	}
 
 	void ResourceManager::StartFrame()
@@ -269,6 +273,8 @@ namespace RB::Graphics::D3D12
 
 	void ResourceManager::EndFrame()
 	{
+		EnterCriticalSection(&m_CS);
+
 		// Check which tracked resources can be deleted
 		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end();)
 		{
@@ -295,6 +301,8 @@ namespace RB::Graphics::D3D12
 				++itr;
 			}
 		}
+
+		LeaveCriticalSection(&m_CS);
 	}
 
 	void ResourceManager::MarkForDelete(GpuResource* resource)
@@ -305,15 +313,23 @@ namespace RB::Graphics::D3D12
 			return;
 		}
 		
+		EnterCriticalSection(&m_CS);
+
 		m_ObjsScheduledToReleaseAfterExecute.push_back(resource->GetResource());
+
+		LeaveCriticalSection(&m_CS);
 	}
 
 	void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
 	{
+		EnterCriticalSection(&m_CS);
+
 		FencePair* fence_pair = new FencePair{ queue, fence_value };
 
 		m_ObjsWaitingToFinishFlight.emplace(fence_pair, m_ObjsScheduledToReleaseAfterExecute);
 		m_ObjsScheduledToReleaseAfterExecute.clear();
+
+		LeaveCriticalSection(&m_CS);
 	}
 
 	bool ResourceManager::WaitUntilResourceValid(GpuResource* resource)

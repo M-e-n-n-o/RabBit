@@ -29,7 +29,7 @@ namespace RB::Graphics
 		inline static RenderAPI GetAPI() { return s_Api; }
 
 		// Submits current frame relevant information of the scene to the renderer
-		void SubmitFrameContext(const Entity::Scene* const scene);
+		void SubmitFrame(const Entity::Scene* const scene);
 
 		// Sync with the render thread (and optionally also wait until GPU is idle)
 		void SyncRenderer(bool gpu_sync = false);
@@ -52,8 +52,6 @@ namespace RB::Graphics
 		virtual void SyncWithGpu() = 0;
 
 	private:
-		void StreamResources(const Entity::Scene* const scene);
-
 		// Should only be called from the render thread!
 		void OnEvent(Input::Events::Event& event) override;
 
@@ -66,8 +64,10 @@ namespace RB::Graphics
 
 		RenderInterface*	m_GraphicsInterface; // Used by the render passes
 		RenderInterface*	m_CopyInterface;	 // Used for resource streaming 
+		RenderPass*			m_StreamingPass;
 		RenderPass**		m_RenderPasses;
 		uint32_t			m_TotalPasses;
+
 
 		uint64_t			m_RenderFrameIndex;
 		CRITICAL_SECTION	m_RenderFrameIndexCS;

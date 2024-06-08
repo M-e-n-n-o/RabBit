@@ -109,7 +109,7 @@ namespace RB
 			OnUpdate();
 
 			// Submit the scene as context for rendering the next frame
-			m_Renderer->SubmitFrameContext(m_Scene);
+			m_Renderer->SubmitFrame(m_Scene);
 
 			// Check if there are any windows that should be closed/removed
 			if (m_CheckWindows)
