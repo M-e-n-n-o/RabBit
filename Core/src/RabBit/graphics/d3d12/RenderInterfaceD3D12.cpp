@@ -288,7 +288,7 @@ namespace RB::Graphics::D3D12
 	{
 		D3D12_RASTERIZER_DESC desc = {};
 		desc.FillMode				= D3D12_FILL_MODE_SOLID;
-		desc.DepthClipEnable		= FALSE;
+		desc.DepthClipEnable		= TRUE;
 		desc.FrontCounterClockwise	= FALSE;
 		desc.DepthBias				= D3D12_DEFAULT_DEPTH_BIAS;
 		desc.DepthBiasClamp			= D3D12_DEFAULT_DEPTH_BIAS_CLAMP;

@@ -251,3 +251,43 @@ Float4::Float4(float x, float y, float z, float w)
 	: x(x), y(y), z(z), w(w)
 {
 }
+
+Float4 Float4::operator+(const Float4& other) const
+{
+	return Float4(
+		x + other.x,
+		y + other.y,
+		z + other.z,
+		w + other.w
+	);
+}
+
+Float4 Float4::operator+(float const& other) const
+{
+	return Float4(
+		x + other,
+		y + other,
+		z + other,
+		w + other
+	);
+}
+
+Float4 Float4::operator*(const Float4& other) const
+{
+	return Float4(
+		x * other.x,
+		y * other.y,
+		z * other.z,
+		w * other.w
+	);
+}
+
+Float4 Float4::operator*(const float& other) const
+{
+	return Float4(
+		x * other,
+		y * other,
+		z * other,
+		w * other
+	);
+}

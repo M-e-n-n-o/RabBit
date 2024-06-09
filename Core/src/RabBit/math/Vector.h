@@ -164,14 +164,14 @@ namespace RB::Math
 
 	//	float GetLength() const;
 
-	//	Float4 operator+(const Float4& other)  const;
-	//	Float4 operator+(const float& other) const;
+		Float4 operator+(const Float4& other)  const;
+		Float4 operator+(const float& other) const;
 
 	//	Float4 operator-(const Float4& other)  const;
 	//	Float4 operator-(const float& other) const;
 
-	//	Float4 operator*(const Float4& other)  const;
-	//	Float4 operator*(const float& other) const;
+		Float4 operator*(const Float4& other)  const;
+		Float4 operator*(const float& other) const;
 
 	//	Float4 operator/(const Float4& other)  const;
 	//	Float4 operator/(const float& other) const;

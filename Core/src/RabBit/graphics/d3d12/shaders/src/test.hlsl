@@ -8,10 +8,11 @@ cbuffer ConstantBuffer : register(b0, space0)
 
 v2p VS_VertexColor(vertexInfo input)
 {
+
+    //float4x4 mvp = mul(mul(g_Transform.localToWorldMat, g_Transform.worldToViewMat), g_Transform.viewToClipMat);
+    float4x4 mvp = g_Transform.localToWorldMat;
+
     v2p output;
-
-    float4x4 mvp = mul(mul(g_Transform.localToWorldMat, g_Transform.worldToViewMat), g_Transform.viewToClipMat);
-
     output.position = mul(mvp, float4(input.position, 1.0f));
     output.color = input.color;
     return output;

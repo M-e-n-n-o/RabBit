@@ -19,34 +19,41 @@ public:
 	{
 		RB_LOG("Hoiii");
 
+		//float vertex_data[] = {
+		//	// Pos					Color
+		//	-1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f, // 0
+		//	-1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f, // 1
+		//	 1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f, // 2
+		//	 1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f, // 3
+		//	-1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f, // 4
+		//	-1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f, // 5
+		//	 1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f, // 6
+		//	 1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f  // 7
+		//};
+
+		//uint16_t index_data[] = {
+		//	0, 1, 2, 0, 2, 3,
+		//	4, 6, 5, 4, 7, 6,
+		//	4, 5, 1, 4, 1, 0,
+		//	3, 2, 6, 3, 6, 7,
+		//	1, 5, 6, 1, 6, 2,
+		//	4, 0, 3, 4, 3, 7
+		//};
+
 		float vertex_data[] = {
-			// Pos					Color
-			-1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f, // 0
-			-1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f, // 1
-			 1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f, // 2
-			 1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f, // 3
-			-1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f, // 4
-			-1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f, // 5
-			 1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f, // 6
-			 1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f  // 7
+			// Pos				Color
+			-0.5f, -0.5f, 0,	1, 0, 0,
+			0, 0.5f, 0,			0, 1, 0,
+			0.5f, -0.5f, 0,		0, 0, 1,
 		};
 
-		uint16_t index_data[] = {
-			0, 1, 2, 0, 2, 3,
-			4, 6, 5, 4, 7, 6,
-			4, 5, 1, 4, 1, 0,
-			3, 2, 6, 3, 6, 7,
-			1, 5, 6, 1, 6, 2,
-			4, 0, 3, 4, 3, 7
-		};
-
-		m_Mesh = new Mesh("Triangle", vertex_data, 6, _countof(vertex_data), index_data, _countof(index_data));
+		m_Mesh = new Mesh("Triangle", vertex_data, 6, _countof(vertex_data), nullptr, 0); //index_data, _countof(index_data));
 
 		GameObject* object = GetScene()->CreateGameObject();
 		object->AddComponent<MeshRenderer>(m_Mesh);
 		m_Transform = object->AddComponent<Transform>();
-		m_Transform->position = Float3(0.0f, 0.0f, 100.0f);
-		m_Transform->scale	= Float3(0.005f);
+		m_Transform->position = Float3(0.0f, 0.0f, 1.0f);
+		m_Transform->scale	= Float3(1.0f);
 
 		GameObject* camera = GetScene()->CreateGameObject();
 		camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
@@ -56,8 +63,8 @@ public:
 		/*
 			Things to fix:
 			- Visualize cube
-				- Something with the projection matrix and the depth is going wrong I think
-				- The vertex/index data is not completely correct
+				- The index data is not yet uploaded to the GPU by the streamer, add this!
+				- Something with the order of the matrix multiplies in the shader (sending the entire MVP via code does work)
 			- Small memory leak somewhere
 		*/
 	}
@@ -68,7 +75,7 @@ public:
 
 		if (IsMouseKeyDown(MouseCode::ButtonLeft))
 		{
-			m_Transform->position.z += 0.00001f;
+			m_Transform->position.z += 0.001f;
 
 		}
 	}

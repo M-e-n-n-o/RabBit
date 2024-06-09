@@ -16,6 +16,17 @@ namespace RB::Math
 		memcpy(out, a, 16 * sizeof(float));
 	}
 
+	Float4x4 Float4x4::operator*(const Float4x4& other)
+	{
+		Float4x4 out;
+		out.row0 = (other.row0 * row0.x) + (other.row1 * row0.y) + (other.row2 * row0.z) + (other.row3 * row0.w);
+		out.row1 = (other.row0 * row1.x) + (other.row1 * row1.y) + (other.row2 * row1.z) + (other.row3 * row1.w);
+		out.row2 = (other.row0 * row2.x) + (other.row1 * row2.y) + (other.row2 * row2.z) + (other.row3 * row2.w);
+		out.row3 = (other.row0 * row3.x) + (other.row1 * row3.y) + (other.row2 * row3.z) + (other.row3 * row3.w);
+
+		return out;
+	}
+
 	void Float4x4::Transpose()
 	{
 		Float4x4 copy = *this;
@@ -33,7 +44,7 @@ namespace RB::Math
 
 	Float3 Float4x4::GetPosition()
 	{
-		return Float3(a03, a13, a23);
+		return Float3(a30, a31, a32);
 	}
 
 	void Float4x4::SetPosition(const Float3 pos)
@@ -43,9 +54,9 @@ namespace RB::Math
 
 	void Float4x4::SetPosition(float x, float y, float z)
 	{
-		a03 = x;
-		a13 = y;
-		a23 = z;
+		a30 = x;
+		a31 = y;
+		a32 = z;
 	}
 
 	void Float4x4::Scale(const Float3 scale)

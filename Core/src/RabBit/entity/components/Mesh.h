@@ -26,7 +26,7 @@ namespace RB::Entity
 			if (index_data_count > 0)
 			{
 				uint64_t index_data_size = index_data_count * sizeof(uint16_t);
-				m_IndexData = (uint16_t*)ALLOC_HEAP(index_data_size);
+				m_IndexData = (uint16_t*) ALLOC_HEAP(index_data_size);
 				memcpy(m_IndexData, index_data, index_data_size);
 
 				std::string index_name = name;
@@ -65,6 +65,11 @@ namespace RB::Entity
 		Graphics::VertexBuffer* GetVertexBuffer() const
 		{
 			return m_VertexBuffer;
+		}
+
+		Graphics::IndexBuffer* GetIndexBuffer() const
+		{
+			return m_IndexBuffer;
 		}
 
 	private:

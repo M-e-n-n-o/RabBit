@@ -17,7 +17,8 @@ namespace RB::Graphics
 	{
 		struct ModelEntry
 		{
-			VertexBuffer*  buffer;
+			VertexBuffer*  vb;
+			IndexBuffer*   ib;
 			Math::Float4x4 modelMatrix;
 		};
 
@@ -61,7 +62,8 @@ namespace RB::Graphics
 			}
 
 			GBufferEntry::ModelEntry entry = {};
-			entry.buffer		= mesh->GetVertexBuffer();
+			entry.vb			= mesh->GetVertexBuffer();
+			entry.ib			= mesh->GetIndexBuffer();
 			entry.modelMatrix	= transform->GetLocalToWorldMatrix();
 
 			entries[total_entries] = entry;
@@ -103,9 +105,9 @@ namespace RB::Graphics
 
 		TransformCB transform;
 		transform.worldToViewMat = view_context->viewFrustum.GetWorldToViewMatrix();
-		transform.worldToViewMat.Transpose();
+		//transform.worldToViewMat.Transpose();
 		transform.viewToClipMat = view_context->viewFrustum.GetViewToClipMatrix();
-		transform.viewToClipMat.Transpose();
+		//transform.viewToClipMat.Transpose();
 
 		ColorCB color;
 		color.color = { 0.0f, 1.0f, 0.0f };
@@ -114,10 +116,19 @@ namespace RB::Graphics
 		{
 			GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 
-			render_interface->SetVertexBuffer(model_entry.buffer);
+			render_interface->SetVertexBuffer(model_entry.vb);
+
+			if (model_entry.ib)
+			{
+				render_interface->SetIndexBuffer(model_entry.ib);
+			}
 
 			transform.localToWorldMat = model_entry.modelMatrix;
-			transform.localToWorldMat.Transpose();
+			//transform.localToWorldMat.Transpose();
+
+			Math::Float4x4 mvp = transform.localToWorldMat * transform.worldToViewMat;
+			mvp = mvp * transform.viewToClipMat;
+			transform.localToWorldMat = mvp;
 
 			render_interface->SetConstantShaderData(0, &transform, sizeof(transform));
 

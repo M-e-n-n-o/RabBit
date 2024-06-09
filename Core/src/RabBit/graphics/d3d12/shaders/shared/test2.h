@@ -10,8 +10,6 @@ typedef RB::Math::Float4x4	float4x4;
 
 struct TransformCB
 {
-	// Matrices are processed in column major in HLSL! (by default)
-
 	float4x4 localToWorldMat;
 	float4x4 worldToViewMat;
 	float4x4 viewToClipMat;

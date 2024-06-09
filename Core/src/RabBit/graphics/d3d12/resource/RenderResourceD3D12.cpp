@@ -38,6 +38,7 @@ namespace RB::Graphics::D3D12
 		: m_Name(name)
 		, m_Size(data_size)
 		, m_Data(data)
+		, m_View{}
 	{
 		m_Resource = new GpuResource();
 		g_ResourceManager->ScheduleCreateIndexResource(m_Resource, name, data_size);

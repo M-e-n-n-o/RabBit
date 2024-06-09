@@ -51,6 +51,8 @@ namespace RB::Math
 
 		void ToData(float* out);
 
+		Float4x4 operator*(const Float4x4& other);
+
 		void Transpose();
 
 		Float3 GetPosition();
