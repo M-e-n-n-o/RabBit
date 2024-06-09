@@ -26,6 +26,11 @@ namespace RB::Graphics
 		return m_InFocus;
 	}
 
+	float Window::GetAspectRatio() const
+	{
+		return (float) GetWidth() / (float) GetHeight();
+	}
+
 	void Window::ToggleFullscreen()
 	{
 		if (m_IsFullscreen)

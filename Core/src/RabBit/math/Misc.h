@@ -85,12 +85,12 @@ namespace RB::Math
 	template<typename T>
 	inline T DegreesToRadians(T value)
 	{
-		return value * (kPI / 180);
+		return value * (kPI / 180.0f);
 	}
 
 	template<typename T>
 	inline T RadiansToDegrees(T value)
 	{
-		return value * (180 / kPI);
+		return value * (180.0f / kPI);
 	}
 }

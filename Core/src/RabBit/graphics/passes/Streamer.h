@@ -8,7 +8,7 @@ namespace RB::Graphics
 	public:
 		RenderPassConfig GetConfiguration() override;
 
-		RenderPassEntry* SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene) override;
+		RenderPassEntry* SubmitEntry(const Entity::Scene* const scene) override;
 
 		void Render(RenderInterface* render_interface,
 			ViewContext* view_context,

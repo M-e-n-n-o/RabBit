@@ -2,23 +2,21 @@
 #include "Renderer.h"
 #include "RenderInterface.h"
 #include "RenderPass.h"
+#include "Window.h"
+#include "ViewContext.h"
+
 #include "app/Application.h"
-#include "graphics/Window.h"
 #include "input/events/WindowEvent.h"
 
 #include "entity/Scene.h"
-#include "d3d12/RendererD3D12.h"
-
-#include <atomic>
+#include "entity/components/Camera.h"
+#include "entity/components/Transform.h"
 
 #include "passes/GBuffer.h"
 #include "passes/Streamer.h"
 
-#include "d3d12/GraphicsDevice.h"
-#include "d3d12/DeviceQueue.h"
-#include "d3d12/resource/GpuResource.h"
-#include "d3d12/resource/RenderResourceD3D12.h"
-#include "d3d12/GraphicsDevice.h"
+#include "d3d12/RendererD3D12.h"
+// Needed for the PIX markers, need to make an abstraction for this
 #include "d3d12/RenderInterfaceD3D12.h"
 
 using namespace RB::Input::Events;
@@ -30,18 +28,23 @@ namespace RB::Graphics
 
 	struct RenderContext : public JobData
 	{
-		RenderPass**			renderPasses;
-		RenderPassEntry**		renderPassEntries;
-		uint32_t				totalPasses;
+		ViewContext*						viewContexts;
+		uint32_t							totalViewContexts;
+
+		List<Renderer::BackBufferGuard>*	backBufferAvailabilityGuards;
+
+		RenderPass**						renderPasses;
+		RenderPassEntry**					renderPassEntries;
+		uint32_t							totalPasses;
 						 
-		RenderInterface*		graphicsInterface;
-								
-		uint64_t*				renderFrameIndex;
-		CRITICAL_SECTION*		renderFrameIndexCS;
-								
-		std::function<void()>	OnRenderFrameStart;
-		std::function<void()>	OnRenderFrameEnd;
-		std::function<void()>	SyncWithGpu;
+		RenderInterface*					graphicsInterface;
+											
+		uint64_t*							renderFrameIndex;
+		CRITICAL_SECTION*					renderFrameIndexCS;
+											
+		std::function<void()>				OnRenderFrameStart;
+		std::function<void()>				OnRenderFrameEnd;
+		std::function<void()>				SyncWithGpu;
 
 		~RenderContext()
 		{
@@ -50,6 +53,8 @@ namespace RB::Graphics
 				SAFE_DELETE(renderPassEntries[i]);
 			}
 			SAFE_FREE(renderPassEntries);
+
+			SAFE_FREE(viewContexts);
 		}
 	};
 
@@ -119,26 +124,32 @@ namespace RB::Graphics
 
 	void Renderer::SubmitFrame(const Entity::Scene* const scene)
 	{
-		RenderPassEntry** entries = (RenderPassEntry**) ALLOC_HEAP(sizeof(RenderPassEntry*) * m_TotalPasses);
-
-		// Gather the entries from all render passes
-		for (int i = 0; i < m_TotalPasses; i++)
-		{
-			entries[i] = m_RenderPasses[i]->SubmitEntry(nullptr, scene);
-		}
-
 		// Schedule a render job (overwrites the previous render job if not yet picked up)
 		{
+			uint32_t total_view_contexts;
+			ViewContext* view_contexts = CreateViewContexts(scene, total_view_contexts);
+
+			RenderPassEntry** entries = (RenderPassEntry**)ALLOC_HEAP(sizeof(RenderPassEntry*) * m_TotalPasses);
+
+			// Gather the entries from all render passes
+			for (int i = 0; i < m_TotalPasses; i++)
+			{
+				entries[i] = m_RenderPasses[i]->SubmitEntry(scene);
+			}
+
 			RenderContext* context = new RenderContext();
-			context->renderPasses		= m_RenderPasses;
-			context->renderPassEntries	= entries;
-			context->totalPasses		= m_TotalPasses;
-			context->graphicsInterface	= m_GraphicsInterface;
-			context->renderFrameIndex	= &m_RenderFrameIndex;
-			context->renderFrameIndexCS = &m_RenderFrameIndexCS;
-			context->OnRenderFrameStart	= std::bind(&Renderer::OnFrameStart, this);
-			context->OnRenderFrameEnd	= std::bind(&Renderer::OnFrameEnd, this);
-			context->SyncWithGpu		= std::bind(&Renderer::SyncWithGpu, this);
+			context->viewContexts					= view_contexts;
+			context->totalViewContexts				= total_view_contexts;
+			context->backBufferAvailabilityGuards	= &m_BackBufferAvailabilityGuards;
+			context->renderPasses					= m_RenderPasses;
+			context->renderPassEntries				= entries;
+			context->totalPasses					= m_TotalPasses;
+			context->graphicsInterface				= m_GraphicsInterface;
+			context->renderFrameIndex				= &m_RenderFrameIndex;
+			context->renderFrameIndexCS				= &m_RenderFrameIndexCS;
+			context->OnRenderFrameStart				= std::bind(&Renderer::OnFrameStart, this);
+			context->OnRenderFrameEnd				= std::bind(&Renderer::OnFrameEnd, this);
+			context->SyncWithGpu					= std::bind(&Renderer::SyncWithGpu, this);
 
 			m_RenderThread->ScheduleJob(m_RenderJobType, context);
 		}
@@ -153,10 +164,11 @@ namespace RB::Graphics
 
 		// Stream resources to the GPU on the main thread (maybe in the future do this on a different thread?)
 		{
-			RenderPassEntry* entry = m_StreamingPass->SubmitEntry(nullptr, scene);
+			RenderPassEntry* entry = m_StreamingPass->SubmitEntry(scene);
 
 			if (entry != nullptr)
 			{
+				// Doesn't need a ViewContext
 				m_StreamingPass->Render(m_CopyInterface, nullptr, entry, nullptr, nullptr, nullptr);
 
 				// Make sure the graphics interface waits until the streaming has been completed before starting to render
@@ -174,6 +186,52 @@ namespace RB::Graphics
 			RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
 			SyncRenderer(false);
 		}
+	}
+
+	ViewContext* Renderer::CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count)
+	{
+		auto camera_components = scene->GetComponentsWithTypeOf<Entity::Camera>();
+
+		out_context_count = camera_components.size();
+
+		ViewContext* contexts = (ViewContext*) ALLOC_HEAP(sizeof(ViewContext) * out_context_count);
+
+		uint32_t context_index = 0;
+
+		uint32_t original_context_count = out_context_count;
+		for (int i = 0; i < original_context_count; ++i)
+		{
+			const Entity::Camera*	 camera		= (const Entity::Camera*) camera_components[i];
+			const Entity::Transform* transform	= camera->GetGameObject()->GetComponent<Entity::Transform>();
+
+			if (transform == nullptr)
+			{
+				RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object does not have a transform, skipping...");
+				out_context_count--;
+				continue;
+			}
+
+			Window* window = Application::GetInstance()->GetWindow(camera->GetTargetWindowIndex());
+
+			if (window == nullptr)
+			{
+				out_context_count--;
+				continue;
+			}
+
+			contexts[context_index] = {};
+
+			contexts[context_index].viewFrustum = {};
+			contexts[context_index].viewFrustum.SetTransform(transform->GetLocalToWorldMatrix());
+			contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), window->GetAspectRatio(), false);
+			//contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * window->GetAspectRatio(), 1, -1, false);
+
+			contexts[context_index].displayIndex = camera->GetTargetWindowIndex();
+
+			context_index++;
+		}
+
+		return contexts;
 	}
 
 	void Renderer::SyncRenderer(bool gpu_sync)
@@ -227,34 +285,47 @@ namespace RB::Graphics
 		context->ProcessEvents();
 	}
 
-	// TODO Remove!
-	Shared<GpuGuard> _FenceValues[BACK_BUFFER_COUNT] = {};
-
 	void RenderJob(JobData* data)
 	{
 		RenderContext* context = (RenderContext*) data;
 
+		GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
+
 		context->OnRenderFrameStart();
 
-		Graphics::Window* window = Application::GetInstance()->GetPrimaryWindow();
-
-		if (window && window->IsValid() && !window->IsMinimized())
 		{
-			GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
+			RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
 
-			Texture2D* back_buffer = window->GetCurrentBackBuffer();
-
-			// Render frame
+			for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
 			{
-				RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
+				RB_PROFILE_GPU_SCOPED(command_list.Get(), "ViewContext");
 
-				uint64_t value = window->GetCurrentBackBufferIndex();
-				if (_FenceValues[value])
+				ViewContext& view_context = context->viewContexts[view_context_index];
+
+				Graphics::Window* window = Application::GetInstance()->GetWindow(view_context.displayIndex);
+
+				if (!window || !window->IsValid() || window->IsMinimized())
 				{
-					_FenceValues[value]->WaitUntilFinishedRendering();
+					continue;
 				}
 
-				// Clear the backbuffer
+				// Wait until the backbuffer resource is available
+				// (TODO Later when the passes will not use the backbuffers directly, this wait will be moved just before the backbuffer copy)
+				if (view_context.displayIndex < context->backBufferAvailabilityGuards->size())
+				{
+					uint64_t back_buffer_index = window->GetCurrentBackBufferIndex();
+
+					auto guards = (*context->backBufferAvailabilityGuards)[view_context.displayIndex].guards;
+
+					if (guards[back_buffer_index])
+					{
+						guards[back_buffer_index]->WaitUntilFinishedRendering();
+					}
+				}
+
+				Texture2D* back_buffer = window->GetCurrentBackBuffer();
+
+				// Clear the backbuffer (TODO Create a GlobalPrepare pass to clear all necessary textures)
 				{
 					RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
@@ -262,41 +333,55 @@ namespace RB::Graphics
 				}
 
 				// Render the different passes
-				for (int i = 0; i < context->totalPasses; ++i)
+				for (int pass_index = 0; pass_index < context->totalPasses; ++pass_index)
 				{
-					RenderPassEntry* entry = context->renderPassEntries[i];
+					RenderPassEntry* entry = context->renderPassEntries[pass_index];
 
+					// Do not render the pass if it did not submit an entry
 					if (entry == nullptr)
 					{
 						continue;
 					}
 
-					RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[i]->GetConfiguration().friendlyName);
+					RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetConfiguration().friendlyName);
 
-					context->renderPasses[i]->Render(context->graphicsInterface, nullptr, context->renderPassEntries[i], (RenderResource**) &back_buffer, nullptr, nullptr);
+					context->renderPasses[pass_index]->Render(context->graphicsInterface, &view_context, context->renderPassEntries[pass_index], (RenderResource**)&back_buffer, nullptr, nullptr);
 
+					// Invalidate the render state after every pass
 					context->graphicsInterface->InvalidateState();
 				}
 			}
+		}
 
-			// Present
+		// Present to all windows
+		for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
+		{
+			uint32_t display_index = context->viewContexts[view_context_index].displayIndex;
+
+			Graphics::Window* window = Application::GetInstance()->GetWindow(display_index);
+
+			if (!window || !window->IsValid() || window->IsMinimized())
 			{
-				//RB_PROFILE_GPU_SCOPED(d3d_list, "Present");
-
-				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-					((D3D12::GpuResource*)back_buffer->GetNativeResource())->GetResource().Get(),
-					D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
-				);
-
-				((D3D12::GpuResource*)back_buffer->GetNativeResource())->UpdateState(D3D12_RESOURCE_STATE_PRESENT);
-
-				command_list->ResourceBarrier(1, &barrier);
-
-				uint64_t value = window->GetCurrentBackBufferIndex();
-				_FenceValues[value] = context->graphicsInterface->ExecuteOnGpu();
-
-				window->Present(VsyncMode::On);
+				continue;
 			}
+
+			Texture2D* back_buffer = window->GetCurrentBackBuffer();
+
+			context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);
+			context->graphicsInterface->FlushResourceBarriers();
+
+			// Execute al the work to the GPU
+			Shared<GpuGuard> guard = context->graphicsInterface->ExecuteOnGpu();
+
+			if (display_index >= context->backBufferAvailabilityGuards->size())
+			{
+				context->backBufferAvailabilityGuards->push_back(Renderer::BackBufferGuard());
+			}
+
+			uint64_t buffer_index = window->GetCurrentBackBufferIndex();
+			(*context->backBufferAvailabilityGuards)[display_index].guards[buffer_index] = guard;
+
+			window->Present(VsyncMode::On);
 		}
 
 		context->OnRenderFrameEnd();

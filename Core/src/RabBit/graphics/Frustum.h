@@ -15,14 +15,19 @@ namespace RB::Graphics
 	public:
 		Frustum();
 
+		// View matrix
+		Math::Float4x4 GetWorldToViewMatrix() const { return m_WorldToViewMat; }
+
 		void SetTransform(Math::Float3 position, Math::Float3 rotation);
 		void SetTransform(Math::Float4x4 world_position);
 
 		// Projection matrix
 		Math::Float4x4 GetViewToClipMatrix() const { return m_ViewToClipMat; }
 
-		void SetPerspectiveProjectionVFov(float near, float far, float vfov, float aspect, bool reverse_depth);
-		void SetPerspectiveProjection(float near, float far, float left, float right, float top, float bottom, bool reverse_depth);
+		void SetPerspectiveProjectionVFov(float near_plane, float far_plane, float vfov, float aspect, bool reverse_depth);
+		void SetPerspectiveProjection(float near_plane, float far_plane, float left, float right, float top, float bottom, bool reverse_depth);
+
+		void SetOrthographicProjection(float near_plane, float far_plane, float left, float right, float top, float bottom, bool reverse_depth);
 
 	private:
 		Math::Float4x4	m_WorldToViewMat;	// World space to view space matrix

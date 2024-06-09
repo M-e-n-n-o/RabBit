@@ -11,6 +11,26 @@ namespace RB::Math
 		row3 = { 0, 0, 0, 1 };
 	}
 
+	void Float4x4::ToData(float* out)
+	{
+		memcpy(out, a, 16 * sizeof(float));
+	}
+
+	void Float4x4::Transpose()
+	{
+		Float4x4 copy = *this;
+
+		row0 = { copy.row0.x, copy.row1.x, copy.row2.x, copy.row3.x };
+		row1 = { copy.row0.y, copy.row1.y, copy.row2.y, copy.row3.y };
+		row2 = { copy.row0.z, copy.row1.z, copy.row2.z, copy.row3.z };
+		row3 = { copy.row0.w, copy.row1.w, copy.row2.w, copy.row3.w };
+	}
+
+	void Float4x4::Rotate(const Float3 euler_angles)
+	{
+		// TODO
+	}
+
 	Float3 Float4x4::GetPosition()
 	{
 		return Float3(a03, a13, a23);

@@ -9,6 +9,12 @@ namespace RB::Entity
 	public:
 		DEFINE_COMP_TAG("Transform");
 
+		Transform()
+			: position(0.0f)
+			, rotation(0.0f)
+			, scale(1.0f)
+		{}
+
 		Math::Float3 position;
 		Math::Float3 rotation;
 		Math::Float3 scale;

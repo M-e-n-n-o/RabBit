@@ -59,6 +59,8 @@
 #include "RabBit/entity/Scene.h"
 #include "RabBit/entity/GameObject.h"
 #include "RabBit/entity/components/Mesh.h"
+#include "RabBit/entity/components/Camera.h"
+#include "RabBit/entity/components/Transform.h"
 
 #include "RabBit/input/Input.h"
 #include "RabBit/input/KeyCodes.h"

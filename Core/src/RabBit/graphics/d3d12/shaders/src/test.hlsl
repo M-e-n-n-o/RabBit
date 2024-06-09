@@ -9,17 +9,20 @@ cbuffer ConstantBuffer : register(b0, space0)
 v2p VS_VertexColor(vertexInfo input)
 {
     v2p output;
-    output.position = float4(input.position + g_Transform.offset, 0, 1);
+
+    float4x4 mvp = mul(mul(g_Transform.localToWorldMat, g_Transform.worldToViewMat), g_Transform.viewToClipMat);
+
+    output.position = mul(mvp, float4(input.position, 1.0f));
     output.color = input.color;
     return output;
 }
 
-cbuffer ConstantBuffer2 : register(b1, space0)
-{
-    ColorCB g_Color;
-}
+//cbuffer ConstantBuffer2 : register(b1, space0)
+//{
+//    ColorCB g_Color;
+//}
 
 float4 PS_VertexColor(v2p input) : SV_TARGET
 {
-    return float4(g_Color.color, 1.0f);
+    return float4(input.color, 1.0f);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Window.h"
 #include "input/events/Event.h"
 #include "utils/Threading.h"
 
@@ -18,6 +19,8 @@ namespace RB::Graphics
 
 	class RenderInterface;
 	class RenderPass;
+	class GpuGuard;
+	struct ViewContext;
 
 	// Fully static class
 	class Renderer : public Input::Events::EventListener
@@ -52,26 +55,36 @@ namespace RB::Graphics
 		virtual void SyncWithGpu() = 0;
 
 	private:
+		ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
+
 		// Should only be called from the render thread!
 		void OnEvent(Input::Events::Event& event) override;
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 
-		bool				m_IsShutdown;
-		WorkerThread*		m_RenderThread;
-		JobTypeID			m_RenderJobType;
-		JobTypeID			m_EventJobType;
+		bool							m_IsShutdown;
+		WorkerThread*					m_RenderThread;
+		JobTypeID						m_RenderJobType;
+		JobTypeID						m_EventJobType;
 
-		RenderInterface*	m_GraphicsInterface; // Used by the render passes
-		RenderInterface*	m_CopyInterface;	 // Used for resource streaming 
-		RenderPass*			m_StreamingPass;
-		RenderPass**		m_RenderPasses;
-		uint32_t			m_TotalPasses;
+		RenderInterface*				m_GraphicsInterface; // Used by the render passes
+		RenderInterface*				m_CopyInterface;	 // Used for resource streaming 
+		RenderPass*						m_StreamingPass;
+		RenderPass**					m_RenderPasses;
+		uint32_t						m_TotalPasses;
 
+		uint64_t						m_RenderFrameIndex;
+		CRITICAL_SECTION				m_RenderFrameIndexCS;
 
-		uint64_t			m_RenderFrameIndex;
-		CRITICAL_SECTION	m_RenderFrameIndexCS;
+	public:
+		struct BackBufferGuard
+		{
+			Shared<GpuGuard> guards[BACK_BUFFER_COUNT];
+		};
+	private:
 
-		const uint32_t		m_RenderThreadTimeoutMs = 100;
+		List<BackBufferGuard>			m_BackBufferAvailabilityGuards;
+
+		const uint32_t					m_RenderThreadTimeoutMs = 100;
 	};
 }

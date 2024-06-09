@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ResourceState.h"
-
 // If you get an error that this file cannot be found, run the ShaderCompiler project for the graphics API you are using
 #include "codeGen/ShaderDefines.h"
 
@@ -17,6 +15,7 @@ namespace RB::Graphics
 	class RenderResource;
 	class RenderInterface;
 	class RenderTargetBundle;
+	enum class ResourceState;
 
 	enum class BlendMode
 	{
@@ -60,7 +59,7 @@ namespace RB::Graphics
 		virtual void GpuWaitOn(GpuGuard* guard) = 0;
 
 		// You should normally not have to manually transition resources, this will be done automatically
-		//virtual void TransitionResource(RenderResource* resource, ResourceState state) = 0;
+		virtual void TransitionResource(RenderResource* resource, ResourceState state) = 0;
 		virtual void FlushResourceBarriers() = 0;
 
 		virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;

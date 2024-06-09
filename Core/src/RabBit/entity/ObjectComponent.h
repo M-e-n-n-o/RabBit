@@ -14,6 +14,8 @@ namespace RB::Entity
 
 		virtual void Update() {}
 
+		GameObject* GetGameObject() const { return m_GameObject; }
+
 	protected:
 		GameObject* m_GameObject;
 

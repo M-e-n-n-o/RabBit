@@ -92,6 +92,11 @@ namespace RB::Graphics::D3D12
 		m_Queue->GpuWaitForFenceValue(d3d_guard->m_Queue->GetFence(), d3d_guard->m_FenceValue);
 	}
 
+	void RenderInterfaceD3D12::TransitionResource(RenderResource* resource, ResourceState state)
+	{
+		g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), ConvertToD3D12ResourceState(state));
+	}
+
 	void RenderInterfaceD3D12::FlushResourceBarriers()
 	{
 		g_ResourceStateManager->FlushPendingTransitions(m_CommandList.Get());
@@ -283,7 +288,7 @@ namespace RB::Graphics::D3D12
 	{
 		D3D12_RASTERIZER_DESC desc = {};
 		desc.FillMode				= D3D12_FILL_MODE_SOLID;
-		desc.DepthClipEnable		= TRUE;
+		desc.DepthClipEnable		= FALSE;
 		desc.FrontCounterClockwise	= FALSE;
 		desc.DepthBias				= D3D12_DEFAULT_DEPTH_BIAS;
 		desc.DepthBiasClamp			= D3D12_DEFAULT_DEPTH_BIAS_CLAMP;

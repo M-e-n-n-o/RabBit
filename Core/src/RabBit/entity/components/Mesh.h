@@ -9,29 +9,39 @@ namespace RB::Entity
 	{
 	public:
 
-		Mesh()
+		Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count)
+			: m_VertexData(nullptr)
+			, m_IndexData(nullptr)
+			, m_VertexBuffer(nullptr)
+			, m_IndexBuffer(nullptr)
 		{
 			m_IsUploaded = false;
 
-			float data[] = {
-				// Pos				Color
-				-0.5f, -0.5f,		1, 0, 0,
-				0, 0.5f,			0, 1, 0,
-				0.5f, -0.5f,		0, 0, 1,
-			};
+			uint64_t vertex_data_size = vertex_data_count * sizeof(float);
+			m_VertexData = (float*) ALLOC_HEAP(vertex_data_size);
+			memcpy(m_VertexData, vertex_data, vertex_data_size);
 
-			uint64_t size = 15 * sizeof(float);
+			m_VertexBuffer = Graphics::VertexBuffer::Create(name, RB::Graphics::TopologyType::TriangleList, m_VertexData, sizeof(float) * elements_per_vertex, vertex_data_size);
 
-			m_Data = (float*) ALLOC_HEAP(size);
-			memcpy(m_Data, data, size);
+			if (index_data_count > 0)
+			{
+				uint64_t index_data_size = index_data_count * sizeof(uint16_t);
+				m_IndexData = (uint16_t*)ALLOC_HEAP(index_data_size);
+				memcpy(m_IndexData, index_data, index_data_size);
 
-			m_VertexBuffer = Graphics::VertexBuffer::Create("Triangle", RB::Graphics::TopologyType::TriangleList, m_Data, sizeof(float) * 5, size);
+				std::string index_name = name;
+				index_name += " index";
+
+				m_IndexBuffer = Graphics::IndexBuffer::Create(index_name.c_str(), m_IndexData, index_data_size);
+			}
 		}
 
 		~Mesh()
 		{
-			SAFE_FREE(m_Data);
+			SAFE_FREE(m_VertexData);
+			SAFE_FREE(m_IndexData);
 			delete m_VertexBuffer;
+			delete m_IndexBuffer;
 		}
 
 		// Creates an upload resource the size of range which will stay alive until writable is set to false
@@ -47,7 +57,8 @@ namespace RB::Entity
 			if (m_IsUploaded)
 			{
 				// TODO Enable deleting the data after it has been uploaded again when this method is called at the proper time
-				//SAFE_FREE(m_Data);
+				//SAFE_FREE(m_VertexData);
+				//SAFE_FREE(m_IndexData);
 			}
 		}
 
@@ -57,11 +68,13 @@ namespace RB::Entity
 		}
 
 	private:
-		float* m_Data;
+		float* m_VertexData;
+		uint16_t* m_IndexData;
 
 		bool m_IsUploaded;
 
 		Graphics::VertexBuffer* m_VertexBuffer;
+		Graphics::IndexBuffer* m_IndexBuffer;
 	};
 
 	class MeshRenderer : public ObjectComponent
@@ -69,14 +82,9 @@ namespace RB::Entity
 	public:
 		DEFINE_COMP_TAG("MeshRenderer");
 
-		MeshRenderer()
+		MeshRenderer(Mesh* mesh)
 		{
-			m_Mesh = new Mesh();
-		}
-
-		~MeshRenderer()
-		{
-			delete m_Mesh;
+			m_Mesh = mesh;
 		}
 
 		Mesh* GetMesh() const

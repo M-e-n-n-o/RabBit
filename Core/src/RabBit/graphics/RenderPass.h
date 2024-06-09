@@ -65,13 +65,16 @@ namespace RB::Graphics
 
 		// Executed on the main thread after the game logic update. This method just gives the needed context of the 
 		// current frame' viewcontext to the renderpass (as the renderpass will run next frame as it is ~1 frame behind). 
-		// This method will run for every ViewContext, so we can change things depening on the type of view context, 
-		// lower quality for example. It can also do some preprocessing before the actual Render() call to, for example, 
-		// determine which RenderEntries this pass needs, so the RenderThread does not need to do this. But it can maybe 
-		// also determine if the pass needs to run at all even.
-		virtual RenderPassEntry* SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene) = 0;
+		// It can also do some preprocessing before the actual Render() call to, for example, determine which RenderEntries 
+		// this pass needs, so the RenderThread does not need to do this. But it can maybe also determine if the pass needs 
+		// to run at all even.
+		// 
+		// TODO This method might have to run for every ViewContext, so we can change things depening on the type of view 
+		// context, lower quality for example.
+		virtual RenderPassEntry* SubmitEntry(const Entity::Scene* const scene) = 0;
 
 		// Executed on the render thread
+		// Runs for every ViewContext
 		virtual void Render(RenderInterface* render_interface,
 							ViewContext* view_context,
 							RenderPassEntry* entry_context,

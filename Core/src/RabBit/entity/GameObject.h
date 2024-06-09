@@ -17,6 +17,9 @@ namespace RB::Entity
 		template<class T, typename... Args>
 		T* AddComponent(Args... args);
 
+		template<class T>
+		T* GetComponent(uint32_t index = 0);
+
 		void AppendComponentsWithTypeOf(ComponentID comp_id, List<const ObjectComponent*>& list) const;
 
 	private:
@@ -47,5 +50,22 @@ namespace RB::Entity
 
 		comp->OnAttachedToGameObject(this);
 		return comp;
+	}
+
+	template<class T>
+	T* GameObject::GetComponent(uint32_t index)
+	{
+		ComponentID id = m_Register->GetComponentID<T>();
+
+		auto itr = m_Components.find(id);
+
+		if (itr == m_Components.end())
+		{
+			return nullptr;
+		}
+
+		index = Math::Min(index, (uint32_t)(itr->second.size() - 1));
+
+		return (T*) itr->second[index];
 	}
 }

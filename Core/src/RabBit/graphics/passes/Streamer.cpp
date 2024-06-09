@@ -1,6 +1,7 @@
 #include "RabBitCommon.h"
 #include "Streamer.h"
 
+#include "graphics/ViewContext.h"
 #include "graphics/RenderResource.h"
 #include "graphics/RenderInterface.h"
 
@@ -16,7 +17,7 @@ namespace RB::Graphics
 
 		~StreamerEntry()
 		{
-			delete buffers;
+			SAFE_FREE(buffers);
 		}
 	};
 
@@ -40,7 +41,7 @@ namespace RB::Graphics
 		TODO Maybe an idea to batch all some uploads together in a bigger upload resource?
 	*/
 
-	RenderPassEntry* StreamerPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene)
+	RenderPassEntry* StreamerPass::SubmitEntry(const Entity::Scene* const scene)
 	{
 		List<const Entity::ObjectComponent*> mesh_renderers = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
 

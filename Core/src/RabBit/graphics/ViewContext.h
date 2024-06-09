@@ -4,12 +4,9 @@
 
 namespace RB::Graphics
 {
-	class ViewContext
+	struct ViewContext
 	{
-		static_assert(false);
-		// Create a view context and add the frustum to it
-
-	private:
-		Frustum m_Frustum;
+		Frustum		viewFrustum;
+		uint32_t	displayIndex;
 	};
 }

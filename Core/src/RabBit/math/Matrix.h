@@ -9,7 +9,7 @@ namespace RB::Math
 	public:
 		union
 		{
-			struct
+			struct // Row major
 			{
 				float a[16];
 			};
@@ -22,7 +22,7 @@ namespace RB::Math
 				Float4 row3;
 			};
 
-			struct
+			struct // Row major
 			{
 				struct
 				{
@@ -49,7 +49,13 @@ namespace RB::Math
 		Float4x4();
 		~Float4x4() = default;
 
+		void ToData(float* out);
+
+		void Transpose();
+
 		Float3 GetPosition();
+
+		void Rotate(const Float3 euler_angles);
 
 		void SetPosition(const Float3 pos);
 		void SetPosition(float x, float y, float z);

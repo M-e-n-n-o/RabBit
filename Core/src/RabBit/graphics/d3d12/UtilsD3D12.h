@@ -20,6 +20,47 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
+    static D3D12_RESOURCE_STATES ConvertToD3D12ResourceState(const ResourceState& state)
+    {
+        switch (state)
+        {
+        case ResourceState::COMMON:
+            return D3D12_RESOURCE_STATE_COMMON;
+        case ResourceState::VERTEX_AND_CONSTANT_BUFFER:
+            return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+        case ResourceState::INDEX_BUFFER:
+            return D3D12_RESOURCE_STATE_INDEX_BUFFER;
+        case ResourceState::RENDER_TARGET:
+            return D3D12_RESOURCE_STATE_RENDER_TARGET;
+        case ResourceState::UNORDERED_ACCESS:
+            return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        case ResourceState::DEPTH_WRITE:
+            return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+        case ResourceState::DEPTH_READ:
+            return D3D12_RESOURCE_STATE_DEPTH_READ;
+        case ResourceState::NON_PIXEL_SHADER_RESOURCE:
+            return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        case ResourceState::PIXEL_SHADER_RESOURCE:
+            return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        case ResourceState::COPY_DEST:
+            return D3D12_RESOURCE_STATE_COPY_DEST;
+        case ResourceState::COPY_SOURCE:
+            return D3D12_RESOURCE_STATE_COPY_SOURCE;
+        case ResourceState::RAYTRACING_ACCELERATION_STRUCTURE:
+            return D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+        case ResourceState::READ:
+            return D3D12_RESOURCE_STATE_GENERIC_READ;
+        case ResourceState::ALL_SHADER_RESOURCE:
+            return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+        case ResourceState::PRESENT:
+            return D3D12_RESOURCE_STATE_PRESENT;
+        default:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "State not yet supported");
+            return D3D12_RESOURCE_STATE_COMMON;
+            break;
+        }
+    }
+
     static DXGI_FORMAT ConvertToDXGIFormat(const RenderResourceFormat& format)
     {
         switch (format)

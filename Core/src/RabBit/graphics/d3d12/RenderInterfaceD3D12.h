@@ -41,7 +41,7 @@ namespace RB::Graphics::D3D12
 		Shared<GpuGuard> ExecuteInternal() override;
 		void GpuWaitOn(GpuGuard* guard) override;
 
-		//void TransitionResource(RenderResource* resource, ResourceState state) override;
+		void TransitionResource(RenderResource* resource, ResourceState state) override;
 		void FlushResourceBarriers() override;
 
 		void SetRenderTarget(RenderTargetBundle* bundle) override;

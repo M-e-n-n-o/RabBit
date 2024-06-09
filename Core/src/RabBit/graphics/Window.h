@@ -30,36 +30,37 @@ namespace RB::Graphics
 	public:
 		virtual ~Window();
 
-		virtual void Update() = 0;
+		virtual void			Update() = 0;
 
-		virtual void Present(const VsyncMode& mode) = 0;
+		virtual void			Present(const VsyncMode& mode) = 0;
 
 		// Returns width, height, x pos, and y pos of entire window
-		virtual Math::Float4 GetWindowRectangle() const = 0;
+		virtual Math::Float4	GetWindowRectangle() const = 0;
 
-		virtual uint32_t GetWidth() const = 0;
-		virtual uint32_t GetHeight() const = 0;
+				float			GetAspectRatio()	const;
+		virtual uint32_t		GetWidth()			const = 0;
+		virtual uint32_t		GetHeight()			const = 0;
 
-		virtual bool IsMinimized()	const = 0;
-		virtual bool IsValid()		const = 0;
+		virtual bool			IsMinimized()		const = 0;
+		virtual bool			IsValid()			const = 0;
 
-		bool InFocus() const;
+				bool			InFocus()			const;
 
-		virtual Display* GetParentDisplay() = 0;
+		virtual Display*		GetParentDisplay() = 0;
 
-		virtual void SetBorderless(bool borderless) = 0;
+		virtual void			SetBorderless(bool borderless) = 0;
 
-		virtual bool IsSameWindow(void* window_handle) const = 0;
-		virtual void* GetNativeWindowHandle() const = 0;
+		virtual bool			IsSameWindow(void* window_handle)	const = 0;
+		virtual void*			GetNativeWindowHandle()				const = 0;
 
-		virtual RenderResourceFormat GetBackBufferFormat() = 0;
-		virtual uint32_t GetCurrentBackBufferIndex() = 0;
-		virtual Graphics::Texture2D* GetCurrentBackBuffer() = 0;
+		virtual RenderResourceFormat	GetBackBufferFormat() = 0;
+		virtual uint32_t				GetCurrentBackBufferIndex() = 0;
+		virtual Graphics::Texture2D*	GetCurrentBackBuffer() = 0;
 
-		void ProcessEvent(Input::Events::WindowEvent& event);
+				void			ProcessEvent(Input::Events::WindowEvent& event);
 
-		static Window* Create(const char* window_name, Display* display, uint32_t window_style);
-		static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style);
+		static Window*			Create(const char* window_name, Display* display, uint32_t window_style);
+		static Window*			Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style);
 		
 	protected:
 		Window(bool is_fullscreen);

@@ -3,9 +3,11 @@
 
 #include "graphics/RenderResource.h"
 #include "graphics/RenderInterface.h"
+#include "graphics/ViewContext.h"
 
 #include "entity/Scene.h"
 #include "entity/components/Mesh.h"
+#include "entity/components/Transform.h"
 
 #include "graphics/d3d12/shaders/shared/test2.h"
 
@@ -13,12 +15,18 @@ namespace RB::Graphics
 {
 	struct GBufferEntry : public RenderPassEntry
 	{
-		VertexBuffer**  buffers;
-		uint32_t		totalBuffers;
+		struct ModelEntry
+		{
+			VertexBuffer*  buffer;
+			Math::Float4x4 modelMatrix;
+		};
+
+		ModelEntry* entries;
+		uint32_t totalEntries;
 
 		~GBufferEntry()
 		{
-			delete buffers;
+			SAFE_FREE(entries);
 		}
 	};
 
@@ -27,52 +35,49 @@ namespace RB::Graphics
 		return RenderPassConfigBuilder(RenderPassType::GBuffer, "GBuffer", false).Build();
 	}
 
-	RenderPassEntry* GBufferPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene)
+	RenderPassEntry* GBufferPass::SubmitEntry(const Entity::Scene* const scene)
 	{
 		auto mesh_renderers = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
 
-		// Allocate for the worst case scenario amount of vertex buffers
-		VertexBuffer** buffers = (VertexBuffer**) ALLOC_HEAP(sizeof(VertexBuffer*) * mesh_renderers.size());
+		GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*) ALLOC_HEAP(sizeof(GBufferEntry::ModelEntry) * mesh_renderers.size());
 
-		uint32_t total_meshes = 0;
+		uint32_t total_entries = 0;
 
 		for (int i = 0; i < mesh_renderers.size(); ++i)
 		{
-			const Entity::Mesh* mesh = ((const Entity::MeshRenderer*)mesh_renderers[i])->GetMesh();
+			const Entity::MeshRenderer* mesh_renderer = (const Entity::MeshRenderer*)mesh_renderers[i];
+			const Entity::Mesh* mesh = mesh_renderer->GetMesh();
 
 			if (!mesh->IsLatestDataUploaded())
 			{
 				continue;
 			}
 
-			bool already_inserted = false;
-			for (int j = 0; j < total_meshes; ++j)
-			{
-				if (buffers[j] == mesh->GetVertexBuffer())
-				{
-					already_inserted = true;
-					break;
-				}
-			}
+			const Entity::Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Entity::Transform>();
 
-			if (already_inserted)
+			if (transform == nullptr)
 			{
 				continue;
 			}
 
-			buffers[total_meshes] = mesh->GetVertexBuffer();
-			total_meshes++;
+			GBufferEntry::ModelEntry entry = {};
+			entry.buffer		= mesh->GetVertexBuffer();
+			entry.modelMatrix	= transform->GetLocalToWorldMatrix();
+
+			entries[total_entries] = entry;
+
+			total_entries++;
 		}
 
-		if (total_meshes == 0)
+		if (total_entries == 0)
 		{
-			delete buffers;
+			delete entries;
 			return nullptr;
 		}
 
 		GBufferEntry* entry = new GBufferEntry();
-		entry->buffers = buffers;
-		entry->totalBuffers = total_meshes;
+		entry->entries		= entries;
+		entry->totalEntries = total_entries;
 
 		return entry;
 	}
@@ -97,19 +102,24 @@ namespace RB::Graphics
 		GBufferEntry* entry = (GBufferEntry*) entry_context;
 
 		TransformCB transform;
-		transform.offset = { 0.75f, 0 };
+		transform.worldToViewMat = view_context->viewFrustum.GetWorldToViewMatrix();
+		transform.worldToViewMat.Transpose();
+		transform.viewToClipMat = view_context->viewFrustum.GetViewToClipMatrix();
+		transform.viewToClipMat.Transpose();
 
 		ColorCB color;
 		color.color = { 0.0f, 1.0f, 0.0f };
 
-		for (int i = 0; i < entry->totalBuffers; ++i)
+		for (int i = 0; i < entry->totalEntries; ++i)
 		{
-			VertexBuffer* buffer = entry->buffers[i];
+			GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 
-			render_interface->SetVertexBuffer(buffer);
+			render_interface->SetVertexBuffer(model_entry.buffer);
+
+			transform.localToWorldMat = model_entry.modelMatrix;
+			transform.localToWorldMat.Transpose();
 
 			render_interface->SetConstantShaderData(0, &transform, sizeof(transform));
-			render_interface->SetConstantShaderData(1, &color, sizeof(color));
 
 			render_interface->Draw();
 		}
