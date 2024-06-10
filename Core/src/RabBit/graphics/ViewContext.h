@@ -4,9 +4,14 @@
 
 namespace RB::Graphics
 {
-	struct ViewContext
+	class RenderInterface;
+
+	class ViewContext
 	{
+	public:
 		Frustum		viewFrustum;
 		uint32_t	displayIndex;
+
+		void SetFrameConstants(RenderInterface* render_interface) const;
 	};
 }

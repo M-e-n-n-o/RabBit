@@ -1,27 +1,34 @@
-#include "test2.hlsl"
-#include "../shared/test2.h"
+#include "../shared/Common.h"
 
-cbuffer ConstantBuffer : register(b0, space0)
+cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
 {
-    TransformCB g_Transform;
+    float4x4 localToWorldMat;
 }
+
+struct vertexInfo
+{
+    float3 position : POSITION;
+    float3 color    : COLOR;
+};
+
+struct v2p
+{
+    float4 position : SV_POSITION;
+    float3 color    : TEXCOORD0;
+};
 
 v2p VS_VertexColor(vertexInfo input)
 {
-
-    //float4x4 mvp = mul(mul(g_Transform.localToWorldMat, g_Transform.worldToViewMat), g_Transform.viewToClipMat);
-    float4x4 mvp = g_Transform.localToWorldMat;
+    float3 world_pos    = TransformLocalToWorld(input.position, localToWorldMat);
+    float3 view_pos     = TransformWorldToView(world_pos);
+    float4 clip_pos     = TransformViewToClip(view_pos);
 
     v2p output;
-    output.position = mul(mvp, float4(input.position, 1.0f));
-    output.color = input.color;
+    output.position = clip_pos;
+    output.color    = input.color;
+
     return output;
 }
-
-//cbuffer ConstantBuffer2 : register(b1, space0)
-//{
-//    ColorCB g_Color;
-//}
 
 float4 PS_VertexColor(v2p input) : SV_TARGET
 {

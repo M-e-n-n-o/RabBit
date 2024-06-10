@@ -9,7 +9,7 @@
 #include "entity/components/Mesh.h"
 #include "entity/components/Transform.h"
 
-#include "graphics/d3d12/shaders/shared/test2.h"
+#include "graphics/d3d12/shaders/shared/Common.h"
 
 namespace RB::Graphics
 {
@@ -103,14 +103,8 @@ namespace RB::Graphics
 
 		GBufferEntry* entry = (GBufferEntry*) entry_context;
 
-		TransformCB transform;
-		transform.worldToViewMat = view_context->viewFrustum.GetWorldToViewMatrix();
-		//transform.worldToViewMat.Transpose();
-		transform.viewToClipMat = view_context->viewFrustum.GetViewToClipMatrix();
-		//transform.viewToClipMat.Transpose();
-
-		ColorCB color;
-		color.color = { 0.0f, 1.0f, 0.0f };
+		// Set the frame constants
+		view_context->SetFrameConstants(render_interface);
 
 		for (int i = 0; i < entry->totalEntries; ++i)
 		{
@@ -123,14 +117,7 @@ namespace RB::Graphics
 				render_interface->SetIndexBuffer(model_entry.ib);
 			}
 
-			transform.localToWorldMat = model_entry.modelMatrix;
-			//transform.localToWorldMat.Transpose();
-
-			Math::Float4x4 mvp = transform.localToWorldMat * transform.worldToViewMat;
-			mvp = mvp * transform.viewToClipMat;
-			transform.localToWorldMat = mvp;
-
-			render_interface->SetConstantShaderData(0, &transform, sizeof(transform));
+			render_interface->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
 			render_interface->Draw();
 		}

@@ -20,7 +20,7 @@ namespace RB::Graphics
 	class RenderInterface;
 	class RenderPass;
 	class GpuGuard;
-	struct ViewContext;
+	class ViewContext;
 
 	// Fully static class
 	class Renderer : public Input::Events::EventListener

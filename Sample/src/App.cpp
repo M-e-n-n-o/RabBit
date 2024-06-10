@@ -51,20 +51,20 @@ public:
 
 		GameObject* object = GetScene()->CreateGameObject();
 		object->AddComponent<MeshRenderer>(m_Mesh);
-		m_Transform = object->AddComponent<Transform>();
-		m_Transform->position = Float3(0.0f, 0.0f, 1.0f);
-		m_Transform->scale	= Float3(1.0f);
+		Transform* t = object->AddComponent<Transform>();
+		t->position = Float3(0.0f, 0.0f, 5.0f);
+		t->scale	= Float3(1.0f);
 
 		GameObject* camera = GetScene()->CreateGameObject();
 		camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
-		camera->AddComponent<Transform>();
+		m_Transform = camera->AddComponent<Transform>();
 
-		static_assert(false);
+		//static_assert(false);
 		/*
 			Things to fix:
 			- Visualize cube
 				- The index data is not yet uploaded to the GPU by the streamer, add this!
-				- Something with the order of the matrix multiplies in the shader (sending the entire MVP via code does work)
+				- Add matrix rotations
 			- Small memory leak somewhere
 		*/
 	}
@@ -75,8 +75,11 @@ public:
 
 		if (IsMouseKeyDown(MouseCode::ButtonLeft))
 		{
-			m_Transform->position.z += 0.001f;
-
+			m_Transform->position.z += 0.0001f;
+		}
+		else if (IsMouseKeyDown(MouseCode::ButtonRight))
+		{
+			m_Transform->position.z -= 0.0001f;
 		}
 	}
 

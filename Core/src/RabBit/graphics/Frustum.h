@@ -17,9 +17,10 @@ namespace RB::Graphics
 
 		// View matrix
 		Math::Float4x4 GetWorldToViewMatrix() const { return m_WorldToViewMat; }
+		//Math::Float4x4 GetViewToWorldMatrix() const { return m_ViewToWorldMat; }
 
 		void SetTransform(Math::Float3 position, Math::Float3 rotation);
-		void SetTransform(Math::Float4x4 world_position);
+		void SetTransform(Math::Float4x4 view_to_world);
 
 		// Projection matrix
 		Math::Float4x4 GetViewToClipMatrix() const { return m_ViewToClipMat; }
@@ -31,6 +32,7 @@ namespace RB::Graphics
 
 	private:
 		Math::Float4x4	m_WorldToViewMat;	// World space to view space matrix
+		//Math::Float4x4	m_ViewToWorldMat;
 		Math::Float4x4	m_ViewToClipMat;	// View space to clip space matrix (projection matrix)
 
 		float			m_VFov;

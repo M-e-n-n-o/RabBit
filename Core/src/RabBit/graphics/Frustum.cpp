@@ -1,4 +1,3 @@
-#include "Frustum.h"
 #include "RabBitCommon.h"
 #include "Frustum.h"
 
@@ -27,11 +26,10 @@ namespace RB::Graphics
 		SetTransform(m);
 	}
 
-	void Frustum::SetTransform(Math::Float4x4 world_position)
+	void Frustum::SetTransform(Math::Float4x4 view_to_world)
 	{
-		m_WorldToViewMat = world_position;
-
-		// Invert the position
+		// TODO Create a proper matrix invert method (that also inverts rotation)
+		m_WorldToViewMat = view_to_world;
 		m_WorldToViewMat.SetPosition(m_WorldToViewMat.GetPosition() * -1);
 	}
 

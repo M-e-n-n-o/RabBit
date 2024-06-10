@@ -57,6 +57,7 @@ namespace RB::Math
 		a30 = x;
 		a31 = y;
 		a32 = z;
+		a33 = 1;
 	}
 
 	void Float4x4::Scale(const Float3 scale)
