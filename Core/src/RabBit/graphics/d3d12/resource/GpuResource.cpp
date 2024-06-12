@@ -45,6 +45,11 @@ namespace RB::Graphics::D3D12
 		return m_Resource != nullptr;
 	}
 
+	void GpuResource::MarkAsUsed(DeviceQueue* queue)
+	{
+		g_ResourceManager->MarkUsed(this, queue);
+	}
+
 	void GpuResource::UpdateState(D3D12_RESOURCE_STATES state)
 	{
 		m_State = state;

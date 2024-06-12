@@ -7,6 +7,8 @@
 
 namespace RB::Graphics::D3D12
 {
+	class DeviceQueue;
+
 	class GpuResource
 	{
 	public:
@@ -21,7 +23,7 @@ namespace RB::Graphics::D3D12
 
 		bool IsValid() const;
 
-		//void MarkAsUsed();
+		void MarkAsUsed(DeviceQueue* queue);
 
 		void UpdateState(D3D12_RESOURCE_STATES state);
 		D3D12_RESOURCE_STATES GetState() const;

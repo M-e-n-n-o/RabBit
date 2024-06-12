@@ -90,12 +90,10 @@ namespace RB::Graphics::D3D12
 		delete m_CreationThread;
 
 		// Wait until all objects can be release
-		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end();)
+		for (auto itr = m_InFlight.begin(); itr != m_InFlight.end();)
 		{
-			itr->first->queue->CpuWaitForFenceValue(itr->first->fenceValue);
-			
-			delete itr->first;
-			itr = m_ObjsWaitingToFinishFlight.erase(itr);
+			itr->first.queue->CpuWaitForFenceValue(itr->first.fenceValue);
+			itr = m_InFlight.erase(itr);
 		}
 
 		DeleteCriticalSection(&m_CS);
@@ -110,13 +108,12 @@ namespace RB::Graphics::D3D12
 	{
 		EnterCriticalSection(&m_CS);
 
-		// Check which tracked resources can be deleted
-		for (auto itr = m_ObjsWaitingToFinishFlight.begin(); itr != m_ObjsWaitingToFinishFlight.end();)
+		// Check which resources have finished executing on the GPU
+		for (auto itr = m_InFlight.begin(); itr != m_InFlight.end();)
 		{
-			if (itr->first->queue->IsFenceReached(itr->first->fenceValue))
+			if (itr->first.queue->IsFenceReached(itr->first.fenceValue))
 			{
-				delete itr->first;
-				itr = m_ObjsWaitingToFinishFlight.erase(itr);
+				itr = m_InFlight.erase(itr);
 			}
 			else
 			{
@@ -140,29 +137,55 @@ namespace RB::Graphics::D3D12
 		LeaveCriticalSection(&m_CS);
 	}
 
-	void ResourceManager::MarkForDelete(GpuResource* resource)
+	void ResourceManager::MarkUsed(GpuResource* resource, DeviceQueue* queue)
 	{
 		if (!resource->IsValid())
 		{
-			RB_LOG_WARN(LOGTAG_GRAPHICS, "Resource can not be deleted, it is not valid");
+			RB_LOG_WARN(LOGTAG_GRAPHICS, "Resource cannot be set as used, not valid");
 			return;
 		}
-		
+
 		EnterCriticalSection(&m_CS);
 
-		m_ObjsScheduledToReleaseAfterExecute.push_back(resource->GetResource());
+		auto itr = m_ScheduledUsages.find(queue);
+
+		if (itr == m_ScheduledUsages.end())
+		{
+			List<GPtr<ID3D12Object>> list;
+			list.push_back(resource->GetResource());
+
+			m_ScheduledUsages.emplace(queue, list);
+		}
+		else
+		{
+			itr->second.push_back(resource->GetResource());
+		}
 
 		LeaveCriticalSection(&m_CS);
+	}
+
+	void ResourceManager::MarkForDelete(GpuResource* resource)
+	{
+		// Don't need to do anything to delete at the right time. This because when the resource is currently in flight or still 
+		// has to be used by a command list, there is a reference being kept to it by the m_ScheduledUsages or the m_InFlight member.
 	}
 
 	void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
 	{
 		EnterCriticalSection(&m_CS);
 
-		FencePair* fence_pair = new FencePair{ queue, fence_value };
+		auto scheduled_use_itr = m_ScheduledUsages.find(queue);
+		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, scheduled_use_itr != m_ScheduledUsages.end(), "DeviceQueue was not yet registered for the scheduled usages queue");
 
-		m_ObjsWaitingToFinishFlight.emplace(fence_pair, m_ObjsScheduledToReleaseAfterExecute);
-		m_ObjsScheduledToReleaseAfterExecute.clear();
+		FencePair fence_pair;
+		fence_pair.queue	  = queue;
+		fence_pair.fenceValue = fence_value;
+
+		// Set all resources that were marked for use to this queue in flight
+		m_InFlight.emplace(fence_pair, scheduled_use_itr->second);
+
+		// Clear the scheduled usages for this queue
+		scheduled_use_itr->second.clear();
 
 		LeaveCriticalSection(&m_CS);
 	}

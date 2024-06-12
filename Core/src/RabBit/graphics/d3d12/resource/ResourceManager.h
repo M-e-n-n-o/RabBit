@@ -13,7 +13,7 @@ namespace RB::Graphics::D3D12
 	/*
 	* TODO: 
 	* - Track the resource sizes
-	* - Make is possible to easily create and alias (multiple) resources from 1 heap (all rendertargets in 1 big heap)
+	* - Make is possible to easily create and alias (multiple) resources from 1 heap (all rendertargets in 1 big heap?)
 	*/
 
 	// Global resource manager
@@ -25,6 +25,16 @@ namespace RB::Graphics::D3D12
 
 		void StartFrame();
 		void EndFrame();
+
+		static_assert(false);
+		// TODO 
+		//		- Misschien performance verbeteren van MarkUsed functie? (roep ik overal nu goed MarkUsed aan?)
+		//
+		//		- ScheduleUpload functie maken en DoUploads(RenderInterface) die beiden worden
+		//		  aangeroepen door de streamer pass
+		//		  (STOP DIT IN EEN RESOURCE STREAMER KLASSE!!!, die moet te gebruiken zijn tussen alle Graphics API's!)
+
+		void MarkUsed(GpuResource* resource, DeviceQueue* queue);
 
 		void MarkForDelete(GpuResource* resource);
 		void OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value);
@@ -46,11 +56,11 @@ namespace RB::Graphics::D3D12
 		struct FencePair
 		{
 			DeviceQueue* queue;
-			uint64_t fenceValue;
+			uint64_t	 fenceValue;
 		};
 
-		UnorderedMap<FencePair*, List<GPtr<ID3D12Object>>> m_ObjsWaitingToFinishFlight;
-		List<GPtr<ID3D12Object>> m_ObjsScheduledToReleaseAfterExecute;
+		UnorderedMap<DeviceQueue*, List<GPtr<ID3D12Object>>> m_ScheduledUsages;
+		UnorderedMap<FencePair,    List<GPtr<ID3D12Object>>> m_InFlight;
 
 		enum class ResourceType
 		{

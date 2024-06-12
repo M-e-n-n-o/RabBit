@@ -59,7 +59,7 @@ public:
 		camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
 		m_Transform = camera->AddComponent<Transform>();
 
-		//static_assert(false);
+		static_assert(false);
 		/*
 			Things to fix:
 			- Visualize cube

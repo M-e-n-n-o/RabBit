@@ -94,6 +94,8 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::TransitionResource(RenderResource* resource, ResourceState state)
 	{
+		MarkResourceUsed(resource);
+
 		g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), ConvertToD3D12ResourceState(state));
 	}
 
@@ -119,9 +121,13 @@ namespace RB::Graphics::D3D12
 				max_width = Math::Max(max_width, tex->GetWidth());
 				max_height = Math::Max(max_height, tex->GetHeight());
 
-				g_ResourceStateManager->TransitionResource((GpuResource*) tex->GetNativeResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+				GpuResource* res = (GpuResource*)tex->GetNativeResource();
+
+				g_ResourceStateManager->TransitionResource(res, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 				m_RenderState.rtvFormats[i] = ConvertToDXGIFormat(tex->GetFormat());
+
+				MarkResourceUsed(res);
 			}
 			else
 			{
@@ -136,9 +142,13 @@ namespace RB::Graphics::D3D12
 		{
 			depth_handle = ((Texture2DD3D12*)depth_stencil)->GetCpuHandle();
 
-			g_ResourceStateManager->TransitionResource((GpuResource*) depth_stencil->GetNativeResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			GpuResource* res = (GpuResource*)depth_stencil->GetNativeResource();
+
+			g_ResourceStateManager->TransitionResource(res, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
 			m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
+			
+			MarkResourceUsed(res);
 		}
 		
 		m_CommandList->OMSetRenderTargets(bundle->colorTargetsCount, color_handles, true, depth_handle);
@@ -214,6 +224,8 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::Clear(RenderResource* resource, const Math::Float4& color)
 	{
+		MarkResourceUsed(resource);
+
 		g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 		FlushResourceBarriers();
 
@@ -353,6 +365,8 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::SetIndexBuffer(RenderResource* index_resource)
 	{
+		MarkResourceUsed(index_resource);
+
 		IndexBufferD3D12* ib = (IndexBufferD3D12*) index_resource;
 
 		m_CommandList->IASetIndexBuffer(&ib->GetView());
@@ -362,6 +376,8 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot)
 	{
+		MarkResourceUsed(vertex_resource);
+
 		RenderResource* resources[] = { vertex_resource };
 		SetVertexBuffers(resources, 1, slot);
 	}
@@ -381,6 +397,8 @@ namespace RB::Graphics::D3D12
 			}
 
 			VertexBufferD3D12* vbo = (VertexBufferD3D12*)vertex_resources[res_idx];
+
+			MarkResourceUsed(vbo);
 
 			views[res_idx] = vbo->GetView();
 
@@ -430,6 +448,9 @@ namespace RB::Graphics::D3D12
 		GpuResource* src_res = (GpuResource*)src->GetNativeResource();
 		GpuResource* dest_res = (GpuResource*)dest->GetNativeResource();
 
+		MarkResourceUsed(src_res);
+		MarkResourceUsed(dest_res);
+
 		switch (src->GetPrimitiveType())
 		{
 		case RenderResourceType::Buffer:
@@ -452,7 +473,7 @@ namespace RB::Graphics::D3D12
 		{
 			GpuResource* upload_res = new GpuResource();
 			g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", data_size);
-			
+
 			char* mapped_mem;
 			RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
 
@@ -462,6 +483,9 @@ namespace RB::Graphics::D3D12
 			//upload_res->Unmap(0, nullptr);
 
 			InternalCopyBuffer(upload_res, (GpuResource*)resource->GetNativeResource());
+
+			MarkResourceUsed(upload_res);
+			MarkResourceUsed(resource);
 
 			delete upload_res;
 		}
@@ -496,6 +520,16 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DispatchInternal()
 	{
+	}
+
+	void RenderInterfaceD3D12::MarkResourceUsed(RenderResource* resource)
+	{
+		MarkResourceUsed((GpuResource*)resource->GetNativeResource());
+	}
+
+	void RenderInterfaceD3D12::MarkResourceUsed(GpuResource* resource)
+	{
+		resource->MarkAsUsed(m_Queue);
 	}
 
 	void RenderInterfaceD3D12::BindResources()
