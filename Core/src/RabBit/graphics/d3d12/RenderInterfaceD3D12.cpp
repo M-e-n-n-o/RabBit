@@ -64,6 +64,8 @@ namespace RB::Graphics::D3D12
 	void RenderInterfaceD3D12::InvalidateState()
 	{
 		m_RenderState = {};
+
+		// TODO Maybe set some default states here, such as backface culling, depth testing on, etc.
 	}
 
 	Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()

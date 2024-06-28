@@ -90,7 +90,7 @@ namespace RB::Graphics
 		render_interface->SetPixelShader(PS_VertexColor);
 
 		render_interface->SetBlendMode(BlendMode::None);
-		render_interface->SetCullMode(CullMode::None);
+		render_interface->SetCullMode(CullMode::Back);
 		render_interface->SetDepthMode(DepthMode::Disabled);
 
 		RenderTargetBundle bundle = {};

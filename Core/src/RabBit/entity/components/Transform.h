@@ -23,8 +23,10 @@ namespace RB::Entity
 		Math::Float4x4 GetLocalToWorldMatrix() const
 		{
 			Math::Float4x4 m;
+			m.RotateAroundX(Math::DegreesToRadians(rotation.x));
+			m.RotateAroundY(Math::DegreesToRadians(rotation.y));
+			m.RotateAroundZ(Math::DegreesToRadians(rotation.z));
 			m.SetPosition(position);
-			m.Rotate(rotation);
 			m.Scale(scale);
 
 			return m;

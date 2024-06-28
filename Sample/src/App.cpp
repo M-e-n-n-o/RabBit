@@ -11,6 +11,7 @@ private:
 	Mesh* m_Mesh;
 
 	Transform* m_Transform;
+	Transform* m_Camera;
 
 public:
 	App(RB::AppInfo& info): Application(info) {}
@@ -53,18 +54,14 @@ public:
 		object->AddComponent<MeshRenderer>(m_Mesh);
 		Transform* t = object->AddComponent<Transform>();
 		t->position = Float3(0.0f, 0.0f, 5.0f);
+		t->rotation = Float3(45.0f, 0.0f, 0.0f);
 		t->scale	= Float3(1.0f);
+
+		m_Transform = t;
 
 		GameObject* camera = GetScene()->CreateGameObject();
 		camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
-		m_Transform = camera->AddComponent<Transform>();
-
-		//static_assert(false);
-		/*
-			Things to fix:
-			- Visualize cube
-				- Add matrix rotations
-		*/
+		m_Camera = camera->AddComponent<Transform>();
 	}
 
 	void OnUpdate() override
@@ -73,11 +70,36 @@ public:
 
 		if (IsMouseKeyDown(MouseCode::ButtonLeft))
 		{
-			m_Transform->position.z += 0.0001f;
+			m_Transform->rotation.y += 0.001f;
 		}
-		else if (IsMouseKeyDown(MouseCode::ButtonRight))
+		if (IsMouseKeyDown(MouseCode::ButtonRight))
 		{
-			m_Transform->position.z -= 0.0001f;
+			m_Transform->rotation.x += 0.001f;
+		}
+
+		if (IsKeyDown(KeyCode::W))
+		{
+			m_Camera->position.z += 0.0001f;
+		}
+		if (IsKeyDown(KeyCode::A))
+		{
+			m_Camera->position.x -= 0.0001f;
+		}
+		if (IsKeyDown(KeyCode::S))
+		{
+			m_Camera->position.z -= 0.0001f;
+		}
+		if (IsKeyDown(KeyCode::D))
+		{
+			m_Camera->position.x += 0.0001f;
+		}
+		if (IsKeyDown(KeyCode::LeftShift))
+		{
+			m_Camera->rotation.x += 0.001f;
+		}
+		if (IsKeyDown(KeyCode::Space))
+		{
+			m_Camera->rotation.x -= 0.001f;
 		}
 	}
 

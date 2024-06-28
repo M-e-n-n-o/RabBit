@@ -59,6 +59,30 @@ namespace RB::Math
 	}
 
 	template<typename T>
+	inline T Sin(T value)
+	{
+		return sin(value);
+	}
+
+	template<>
+	inline float Sin<float>(float value)
+	{
+		return sinf(value);
+	}
+
+	template<typename T>
+	inline T Cos(T value)
+	{
+		return cos(value);
+	}
+
+	template<>
+	inline float Cos<float>(float value)
+	{
+		return cosf(value);
+	}
+
+	template<typename T>
 	inline T Tan(T value)
 	{
 		return tan(value);

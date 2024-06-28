@@ -16,6 +16,11 @@ namespace RB::Math
 
 			struct
 			{
+				Float4 row[4];
+			};
+
+			struct
+			{
 				Float4 row0;
 				Float4 row1;
 				Float4 row2;
@@ -57,7 +62,9 @@ namespace RB::Math
 
 		Float3 GetPosition();
 
-		void Rotate(const Float3 euler_angles);
+		void RotateAroundX(float xrad);
+		void RotateAroundY(float yrad);
+		void RotateAroundZ(float zrad);
 
 		void SetPosition(const Float3 pos);
 		void SetPosition(float x, float y, float z);

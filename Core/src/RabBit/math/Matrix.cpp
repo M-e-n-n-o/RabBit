@@ -37,9 +37,58 @@ namespace RB::Math
 		row3 = { copy.row0.w, copy.row1.w, copy.row2.w, copy.row3.w };
 	}
 
-	void Float4x4::Rotate(const Float3 euler_angles)
+	void Float4x4::RotateAroundX(float xrad)
 	{
-		// TODO
+		Float4x4 copy = *this;
+
+		float sin_theta = Sin(xrad);
+		float cos_theta = Cos(xrad);
+
+		for (int i = 0; i < 4; ++i)
+		{
+			copy.row[i].y = cos_theta * row[i].y - sin_theta * row[i].z;
+			copy.row[i].z = sin_theta * row[i].y + cos_theta * row[i].z;
+			copy.row[i].x = row[i].x;
+			copy.row[i].w = row[i].w;
+		}
+
+		memcpy(a, copy.a, 16 * sizeof(float));
+	}
+
+	void Float4x4::RotateAroundY(float yrad)
+	{
+		Float4x4 copy = *this;
+
+		float sin_theta = Sin(yrad);
+		float cos_theta = Cos(yrad);
+
+		for (int i = 0; i < 4; ++i)
+		{
+			copy.row[i].z = cos_theta * row[i].z - sin_theta * row[i].x;
+			copy.row[i].x = sin_theta * row[i].z + cos_theta * row[i].x;
+			copy.row[i].y = row[i].y;
+			copy.row[i].w = row[i].w;
+		}
+
+		memcpy(a, copy.a, 16 * sizeof(float));
+	}
+
+	void Float4x4::RotateAroundZ(float zrad)
+	{
+		Float4x4 copy = *this;
+
+		float sin_theta = Sin(zrad);
+		float cos_theta = Cos(zrad);
+
+		for (int i = 0; i < 4; ++i)
+		{
+			copy.row[i].x = cos_theta * row[i].x - sin_theta * row[i].y;
+			copy.row[i].y = sin_theta * row[i].x + cos_theta * row[i].y;
+			copy.row[i].z = row[i].z;
+			copy.row[i].w = row[i].w;
+		}
+
+		memcpy(a, copy.a, 16 * sizeof(float));
 	}
 
 	Float3 Float4x4::GetPosition()
