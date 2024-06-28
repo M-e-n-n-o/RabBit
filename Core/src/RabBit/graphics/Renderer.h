@@ -45,7 +45,7 @@ namespace RB::Graphics
 		static Renderer* Create(bool enable_validation_layer);
 
 	protected:
-		Renderer();
+		Renderer(bool multi_threading_support);
 
 		void Init();
 
@@ -75,6 +75,8 @@ namespace RB::Graphics
 
 		uint64_t						m_RenderFrameIndex;
 		CRITICAL_SECTION				m_RenderFrameIndexCS;
+
+		bool							m_MultiThreadingSupport;
 
 	public:
 		struct BackBufferGuard

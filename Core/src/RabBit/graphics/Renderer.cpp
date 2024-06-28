@@ -63,10 +63,12 @@ namespace RB::Graphics
 		std::function<void()> ProcessEvents;
 	};
 
-	Renderer::Renderer()
+	Renderer::Renderer(bool multi_threading_support)
 		: EventListener(kEventCat_Window)
 		, m_IsShutdown(true)
+		, m_MultiThreadingSupport(multi_threading_support)
 	{
+
 	}
 
 	void Renderer::Init()
@@ -76,10 +78,13 @@ namespace RB::Graphics
 		m_CopyInterface		= RenderInterface::Create(true);
 		m_GraphicsInterface = RenderInterface::Create(false);
 
-		m_RenderThread = new WorkerThread(L"Render Thread", ThreadPriority::High);
+		if (m_MultiThreadingSupport)
+		{
+			m_RenderThread = new WorkerThread(L"Render Thread", ThreadPriority::High);
 
-		m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
-		m_EventJobType  = m_RenderThread->AddJobType(&EventJob,  true);
+			m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
+			m_EventJobType  = m_RenderThread->AddJobType(&EventJob,  true);
+		}
 
 		m_RenderFrameIndex = 0;
 		InitializeCriticalSection(&m_RenderFrameIndexCS);
@@ -104,8 +109,11 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = true;
 
-		// Blocks until render thread is completely idle
-		delete m_RenderThread;
+		if (m_MultiThreadingSupport)
+		{
+			// Blocks until render thread is completely idle
+			delete m_RenderThread;
+		}
 
 		SyncWithGpu();
 
@@ -151,7 +159,15 @@ namespace RB::Graphics
 			context->OnRenderFrameEnd				= std::bind(&Renderer::OnFrameEnd, this);
 			context->SyncWithGpu					= std::bind(&Renderer::SyncWithGpu, this);
 
-			m_RenderThread->ScheduleJob(m_RenderJobType, context);
+			if (m_MultiThreadingSupport)
+			{
+				m_RenderThread->ScheduleJob(m_RenderJobType, context);
+			}
+			else
+			{
+				RenderJob(context);
+				delete context;
+			}
 		}
 
 		// Schedule an event handling job
@@ -159,7 +175,15 @@ namespace RB::Graphics
 			EventContext* context = new EventContext();
 			context->ProcessEvents = std::bind(&Renderer::ProcessEvents, this);
 
-			m_RenderThread->ScheduleJob(m_EventJobType, context);
+			if (m_MultiThreadingSupport)
+			{
+				m_RenderThread->ScheduleJob(m_EventJobType, context);
+			}
+			else
+			{
+				EventJob(context);
+				delete context;
+			}
 		}
 
 		// Stream resources to the GPU on the main thread (maybe in the future do this on a different thread?)
@@ -179,12 +203,15 @@ namespace RB::Graphics
 			SAFE_DELETE(entry);
 		}
 
-		// Sync with the render thread on a stall
-		JobID stalling_job;
-		if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job))
+		if (m_MultiThreadingSupport)
 		{
-			RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
-			SyncRenderer(false);
+			// Sync with the render thread on a stall
+			JobID stalling_job;
+			if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job))
+			{
+				RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
+				SyncRenderer(false);
+			}
 		}
 	}
 
@@ -236,9 +263,12 @@ namespace RB::Graphics
 
 	void Renderer::SyncRenderer(bool gpu_sync)
 	{
-		if (!m_RenderThread->IsCurrentThread())
+		if (m_MultiThreadingSupport)
 		{
-			m_RenderThread->SyncAll();
+			if (!m_RenderThread->IsCurrentThread())
+			{
+				m_RenderThread->SyncAll();
+			}
 		}
 
 		if (gpu_sync)
