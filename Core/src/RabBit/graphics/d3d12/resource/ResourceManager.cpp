@@ -208,6 +208,8 @@ namespace RB::Graphics::D3D12
 		// Sync until the job is completed
 		m_CreationThread->Sync(itr->jobID);
 
+		m_ScheduledCreations.erase(itr);
+
 		return true;
 	}
 
@@ -223,7 +225,8 @@ namespace RB::Graphics::D3D12
 		desc->name				 = wname;
 		desc->size				 = size;
 
-		m_ScheduledCreations.push_back({ resource, m_CreationThread->ScheduleJob(m_CreationJob, desc) });
+		JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+		m_ScheduledCreations.push_back({ resource, id });
 	}
 
 	void ResourceManager::ScheduleCreateVertexResource(GpuResource* resource, const char* name, uint64_t size)
@@ -238,7 +241,8 @@ namespace RB::Graphics::D3D12
 		desc->name		= wname;
 		desc->size		= size;
 
-		m_ScheduledCreations.push_back({ resource, m_CreationThread->ScheduleJob(m_CreationJob, desc) });
+		JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+		m_ScheduledCreations.push_back({ resource, id });
 	}
 
 	void ResourceManager::ScheduleCreateIndexResource(GpuResource* resource, const char* name, uint64_t size)
@@ -253,7 +257,8 @@ namespace RB::Graphics::D3D12
 		desc->name		= wname;
 		desc->size		= size;
 
-		m_ScheduledCreations.push_back({ resource, m_CreationThread->ScheduleJob(m_CreationJob, desc) });
+		JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+		m_ScheduledCreations.push_back({ resource, id });
 	}
 
 	GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,
