@@ -12,8 +12,8 @@ namespace RB::Graphics
 {
 	struct StreamerEntry : public RenderPassEntry
 	{
-		VertexBuffer**	buffers;
-		uint32_t		totalBuffers;
+		Buffer**	buffers;
+		uint32_t	totalBuffers;
 
 		~StreamerEntry()
 		{
@@ -45,8 +45,8 @@ namespace RB::Graphics
 	{
 		List<const Entity::ObjectComponent*> mesh_renderers = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
 
-		// Allocate for the worst case scenario amount of vertex buffers
-		VertexBuffer** buffers = (VertexBuffer**)ALLOC_HEAP(sizeof(VertexBuffer*) * mesh_renderers.size());
+		// Allocate for the worst case scenario amount of buffers
+		Buffer** buffers = (Buffer**)ALLOC_HEAP(sizeof(Buffer*) * mesh_renderers.size() * 2);
 
 		uint32_t uploaded_count = 0;
 
@@ -59,31 +59,50 @@ namespace RB::Graphics
 				continue;
 			}
 
-			bool already_inserted = false;
+			bool already_inserted_vb = false;
+			bool already_inserted_ib = mesh->GetIndexBuffer() == nullptr;
 			for (int i = 0; i < uploaded_count; ++i)
 			{
 				if (buffers[i] == mesh->GetVertexBuffer())
 				{
-					already_inserted = true;
+					already_inserted_vb = true;
+				}
+
+				if (buffers[i] == mesh->GetIndexBuffer())
+				{
+					already_inserted_ib = true;
+				}
+
+				if (already_inserted_vb && already_inserted_ib)
+				{
 					break;
 				}
 			}
 
-			if (already_inserted)
+			if (!already_inserted_vb)
 			{
-				continue;
+				buffers[uploaded_count] = mesh->GetVertexBuffer();
+				uploaded_count++;
 			}
 
-			buffers[uploaded_count] = mesh->GetVertexBuffer();
-			uploaded_count++;
+			if (!already_inserted_ib)
+			{
+				buffers[uploaded_count] = mesh->GetIndexBuffer();
+				uploaded_count++;
+			}
 
 			// TODO This is ofcourse not true, they are uploaded once the fence has been reached, but how to do this in a proper and clean way?
+			// 
+			// Ideas: 
+			//		- ScheduleUpload functie maken en DoUploads(RenderInterface) die beiden worden
+			//		  aangeroepen door de streamer pass
+			//		  (STOP DIT IN EEN RESOURCE STREAMER KLASSE!!!, die moet te gebruiken zijn tussen alle Graphics API's!)
 			mesh->SetLatestDataUploaded(true);
 		}
 
 		if (uploaded_count == 0)
 		{
-			delete buffers;
+			SAFE_FREE(buffers);
 			return nullptr;
 		}
 

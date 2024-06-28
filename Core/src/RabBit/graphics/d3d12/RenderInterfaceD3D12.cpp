@@ -175,6 +175,7 @@ namespace RB::Graphics::D3D12
 				{
 					if (m_Queue->IsFenceReached(itr->fenceValue))
 					{
+						itr->allocator->Reset();
 						m_AvailableCBVAllocators.push(itr->allocator);
 						itr = m_InFlightCBVAllocators.erase(itr);
 					}
@@ -376,8 +377,6 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot)
 	{
-		MarkResourceUsed(vertex_resource);
-
 		RenderResource* resources[] = { vertex_resource };
 		SetVertexBuffers(resources, 1, slot);
 	}

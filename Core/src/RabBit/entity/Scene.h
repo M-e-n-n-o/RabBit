@@ -35,7 +35,7 @@ namespace RB::Entity
 
 		if (id == -1)
 		{
-			RB_LOG_WARN(LOGTAG_ENTITY, "Component of type %s is not registered yet", T::GetComponentTag());
+			//RB_LOG_WARN(LOGTAG_ENTITY, "Component of type %s is not registered yet", T::GetComponentTag());
 			return list;
 		}
 

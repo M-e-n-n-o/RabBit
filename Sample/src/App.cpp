@@ -19,35 +19,35 @@ public:
 	{
 		RB_LOG("Hoiii");
 
-		//float vertex_data[] = {
-		//	// Pos					Color
-		//	-1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f, // 0
-		//	-1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f, // 1
-		//	 1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f, // 2
-		//	 1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f, // 3
-		//	-1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f, // 4
-		//	-1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f, // 5
-		//	 1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f, // 6
-		//	 1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f  // 7
-		//};
-
-		//uint16_t index_data[] = {
-		//	0, 1, 2, 0, 2, 3,
-		//	4, 6, 5, 4, 7, 6,
-		//	4, 5, 1, 4, 1, 0,
-		//	3, 2, 6, 3, 6, 7,
-		//	1, 5, 6, 1, 6, 2,
-		//	4, 0, 3, 4, 3, 7
-		//};
-
 		float vertex_data[] = {
-			// Pos				Color
-			-0.5f, -0.5f, 0,	1, 0, 0,
-			0, 0.5f, 0,			0, 1, 0,
-			0.5f, -0.5f, 0,		0, 0, 1,
+			// Pos					Color
+			-1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f, // 0
+			-1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f, // 1
+			 1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f, // 2
+			 1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f, // 3
+			-1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f, // 4
+			-1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f, // 5
+			 1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f, // 6
+			 1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f  // 7
 		};
 
-		m_Mesh = new Mesh("Triangle", vertex_data, 6, _countof(vertex_data), nullptr, 0); //index_data, _countof(index_data));
+		uint16_t index_data[] = {
+			0, 1, 2, 0, 2, 3,
+			4, 6, 5, 4, 7, 6,
+			4, 5, 1, 4, 1, 0,
+			3, 2, 6, 3, 6, 7,
+			1, 5, 6, 1, 6, 2,
+			4, 0, 3, 4, 3, 7
+		};
+
+		//float vertex_data[] = {
+		//	// Pos				Color
+		//	-0.5f, -0.5f, 0,	1, 0, 0,
+		//	0, 0.5f, 0,			0, 1, 0,
+		//	0.5f, -0.5f, 0,		0, 0, 1,
+		//};
+
+		m_Mesh = new Mesh("Triangle", vertex_data, 6, _countof(vertex_data), index_data, _countof(index_data));
 
 		GameObject* object = GetScene()->CreateGameObject();
 		object->AddComponent<MeshRenderer>(m_Mesh);
@@ -59,11 +59,10 @@ public:
 		camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
 		m_Transform = camera->AddComponent<Transform>();
 
-		static_assert(false);
+		//static_assert(false);
 		/*
 			Things to fix:
 			- Visualize cube
-				- The index data is not yet uploaded to the GPU by the streamer, add this!
 				- Add matrix rotations
 			- Small memory leak somewhere
 		*/

@@ -67,13 +67,12 @@ namespace RB::Graphics
 			entry.modelMatrix	= transform->GetLocalToWorldMatrix();
 
 			entries[total_entries] = entry;
-
 			total_entries++;
 		}
 
 		if (total_entries == 0)
 		{
-			delete entries;
+			SAFE_FREE(entries);
 			return nullptr;
 		}
 

@@ -92,7 +92,7 @@ namespace RB::Graphics::D3D12
 		// Wait until all objects can be release
 		for (auto itr = m_InFlight.begin(); itr != m_InFlight.end();)
 		{
-			itr->first.queue->CpuWaitForFenceValue(itr->first.fenceValue);
+			itr->first->queue->CpuWaitForFenceValue(itr->first->fenceValue);
 			itr = m_InFlight.erase(itr);
 		}
 
@@ -111,8 +111,9 @@ namespace RB::Graphics::D3D12
 		// Check which resources have finished executing on the GPU
 		for (auto itr = m_InFlight.begin(); itr != m_InFlight.end();)
 		{
-			if (itr->first.queue->IsFenceReached(itr->first.fenceValue))
+			if (itr->first->queue->IsFenceReached(itr->first->fenceValue))
 			{
+				delete itr->first;
 				itr = m_InFlight.erase(itr);
 			}
 			else
@@ -158,7 +159,11 @@ namespace RB::Graphics::D3D12
 		}
 		else
 		{
-			itr->second.push_back(resource->GetResource());
+			// Only add it if its not already in the list
+			if (std::find(itr->second.begin(), itr->second.end(), resource->GetResource()) == itr->second.end())
+			{
+				itr->second.push_back(resource->GetResource());
+			}
 		}
 
 		LeaveCriticalSection(&m_CS);
@@ -177,9 +182,9 @@ namespace RB::Graphics::D3D12
 		auto scheduled_use_itr = m_ScheduledUsages.find(queue);
 		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, scheduled_use_itr != m_ScheduledUsages.end(), "DeviceQueue was not yet registered for the scheduled usages queue");
 
-		FencePair fence_pair;
-		fence_pair.queue	  = queue;
-		fence_pair.fenceValue = fence_value;
+		FencePair* fence_pair = new FencePair();
+		fence_pair->queue	   = queue;
+		fence_pair->fenceValue = fence_value;
 
 		// Set all resources that were marked for use to this queue in flight
 		m_InFlight.emplace(fence_pair, scheduled_use_itr->second);
