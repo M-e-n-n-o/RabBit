@@ -31,9 +31,6 @@ namespace RB::Graphics::D3D12
 		RenderInterfaceD3D12(bool allow_only_copy_operations);
 		~RenderInterfaceD3D12();
 
-		// The render interface does not own the command list, so it does not get a shared pointer
-		//void SetCommandList(ID3D12GraphicsCommandList2* command_list);
-
 		void InvalidateState() override;
 
 		// This method executes the command list and sets a new internal valid command list

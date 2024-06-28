@@ -4,7 +4,7 @@
 #include "resource/ResourceManager.h"
 #include "resource/ResourceStateManager.h"
 #include "shaders/ShaderSystem.h"
-#include "pipeline/Pipeline.h"
+#include "Pipeline.h"
 
 namespace RB::Graphics::D3D12
 {

@@ -75,6 +75,7 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = false;
 
+		// TODO Maybe change this to a compute queue so that it can generate mip maps
 		m_CopyInterface		= RenderInterface::Create(true);
 		m_GraphicsInterface = RenderInterface::Create(false);
 

@@ -5,7 +5,7 @@
 #include "resource/RenderResourceD3D12.h"
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
-#include "pipeline/Pipeline.h"
+#include "Pipeline.h"
 #include "shaders/ShaderSystem.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"

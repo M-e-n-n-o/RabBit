@@ -34,7 +34,8 @@ namespace RB::Graphics::D3D12
 
 	void ResourceStateManager::InsertUAVBarrier(GpuResource* resource)
 	{
-		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(resource->GetResource().Get()));
+		ID3D12Resource* res = resource ? resource->GetResource().Get() : nullptr;
+		InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(res));
 	}
 
 	void ResourceStateManager::InsertAliasBarrier(GpuResource* before, GpuResource* after)
