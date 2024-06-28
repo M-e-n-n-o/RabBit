@@ -4,6 +4,7 @@
 #include "SwapChain.h"
 #include "app/Application.h"
 #include "graphics/Display.h"
+#include "graphics/Renderer.h"
 #include "graphics/d3d12/GraphicsDevice.h"
 #include "graphics/d3d12/DeviceQueue.h"
 #include "graphics/d3d12/UtilsD3D12.h"
@@ -252,7 +253,7 @@ namespace RB::Graphics::D3D12
 			return;
 		}
 
-		g_GraphicsDevice->WaitUntilIdle();
+		Application::GetInstance()->GetRenderer()->SyncRenderer(true);
 
 		width = std::max(1u, width);
 		height = std::max(1u, height);
@@ -270,7 +271,7 @@ namespace RB::Graphics::D3D12
 	{
 		// The actual window gets destroyed when deleting the Window object, this should be done by the main thread
 
-		g_GraphicsDevice->WaitUntilIdle();
+		Application::GetInstance()->GetRenderer()->SyncRenderer(true);
 
 		RB_LOG(LOGTAG_WINDOWING, "Scheduled destroy of window");
 

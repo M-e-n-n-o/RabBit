@@ -236,7 +236,10 @@ namespace RB::Graphics
 
 	void Renderer::SyncRenderer(bool gpu_sync)
 	{
-		m_RenderThread->SyncAll();
+		if (!m_RenderThread->IsCurrentThread())
+		{
+			m_RenderThread->SyncAll();
+		}
 
 		if (gpu_sync)
 		{

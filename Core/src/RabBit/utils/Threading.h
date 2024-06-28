@@ -50,6 +50,8 @@ namespace RB
 		void		Cancel(JobID job_id);
 		void		CancelAll();
 
+		bool		IsCurrentThread();
+
 	private:
 		struct Job
 		{

@@ -274,6 +274,11 @@ namespace RB
 		LeaveCriticalSection(&m_SharedContext->kickCS);
 	}
 
+	bool WorkerThread::IsCurrentThread()
+	{
+		return GetCurrentThreadId() == GetThreadId(m_ThreadHandle);
+	}
+
 	List<WorkerThread::Job>::iterator WorkerThread::FindJobBy(JobID id)
 	{
 		return std::find_if(m_SharedContext->pendingJobs.begin(), m_SharedContext->pendingJobs.end(), [id](Job& other) -> bool

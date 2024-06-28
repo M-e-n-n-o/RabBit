@@ -64,7 +64,6 @@ public:
 			Things to fix:
 			- Visualize cube
 				- Add matrix rotations
-			- Small memory leak somewhere
 		*/
 	}
 

@@ -23,8 +23,7 @@ namespace RB::Graphics::D3D12
 		ResourceManager();
 		~ResourceManager();
 
-		void StartFrame();
-		void EndFrame();
+		void UpdateBookkeeping();
 
 		void MarkUsed(GpuResource* resource, DeviceQueue* queue);
 

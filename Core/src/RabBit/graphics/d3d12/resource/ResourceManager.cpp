@@ -99,12 +99,7 @@ namespace RB::Graphics::D3D12
 		DeleteCriticalSection(&m_CS);
 	}
 
-	void ResourceManager::StartFrame()
-	{
-
-	}
-
-	void ResourceManager::EndFrame()
+	void ResourceManager::UpdateBookkeeping()
 	{
 		EnterCriticalSection(&m_CS);
 

@@ -51,6 +51,8 @@ namespace RB
 		Graphics::Window* FindWindow(void* window_handle) const;
 		int32_t			  FindWindowIndex(void* window_handle) const;
 
+		Graphics::Renderer* GetRenderer() const { return m_Renderer; }
+
 		Entity::Scene* GetScene() const { return m_Scene; }
 
 		uint64_t GetFrameIndex() const { return m_FrameIndex; }
