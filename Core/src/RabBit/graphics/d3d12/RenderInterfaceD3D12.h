@@ -75,7 +75,7 @@ namespace RB::Graphics::D3D12
 		void MarkResourceUsed(RenderResource* resource);
 		void MarkResourceUsed(GpuResource* resource);
 		void BindResources();
-		void SetPipelineState();
+		void SetGraphicsPipelineState();
 		void SetNewCommandList();
 		void InternalCopyBuffer(GpuResource* src, GpuResource* dest);
 

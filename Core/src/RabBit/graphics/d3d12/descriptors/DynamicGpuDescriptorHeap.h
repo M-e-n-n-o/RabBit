@@ -27,6 +27,7 @@ namespace RB::Graphics::D3D12
 		// Useful for ClearUAV calls, which require both CPU and GPU visible descriptors.
 		D3D12_GPU_DESCRIPTOR_HANDLE CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE cpu_desc);
 
+		// Determines which descriptors on which root signature slot have to be set
 		void OnSetNewRootSignature(const RootSignatureParameterDescriptorDesc& descriptors_description);
 
 		// Reset used descriptors.
