@@ -81,6 +81,15 @@ namespace RB::Graphics::D3D12
 		D3D12_SHADER_DESC ps_desc;
 		ps_reflection->GetDesc(&ps_desc);
 
+
+		// Change all this super ugly logic to a bit mask system like that from:
+		// https://github.com/jpvanoosten/LearningDirectX12/blob/v0.0.3/DX12Lib/src/RootSignature.cpp
+		//
+		// We can then also use this bit mask in the DynamicGpuDescriptorHeap class
+		// FILL IN THE RootSignatureParameterDescriptorDesc STRUCT!!!
+		// Also make sure that there cannot be more than 32 number of parameters in the root signature (rootIndexSlotsUsed)!
+		static_assert(false);
+
 		uint32_t referenced_cbvs = vs_desc.ConstantBuffers + ps_desc.ConstantBuffers;
 
 		// Only CBV's are supported currently.

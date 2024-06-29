@@ -502,7 +502,7 @@ namespace RB::Graphics::D3D12
 	{
 		if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
 		{
-			SetPipelineState();
+			SetGraphicsPipelineState();
 		}
 
 		BindResources();
@@ -521,6 +521,28 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DispatchInternal()
 	{
+	}
+
+	void RenderInterfaceD3D12::BindDescriptorHeaps()
+	{
+		// Finish this
+		static_assert(false);
+
+		// PSEUDO CODE:
+		// 
+		//auto all_heaps;
+		//bool changed = false;
+		//
+		//for (int i = 0; i < m_TotalHeaps; ++i)
+		//{
+		//	all_heaps[i] = m_DynamicGpuDescriptorHeaps[i]->GetCurrentDescriptorHeap();
+		//	// TODO check if any of the heaps actually changed, we do not want to re-set the heap if not necessary!
+		//}
+		//
+		//if (changed)
+		//{
+		//	m_CommandList->SetDescriptorHeaps(m_TotalHeaps, all_heaps);
+		//}
 	}
 
 	void RenderInterfaceD3D12::MarkResourceUsed(RenderResource* resource)
@@ -544,7 +566,7 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	void RenderInterfaceD3D12::SetPipelineState()
+	void RenderInterfaceD3D12::SetGraphicsPipelineState()
 	{
 		#define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
 

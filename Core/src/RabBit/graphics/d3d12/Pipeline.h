@@ -9,6 +9,21 @@ namespace RB::Graphics::D3D12
 	// CBV's are the first parameters in the root signature
 	#define CBV_ROOT_PARAMETER_INDEX_OFFSET 0
 
+	struct RootSignatureParameterDescriptorDesc
+	{
+		// Max value of 32!
+		uint32_t rootIndexSlotsUsed;
+
+		// Bit masks indicating on which root index which type of descriptor is bound
+		uint32_t descriptorTableBitMask;
+		uint32_t samplerTableBitMask;
+		uint32_t cbvBitMask;
+
+		// Array sorted by root index, storing the amount of descriptors per table, 
+		// if there is a desctiptor table at that index.
+		uint32_t numDescriptorsPerTable[32 /* (sizeof(uint32_t) * 8) */ ];
+	};
+
 	class PipelineManager
 	{
 	public:
