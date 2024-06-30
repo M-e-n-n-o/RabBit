@@ -71,7 +71,7 @@ namespace RB::Graphics::D3D12
 		GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
 	private:
-		void BindDescriptorHeaps();
+		void BindDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE, ID3D12DescriptorHeap*);
 		void MarkResourceUsed(RenderResource* resource);
 		void MarkResourceUsed(GpuResource* resource);
 		void BindResources();

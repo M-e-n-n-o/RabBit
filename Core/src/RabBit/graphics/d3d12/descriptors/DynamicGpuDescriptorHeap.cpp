@@ -4,7 +4,7 @@
 
 namespace RB::Graphics::D3D12
 {
-	DynamicGpuDescriptorHeap::DynamicGpuDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descriptors_per_heap, std::function<void()> bind_descriptor_heap_callback)
+	DynamicGpuDescriptorHeap::DynamicGpuDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descriptors_per_heap, std::function<void(D3D12_DESCRIPTOR_HEAP_TYPE, ID3D12DescriptorHeap*)> bind_descriptor_heap_callback)
 		: m_HeapType(type)
 		, m_NumDescriptorsPerHeap(descriptors_per_heap)
 		, m_StaleDescriptorTableBitMask(0)
@@ -168,7 +168,7 @@ namespace RB::Graphics::D3D12
 		m_CurrentGpuDescriptorHandle = m_CurrentDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
 		// Binds the current descriptor heap to the command list
-		m_BindDescriptorHeapCallback();
+		m_BindDescriptorHeapCallback(m_HeapType, m_CurrentDescriptorHeap.Get());
 
 		// When updating the descriptor heap all descriptor tabled must be recopied to the new descriptor heap
 		m_StaleDescriptorTableBitMask = m_DescriptorTableBitMask;

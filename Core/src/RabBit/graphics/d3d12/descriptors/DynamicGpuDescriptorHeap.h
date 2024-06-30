@@ -11,7 +11,7 @@ namespace RB::Graphics::D3D12
 	class DynamicGpuDescriptorHeap
 	{
 	public:
-		DynamicGpuDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descriptors_per_heap, std::function<void()> bind_descriptor_heap_callback);
+		DynamicGpuDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descriptors_per_heap, std::function<void(D3D12_DESCRIPTOR_HEAP_TYPE, ID3D12DescriptorHeap*)> bind_descriptor_heap_callback);
 		~DynamicGpuDescriptorHeap();
 
 		// Stages a range of CPU visible descriptors. These are copied to a GPU visible 
@@ -84,6 +84,6 @@ namespace RB::Graphics::D3D12
 
 		uint32_t								m_NumFreeHandles;
 
-		std::function<void()>					m_BindDescriptorHeapCallback;
+		std::function<void(D3D12_DESCRIPTOR_HEAP_TYPE, ID3D12DescriptorHeap*)> m_BindDescriptorHeapCallback;
 	};
 }

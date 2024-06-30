@@ -113,7 +113,7 @@ namespace RB::Graphics::D3D12
 
 		D3D12_CPU_DESCRIPTOR_HANDLE color_handles[8];
 		
-		for (int i = 0; i < 8; ++i)
+		for (int i = 0; i < _countof(bundle->colorTargets); ++i)
 		{
 			if (i < bundle->colorTargetsCount)
 			{
@@ -523,26 +523,19 @@ namespace RB::Graphics::D3D12
 	{
 	}
 
-	void RenderInterfaceD3D12::BindDescriptorHeaps()
+	void RenderInterfaceD3D12::BindDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, ID3D12DescriptorHeap* heap)
 	{
 		// Finish this
 		static_assert(false);
 
 		// PSEUDO CODE:
 		// 
-		//auto all_heaps;
-		//bool changed = false;
+		// Store a list of heaps of all possible heap types in this class.
+		// Check if the passed in heap of the passed in type is different from the currently stored heap at that type,
+		// if so, re-set the heaps.
 		//
-		//for (int i = 0; i < m_TotalHeaps; ++i)
-		//{
-		//	all_heaps[i] = m_DynamicGpuDescriptorHeaps[i]->GetCurrentDescriptorHeap();
-		//	// TODO check if any of the heaps actually changed, we do not want to re-set the heap if not necessary!
-		//}
 		//
-		//if (changed)
-		//{
-		//	m_CommandList->SetDescriptorHeaps(m_TotalHeaps, all_heaps);
-		//}
+		// WILL THE DESCRIPTOR HEAPS ALWAYS BE PROPERLY SET? YES, WE SHOULD CALL RESET WHEN WE ARE STARTING TO USE A NEW DynamicGpuDescriptorHeap AGAIN!!!
 	}
 
 	void RenderInterfaceD3D12::MarkResourceUsed(RenderResource* resource)
