@@ -1,13 +1,14 @@
 #include "RabBitCommon.h"
 #include "Pipeline.h"
 #include "graphics/d3d12/GraphicsDevice.h"
-#include "graphics/d3d12/shaders/ShaderSystem.h"
+#include "graphics/d3d12/shaders/ShaderSystemD3D12.h"
 
 namespace RB::Graphics::D3D12
 {
 	PipelineManager* g_PipelineManager = nullptr;
 
-	PipelineManager::PipelineManager()
+	PipelineManager::PipelineManager(ShaderSystem* shader_system)
+		: m_ShaderSystem(shader_system)
 	{
 
 	}
@@ -73,8 +74,8 @@ namespace RB::Graphics::D3D12
 			return found->second;
 		}
 
-		GPtr<ID3D12ShaderReflection> vs_reflection = g_ShaderSystem->GetShaderBlob(vs_identifier)->reflectionData;
-		GPtr<ID3D12ShaderReflection> ps_reflection = g_ShaderSystem->GetShaderBlob(ps_identifier)->reflectionData;
+		GPtr<ID3D12ShaderReflection> vs_reflection = ((CompiledShaderBlob*) m_ShaderSystem->GetCompilerShader(vs_identifier))->reflectionData;
+		GPtr<ID3D12ShaderReflection> ps_reflection = ((CompiledShaderBlob*)m_ShaderSystem->GetCompilerShader(ps_identifier))->reflectionData;
 
 		D3D12_SHADER_DESC vs_desc;
 		vs_reflection->GetDesc(&vs_desc);
@@ -222,7 +223,7 @@ namespace RB::Graphics::D3D12
 			return found->second;
 		}
 
-		GPtr<ID3D12ShaderReflection> reflection = g_ShaderSystem->GetShaderBlob(vs_identifier)->reflectionData;
+		GPtr<ID3D12ShaderReflection> reflection = ((CompiledShaderBlob*)m_ShaderSystem->GetCompilerShader(vs_identifier))->reflectionData;
 
 		D3D12_SHADER_DESC shader_desc;
 		reflection->GetDesc(&shader_desc);

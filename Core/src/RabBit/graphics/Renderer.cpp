@@ -4,6 +4,7 @@
 #include "RenderPass.h"
 #include "Window.h"
 #include "ViewContext.h"
+#include "ShaderSystem.h"
 
 #include "app/Application.h"
 #include "input/events/WindowEvent.h"
@@ -75,13 +76,16 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = false;
 
+		m_ShaderSystem		= ShaderSystem::Create();
+
 		// TODO Maybe change this to a compute queue so that it can generate mip maps
-		m_CopyInterface		= RenderInterface::Create(true);
-		m_GraphicsInterface = RenderInterface::Create(false);
+		m_CopyInterface		= RenderInterface::Create(true, m_ShaderSystem);
+		m_GraphicsInterface = RenderInterface::Create(false, m_ShaderSystem);
+
 
 		if (m_MultiThreadingSupport)
 		{
-			m_RenderThread = new WorkerThread(L"Render Thread", ThreadPriority::High);
+			m_RenderThread	= new WorkerThread(L"Render Thread", ThreadPriority::High);
 
 			m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
 			m_EventJobType  = m_RenderThread->AddJobType(&EventJob,  true);
@@ -126,6 +130,8 @@ namespace RB::Graphics
 		delete m_StreamingPass;
 
 		DeleteCriticalSection(&m_RenderFrameIndexCS);
+
+		delete m_ShaderSystem;
 
 		delete m_GraphicsInterface;
 		delete m_CopyInterface;

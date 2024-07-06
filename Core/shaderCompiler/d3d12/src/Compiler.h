@@ -16,6 +16,7 @@ public:
 private:
 	void RetrieveShaderEntries(DxcBuffer& source, std::vector<Shader>& entries);
 	void GetShaderStages(const char* source, ShaderStage stage, const char* prefix, std::vector<Shader>& entries);
+	void AddInputMasks(Shader& shader);
 
 	CComPtr<IDxcUtils>			m_Utils;
 	CComPtr<IDxcCompiler3>		m_Compiler;

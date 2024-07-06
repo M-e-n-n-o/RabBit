@@ -1,12 +1,10 @@
 #include "RabBitCommon.h"
-#include "ShaderSystem.h"
+#include "ShaderSystemD3D12.h"
 #include <fstream>
 
 namespace RB::Graphics::D3D12
 {
-	ShaderSystem* g_ShaderSystem = nullptr;
-
-	ShaderSystem::ShaderSystem()
+	ShaderSystemD3D12::ShaderSystemD3D12()
 	{
 		RB_ASSERT_FATAL_RELEASE_D3D(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_DxcUtils)), "Failed to create DXC Utils object");
 
@@ -21,7 +19,7 @@ namespace RB::Graphics::D3D12
 
 		for (uint64_t shader_index = 0; shader_index < SHADER_ENTRIES; ++shader_index)
 		{
-			ShaderBlob* blob = new ShaderBlob();
+			CompiledShaderBlob* blob = new CompiledShaderBlob();
 
 			// Read shader blob
 			uint64_t start = SHADER_LUT[shader_index].offsetInFile;
@@ -50,12 +48,18 @@ namespace RB::Graphics::D3D12
 			delete[] reflection_data.Ptr;
 
 			m_ShaderBlobs[shader_index] = blob;
+			
+			// Copy over shader masks
+			m_ShaderMasks[shader_index].cbvMask = SHADER_LUT[shader_index].cbvMask;
+			m_ShaderMasks[shader_index].srvMask = SHADER_LUT[shader_index].srvMask;
+			m_ShaderMasks[shader_index].uavMask = SHADER_LUT[shader_index].uavMask;
+			m_ShaderMasks[shader_index].samplerMask = SHADER_LUT[shader_index].samplerMask;
 		}
 
 		stream.close();
 	}
 
-	ShaderSystem::~ShaderSystem()
+	ShaderSystemD3D12::~ShaderSystemD3D12()
 	{
 		for (uint64_t shader_index = 0; shader_index < SHADER_ENTRIES; ++shader_index)
 		{
@@ -67,8 +71,13 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	ShaderBlob* ShaderSystem::GetShaderBlob(uint32_t shader_identifier)
+	void* ShaderSystemD3D12::GetCompilerShader(uint32_t shader_identifier)
 	{
-		return m_ShaderBlobs[shader_identifier];
+		return (void*) m_ShaderBlobs[shader_identifier];
+	}
+	
+	const ShaderResourceMask& ShaderSystemD3D12::GetShaderResourceMask(uint32_t shader_identifier)
+	{
+		return m_ShaderMasks[shader_identifier];
 	}
 }

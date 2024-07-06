@@ -21,6 +21,7 @@ namespace RB::Graphics
 	class RenderPass;
 	class GpuGuard;
 	class ViewContext;
+	class ShaderSystem;
 
 	// Fully static class
 	class Renderer : public Input::Events::EventListener
@@ -54,6 +55,8 @@ namespace RB::Graphics
 
 		virtual void SyncWithGpu() = 0;
 
+		ShaderSystem*			m_ShaderSystem;
+
 	private:
 		ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
 
@@ -62,21 +65,21 @@ namespace RB::Graphics
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 
-		bool							m_IsShutdown;
-		WorkerThread*					m_RenderThread;
-		JobTypeID						m_RenderJobType;
-		JobTypeID						m_EventJobType;
+		bool					m_IsShutdown;
+		WorkerThread*			m_RenderThread;
+		JobTypeID				m_RenderJobType;
+		JobTypeID				m_EventJobType;
 
-		RenderInterface*				m_GraphicsInterface; // Used by the render passes
-		RenderInterface*				m_CopyInterface;	 // Used for resource streaming 
-		RenderPass*						m_StreamingPass;
-		RenderPass**					m_RenderPasses;
-		uint32_t						m_TotalPasses;
+		RenderInterface*		m_GraphicsInterface; // Used by the render passes
+		RenderInterface*		m_CopyInterface;	 // Used for resource streaming 
+		RenderPass*				m_StreamingPass;
+		RenderPass**			m_RenderPasses;
+		uint32_t				m_TotalPasses;
 
-		uint64_t						m_RenderFrameIndex;
-		CRITICAL_SECTION				m_RenderFrameIndexCS;
+		uint64_t				m_RenderFrameIndex;
+		CRITICAL_SECTION		m_RenderFrameIndexCS;
 
-		bool							m_MultiThreadingSupport;
+		bool					m_MultiThreadingSupport;
 
 	public:
 		struct BackBufferGuard
@@ -85,8 +88,8 @@ namespace RB::Graphics
 		};
 	private:
 
-		List<BackBufferGuard>			m_BackBufferAvailabilityGuards;
+		List<BackBufferGuard>	m_BackBufferAvailabilityGuards;
 
-		const uint32_t					m_RenderThreadTimeoutMs = 100;
+		const uint32_t			m_RenderThreadTimeoutMs = 100;
 	};
 }

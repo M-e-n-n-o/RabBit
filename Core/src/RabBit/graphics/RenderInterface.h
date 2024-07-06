@@ -1,8 +1,5 @@
 #pragma once
 
-// If you get an error that this file cannot be found, run the ShaderCompiler project for the graphics API you are using
-#include "codeGen/ShaderDefines.h"
-
 namespace RB::Math
 {
 	struct Float4;
@@ -12,6 +9,7 @@ namespace RB::Graphics
 {
 	#define INTERMEDIATE_EXECUTE_THRESHOLD 350
 
+	class ShaderSystem;
 	class RenderResource;
 	class RenderInterface;
 	class RenderTargetBundle;
@@ -91,7 +89,7 @@ namespace RB::Graphics
 		void Draw();
 		void Dispatch();
 
-		static RenderInterface* Create(bool allow_only_copy_operations);
+		static RenderInterface* Create(bool allow_only_copy_operations, ShaderSystem* shader_system);
 
 	protected:
 		RenderInterface() = default;

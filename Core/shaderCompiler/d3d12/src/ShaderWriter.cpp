@@ -13,6 +13,10 @@ struct ShaderBlobLookup
 	uint64_t		offsetInFile;
 	uint64_t		shaderBlobLength;
 	uint64_t		reflectionBlobLength;
+	uint64_t		cbvMask;
+	uint64_t		srvMask;
+	uint64_t		uavMask;
+	uint64_t		samplerMask;
 };
 
 const wchar_t SHADER_START[] = LR"(#pragma once
@@ -36,6 +40,10 @@ namespace RB::Graphics::D3D12
 		uint64_t offsetInFile;
 		uint64_t shaderBlobLength;
 		uint64_t reflectionBlobLength;
+		uint64_t cbvMask;
+		uint64_t srvMask;
+		uint64_t uavMask;
+		uint64_t samplerMask;
 	};
 
 	static const uint32_t SHADER_ENTRIES = )";
@@ -65,6 +73,10 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 		entry.shaderBlobLength		= shader.shaderBlob->GetBufferSize();
 		entry.reflectionBlobLength	= shader.reflection->GetBufferSize();
 		entry.offsetInFile			= offset;
+		entry.cbvMask				= shader.cbvMask;
+		entry.srvMask				= shader.srvMask;
+		entry.uavMask				= shader.uavMask;
+		entry.samplerMask			= shader.samplerMask;
 
 		shader_table.push_back(entry);
 		offset += (entry.shaderBlobLength + entry.reflectionBlobLength);
@@ -108,6 +120,14 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 		d3d_output.append(std::to_wstring(entry.shaderBlobLength));
 		d3d_output.append(L",");
 		d3d_output.append(std::to_wstring(entry.reflectionBlobLength));
+		d3d_output.append(L",");
+		d3d_output.append(std::to_wstring(entry.cbvMask));
+		d3d_output.append(L",");
+		d3d_output.append(std::to_wstring(entry.srvMask));
+		d3d_output.append(L",");
+		d3d_output.append(std::to_wstring(entry.uavMask));
+		d3d_output.append(L",");
+		d3d_output.append(std::to_wstring(entry.samplerMask));
 		d3d_output.append(L"},");
 
 		defines_output.append(L"\tstatic const uint32_t ");

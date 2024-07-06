@@ -6,7 +6,7 @@
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
 #include "Pipeline.h"
-#include "shaders/ShaderSystem.h"
+#include "shaders/ShaderSystemD3D12.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
 
@@ -32,10 +32,11 @@ namespace RB::Graphics::D3D12
 	//								GpuGuard
 	// ---------------------------------------------------------------------------
 
-	RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
+	RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations, ShaderSystem* shader_system)
 		: m_CopyOperationsOnly(allow_only_copy_operations)
 		, m_RenderState()
 		, m_CurrentCBVAllocator(nullptr)
+		, m_ShaderSystem(shader_system)
 	{
 		if (allow_only_copy_operations)
 			m_Queue = g_GraphicsDevice->GetCopyQueue();
@@ -505,7 +506,7 @@ namespace RB::Graphics::D3D12
 			SetGraphicsPipelineState();
 		}
 
-		BindResources();
+		BindDrawResources();
 
 		FlushResourceBarriers();
 
@@ -548,7 +549,7 @@ namespace RB::Graphics::D3D12
 		resource->MarkAsUsed(m_Queue);
 	}
 
-	void RenderInterfaceD3D12::BindResources()
+	void RenderInterfaceD3D12::BindDrawResources()
 	{
 		for (int i = 0; i < _countof(m_RenderState.cbvAddresses); ++i)
 		{
@@ -556,6 +557,14 @@ namespace RB::Graphics::D3D12
 			{
 				m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + i, m_RenderState.cbvAddresses[i]);
 			}
+
+#if RB_CONFIG_DEBUG
+			// Some extra debug checks
+			bool occupies_slot = ((m_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << (CBV_ROOT_PARAMETER_INDEX_OFFSET + i))) > 0 ||
+								  (m_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << (CBV_ROOT_PARAMETER_INDEX_OFFSET + i))) > 0);
+
+			RB_ASSERT(LOGTAG_GRAPHICS, m_RenderState.cbvAddresses[i] > 0 == occupies_slot, "The bounded CBV slot does not match the shader's used CBV slots");
+#endif
 		}
 	}
 
@@ -583,8 +592,8 @@ namespace RB::Graphics::D3D12
 		
 		List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader);
 
-		ShaderBlob* vs_blob = g_ShaderSystem->GetShaderBlob(m_RenderState.vsShader);
-		ShaderBlob* ps_blob = g_ShaderSystem->GetShaderBlob(m_RenderState.psShader);
+		CompiledShaderBlob* vs_blob = (CompiledShaderBlob*) m_ShaderSystem->GetCompilerShader(m_RenderState.vsShader);
+		CompiledShaderBlob* ps_blob = (CompiledShaderBlob*) m_ShaderSystem->GetCompilerShader(m_RenderState.psShader);
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 		pso_desc.pRootSignature			= m_RenderState.rootSignature.Get();

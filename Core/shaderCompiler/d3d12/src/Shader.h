@@ -19,4 +19,8 @@ struct Shader
 	ShaderStage				stage;
 	CComPtr<IDxcBlob>		shaderBlob;
 	CComPtr<IDxcBlob>		reflection;
+	uint64_t				cbvMask;
+	uint64_t				srvMask;
+	uint64_t				uavMask;
+	uint64_t				samplerMask;
 };

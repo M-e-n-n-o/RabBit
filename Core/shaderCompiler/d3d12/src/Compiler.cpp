@@ -105,6 +105,8 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 			results->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&entry.reflection), nullptr);
 			EXIT_ON_FAIL(entry.reflection != nullptr, "Could not retrieve shader reflection");
 
+			AddInputMasks(entry);
+
 			m_CompiledShaders.push_back(entry);
 		}
 
@@ -146,5 +148,71 @@ void Compiler::GetShaderStages(const char* source, ShaderStage stage, const char
 
 		// Get past the shader we just found
 		string_source = string_source.substr(pos, string_source.length());
+	}
+}
+
+void Compiler::AddInputMasks(Shader& shader)
+{
+	DxcBuffer reflection_data;
+	reflection_data.Encoding = DXC_CP_ACP;
+	reflection_data.Size	 = shader.reflection->GetBufferSize();
+	reflection_data.Ptr		 = shader.reflection->GetBufferPointer();
+
+	CComPtr<ID3D12ShaderReflection> reflection;
+	EXIT_ON_FAIL_HR(m_Utils->CreateReflection(&reflection_data, IID_PPV_ARGS(&reflection)), L"Failed to load reflection data");
+
+	D3D12_SHADER_DESC desc;
+	EXIT_ON_FAIL_HR(reflection->GetDesc(&desc), L"Failed to get description of shader: " << shader.entryName);
+
+	shader.cbvMask = 0;
+	shader.srvMask = 0;
+	shader.uavMask = 0;
+	shader.samplerMask = 0;
+
+	for (int i = 0; i < desc.BoundResources; ++i)
+	{
+		D3D12_SHADER_INPUT_BIND_DESC input_desc;
+		EXIT_ON_FAIL_HR(reflection->GetResourceBindingDesc(i, &input_desc), L"Failed to get resource " << std::to_wstring(i));
+
+		switch (input_desc.Type)
+		{
+			case D3D_SIT_CBUFFER:
+			{
+				//LOGW("CBV at: " << input_desc.BindPoint);
+				shader.cbvMask |= (1 << input_desc.BindPoint);
+			}
+			break;
+			case D3D_SIT_SAMPLER:
+			{
+				//LOGW("Sampler at: " << input_desc.BindPoint);
+				shader.samplerMask |= (1 << input_desc.BindPoint);
+			}
+			break;
+			case D3D_SIT_TBUFFER:
+			case D3D_SIT_TEXTURE:
+			case D3D_SIT_STRUCTURED:
+			case D3D_SIT_BYTEADDRESS:
+			case D3D_SIT_RTACCELERATIONSTRUCTURE:
+			{
+				//LOGW("SRV at: " << input_desc.BindPoint);
+				shader.srvMask |= (1 << input_desc.BindPoint);
+			}
+			break;
+			case D3D_SIT_UAV_RWTYPED:
+			case D3D_SIT_UAV_RWSTRUCTURED:
+			case D3D_SIT_UAV_RWBYTEADDRESS:
+			case D3D_SIT_UAV_APPEND_STRUCTURED:
+			case D3D_SIT_UAV_CONSUME_STRUCTURED:
+			case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+			case D3D_SIT_UAV_FEEDBACKTEXTURE:
+			{
+				//LOGW("UAV at: " << input_desc.BindPoint);
+				shader.uavMask |= (1 << input_desc.BindPoint);
+			}
+			break;
+		default:
+			LOGW("Bounded input resource " << std::to_wstring(i) << " is not valid");
+			break;
+		}
 	}
 }

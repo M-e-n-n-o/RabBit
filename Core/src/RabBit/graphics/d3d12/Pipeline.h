@@ -4,8 +4,14 @@
 
 #include <d3d12.h>
 
+namespace RB::Graphics
+{
+	class ShaderSystem;
+}
+
 namespace RB::Graphics::D3D12
 {
+
 	// CBV's are the first parameters in the root signature
 	#define CBV_ROOT_PARAMETER_INDEX_OFFSET 0
 
@@ -27,7 +33,7 @@ namespace RB::Graphics::D3D12
 	class PipelineManager
 	{
 	public:
-		PipelineManager();
+		PipelineManager(ShaderSystem* shader_system);
 
 		GPtr<ID3D12PipelineState> GetComputePipeline(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint32_t cs_identifier);
 		GPtr<ID3D12PipelineState> GetGraphicsPipeline(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint32_t vs_identifier, uint32_t ps_identifier);
@@ -39,13 +45,14 @@ namespace RB::Graphics::D3D12
 	private:
 		uint64_t GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
 		uint64_t GetPipelineHash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
-	
 
 		UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_ComputePipelines;
 		UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_GraphicsPipelines;
 
 		UnorderedMap<uint64_t, GPtr<ID3D12RootSignature>>		m_RootSignatures;
 		UnorderedMap<uint32_t, List<D3D12_INPUT_ELEMENT_DESC>>	m_InputElementDescriptions;
+
+		ShaderSystem*											m_ShaderSystem;
 	};
 
 	extern PipelineManager* g_PipelineManager;
