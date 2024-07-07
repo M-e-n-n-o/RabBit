@@ -46,6 +46,9 @@ namespace RB::Graphics::D3D12
 		uint64_t GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
 		uint64_t GetPipelineHash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
 
+		void FillDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE type, uint32_t vs_mask, uint32_t ps_mask,
+			CD3DX12_DESCRIPTOR_RANGE* out_vertex_range, CD3DX12_DESCRIPTOR_RANGE* out_pixel_range, CD3DX12_DESCRIPTOR_RANGE* out_all_range);
+
 		UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_ComputePipelines;
 		UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_GraphicsPipelines;
 

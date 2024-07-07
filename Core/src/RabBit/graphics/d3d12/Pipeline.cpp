@@ -76,6 +76,8 @@ namespace RB::Graphics::D3D12
 
 		GPtr<ID3D12ShaderReflection> vs_reflection = ((CompiledShaderBlob*) m_ShaderSystem->GetCompilerShader(vs_identifier))->reflectionData;
 		GPtr<ID3D12ShaderReflection> ps_reflection = ((CompiledShaderBlob*)m_ShaderSystem->GetCompilerShader(ps_identifier))->reflectionData;
+		const ShaderResourceMask&	 vs_mask	   = m_ShaderSystem->GetShaderResourceMask(vs_identifier);
+		const ShaderResourceMask&	 ps_mask	   = m_ShaderSystem->GetShaderResourceMask(ps_identifier);
 
 		D3D12_SHADER_DESC vs_desc;
 		vs_reflection->GetDesc(&vs_desc);
@@ -91,56 +93,221 @@ namespace RB::Graphics::D3D12
 		// Also make sure that there cannot be more than 32 number of parameters in the root signature (rootIndexSlotsUsed)!
 		static_assert(false);
 
-		uint32_t referenced_cbvs = vs_desc.ConstantBuffers + ps_desc.ConstantBuffers;
+		//uint32_t referenced_cbvs = vs_desc.ConstantBuffers + ps_desc.ConstantBuffers;
 
-		// Only CBV's are supported currently.
-		// All constant buffers are inline for now.
-		uint32_t total_cbvs = 0;
-		D3D12_ROOT_PARAMETER* parameters	  = (D3D12_ROOT_PARAMETER*) ALLOC_STACK(sizeof(D3D12_ROOT_PARAMETER) * referenced_cbvs);
-		LPCSTR*				  parameter_names = (LPCSTR*)				ALLOC_STACK(sizeof(LPCSTR) * referenced_cbvs);
+		//// Only CBV's are supported currently.
+		//// All constant buffers are inline for now.
+		//uint32_t total_cbvs = 0;
+		//D3D12_ROOT_PARAMETER* parameters	  = (D3D12_ROOT_PARAMETER*) ALLOC_STACK(sizeof(D3D12_ROOT_PARAMETER) * referenced_cbvs);
+		//LPCSTR*				  parameter_names = (LPCSTR*)				ALLOC_STACK(sizeof(LPCSTR) * referenced_cbvs);
 
-		for (int i = 0; i < referenced_cbvs; ++i)
+		//for (int i = 0; i < referenced_cbvs; ++i)
+		//{
+		//	GPtr<ID3D12ShaderReflection>	reflection	= i < vs_desc.ConstantBuffers ? vs_reflection : ps_reflection;
+		//	uint32_t						subtract	= i < vs_desc.ConstantBuffers ? 0 : vs_desc.ConstantBuffers;
+		//	D3D12_SHADER_VISIBILITY			visibility	= i < vs_desc.ConstantBuffers ? D3D12_SHADER_VISIBILITY_VERTEX : D3D12_SHADER_VISIBILITY_PIXEL;
+
+		//	D3D12_SHADER_BUFFER_DESC buffer_desc;
+		//	reflection->GetConstantBufferByIndex(i - subtract)->GetDesc(&buffer_desc);
+
+		//	int32_t index = -1;
+		//	for (int j = 0; j < total_cbvs; ++j)
+		//	{
+		//		if (parameter_names[j] == buffer_desc.Name)
+		//		{
+		//			// Found the same CBV (so it's shared between multiple shader stages)
+		//			index = j;
+		//			break;
+		//		}
+		//	}
+
+		//	if (index >= 0)
+		//	{
+		//		parameters[index].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		//	}
+		//	else
+		//	{
+		//		parameters[total_cbvs] = {};
+		//		parameters[total_cbvs].ParameterType			 = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		//		parameters[total_cbvs].Descriptor.ShaderRegister = total_cbvs;
+		//		parameters[total_cbvs].Descriptor.RegisterSpace	 = 0;
+		//		parameters[total_cbvs].ShaderVisibility			 = visibility;
+
+		//		parameter_names[total_cbvs] = buffer_desc.Name;
+
+		//		total_cbvs++;
+		//	}
+		//}
+
+		//uint32_t total_slots = NumberOfSetBits(vs_mask.cbvMask) + NumberOfSetBits(vs_mask.srvMask) + NumberOfSetBits(vs_mask.uavMask) + NumberOfSetBits(vs_mask.samplerMask);
+		//						+ NumberOfSetBits(ps_mask.cbvMask) + NumberOfSetBits(ps_mask.srvMask) + NumberOfSetBits(ps_mask.uavMask) + NumberOfSetBits(ps_mask.samplerMask);
+
+
+
+		CD3DX12_DESCRIPTOR_RANGE vertex_visible_sampler_ranges;
+		CD3DX12_DESCRIPTOR_RANGE pixel_visible_sampler_ranges;
+		CD3DX12_DESCRIPTOR_RANGE all_visible_sampler_ranges;
+
+
+
+		uint32_t num_parameters = 0;
+
+		// Samplers will have their own descriptor table
+		CD3DX12_DESCRIPTOR_RANGE sampler_range;
+		uint32_t combined_samplers = vs_mask.samplerMask | ps_mask.samplerMask;
+		uint32_t total_samplers = NumberOfSetBits(combined_samplers);
+
+		if (total_samplers > 0)
 		{
-			GPtr<ID3D12ShaderReflection>	reflection	= i < vs_desc.ConstantBuffers ? vs_reflection : ps_reflection;
-			uint32_t						subtract	= i < vs_desc.ConstantBuffers ? 0 : vs_desc.ConstantBuffers;
-			D3D12_SHADER_VISIBILITY			visibility	= i < vs_desc.ConstantBuffers ? D3D12_SHADER_VISIBILITY_VERTEX : D3D12_SHADER_VISIBILITY_PIXEL;
+			DWORD index;
+			_BitScanForward(&index, combined_samplers);
 
-			D3D12_SHADER_BUFFER_DESC buffer_desc;
-			reflection->GetConstantBufferByIndex(i - subtract)->GetDesc(&buffer_desc);
+			sampler_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, total_samplers, index);
 
-			int32_t index = -1;
-			for (int j = 0; j < total_cbvs; ++j)
+			num_parameters++;
+		}
+
+		// SRV's and UAV's will be combined into 1 descriptor table
+		CD3DX12_DESCRIPTOR_RANGE srv_uav_ranges[2];
+		uint32_t total_srv_uav_ranges = 0;
+
+		// SRV's
+		CD3DX12_DESCRIPTOR_RANGE srv_range;
+		uint32_t combined_srvs = vs_mask.srvMask | ps_mask.srvMask;
+		uint32_t total_srvs = NumberOfSetBits(combined_srvs);
+
+		if (total_srvs > 0)
+		{
+			DWORD index;
+			_BitScanForward(&index, combined_srvs);
+
+			srv_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, total_srvs, index);
+
+			srv_uav_ranges[total_srv_uav_ranges] = srv_range;
+			total_srv_uav_ranges++;
+		}
+
+		// UAV's
+		CD3DX12_DESCRIPTOR_RANGE uav_range;
+		uint32_t combined_uavs = vs_mask.uavMask | ps_mask.uavMask;
+		uint32_t total_uavs = NumberOfSetBits(combined_uavs);
+
+		if (total_uavs > 0)
+		{
+			DWORD index;
+			_BitScanForward(&index, combined_uavs);
+
+			uav_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, total_uavs, index);
+
+			srv_uav_ranges[total_srv_uav_ranges] = uav_range;
+			total_srv_uav_ranges++;
+		}
+
+		num_parameters = total_srv_uav_ranges > 0 ? num_parameters + 1 : num_parameters;
+
+		// CBV's are all inline
+		uint32_t combined_cbvs = vs_mask.cbvMask | ps_mask.cbvMask;
+		uint32_t total_cbvs = NumberOfSetBits(combined_cbvs);
+
+		num_parameters += total_cbvs;
+
+		CD3DX12_ROOT_PARAMETER* parameters = (CD3DX12_ROOT_PARAMETER*)ALLOC_STACK(sizeof(CD3DX12_ROOT_PARAMETER) * num_parameters);
+
+		// TODO How do we properly set the visibility???????
+		// We need to divide the ranges into which are visible in which shader stage!!
+		//D3D12_SHADER_VISIBILITY_VERTEX
+		//parameters[0].InitAsDescriptorTable();
+		//parameters[0].InitAsConstantBufferView()
+
+
+		for (int i = 0; i < 2; ++i)
+		{
+			const ShaderResourceMask& mask = i == 0 ? vs_mask : ps_mask;
+
+			uint64_t cbv_mask = mask.cbvMask;
+			DWORD index;
+
+			while (_BitScanForward(&index, cbv_mask) && index < NumberOfSetBits(mask.cbvMask))
 			{
-				if (parameter_names[j] == buffer_desc.Name)
+				parameters
+
+				// Flip the bit so it's not scanned again
+				cbv_mask ^= (1 << index);
+			}
+		}
+
+		// GO BINDLESS FOR SRV's, and CBV's (maybe also samplers?)!!!!!!
+		// https://alextardif.com/Bindless.html
+		// https://blog.traverseresearch.nl/bindless-rendering-setup-afeb678d77fc
+		// https://rtarun9.github.io/blogs/bindless_rendering/
+		/*
+			Plan:
+			(WE OFCOURSE STILL NEED TO DOUBLE/TRIPLE BUFFER THE DESCRIPTOR HEAPS)
+			(Only do bindless for SRV's & UAV's, use static samplers & inline CBV's)
+			- Create 1 shader visisble CBV_SRV_UAV descriptor heap with the max amount of descriptors possible
+			- Bind the descriptor heap directly at the start of each command list (so not needed after every call of pso change anymore)
+			- Create separate descriptor ranges (in the root signature) for each resource type (tex2D, cubeTex, tex3D, rwTex2D etc.) with the max amount of descriptors possible 
+				(https://learn.microsoft.com/en-us/windows/win32/direct3d12/hardware-support)
+			- When a texture is created, a SRV (and UAV if write access) is created in the first empty spot on the descriptor heap (so directly copied into the GPU descriptor heap, 
+			    so cpu descriptor does not need to be kept around). The view index into the heap is stored in the texture class.
+			- When you then want to set a texture in a shader you still need to specify which slot you are going to use in the TextureIndices constant buffer.
+			- The RenderInterface will then upload the index of the view into the shader visible heap into that slot so the shader knows which texture to pick from the texture array.
+
+
+			Example implementation:
+
+			GPU:
+			{
+				Texture2D   Texture2DTable[]   : register(t0, tex2DSpace);
+				TextureCube TextureCubeTable[] : registre(t0, texCubeSpace);
+				RWTexture2D RwTexture2DTable[] : register(t0, rwTex2DSpace);
+
+				// TODO: Maybe make this a Buffer (or ByteAddressBuffer) instead of an inline CBV
+				cbuffer TextureIndices : CBUFFER_REG(kInstanceCB)
 				{
-					// Found the same CBV (so it's shared between multiple shader stages)
-					index = j;
-					break;
+					uint g_IndexTex2D0; // The indices that are not used should point to a default error texture!
+					uint g_IndexTex2D1;
+					uint g_IndexTex2D2;
+					etc.
+
+					uint g_IndexTexCube0;
+					uint g_IndexTexCube1;
+					uint g_IndexTexCube2;
+					etc.
+
+					etc.
+				}
+
+				#define FETCH_TEX2D(index) Texture2DTable[g_IndexTex2D##index##]
+
+				main()
+				{
+					Texture2D<float4> albedo_tex = FETCH_TEX2D(1);
 				}
 			}
 
-			if (index >= 0)
+			CPU:
 			{
-				parameters[index].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			}
-			else
-			{
-				parameters[total_cbvs] = {};
-				parameters[total_cbvs].ParameterType			 = D3D12_ROOT_PARAMETER_TYPE_CBV;
-				parameters[total_cbvs].Descriptor.ShaderRegister = total_cbvs;
-				parameters[total_cbvs].Descriptor.RegisterSpace	 = 0;
-				parameters[total_cbvs].ShaderVisibility			 = visibility;
+				interface->SetSRV(1, albedo_tex);
 
-				parameter_names[total_cbvs] = buffer_desc.Name;
 
-				total_cbvs++;
+
+				RenderInterface::SetSRV(slot, texture)
+				{
+					tex_slot = DescriptorHeap::GetSRVIndex(texture);
+
+					shader->uploadConstant("g_IndexTex2D{slot}", tex_slot);
+				}
 			}
-		}
+		
+		*/
+		static_assert(false);
+
 
 		// TODO Expand the creation of root signatures based on the shader reflection data!
 		D3D12_ROOT_SIGNATURE_DESC desc = {};
 		desc.Flags				= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		desc.NumParameters		= total_cbvs;
+		desc.NumParameters		= num_parameters;
 		desc.pParameters		= parameters;
 		desc.NumStaticSamplers	= 0;
 		desc.pStaticSamplers	= nullptr;
@@ -155,6 +322,33 @@ namespace RB::Graphics::D3D12
 		m_RootSignatures.insert({ hash, signature });
 
 		return signature;
+	}
+
+	void PipelineManager::FillDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE type, uint32_t vs_mask, uint32_t ps_mask, 
+		CD3DX12_DESCRIPTOR_RANGE* out_vertex_range, CD3DX12_DESCRIPTOR_RANGE* out_pixel_range, CD3DX12_DESCRIPTOR_RANGE* out_all_range)
+	{
+		uint32_t combined_mask = vs_mask | ps_mask;
+
+		DWORD index;
+		while (_BitScanForward(&index, combined_mask) && index < NumberOfSetBits(combined_mask))
+		{
+			if ((vs_mask & (1 << index)) > 0 && (ps_mask & (1 << index)) > 0)
+			{
+				// Visible in both stages
+				out_all_range->Init();
+			}
+			else if ((vs_mask & (1 << index)) > 0)
+			{
+				// Visible in vertex stage only
+			}
+			else
+			{
+				// Visible in pixel stage only
+			}
+
+			// Flip the bit so it's not scanned again
+			combined_mask ^= (1 << index);
+		}
 	}
 
 	uint64_t PipelineManager::GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash)

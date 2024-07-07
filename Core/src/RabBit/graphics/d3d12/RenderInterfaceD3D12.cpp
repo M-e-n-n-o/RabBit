@@ -469,6 +469,9 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
 	{
+		// TODO Keep the upload resource alive for a couple of frames maybe so we don't have to create 
+		// an upload resource for every upload if we do 10 uploads after eachother (so suballocate an upload resource in the full resource).
+
 		switch (resource->GetPrimitiveType())
 		{
 		case RenderResourceType::Buffer:
