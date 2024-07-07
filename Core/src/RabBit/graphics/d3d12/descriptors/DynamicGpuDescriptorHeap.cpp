@@ -14,7 +14,7 @@ namespace RB::Graphics::D3D12
 		, m_NumFreeHandles(0)
 		, m_BindDescriptorHeapCallback(bind_descriptor_heap_callback)
 	{
-		g_GraphicsDevice->Get()->GetDescriptorHandleIncrementSize(m_HeapType);
+		m_DescriptorHandleIncrementSize = g_GraphicsDevice->Get()->GetDescriptorHandleIncrementSize(m_HeapType);
 
 		// Allocate space for staging CPU visible descriptors
 		m_DescriptorHandleCache = CreateUnique<D3D12_CPU_DESCRIPTOR_HANDLE[]>(m_NumDescriptorsPerHeap);

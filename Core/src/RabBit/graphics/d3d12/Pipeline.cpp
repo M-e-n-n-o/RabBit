@@ -242,12 +242,12 @@ namespace RB::Graphics::D3D12
 		// https://rtarun9.github.io/blogs/bindless_rendering/
 		/*
 			Plan:
-			(WE OFCOURSE STILL NEED TO DOUBLE/TRIPLE BUFFER THE DESCRIPTOR HEAPS)
 			(Only do bindless for SRV's & UAV's, use static samplers & inline CBV's)
 			- Create 1 shader visisble CBV_SRV_UAV descriptor heap with the max amount of descriptors possible
+			- Create 1 non-shader visisble CBV_SRV_UAV heap with space for only 1 descriptor
 			- Bind the descriptor heap directly at the start of each command list (so not needed after every call of pso change anymore)
 			- Create separate descriptor ranges (in the root signature) for each resource type (tex2D, cubeTex, tex3D, rwTex2D etc.) with the max amount of descriptors possible 
-				(https://learn.microsoft.com/en-us/windows/win32/direct3d12/hardware-support)
+				(https://learn.microsoft.com/en-us/windows/win32/direct3d12/hardware-support) (do we also need the D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE & D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE flags??)
 			- When a texture is created, a SRV (and UAV if write access) is created in the first empty spot on the descriptor heap (so directly copied into the GPU descriptor heap, 
 			    so cpu descriptor does not need to be kept around). The view index into the heap is stored in the texture class.
 			- When you then want to set a texture in a shader you still need to specify which slot you are going to use in the TextureIndices constant buffer.
@@ -296,6 +296,7 @@ namespace RB::Graphics::D3D12
 				{
 					tex_slot = DescriptorHeap::GetSRVIndex(texture);
 
+					// MAKE SURE THE CONSTANT BUFFER IS DOUBLE BUFFERED (just use the already existing SetConstantShaderData method)
 					shader->uploadConstant("g_IndexTex2D{slot}", tex_slot);
 				}
 			}
