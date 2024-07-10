@@ -4,10 +4,11 @@
 
 namespace RB::Graphics::D3D12
 {
-	GpuResource::GpuResource()
+	GpuResource::GpuResource(std::function<void(GpuResource*)> on_resource_created_callback)
 		: m_Resource(nullptr)
 		, m_State(D3D12_RESOURCE_STATE_COMMON)
 		, m_OwnsResource(true)
+		, m_OnCreationCallback(on_resource_created_callback)
 	{
 	}
 
@@ -15,6 +16,7 @@ namespace RB::Graphics::D3D12
 		: m_Resource(resource)
 		, m_State(state)
 		, m_OwnsResource(transfer_ownership)
+		, m_OnCreationCallback(nullptr)
 	{
 	}
 
@@ -69,5 +71,10 @@ namespace RB::Graphics::D3D12
 	{
 		m_Resource = resource;
 		m_State = state;
+
+		if (m_OnCreationCallback)
+		{
+			m_OnCreationCallback(this);
+		}
 	}
 }

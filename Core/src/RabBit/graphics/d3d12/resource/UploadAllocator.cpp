@@ -14,7 +14,7 @@ namespace RB::Graphics::D3D12
 		, m_UploadOffset(0)
 	{
 		m_UploadResource = new GpuResource();
-		g_ResourceManager->ScheduleCreateUploadResource(m_UploadResource, m_Name, m_ResourceSize);
+		g_ResourceManager->ScheduleCreateUploadResource(m_UploadResource, m_Name, { m_ResourceSize });
 
 		m_UploadResource->GetResource()->Map(0, nullptr, (void**)&m_WriteAddress);
 		m_GpuAddress = m_UploadResource->GetResource()->GetGPUVirtualAddress();

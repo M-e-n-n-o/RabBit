@@ -12,7 +12,7 @@ namespace RB::Graphics::D3D12
 	class GpuResource
 	{
 	public:
-		GpuResource();
+		GpuResource(std::function<void(GpuResource*)> on_resource_created_callback = nullptr);
 		GpuResource(GPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES state, bool transfer_ownership);
 		~GpuResource();
 
@@ -30,8 +30,9 @@ namespace RB::Graphics::D3D12
 		bool IsInState(D3D12_RESOURCE_STATES state) const;
 
 	private:
-		GPtr<ID3D12Resource>  m_Resource;
-		D3D12_RESOURCE_STATES m_State;
-		bool				  m_OwnsResource;
+		GPtr<ID3D12Resource>				m_Resource;
+		D3D12_RESOURCE_STATES				m_State;
+		bool								m_OwnsResource;
+		std::function<void(GpuResource*)>	m_OnCreationCallback;
 	};
 }

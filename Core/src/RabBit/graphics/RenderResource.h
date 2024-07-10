@@ -148,9 +148,8 @@ namespace RB::Graphics
 		virtual ~Texture() = default;
 
 		virtual bool AllowedRenderTarget() const = 0;
-		//virtual bool AllowedDepthStencil() = 0;
-		//virtual bool AllowedRandomGpuWrites() = 0;
-		//virtual bool AllowedGpuReads() = 0;
+		virtual bool AllowedRandomGpuWrites() const = 0;
+		virtual bool AllowedDepthStencil() const = 0;
 
 	protected:
 		Texture(RenderResourceType type): RenderResource(type) {}
@@ -164,7 +163,7 @@ namespace RB::Graphics
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 
-		static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height);
+		static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
 
 	protected:
 		Texture2D(): Texture(RenderResourceType::Texture2D) {}

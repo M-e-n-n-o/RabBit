@@ -43,12 +43,12 @@ namespace RB::Graphics
 		return nullptr;
 	}
 	
-	Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height)
+	Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access)
 	{
 		switch (Renderer::GetAPI())
 		{
 		case RenderAPI::D3D12:
-			return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height);
+			return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height, is_render_target, is_depth_stencil, random_write_access);
 		default:
 			RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
 			break;

@@ -30,9 +30,25 @@ namespace RB::Graphics::D3D12
 		void MarkForDelete(GpuResource* resource);
 		void OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value);
 
-		void ScheduleCreateUploadResource(GpuResource* resource, const char* name, uint64_t size);
-		void ScheduleCreateVertexResource(GpuResource* resource, const char* name, uint64_t size);
-		void ScheduleCreateIndexResource(GpuResource* resource, const char* name, uint64_t size);
+		struct BufferDesc
+		{
+			uint64_t				size;
+		};
+
+		struct Texture2DDesc
+		{
+			DXGI_FORMAT				format;
+			uint64_t				width;
+			uint64_t				height;
+			uint16_t				arraySize;
+			uint16_t				mipLevels;
+			D3D12_RESOURCE_FLAGS	flags;
+		};
+
+		void ScheduleCreateUploadResource(GpuResource* resource, const char* name, const BufferDesc& desc);
+		void ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& desc);
+		void ScheduleCreateIndexResource(GpuResource* resource, const char* name, const BufferDesc& desc);
+		void ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& desc);
 
 		bool WaitUntilResourceValid(GpuResource* resource);
 
@@ -57,15 +73,21 @@ namespace RB::Graphics::D3D12
 		{
 			Upload,
 			Vertex,
-			Index
+			Index,
+			Texture2D
 		};
 
 		struct ResourceCreationDesc : public JobData
 		{
-			ResourceType	type;
-			GpuResource*	resource;
-			const wchar_t*	name;
-			uint64_t		size;
+			ResourceType		type;
+			GpuResource*		resource;
+			const wchar_t*		name;
+
+			union
+			{
+				BufferDesc		buffer;
+				Texture2DDesc	tex2D;
+			};
 
 			~ResourceCreationDesc()
 			{

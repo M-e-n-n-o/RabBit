@@ -3,6 +3,7 @@
 #include "GraphicsDevice.h"
 #include "resource/ResourceManager.h"
 #include "resource/ResourceStateManager.h"
+#include "resource/BindlessDescriptorHeap.h"
 #include "Pipeline.h"
 
 namespace RB::Graphics::D3D12
@@ -11,6 +12,7 @@ namespace RB::Graphics::D3D12
 		: Renderer(true)
 	{
 		g_GraphicsDevice		= new GraphicsDevice(enable_debug_layer);
+		g_BindlessSrvUavHeap	= new BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 5000);
 		g_ResourceStateManager	= new ResourceStateManager();
 		g_ResourceManager		= new ResourceManager();
 

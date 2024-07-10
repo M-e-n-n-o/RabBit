@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
+#include "BindlessDescriptorHeap.h"
 #include "graphics/RenderResource.h"
 
 // DirectX 12 specific headers.
@@ -69,7 +70,8 @@ namespace RB::Graphics::D3D12
 	class Texture2DD3D12 : public Texture2D
 	{
 	public:
-		Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height);
+		Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
+		Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
 		~Texture2DD3D12();
 
 		const char* GetName() const override { return m_Name; }
@@ -82,22 +84,33 @@ namespace RB::Graphics::D3D12
 
 		uint64_t GetSize() const override { return 0; }
 
-		bool AllowedRenderTarget() const override { return false; }
+		bool AllowedRenderTarget() const override { return m_IsRenderTarget; }
+		bool AllowedDepthStencil() const override { return m_IsDepthStencil; }
+		bool AllowedRandomGpuWrites() const override { return m_AllowUAV; }
 
 		uint32_t GetWidth() const override { return m_Width; }
 		uint32_t GetHeight() const override { return m_Height; }
 
-		void SetCpuHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) { m_CpuHandle = handle; }
-		D3D12_CPU_DESCRIPTOR_HANDLE* GetCpuHandle() { return &m_CpuHandle; }
+		void SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) { m_RenderTargetHandle = handle; }
+		D3D12_CPU_DESCRIPTOR_HANDLE* GetRenderTargetHandle() { return &m_RenderTargetHandle; }
+
+		D3D12_CPU_DESCRIPTOR_HANDLE* GetDepthStencilTargetHandle() { return nullptr; }
 
 	private:
+		void CreateViews(GpuResource* resource);
+
 		const char*						m_Name;
 		GpuResource*					m_Resource;
 		uint32_t						m_Width;
 		uint32_t						m_Height;
 		RenderResourceFormat			m_Format;
 
-		// TODO Maybe make like a wrapper class for descriptors, just like with the resource
-		D3D12_CPU_DESCRIPTOR_HANDLE		m_CpuHandle;
+		bool							m_IsRenderTarget;
+		bool							m_IsDepthStencil;
+		bool							m_AllowUAV;
+
+		DescriptorHandle				m_ReadHandle;
+		DescriptorHandle				m_WriteHandle;
+		D3D12_CPU_DESCRIPTOR_HANDLE		m_RenderTargetHandle;
 	};
 }

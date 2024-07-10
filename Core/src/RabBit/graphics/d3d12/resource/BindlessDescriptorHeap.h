@@ -4,7 +4,7 @@
 
 namespace RB::Graphics::D3D12
 {
-	using DescriptorHandle = uint32_t;
+	using DescriptorHandle = int32_t;
 
 	class BindlessDescriptorHeap
 	{
@@ -32,4 +32,6 @@ namespace RB::Graphics::D3D12
 		D3D12_DESCRIPTOR_HEAP_TYPE	m_Type;
 		uint32_t					m_IncrementSize;
 	};
+
+	extern BindlessDescriptorHeap* g_BindlessSrvUavHeap;
 }

@@ -119,7 +119,14 @@ namespace RB::Graphics::D3D12
 			if (i < bundle->colorTargetsCount)
 			{
 				Texture2DD3D12* tex = (Texture2DD3D12*) bundle->colorTargets[i];
-				color_handles[i] = *tex->GetCpuHandle();
+
+				if (!tex->AllowedRenderTarget())
+				{
+					RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a render target");
+					continue;
+				}
+
+				color_handles[i] = *tex->GetRenderTargetHandle();
 
 				max_width = Math::Max(max_width, tex->GetWidth());
 				max_height = Math::Max(max_height, tex->GetHeight());
@@ -143,15 +150,22 @@ namespace RB::Graphics::D3D12
 		Texture2D* depth_stencil = bundle->depthStencilTarget;
 		if (depth_stencil)
 		{
-			depth_handle = ((Texture2DD3D12*)depth_stencil)->GetCpuHandle();
+			if (depth_stencil->AllowedDepthStencil())
+			{
+				depth_handle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
 
-			GpuResource* res = (GpuResource*)depth_stencil->GetNativeResource();
+				GpuResource* res = (GpuResource*)depth_stencil->GetNativeResource();
 
-			g_ResourceStateManager->TransitionResource(res, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+				g_ResourceStateManager->TransitionResource(res, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
-			m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
+				m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
 			
-			MarkResourceUsed(res);
+				MarkResourceUsed(res);
+			}
+			else
+			{
+				RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a depth stencil target");
+			}
 		}
 		
 		m_CommandList->OMSetRenderTargets(bundle->colorTargetsCount, color_handles, true, depth_handle);
@@ -477,7 +491,7 @@ namespace RB::Graphics::D3D12
 		case RenderResourceType::Buffer:
 		{
 			GpuResource* upload_res = new GpuResource();
-			g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", data_size);
+			g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", { data_size } );
 
 			char* mapped_mem;
 			RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");

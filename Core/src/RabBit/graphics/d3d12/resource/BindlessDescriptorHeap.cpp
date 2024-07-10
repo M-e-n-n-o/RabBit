@@ -56,9 +56,8 @@ namespace RB::Graphics::D3D12
 
 			if (starting_point == m_NextAvailable)
 			{
-				RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, 
-					"Could not find a free slot in the descriptor heap, overwriting a used one. Consider increasing the heap size!");
-				break;
+				RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not find a free slot in the descriptor heap, overwriting a used one. Consider increasing the heap size!");
+				return -1;
 			}
 		}
 

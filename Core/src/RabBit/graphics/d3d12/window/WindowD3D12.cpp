@@ -238,9 +238,9 @@ namespace RB::Graphics::D3D12
 		{
 			std::string name = "Backbuffer resource " + std::to_string(index);
 			GPtr<ID3D12Resource> backbuffer = m_SwapChain->GetCurrentBackBuffer();
-			m_BackBuffers[index] = Texture2D::Create(name.c_str(), new GpuResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT, false), GetBackBufferFormat(), GetWidth(), GetHeight());
+			m_BackBuffers[index] = Texture2D::Create(name.c_str(), new GpuResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT, false), GetBackBufferFormat(), GetWidth(), GetHeight(), true, false);
 
-			((Texture2DD3D12*) m_BackBuffers[index])->SetCpuHandle(m_SwapChain->GetCurrentDescriptorHandleCPU());
+			((Texture2DD3D12*) m_BackBuffers[index])->SetRenderTargetHandle(m_SwapChain->GetCurrentDescriptorHandleCPU());
 		}
 
 		return m_BackBuffers[index];
