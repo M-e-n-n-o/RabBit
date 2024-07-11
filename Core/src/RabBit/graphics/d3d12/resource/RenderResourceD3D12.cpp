@@ -85,7 +85,7 @@ namespace RB::Graphics::D3D12
 	{
 		m_Resource = new GpuResource(std::bind(&Texture2DD3D12::CreateViews, this, std::placeholders::_1));
 
-		uint32_t flags = 0;
+		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 		if (m_IsRenderTarget)
 			flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 		if (m_IsDepthStencil)
@@ -102,7 +102,7 @@ namespace RB::Graphics::D3D12
 		desc.height		= m_Height;
 		desc.arraySize	= 1;
 		desc.mipLevels	= ;
-		desc.flags		= (D3D12_RESOURCE_FLAGS) flags; // CAN WE ACTUALLY CAST THIS LIKE THIS, TEST IF THIS IS CORRECT!!!!!
+		desc.flags		= flags;
 
 		g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
 	}

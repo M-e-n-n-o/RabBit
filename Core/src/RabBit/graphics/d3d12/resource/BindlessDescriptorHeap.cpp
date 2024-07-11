@@ -32,6 +32,10 @@ namespace RB::Graphics::D3D12
 
 		// Non shader-visible descriptor heap
 		{
+			// TODO Batch the descriptor copying together by doing the copy just before a draw/dispatch.
+			// However still make the CPU heap a fixed size (always lower or equal to the size of the GPU heap, maybe size of 25?)
+			// and if you have to copy more than, say that 25, between a draw, just do the copy of the 25 directly and reset the heap.
+
 			D3D12_DESCRIPTOR_HEAP_DESC cpu_desc = {};
 			cpu_desc.Type			= m_Type;
 			cpu_desc.NumDescriptors = 1;
@@ -45,23 +49,32 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	DescriptorHandle BindlessDescriptorHeap::InsertStagedDescriptor()
+	DescriptorHandle BindlessDescriptorHeap::InsertStagedDescriptor(DescriptorHandle* handle_overwrite)
 	{
-		uint32_t starting_point = m_NextAvailable;
+		uint32_t slot;
 
-		// Find the first available slot in the heap
-		while (!m_AvailableSlots[m_NextAvailable])
+		if (handle_overwrite)
 		{
-			m_NextAvailable = (m_NextAvailable + 1) % m_AvailableSlots.size();
-
-			if (starting_point == m_NextAvailable)
-			{
-				RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not find a free slot in the descriptor heap, overwriting a used one. Consider increasing the heap size!");
-				return -1;
-			}
+			slot = *handle_overwrite;
 		}
+		else
+		{
+			uint32_t starting_point = m_NextAvailable;
 
-		uint32_t slot = m_NextAvailable;
+			// Find the first available slot in the heap
+			while (!m_AvailableSlots[m_NextAvailable])
+			{
+				m_NextAvailable = (m_NextAvailable + 1) % m_AvailableSlots.size();
+
+				if (starting_point == m_NextAvailable)
+				{
+					RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not find a free slot in the descriptor heap, overwriting a used one. Consider increasing the heap size!");
+					return -1;
+				}
+			}
+
+			slot = m_NextAvailable;
+		}
 
 		m_AvailableSlots[slot] = false;
 

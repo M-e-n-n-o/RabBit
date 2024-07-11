@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "Pipeline.h"
 #include "graphics/d3d12/GraphicsDevice.h"
-#include "graphics/d3d12/shaders/ShaderSystemD3D12.h"
+#include "graphics/d3d12/ShaderSystemD3D12.h"
 
 namespace RB::Graphics::D3D12
 {
@@ -243,15 +243,17 @@ namespace RB::Graphics::D3D12
 		/*
 			Plan:
 			(Only do bindless for SRV's & UAV's, use static samplers & inline CBV's)
-			- Create 1 shader visisble CBV_SRV_UAV descriptor heap with the max amount of descriptors possible
-			- Create 1 non-shader visisble CBV_SRV_UAV heap with space for only 1 descriptor
-			- Bind the descriptor heap directly at the start of each command list (so not needed after every call of pso change anymore)
+				- Create 1 shader visisble CBV_SRV_UAV descriptor heap with the max amount of descriptors possible
+				- Create 1 non-shader visisble CBV_SRV_UAV heap with space for only 1 descriptor
+				- Bind the descriptor heap directly at the start of each command list (so not needed after every call of pso change anymore)
 			- Create separate descriptor ranges (in the root signature) for each resource type (tex2D, cubeTex, tex3D, rwTex2D etc.) with the max amount of descriptors possible 
 				(https://learn.microsoft.com/en-us/windows/win32/direct3d12/hardware-support) (do we also need the D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE & D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE flags??)
-			- When a texture is created, a SRV (and UAV if write access) is created in the first empty spot on the descriptor heap (so directly copied into the GPU descriptor heap, 
-			    so cpu descriptor does not need to be kept around). The view index into the heap is stored in the texture class.
-			- When you then want to set a texture in a shader you still need to specify which slot you are going to use in the TextureIndices constant buffer.
-			- The RenderInterface will then upload the index of the view into the shader visible heap into that slot so the shader knows which texture to pick from the texture array.
+				- When a texture is created, a SRV (and UAV if write access) is created in the first empty spot on the descriptor heap (so directly copied into the GPU descriptor heap, 
+					so cpu descriptor does not need to be kept around). The view index into the heap is stored in the texture class.
+				- When you then want to set a texture in a shader you still need to specify which slot you are going to use in the TextureIndices constant buffer.
+				- The RenderInterface will then upload the index of the view into the shader visible heap into that slot so the shader knows which texture to pick from the texture array.
+					MAKE SURE ERROR TEXTURES ARE UPLOADED TO NON USED INDICES!
+			- Create 2 non-shader visible heaps for the RTV's & DSV's
 
 
 			Example implementation:
@@ -265,7 +267,7 @@ namespace RB::Graphics::D3D12
 				// TODO: Maybe make this a Buffer (or ByteAddressBuffer) instead of an inline CBV
 				cbuffer TextureIndices : CBUFFER_REG(kInstanceCB)
 				{
-					uint g_IndexTex2D0; // The indices that are not used should point to a default error texture!
+					uint g_IndexTex2D0; // !!!! The indices that are not used should point to a default error texture !!!!!!
 					uint g_IndexTex2D1;
 					uint g_IndexTex2D2;
 					etc.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics/RenderInterface.h"
+#include "graphics/shaders/shared/Common.h"
 
 #include <d3d12.h>
 
@@ -43,6 +44,9 @@ namespace RB::Graphics::D3D12
 
 		void SetRenderTarget(RenderTargetBundle* bundle) override;
 
+		void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override;
+		void ClearShaderResourceInput(uint32_t slot) override;
+
 		void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) override;
 
 		void SetVertexShader(uint32_t shader_index) override;
@@ -71,10 +75,12 @@ namespace RB::Graphics::D3D12
 		GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
 	private:
-		void BindDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, ID3D12DescriptorHeap* heap);
 		void MarkResourceUsed(RenderResource* resource);
 		void MarkResourceUsed(GpuResource* resource);
+
+		void BindDescriptorHeaps();
 		void BindDrawResources();
+
 		void SetGraphicsPipelineState();
 		void SetNewCommandList();
 		void InternalCopyBuffer(GpuResource* src, GpuResource* dest);
@@ -107,8 +113,9 @@ namespace RB::Graphics::D3D12
 			D3D12_RASTERIZER_DESC			rasterizerDesc			= {};
 			bool							depthStencilSet			= false;
 			D3D12_DEPTH_STENCIL_DESC		depthStencilDesc		= {};
-			
 			D3D12_GPU_VIRTUAL_ADDRESS		cbvAddresses[16];
+
+			DescriptorHandle				tex2DsrvHandles[SHADER_TEX2D_SLOTS];
 		};
 
 		RenderState m_RenderState;

@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "ShaderSystem.h"
 #include "Renderer.h"
-#include "d3d12/shaders/ShaderSystemD3D12.h"
+#include "d3d12/ShaderSystemD3D12.h"
 
 namespace RB::Graphics
 {

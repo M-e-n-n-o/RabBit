@@ -60,31 +60,31 @@ namespace RB::Graphics
 		virtual void TransitionResource(RenderResource* resource, ResourceState state) = 0;
 		virtual void FlushResourceBarriers() = 0;
 
-		virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
-
 		virtual void SetVertexShader(uint32_t shader_index) = 0;
 		virtual void SetPixelShader(uint32_t shader_index) = 0;
-
-		virtual void Clear(RenderResource* resource, const Math::Float4& color) = 0;
-
-		virtual void SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom) = 0;
-		virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
-
-		virtual void SetRenderTarget(RenderTargetBundle* bundle) = 0;
-
-		virtual void SetBlendMode(const BlendMode& mode) = 0;
-		virtual void SetCullMode(const CullMode& mode) = 0;
-		virtual void SetDepthMode(const DepthMode& mode) = 0;
 
 		virtual void SetIndexBuffer(RenderResource* index_resource) = 0;
 		virtual void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot = 0) = 0;
 		virtual void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot = 0) = 0;
 
+		virtual void SetRenderTarget(RenderTargetBundle* bundle) = 0;
+
+		virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
+
+		virtual void SetShaderResourceInput(RenderResource* resource, uint32_t slot) = 0;
+		virtual void ClearShaderResourceInput(uint32_t slot) = 0;
+
+		virtual void SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom) = 0;
+		virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
+
+		virtual void SetBlendMode(const BlendMode& mode) = 0;
+		virtual void SetCullMode(const CullMode& mode) = 0;
+		virtual void SetDepthMode(const DepthMode& mode) = 0;
+
+		virtual void Clear(RenderResource* resource, const Math::Float4& color) = 0;
+
 		virtual void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) = 0;
-
 		virtual void CopyResource(RenderResource* src, RenderResource* dest) = 0;
-
-		//virtual void SetShaderInput() = 0;
 
 		void Draw();
 		void Dispatch();

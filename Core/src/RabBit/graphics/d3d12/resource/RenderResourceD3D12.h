@@ -91,10 +91,13 @@ namespace RB::Graphics::D3D12
 		uint32_t GetWidth() const override { return m_Width; }
 		uint32_t GetHeight() const override { return m_Height; }
 
-		void SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) { m_RenderTargetHandle = handle; }
-		D3D12_CPU_DESCRIPTOR_HANDLE* GetRenderTargetHandle() { return &m_RenderTargetHandle; }
+		DescriptorHandle GetReadHandle() const { return m_ReadHandle; }
+		DescriptorHandle GetWriteHandle() const { return m_WriteHandle; }
 
-		D3D12_CPU_DESCRIPTOR_HANDLE* GetDepthStencilTargetHandle() { return nullptr; }
+		void SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) { m_RenderTargetHandle = handle; }
+		D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetHandle() const { return m_RenderTargetHandle; }
+
+		D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilTargetHandle() const { return { 0 }; }
 
 	private:
 		void CreateViews(GpuResource* resource);

@@ -6,7 +6,7 @@
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
 #include "Pipeline.h"
-#include "shaders/ShaderSystemD3D12.h"
+#include "ShaderSystemD3D12.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
 
@@ -44,6 +44,7 @@ namespace RB::Graphics::D3D12
 			m_Queue = g_GraphicsDevice->GetGraphicsQueue();
 
 		SetNewCommandList();
+		InvalidateState();
 	}
 
 	RenderInterfaceD3D12::~RenderInterfaceD3D12()
@@ -65,8 +66,16 @@ namespace RB::Graphics::D3D12
 	void RenderInterfaceD3D12::InvalidateState()
 	{
 		m_RenderState = {};
+		
+		// Clear all the SRV slots
+		for (int i = 0; i < _countof(m_RenderState.tex2DsrvHandles); ++i)
+		{
+			ClearShaderResourceInput(i);
+		}
 
 		// TODO Maybe set some default states here, such as backface culling, depth testing on, etc.
+
+		BindDescriptorHeaps();
 	}
 
 	Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
@@ -126,7 +135,7 @@ namespace RB::Graphics::D3D12
 					continue;
 				}
 
-				color_handles[i] = *tex->GetRenderTargetHandle();
+				color_handles[i] = tex->GetRenderTargetHandle();
 
 				max_width = Math::Max(max_width, tex->GetWidth());
 				max_height = Math::Max(max_height, tex->GetHeight());
@@ -152,7 +161,7 @@ namespace RB::Graphics::D3D12
 		{
 			if (depth_stencil->AllowedDepthStencil())
 			{
-				depth_handle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
+				depth_handle = &((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
 
 				GpuResource* res = (GpuResource*)depth_stencil->GetNativeResource();
 
@@ -177,6 +186,30 @@ namespace RB::Graphics::D3D12
 		SetViewport(0, 0, max_width, max_height);
 
 		m_RenderState.psoDirty = true;
+	}
+
+	void RenderInterfaceD3D12::SetShaderResourceInput(RenderResource* resource, uint32_t slot)
+	{
+		switch (resource->GetType())
+		{
+		case RenderResourceType::Texture2D:
+		{
+			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.tex2DsrvHandles), "Shader resource input slot out of range");
+
+			m_RenderState.tex2DsrvHandles[slot] = ((Texture2DD3D12*) resource)->GetReadHandle();
+		}
+		break;
+
+		default:
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a shader input");
+			break;
+		}
+	}
+
+	void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
+	{
+		// TODO Make a global file with texture defaults
+		SetShaderResourceInput(g_TexDefaultError, slot);
 	}
 
 	void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
@@ -541,19 +574,14 @@ namespace RB::Graphics::D3D12
 	{
 	}
 
-	void RenderInterfaceD3D12::BindDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, ID3D12DescriptorHeap* heap)
+	void RenderInterfaceD3D12::BindDescriptorHeaps()
 	{
-		// Finish this
-		static_assert(false);
+		ID3D12DescriptorHeap* descriptorHeaps[] = 
+		{
+			g_BindlessSrvUavHeap->GetHeap().Get() // Bindless heap for SRV & UAV's
+		};
 
-		// PSEUDO CODE:
-		// 
-		// Store a list of heaps of all possible heap types in this class.
-		// Check if the passed in heap of the passed in type is different from the currently stored heap at that type,
-		// if so, re-set the heaps.
-		//
-		//
-		// WILL THE DESCRIPTOR HEAPS ALWAYS BE PROPERLY SET? YES, WE SHOULD CALL RESET WHEN WE ARE STARTING TO USE A NEW DynamicGpuDescriptorHeap AGAIN!!!
+		m_CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	}
 
 	void RenderInterfaceD3D12::MarkResourceUsed(RenderResource* resource)
@@ -568,6 +596,21 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::BindDrawResources()
 	{
+		// Set the bindless SRV/UAV slots
+		{
+			TextureIndices indices = {};
+
+			// Set the Texture2D's
+			for (int i = 0; i < _countof(indices.tex2D); ++i)
+			{
+				RB_ASSERT_FATAL(LOGTAG_GRAPHICS, m_RenderState.tex2DsrvHandles[i] >= 0, "Tex2D SRV handle is invalid");
+				indices.tex2D[i] = (uint32_t) m_RenderState.tex2DsrvHandles[i];
+			}
+
+			SetConstantShaderData(kTex2DTableSpace, &indices, sizeof(TextureIndices));
+		}
+
+		// Bind the CBV's
 		for (int i = 0; i < _countof(m_RenderState.cbvAddresses); ++i)
 		{
 			if (m_RenderState.cbvAddresses[i] > 0)

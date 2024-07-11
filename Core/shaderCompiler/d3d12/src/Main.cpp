@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 	LOGW(L"");
 
 	ShaderWriter writer;
-	writer.WriteOutShaders(RB_GRAPHICS_FOLDER, shader_files_dir, shader_bin_dir, compiler.GetCompiledShaders());
+	writer.WriteOutShaders(RB_GRAPHICS_FOLDER, RB_D3D_GRAPHICS_FOLDER, shader_bin_dir, compiler.GetCompiledShaders());
 
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");

@@ -15,7 +15,7 @@ namespace RB::Graphics::D3D12
 		D3D12_CPU_DESCRIPTOR_HANDLE GetStagingDestinationDescriptor() const { return m_CpuHeapStaged; }
 		
 		// Call this to copy over the newly created non shader-visible descriptor over to the shader visible heap
-		DescriptorHandle InsertStagedDescriptor();
+		DescriptorHandle InsertStagedDescriptor(DescriptorHandle* handle_overwrite = nullptr);
 		
 		void InvalidateDescriptor(DescriptorHandle handle);
 
