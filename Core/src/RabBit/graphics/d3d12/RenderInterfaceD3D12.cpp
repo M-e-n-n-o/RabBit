@@ -6,7 +6,7 @@
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
 #include "Pipeline.h"
-#include "ShaderSystemD3D12.h"
+#include "ShaderSystem.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
 #include "graphics/ResourceDefaults.h"
@@ -33,11 +33,10 @@ namespace RB::Graphics::D3D12
 	//								GpuGuard
 	// ---------------------------------------------------------------------------
 
-	RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations, ShaderSystem* shader_system)
+	RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
 		: m_CopyOperationsOnly(allow_only_copy_operations)
 		, m_RenderState()
 		, m_CurrentCBVAllocator(nullptr)
-		, m_ShaderSystem(shader_system)
 	{
 		if (allow_only_copy_operations)
 			m_Queue = g_GraphicsDevice->GetCopyQueue();
@@ -610,8 +609,8 @@ namespace RB::Graphics::D3D12
 	void RenderInterfaceD3D12::BindDrawResources()
 	{
 		// Set the bindless SRV/UAV slots (only if the shader is actually using any textures)
-		if ((m_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kTexIndicesCB)) > 0 || 
-			(m_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kTexIndicesCB)) > 0)
+		if ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kTexIndicesCB)) > 0 ||
+			(g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kTexIndicesCB)) > 0)
 		{
 			TextureIndices indices = {};
 
@@ -644,8 +643,8 @@ namespace RB::Graphics::D3D12
 
 #if RB_CONFIG_DEBUG
 			// Some extra debug checks
-			bool occupies_slot = ((m_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << i)) > 0 ||
-								  (m_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << i)) > 0);
+			bool occupies_slot = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << i)) > 0 ||
+								  (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << i)) > 0);
 
 			RB_ASSERT(LOGTAG_GRAPHICS, m_RenderState.cbvAddresses[i] > 0 == occupies_slot, "The bounded CBV slot does not match the shader's used CBV slots");
 #endif
@@ -685,8 +684,8 @@ namespace RB::Graphics::D3D12
 		
 		List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader);
 
-		CompiledShaderBlob* vs_blob = (CompiledShaderBlob*) m_ShaderSystem->GetCompilerShader(m_RenderState.vsShader);
-		CompiledShaderBlob* ps_blob = (CompiledShaderBlob*) m_ShaderSystem->GetCompilerShader(m_RenderState.psShader);
+		CompiledShaderBlob* vs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.vsShader);
+		CompiledShaderBlob* ps_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.psShader);
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 		pso_desc.pRootSignature			= m_RenderState.rootSignature.Get();

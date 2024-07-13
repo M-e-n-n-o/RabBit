@@ -9,7 +9,6 @@ namespace RB::Graphics
 {
 	#define INTERMEDIATE_EXECUTE_THRESHOLD 350
 
-	class ShaderSystem;
 	class RenderResource;
 	class RenderInterface;
 	class RenderTargetBundle;
@@ -89,7 +88,7 @@ namespace RB::Graphics
 		void Draw();
 		void Dispatch();
 
-		static RenderInterface* Create(bool allow_only_copy_operations, ShaderSystem* shader_system);
+		static RenderInterface* Create(bool allow_only_copy_operations);
 
 	protected:
 		RenderInterface() = default;

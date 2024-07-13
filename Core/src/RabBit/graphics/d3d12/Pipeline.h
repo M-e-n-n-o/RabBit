@@ -4,11 +4,6 @@
 
 #include <d3d12.h>
 
-namespace RB::Graphics
-{
-	class ShaderSystem;
-}
-
 namespace RB::Graphics::D3D12
 {
 	// CBV's start at the second parameter in the root signature
@@ -17,7 +12,7 @@ namespace RB::Graphics::D3D12
 	class PipelineManager
 	{
 	public:
-		PipelineManager(ShaderSystem* shader_system);
+		PipelineManager();
 
 		GPtr<ID3D12PipelineState> GetComputePipeline(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint32_t cs_identifier);
 		GPtr<ID3D12PipelineState> GetGraphicsPipeline(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint32_t vs_identifier, uint32_t ps_identifier);
@@ -35,8 +30,6 @@ namespace RB::Graphics::D3D12
 
 		UnorderedMap<uint64_t, GPtr<ID3D12RootSignature>>		m_RootSignatures;
 		UnorderedMap<uint32_t, List<D3D12_INPUT_ELEMENT_DESC>>	m_InputElementDescriptions;
-
-		ShaderSystem*											m_ShaderSystem;
 	};
 
 	extern PipelineManager* g_PipelineManager;

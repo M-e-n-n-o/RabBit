@@ -1,16 +1,15 @@
 #include "RabBitCommon.h"
 #include "Pipeline.h"
 #include "RendererD3D12.h"
-#include "graphics/d3d12/GraphicsDevice.h"
-#include "graphics/d3d12/ShaderSystemD3D12.h"
+#include "ShaderSystem.h"
+#include "GraphicsDevice.h"
 #include "graphics/shaders/shared/Common.h"
 
 namespace RB::Graphics::D3D12
 {
 	PipelineManager* g_PipelineManager = nullptr;
 
-	PipelineManager::PipelineManager(ShaderSystem* shader_system)
-		: m_ShaderSystem(shader_system)
+	PipelineManager::PipelineManager()
 	{
 
 	}
@@ -76,8 +75,8 @@ namespace RB::Graphics::D3D12
 			return found->second;
 		}
 
-		const ShaderResourceMask&	 vs_mask	   = m_ShaderSystem->GetShaderResourceMask(vs_identifier);
-		const ShaderResourceMask&	 ps_mask	   = m_ShaderSystem->GetShaderResourceMask(ps_identifier);
+		const ShaderResourceMask&	 vs_mask	   = g_ShaderSystem->GetShaderResourceMask(vs_identifier);
+		const ShaderResourceMask&	 ps_mask	   = g_ShaderSystem->GetShaderResourceMask(ps_identifier);
 
 		uint64_t combined_cbv_mask = vs_mask.cbvMask | ps_mask.cbvMask;
 
@@ -241,7 +240,7 @@ namespace RB::Graphics::D3D12
 			return found->second;
 		}
 
-		GPtr<ID3D12ShaderReflection> reflection = ((CompiledShaderBlob*)m_ShaderSystem->GetCompilerShader(vs_identifier))->reflectionData;
+		GPtr<ID3D12ShaderReflection> reflection = g_ShaderSystem->GetCompilerShader(vs_identifier)->reflectionData;
 
 		D3D12_SHADER_DESC shader_desc;
 		reflection->GetDesc(&shader_desc);

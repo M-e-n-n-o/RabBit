@@ -1,10 +1,12 @@
 #include "RabBitCommon.h"
-#include "ShaderSystemD3D12.h"
+#include "ShaderSystem.h"
 #include <fstream>
 
 namespace RB::Graphics::D3D12
 {
-	ShaderSystemD3D12::ShaderSystemD3D12()
+	ShaderSystem* g_ShaderSystem = nullptr;
+
+	ShaderSystem::ShaderSystem()
 	{
 		RB_ASSERT_FATAL_RELEASE_D3D(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_DxcUtils)), "Failed to create DXC Utils object");
 
@@ -59,7 +61,7 @@ namespace RB::Graphics::D3D12
 		stream.close();
 	}
 
-	ShaderSystemD3D12::~ShaderSystemD3D12()
+	ShaderSystem::~ShaderSystem()
 	{
 		for (uint64_t shader_index = 0; shader_index < SHADER_ENTRIES; ++shader_index)
 		{
@@ -71,12 +73,12 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	void* ShaderSystemD3D12::GetCompilerShader(uint32_t shader_identifier)
+	CompiledShaderBlob* ShaderSystem::GetCompilerShader(uint32_t shader_identifier)
 	{
-		return (void*) m_ShaderBlobs[shader_identifier];
+		return m_ShaderBlobs[shader_identifier];
 	}
 	
-	const ShaderResourceMask& ShaderSystemD3D12::GetShaderResourceMask(uint32_t shader_identifier)
+	const ShaderResourceMask& ShaderSystem::GetShaderResourceMask(uint32_t shader_identifier)
 	{
 		return m_ShaderMasks[shader_identifier];
 	}

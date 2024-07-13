@@ -4,7 +4,6 @@
 #include "RenderPass.h"
 #include "Window.h"
 #include "ViewContext.h"
-#include "ShaderSystem.h"
 #include "ResourceDefaults.h"
 
 #include "app/Application.h"
@@ -77,14 +76,12 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = false;
 
-		m_ShaderSystem		= ShaderSystem::Create();
-
 		// Initialize default resources
 		InitResourceDefaults();
 
 		// TODO Maybe change this to a compute queue so that it can generate mip maps
-		m_CopyInterface		= RenderInterface::Create(true, m_ShaderSystem);
-		m_GraphicsInterface = RenderInterface::Create(false, m_ShaderSystem);
+		m_CopyInterface		= RenderInterface::Create(true);
+		m_GraphicsInterface = RenderInterface::Create(false);
 
 		if (m_MultiThreadingSupport)
 		{
@@ -136,8 +133,6 @@ namespace RB::Graphics
 
 		// Delete default resources
 		DeleteResourceDefaults();
-
-		delete m_ShaderSystem;
 
 		delete m_GraphicsInterface;
 		delete m_CopyInterface;

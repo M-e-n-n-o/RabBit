@@ -21,7 +21,6 @@ namespace RB::Graphics
 	class RenderPass;
 	class GpuGuard;
 	class ViewContext;
-	class ShaderSystem;
 
 	// Fully static class
 	class Renderer : public Input::Events::EventListener
@@ -54,8 +53,6 @@ namespace RB::Graphics
 		virtual void OnFrameEnd() = 0;
 
 		virtual void SyncWithGpu() = 0;
-
-		ShaderSystem*			m_ShaderSystem;
 
 	private:
 		ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);

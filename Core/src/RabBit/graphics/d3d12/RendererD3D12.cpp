@@ -4,6 +4,7 @@
 #include "resource/ResourceManager.h"
 #include "resource/ResourceStateManager.h"
 #include "resource/BindlessDescriptorHeap.h"
+#include "ShaderSystem.h"
 #include "Pipeline.h"
 
 namespace RB::Graphics::D3D12
@@ -13,17 +14,18 @@ namespace RB::Graphics::D3D12
 	{
 		g_GraphicsDevice		= new GraphicsDevice(enable_debug_layer);
 		g_BindlessSrvUavHeap	= new BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, BINDLESS_SRV_UAV_DESCRIPTOR_HEAP_SIZE);
-		g_ResourceStateManager	= new ResourceStateManager();
 		g_ResourceManager		= new ResourceManager();
+		g_ResourceStateManager	= new ResourceStateManager();
+		g_ShaderSystem			= new ShaderSystem();
+		g_PipelineManager		= new PipelineManager();
 
 		Init();
-
-		g_PipelineManager		= new PipelineManager(m_ShaderSystem);
 	}
 
 	RendererD3D12::~RendererD3D12()
 	{
 		delete g_PipelineManager;
+		delete g_ShaderSystem;
 		delete g_ResourceStateManager;
 		delete g_ResourceManager;
 		delete g_BindlessSrvUavHeap;

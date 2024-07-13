@@ -30,7 +30,7 @@ namespace RB::Graphics::D3D12
 	class RenderInterfaceD3D12 : public RenderInterface
 	{
 	public:
-		RenderInterfaceD3D12(bool allow_only_copy_operations, ShaderSystem* shader_system);
+		RenderInterfaceD3D12(bool allow_only_copy_operations);
 		~RenderInterfaceD3D12();
 
 		void InvalidateState() override;
@@ -90,8 +90,6 @@ namespace RB::Graphics::D3D12
 		bool								m_CopyOperationsOnly;
 		DeviceQueue*						m_Queue;
 		GPtr<ID3D12GraphicsCommandList2>	m_CommandList;
-
-		ShaderSystem*						m_ShaderSystem;
 
 		struct RenderState
 		{
