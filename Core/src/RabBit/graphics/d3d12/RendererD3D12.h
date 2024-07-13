@@ -8,6 +8,8 @@
 
 namespace RB::Graphics::D3D12
 {
+	#define BINDLESS_SRV_UAV_DESCRIPTOR_HEAP_SIZE 5000
+
 	class RendererD3D12 : public Renderer
 	{
 	public:

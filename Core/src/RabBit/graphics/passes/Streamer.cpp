@@ -37,12 +37,26 @@ namespace RB::Graphics
 
 		Do not forget to add GPU waits on the copy interface for the previous graphics interface before starting the texture copies!
 		Also do not forget to let the render thread sync with the resource streaming just before the streaming has been done!
-
-		TODO Maybe an idea to batch all some uploads together in a bigger upload resource?
 	*/
 
 	RenderPassEntry* StreamerPass::SubmitEntry(const Entity::Scene* const scene)
 	{
+		// TODO Also stream new textures!
+		/*
+			How will we do this however? As the default error texture is not an object in the scene.
+			Maybe do not make the Streamer a RenderPass but just a separate system. RenderResources
+			can then just simply call RegisterUpload on the Streamer and the streamer will then only 
+			stream the registered resources.
+
+			Advantage to this is that we then also not have to have the Mesh keep its vertex data alive.
+			This because the mesh can simply give the data it needs uploaded to the Streamer and it will
+			keep the data alive until the copy has been completed on the GPU. This will be easy to
+			implement since the Streamer will just be updated by the Renderer every frame and can simply
+			check when a command list has been completed on the GPU.
+		
+		*/
+		static_assert(false);
+
 		List<const Entity::ObjectComponent*> mesh_renderers = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
 
 		// Allocate for the worst case scenario amount of buffers

@@ -213,7 +213,7 @@ namespace RB::Graphics::D3D12
 	}
 
 	GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,
-		D3D12_HEAP_FLAGS heap_flags, D3D12_RESOURCE_STATES start_state, const D3D12_CLEAR_VALUE* clear_value)
+		D3D12_HEAP_FLAGS heap_flags, D3D12_RESOURCE_STATES start_state, const D3D12_CLEAR_VALUE* optimized_clear_value)
 	{
 		GPtr<ID3D12Resource> resource = nullptr;
 
@@ -222,7 +222,7 @@ namespace RB::Graphics::D3D12
 			heap_flags,
 			&resource_desc,
 			start_state,
-			clear_value,
+			optimized_clear_value,
 			IID_PPV_ARGS(&resource)
 		), "Could not create committed resource: %s", name);
 
@@ -276,6 +276,8 @@ namespace RB::Graphics::D3D12
 		case ResourceManager::ResourceType::Texture2D:
 		{
 			D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+
+			// TODO Fill in the optimized clear value for RenderTargets and DepthStencil textures
 
 			creation_desc->resource->SetResource(
 				g_ResourceManager->CreateCommittedResource(

@@ -9,6 +9,7 @@
 #include "ShaderSystemD3D12.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
+#include "graphics/ResourceDefaults.h"
 
 namespace RB::Graphics::D3D12
 {
@@ -67,15 +68,15 @@ namespace RB::Graphics::D3D12
 	{
 		m_RenderState = {};
 		
-		// Clear all the SRV slots
-		for (int i = 0; i < _countof(m_RenderState.tex2DsrvHandles); ++i)
-		{
-			ClearShaderResourceInput(i);
-		}
-
 		// TODO Maybe set some default states here, such as backface culling, depth testing on, etc.
 
+		if (m_CopyOperationsOnly)
+		{
+			return;
+		}
+
 		BindDescriptorHeaps();
+		ClearDrawResources();
 	}
 
 	Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
@@ -92,8 +93,8 @@ namespace RB::Graphics::D3D12
 			m_CurrentCBVAllocator = nullptr;
 		}
 
-		InvalidateState();
 		SetNewCommandList();
+		InvalidateState();
 
 		return CreateShared<GpuGuardD3D12>(fence_value, m_Queue);
 	}
@@ -208,8 +209,7 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
 	{
-		// TODO Make a global file with texture defaults
-		SetShaderResourceInput(g_TexDefaultError, slot);
+		m_RenderState.tex2DsrvHandles[slot] = -1;
 	}
 
 	void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
@@ -275,13 +275,16 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::Clear(RenderResource* resource, const Math::Float4& color)
 	{
+		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, resource->GetPrimitiveType() == RenderResourceType::Texture, "Only textures are currently supported for clears");
+		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, ((Texture*) resource)->AllowedRenderTarget(), "Only render targets are currently supported for clears");
+
 		MarkResourceUsed(resource);
 
 		g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 		FlushResourceBarriers();
 
 		FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
-		m_CommandList->ClearRenderTargetView(*((D3D12::Texture2DD3D12*)resource)->GetCpuHandle(), clear_color, 0, nullptr);
+		m_CommandList->ClearRenderTargetView(((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle(), clear_color, 0, nullptr);
 	}
 
 	void RenderInterfaceD3D12::SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom)
@@ -518,6 +521,7 @@ namespace RB::Graphics::D3D12
 	{
 		// TODO Keep the upload resource alive for a couple of frames maybe so we don't have to create 
 		// an upload resource for every upload if we do 10 uploads after eachother (so suballocate an upload resource in the full resource).
+		// Or maybe only do this batching together in the Streamer pass?
 
 		switch (resource->GetPrimitiveType())
 		{
@@ -540,6 +544,15 @@ namespace RB::Graphics::D3D12
 			MarkResourceUsed(resource);
 
 			delete upload_res;
+		}
+		break;
+
+		case RenderResourceType::Texture:
+		{
+			// Finish this
+			static_assert(false);
+
+			g_ResourceManager->ScheduleCreateTextureUploadResource();
 		}
 		break;
 
@@ -596,35 +609,55 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::BindDrawResources()
 	{
-		// Set the bindless SRV/UAV slots
+		// Set the bindless SRV/UAV slots (only if the shader is actually using any textures)
+		if ((m_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kTexIndicesCB)) > 0 || 
+			(m_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kTexIndicesCB)) > 0)
 		{
 			TextureIndices indices = {};
 
 			// Set the Texture2D's
 			for (int i = 0; i < _countof(indices.tex2D); ++i)
 			{
-				RB_ASSERT_FATAL(LOGTAG_GRAPHICS, m_RenderState.tex2DsrvHandles[i] >= 0, "Tex2D SRV handle is invalid");
-				indices.tex2D[i] = (uint32_t) m_RenderState.tex2DsrvHandles[i];
+				if (m_RenderState.tex2DsrvHandles[i] >= 0)
+				{
+					indices.tex2D[i] = (uint32_t) m_RenderState.tex2DsrvHandles[i];
+				}
+				else
+				{
+					// Error texture
+					indices.tex2D[i] = (uint32_t) ((Texture2DD3D12*) g_TexDefaultError)->GetReadHandle();
+				}
 			}
 
 			SetConstantShaderData(kTex2DTableSpace, &indices, sizeof(TextureIndices));
 		}
 
 		// Bind the CBV's
+		uint32_t root_index = 0;
 		for (int i = 0; i < _countof(m_RenderState.cbvAddresses); ++i)
 		{
 			if (m_RenderState.cbvAddresses[i] > 0)
 			{
-				m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + i, m_RenderState.cbvAddresses[i]);
+				m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+				root_index++;
 			}
 
 #if RB_CONFIG_DEBUG
 			// Some extra debug checks
-			bool occupies_slot = ((m_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << (CBV_ROOT_PARAMETER_INDEX_OFFSET + i))) > 0 ||
-								  (m_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << (CBV_ROOT_PARAMETER_INDEX_OFFSET + i))) > 0);
+			bool occupies_slot = ((m_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << i)) > 0 ||
+								  (m_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << i)) > 0);
 
 			RB_ASSERT(LOGTAG_GRAPHICS, m_RenderState.cbvAddresses[i] > 0 == occupies_slot, "The bounded CBV slot does not match the shader's used CBV slots");
 #endif
+		}
+	}
+
+	void RenderInterfaceD3D12::ClearDrawResources()
+	{
+		// Clear all SRV's
+		for (int i = 0; i < _countof(m_RenderState.tex2DsrvHandles); ++i)
+		{
+			ClearShaderResourceInput(i);
 		}
 	}
 
@@ -680,8 +713,8 @@ namespace RB::Graphics::D3D12
 
 		GPtr<ID3D12PipelineState> pso = g_PipelineManager->GetGraphicsPipeline(pso_desc, m_RenderState.vsShader, m_RenderState.psShader);
 
+		// All bound resources are not valid anymore after this
 		m_CommandList->SetPipelineState(pso.Get());
-		// Call this before binding any resources to the pipeline (CBV, UAV, SRV, or Samplers)!
 		m_CommandList->SetGraphicsRootSignature(m_RenderState.rootSignature.Get());
 
 		m_RenderState.psoDirty = false;

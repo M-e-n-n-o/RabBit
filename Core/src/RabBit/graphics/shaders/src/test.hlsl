@@ -32,5 +32,6 @@ v2p VS_VertexColor(vertexInfo input)
 
 float4 PS_VertexColor(v2p input) : SV_TARGET
 {
-    return float4(input.color, 1.0f);
+    float4 color = FETCH_TEX2D(0).Sample(g_ClampSampler, float2(0, 0));
+    return float4(color.rgb, 1.0f);
 }

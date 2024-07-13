@@ -9,7 +9,8 @@
 #include "entity/components/Mesh.h"
 #include "entity/components/Transform.h"
 
-#include "graphics/d3d12/shaders/shared/Common.h"
+#include "graphics/shaders/shared/Common.h"
+#include "graphics/codeGen/ShaderDefines.h"
 
 namespace RB::Graphics
 {
@@ -117,6 +118,8 @@ namespace RB::Graphics
 			}
 
 			render_interface->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+
+			render_interface->ClearShaderResourceInput(0);
 
 			render_interface->Draw();
 		}

@@ -9,16 +9,13 @@ typedef RB::Math::Float4x4	float4x4;
 
 #else
 
-#define MAKE_REG_S(r)		s##r
-#define MAKE_REG_T(r)		t##r
-#define MAKE_REG_B(r)		b##r
-#define MAKE_REG_U(r)		u##r
+#define COMBINE(a,b)		a##b
 
-#define SAMPLER_REG(r)		register( MAKE_REG_S(r) )
-#define TBUFFER_REG(r)		register( MAKE_REG_T(r) )
-#define CBUFFER_REG(r)		register( MAKE_REG_B(r) )
-#define TEXTURE_SPACE(s)	register( MAKE_REG_T(0), s )
-#define UBUFFER_SPACE(s)	register( MAKE_REG_U(0), s )
+#define SAMPLER_REG(r)		register( COMBINE(s,r) )
+#define TBUFFER_REG(r)		register( COMBINE(t,r) )
+#define CBUFFER_REG(r)		register( COMBINE(b,r) )
+#define TEXTURE_SPACE(s)	register( COMBINE(t,0), COMBINE(space,s) )
+#define UBUFFER_SPACE(s)	register( COMBINE(u,0), COMBINE(space,s) )
 
 #endif
 
@@ -26,10 +23,15 @@ typedef RB::Math::Float4x4	float4x4;
 // Global slots
 // ---------------------------------------------------------------
 
+// Constant buffer slots
 #define kTexIndicesCB		0
 #define kFrameConstantsCB	1
 #define kInstanceCB			2
 
+// Sampler slots
+#define kClampSamplerSlot	0	
+
+// Texture spaces
 #define kTex2DTableSpace	0
 
 
@@ -73,6 +75,8 @@ cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
 	FrameConstants g_FC;
 }
 
+
+
 // Global resource tables (bindless)
 // ---------------------------------------------------------------
 
@@ -80,7 +84,16 @@ Texture2D Texture2DTable[] : TEXTURE_SPACE(kTex2DTableSpace);
 //TextureCube TextureCubeTable[] : registre(t0, kTexCubeTableSpace);
 //RWTexture2D RwTexture2DTable[] : register(t0, kRwTex2DTableSpace);
 
-#define FETCH_TEX2D(index) Texture2DTable[g_TextureIndices.tex2D[##index##]]
+#define FETCH_TEX2D(index) Texture2DTable[g_TextureIndices.tex2D[ index ]]
+
+
+
+// Global samplers
+// ---------------------------------------------------------------
+
+SamplerState g_ClampSampler : SAMPLER_REG(kClampSamplerSlot);
+
+
 
 // Global helper functions
 // ---------------------------------------------------------------

@@ -11,24 +11,8 @@ namespace RB::Graphics
 
 namespace RB::Graphics::D3D12
 {
-
-	// CBV's are the first parameters in the root signature
-	#define CBV_ROOT_PARAMETER_INDEX_OFFSET 0
-
-	struct RootSignatureParameterDescriptorDesc
-	{
-		// Max value of 32!
-		uint32_t rootIndexSlotsUsed;
-
-		// Bit masks indicating on which root index which type of descriptor is bound
-		uint32_t descriptorTableBitMask;
-		uint32_t samplerTableBitMask;
-		uint32_t cbvBitMask;
-
-		// Array sorted by root index, storing the amount of descriptors per table, 
-		// if there is a desctiptor table at that index.
-		uint32_t numDescriptorsPerTable[32 /* (sizeof(uint32_t) * 8) */ ];
-	};
+	// CBV's start at the second parameter in the root signature
+	#define CBV_ROOT_PARAMETER_INDEX_OFFSET 1
 
 	class PipelineManager
 	{
@@ -45,9 +29,6 @@ namespace RB::Graphics::D3D12
 	private:
 		uint64_t GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
 		uint64_t GetPipelineHash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
-
-		void FillDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE type, uint32_t vs_mask, uint32_t ps_mask,
-			CD3DX12_DESCRIPTOR_RANGE* out_vertex_range, CD3DX12_DESCRIPTOR_RANGE* out_pixel_range, CD3DX12_DESCRIPTOR_RANGE* out_all_range);
 
 		UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_ComputePipelines;
 		UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_GraphicsPipelines;

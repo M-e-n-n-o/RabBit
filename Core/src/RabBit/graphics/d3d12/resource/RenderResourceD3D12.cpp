@@ -93,15 +93,14 @@ namespace RB::Graphics::D3D12
 		if (m_AllowUAV)
 			flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-		// Need mip info
-		static_assert(false);
+		// TODO Add mip support
 
 		ResourceManager::Texture2DDesc desc = {};
 		desc.format		= ConvertToDXGIFormat(m_Format);
 		desc.width		= m_Width;
 		desc.height		= m_Height;
 		desc.arraySize	= 1;
-		desc.mipLevels	= ;
+		desc.mipLevels	= 1;
 		desc.flags		= flags;
 
 		g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
@@ -127,18 +126,20 @@ namespace RB::Graphics::D3D12
 	
 	void Texture2DD3D12::CreateViews(GpuResource* /*resource*/)
 	{
-		// Finish these (need mip info)
-		static_assert(false);
-
 		// SRV
 		{
 			D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessSrvUavHeap->GetStagingDestinationDescriptor();
 
+			// TODO Add mip support
+
 			D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
-			desc.Format						= ConvertToDXGIFormat(m_Format);
-			desc.ViewDimension				= D3D12_SRV_DIMENSION_TEXTURE2D;
-			desc.Shader4ComponentMapping	= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			//desc.Texture2D
+			desc.Format							= ConvertToDXGIFormat(m_Format);
+			desc.ViewDimension					= D3D12_SRV_DIMENSION_TEXTURE2D;
+			desc.Shader4ComponentMapping		= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			desc.Texture2D.MipLevels			= 1;
+			desc.Texture2D.MostDetailedMip		= 0;
+			desc.Texture2D.PlaneSlice			= 0;
+			desc.Texture2D.ResourceMinLODClamp	= 0.0f;
 
 			g_GraphicsDevice->Get()->CreateShaderResourceView(m_Resource->GetResource().Get(), &desc, staging_handle);
 

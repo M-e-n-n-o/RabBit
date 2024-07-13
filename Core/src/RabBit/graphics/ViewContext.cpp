@@ -3,7 +3,7 @@
 #include "RenderInterface.h"
 
 // Shader code
-#include "d3d12/shaders/shared/Common.h"
+#include "shaders/shared/Common.h"
 
 namespace RB::Graphics
 {

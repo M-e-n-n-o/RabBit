@@ -12,7 +12,7 @@ namespace RB::Graphics::D3D12
 		: Renderer(true)
 	{
 		g_GraphicsDevice		= new GraphicsDevice(enable_debug_layer);
-		g_BindlessSrvUavHeap	= new BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 5000);
+		g_BindlessSrvUavHeap	= new BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, BINDLESS_SRV_UAV_DESCRIPTOR_HEAP_SIZE);
 		g_ResourceStateManager	= new ResourceStateManager();
 		g_ResourceManager		= new ResourceManager();
 
@@ -26,6 +26,7 @@ namespace RB::Graphics::D3D12
 		delete g_PipelineManager;
 		delete g_ResourceStateManager;
 		delete g_ResourceManager;
+		delete g_BindlessSrvUavHeap;
 		delete g_GraphicsDevice;
 	}
 

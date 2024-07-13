@@ -2,6 +2,7 @@
 
 #include "graphics/RenderInterface.h"
 #include "graphics/shaders/shared/Common.h"
+#include "resource/BindlessDescriptorHeap.h"
 
 #include <d3d12.h>
 
@@ -80,6 +81,7 @@ namespace RB::Graphics::D3D12
 
 		void BindDescriptorHeaps();
 		void BindDrawResources();
+		void ClearDrawResources();
 
 		void SetGraphicsPipelineState();
 		void SetNewCommandList();
