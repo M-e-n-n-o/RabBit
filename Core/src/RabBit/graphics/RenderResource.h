@@ -70,24 +70,19 @@ namespace RB::Graphics
 
 		virtual void* GetNativeResource() const = 0;
 
-		virtual void* GetData() const = 0;
-		virtual uint64_t GetSize() const = 0;
-		//virtual void WriteData(void* data, uint64_t size, uint32_t write_offset) = 0;
-
-		//virtual bool IsInFlight() const = 0;
-		//virtual bool MarkedForDelete() const = 0;
-		//virtual bool AllowedCpuReads() const = 0;
-		//virtual bool AllowedCpuWrites() const = 0;
-
 		virtual RenderResourceFormat GetFormat() const = 0;
+
+		bool IsStreaming() const { return m_IsStreaming; }
+		void SetIsStreaming(bool is_streaming) { m_IsStreaming = is_streaming; }
 
 		RenderResourceType GetType() const { return m_Type; }
 		RenderResourceType GetPrimitiveType() const;
 
 	protected:
-		RenderResource(RenderResourceType type): m_Type(type) {}
+		RenderResource(RenderResourceType type): m_Type(type), m_IsStreaming(false) {}
 
-		RenderResourceType m_Type;
+		RenderResourceType	m_Type;
+		bool				m_IsStreaming;
 	};
 
 	class Buffer : public RenderResource

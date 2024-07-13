@@ -126,12 +126,15 @@ namespace RB::Graphics::D3D12
 		m_CommandQueue->ExecuteCommandLists(num_command_lists, lists);
 		uint64_t fence_value = SignalFence();
 
-		// Set the command allocators as busy
 		for (uint32_t i = 0; i < num_command_lists; ++i)
 		{
+			// Set the command allocators as busy
 			m_RunningCommandAllocators.push_back({ fence_value, allocators[i] });
 			allocators[i]->Release();
+			
+			m_CommandListQueue.push(command_lists[i]);
 		}
+
 
 		return fence_value;
 	}

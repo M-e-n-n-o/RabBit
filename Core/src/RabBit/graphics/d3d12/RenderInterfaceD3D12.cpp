@@ -499,21 +499,7 @@ namespace RB::Graphics::D3D12
 		GpuResource* src_res = (GpuResource*)src->GetNativeResource();
 		GpuResource* dest_res = (GpuResource*)dest->GetNativeResource();
 
-		MarkResourceUsed(src_res);
-		MarkResourceUsed(dest_res);
-
-		switch (src->GetPrimitiveType())
-		{
-		case RenderResourceType::Buffer:
-		{
-			InternalCopyBuffer(src_res, dest_res);
-		}
-		break;
-
-		default:
-			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
-			break;
-		}
+		InternalCopy(src_res, dest_res, src->GetPrimitiveType());
 	}
 
 	void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
@@ -522,43 +508,27 @@ namespace RB::Graphics::D3D12
 		// an upload resource for every upload if we do 10 uploads after eachother (so suballocate an upload resource in the full resource).
 		// Or maybe only do this batching together in the Streamer pass?
 
-		switch (resource->GetPrimitiveType())
+		uint64_t upload_size = data_size;
+		if (resource->GetPrimitiveType() == RenderResourceType::Texture)
 		{
-		case RenderResourceType::Buffer:
-		{
-			GpuResource* upload_res = new GpuResource();
-			g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", { data_size } );
-
-			char* mapped_mem;
-			RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
-
-			memcpy(mapped_mem, data, data_size);
-
-			// Unmapping is unnecessary
-			//upload_res->Unmap(0, nullptr);
-
-			InternalCopyBuffer(upload_res, (GpuResource*)resource->GetNativeResource());
-
-			MarkResourceUsed(upload_res);
-			MarkResourceUsed(resource);
-
-			delete upload_res;
+			// The size should be aligned by 512 when doing a Buffer -> Texture copy
+			upload_size = Math::AlignUp(upload_size, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 		}
-		break;
 
-		case RenderResourceType::Texture:
-		{
-			// Finish this
-			static_assert(false);
+		GpuResource* upload_res = new GpuResource();
+		g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", { upload_size } );
 
-			g_ResourceManager->ScheduleCreateTextureUploadResource();
-		}
-		break;
+		char* mapped_mem;
+		RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
 
-		default:
-			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
-			break;
-		}
+		memcpy(mapped_mem, data, data_size);
+
+		// Unmapping is unnecessary
+		//upload_res->Unmap(0, nullptr);
+
+		InternalCopy(upload_res, (GpuResource*) resource->GetNativeResource(), resource->GetPrimitiveType());
+
+		delete upload_res;
 	}
 
 	void RenderInterfaceD3D12::DrawInternal()
@@ -584,6 +554,7 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DispatchInternal()
 	{
+		// TODO
 	}
 
 	void RenderInterfaceD3D12::BindDescriptorHeaps()
@@ -594,6 +565,80 @@ namespace RB::Graphics::D3D12
 		};
 
 		m_CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	}
+
+	void RenderInterfaceD3D12::InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type)
+	{
+		MarkResourceUsed(src);
+		MarkResourceUsed(dst);
+
+		if (!m_CopyOperationsOnly)
+		{
+			g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			g_ResourceStateManager->TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST);
+			FlushResourceBarriers();
+		}
+		else
+		{
+			// We do not need to transition resources to the copy state when using a dedicated copy commandlist.
+			// The resources however MUST be in the COMMON state, so check for that here.
+			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
+			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dst->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
+		}
+
+		switch (primitive_type)
+		{
+		case RenderResourceType::Buffer: // Buffer -> Buffer copy
+		{
+			m_CommandList->CopyResource(dst->GetResource().Get(), src->GetResource().Get());
+		}
+		break;
+
+		case RenderResourceType::Texture: // Buffer -> Texture copy
+		{
+			// TODO Finish this copy logic
+			// https://alextardif.com/D3D11To12P3.html
+			static_assert(false);
+
+			RB_ASSERT(LOGTAG_GRAPHICS, (src->GetResource()->GetDesc().Width % D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT) == 0, "The source resource should have the size aligned by 512!");
+
+			D3D12_SUBRESOURCE_FOOTPRINT footprint = { };
+			footprint.Format			= dst->GetResource()->GetDesc().Format;
+			footprint.Width				= dst->GetResource()->GetDesc().Width;
+			footprint.Height			= dst->GetResource()->GetDesc().Height;
+			footprint.Depth				= dst->GetResource()->GetDesc().DepthOrArraySize;
+			footprint.RowPitch			= Math::AlignUp(dst->GetResource()->GetDesc().Width, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+
+			D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_footprint = {};
+			placed_footprint.Offset		= 0;
+			placed_footprint.Footprint	= footprint;
+
+			D3D12_TEXTURE_COPY_LOCATION src_loc = {};
+			src_loc.pResource			= src->GetResource().Get();
+			src_loc.Type				= D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			src_loc.PlacedFootprint		= placed_footprint;
+
+			D3D12_TEXTURE_COPY_LOCATION dest_loc = {};
+			dest_loc.pResource			= dst->GetResource().Get();
+			dest_loc.Type				= D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			dest_loc.SubresourceIndex	= 0;
+
+			D3D12_BOX src_box = {};
+			src_box.top		= 0;
+			src_box.bottom	= dst->GetResource()->GetDesc().Height;
+			src_box.left	= 0;
+			src_box.right	= dst->GetResource()->GetDesc().Height;
+			src_box.front	= 0;
+			src_box.back	= dst->GetResource()->GetDesc().DepthOrArraySize;
+
+			m_CommandList->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, &src_box);
+		}
+		break;
+
+		default:
+			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
+			break;
+		}
 	}
 
 	void RenderInterfaceD3D12::MarkResourceUsed(RenderResource* resource)
@@ -717,24 +762,5 @@ namespace RB::Graphics::D3D12
 		m_CommandList->SetGraphicsRootSignature(m_RenderState.rootSignature.Get());
 
 		m_RenderState.psoDirty = false;
-	}
-
-	void RenderInterfaceD3D12::InternalCopyBuffer(GpuResource* src, GpuResource* dest)
-	{
-		if (!m_CopyOperationsOnly)
-		{
-			g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
-			g_ResourceStateManager->TransitionResource(dest, D3D12_RESOURCE_STATE_COPY_DEST);
-			FlushResourceBarriers();
-		}
-		else
-		{
-			// We do not need to transition resources to the copy state when using a dedicated copy commandlist.
-			// The resources however MUST be in the COMMON state, so check for that here.
-			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
-			RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dest->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
-		}
-
-		m_CommandList->CopyResource(dest->GetResource().Get(), src->GetResource().Get());
 	}
 }

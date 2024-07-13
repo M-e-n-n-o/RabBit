@@ -21,8 +21,8 @@ namespace RB::Graphics
 	class RenderPass;
 	class GpuGuard;
 	class ViewContext;
+	class ResourceStreamer;
 
-	// Fully static class
 	class Renderer : public Input::Events::EventListener
 	{
 	public:
@@ -37,7 +37,11 @@ namespace RB::Graphics
 		// Sync with the render thread (and optionally also wait until GPU is idle)
 		void SyncRenderer(bool gpu_sync = false);
 
+		ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
+
 		uint64_t GetRenderFrameIndex();
+
+		void Init();
 
 		// Also syncs with the render thread and GPU
 		void Shutdown();
@@ -46,8 +50,6 @@ namespace RB::Graphics
 
 	protected:
 		Renderer(bool multi_threading_support);
-
-		void Init();
 
 		virtual void OnFrameStart() = 0;
 		virtual void OnFrameEnd() = 0;
@@ -69,7 +71,6 @@ namespace RB::Graphics
 
 		RenderInterface*		m_GraphicsInterface; // Used by the render passes
 		RenderInterface*		m_CopyInterface;	 // Used for resource streaming 
-		RenderPass*				m_StreamingPass;
 		RenderPass**			m_RenderPasses;
 		uint32_t				m_TotalPasses;
 
@@ -77,6 +78,8 @@ namespace RB::Graphics
 		CRITICAL_SECTION		m_RenderFrameIndexCS;
 
 		bool					m_MultiThreadingSupport;
+
+		ResourceStreamer*		m_ResourceStreamer;
 
 	public:
 		struct BackBufferGuard

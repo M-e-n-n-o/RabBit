@@ -50,6 +50,7 @@ namespace RB
 
 		Renderer::SetAPI(RenderAPI::D3D12);
 		m_Renderer = Renderer::Create(true); //std::strstr(launch_args, "-renderDebug"));
+		m_Renderer->Init();
 
 		m_Displays = Display::CreateDisplays();
 

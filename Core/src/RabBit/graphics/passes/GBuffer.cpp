@@ -50,7 +50,7 @@ namespace RB::Graphics
 			const Entity::MeshRenderer* mesh_renderer = (const Entity::MeshRenderer*)mesh_renderers[i];
 			const Entity::Mesh* mesh = mesh_renderer->GetMesh();
 
-			if (!mesh->IsLatestDataUploaded())
+			if (mesh->GetVertexBuffer()->IsStreaming())
 			{
 				continue;
 			}

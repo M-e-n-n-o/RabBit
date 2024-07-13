@@ -3,6 +3,9 @@
 #include "ResourceManager.h"
 #include "graphics/d3d12/UtilsD3D12.h"
 #include "graphics/d3d12/GraphicsDevice.h"
+#include "app/Application.h"
+#include "graphics/Renderer.h"
+#include "graphics/ResourceStreamer.h"
 
 namespace RB::Graphics::D3D12
 {
@@ -20,6 +23,12 @@ namespace RB::Graphics::D3D12
 	{
 		m_Resource = new GpuResource();
 		g_ResourceManager->ScheduleCreateVertexResource(m_Resource, name, { data_size });
+
+		Streamable streamable = {};
+		streamable.resource		= this;
+		streamable.uploadData	= data;
+		streamable.uploadSize	= data_size;
+		Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
 	}
 
 	VertexBufferD3D12::~VertexBufferD3D12()
@@ -51,6 +60,12 @@ namespace RB::Graphics::D3D12
 	{
 		m_Resource = new GpuResource();
 		g_ResourceManager->ScheduleCreateIndexResource(m_Resource, name, { data_size });
+
+		Streamable streamable = {};
+		streamable.resource		= this;
+		streamable.uploadData	= data;
+		streamable.uploadSize	= data_size;
+		Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
 	}
 
 	IndexBufferD3D12::~IndexBufferD3D12()
@@ -104,6 +119,12 @@ namespace RB::Graphics::D3D12
 		desc.flags		= flags;
 
 		g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
+
+		Streamable streamable = {};
+		streamable.resource		= this;
+		streamable.uploadData	= data;
+		streamable.uploadSize	= data_size;
+		Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
 	}
 
 	Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access)

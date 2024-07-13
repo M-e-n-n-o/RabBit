@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics/RenderInterface.h"
+#include "graphics/RenderResource.h"
 #include "graphics/shaders/shared/Common.h"
 #include "resource/BindlessDescriptorHeap.h"
 
@@ -76,6 +77,7 @@ namespace RB::Graphics::D3D12
 		GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
 	private:
+		void InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type);
 		void MarkResourceUsed(RenderResource* resource);
 		void MarkResourceUsed(GpuResource* resource);
 
@@ -85,7 +87,6 @@ namespace RB::Graphics::D3D12
 
 		void SetGraphicsPipelineState();
 		void SetNewCommandList();
-		void InternalCopyBuffer(GpuResource* src, GpuResource* dest);
 
 		bool								m_CopyOperationsOnly;
 		DeviceQueue*						m_Queue;

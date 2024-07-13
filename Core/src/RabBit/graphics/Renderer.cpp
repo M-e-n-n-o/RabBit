@@ -5,6 +5,7 @@
 #include "Window.h"
 #include "ViewContext.h"
 #include "ResourceDefaults.h"
+#include "ResourceStreamer.h"
 
 #include "app/Application.h"
 #include "input/events/WindowEvent.h"
@@ -14,7 +15,6 @@
 #include "entity/components/Transform.h"
 
 #include "passes/GBuffer.h"
-#include "passes/Streamer.h"
 
 #include "d3d12/RendererD3D12.h"
 // Needed for the PIX markers, need to make an abstraction for this
@@ -76,6 +76,8 @@ namespace RB::Graphics
 	{
 		m_IsShutdown = false;
 
+		m_ResourceStreamer = new ResourceStreamer();
+
 		// Initialize default resources
 		InitResourceDefaults();
 
@@ -98,8 +100,6 @@ namespace RB::Graphics
 		m_TotalPasses = 1;
 		m_RenderPasses = (RenderPass**) ALLOC_HEAP(sizeof(RenderPass*) * m_TotalPasses);
 		m_RenderPasses[0] = new GBufferPass();
-
-		m_StreamingPass = new StreamerPass();
 	}
 
 	Renderer::~Renderer()
@@ -127,7 +127,8 @@ namespace RB::Graphics
 			delete m_RenderPasses[i];
 		}
 		SAFE_FREE(m_RenderPasses);
-		delete m_StreamingPass;
+
+		delete m_ResourceStreamer;
 
 		DeleteCriticalSection(&m_RenderFrameIndexCS);
 
@@ -194,21 +195,16 @@ namespace RB::Graphics
 			}
 		}
 
-		// Stream resources to the GPU on the main thread (maybe in the future do this on a different thread?)
+		// Stream resources to the GPU on the main thread 
+		// (maybe in the future do this on a different thread?)
 		{
-			RenderPassEntry* entry = m_StreamingPass->SubmitEntry(scene);
+			Shared<GpuGuard> guard = m_ResourceStreamer->Stream(m_CopyInterface);
 
-			if (entry != nullptr)
+			if (guard != nullptr)
 			{
-				// Doesn't need a ViewContext
-				m_StreamingPass->Render(m_CopyInterface, nullptr, entry, nullptr, nullptr, nullptr);
-
-				// Make sure the graphics interface waits until the streaming has been completed before starting to render
-				Shared<GpuGuard> guard = m_CopyInterface->ExecuteOnGpu();
+				// Place a GPU barrier on the graphics queue to wait on the streaming
 				m_GraphicsInterface->GpuWaitOn(guard.get());
 			}
-
-			SAFE_DELETE(entry);
 		}
 
 		if (m_MultiThreadingSupport)

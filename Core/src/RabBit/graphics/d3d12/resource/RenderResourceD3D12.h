@@ -19,11 +19,7 @@ namespace RB::Graphics::D3D12
 
 		const char* GetName() const override { return m_Name; }
 
-		void* GetData() const override { return m_Data; }
-
 		void* GetNativeResource() const override { return m_Resource; }
-
-		uint64_t GetSize() const override { return m_Size; }
 
 		uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
 
@@ -49,11 +45,7 @@ namespace RB::Graphics::D3D12
 
 		const char* GetName() const override { return m_Name; }
 
-		void* GetData() const override { return m_Data; }
-
 		void* GetNativeResource() const override { return m_Resource; }
-
-		uint64_t GetSize() const override { return m_Size; }
 
 		uint64_t GetIndexCount() const override { return m_Size / sizeof(uint16_t); }
 
@@ -79,10 +71,6 @@ namespace RB::Graphics::D3D12
 		void* GetNativeResource() const override { return m_Resource; }
 
 		RenderResourceFormat GetFormat() const override { return m_Format; }
-
-		void* GetData() const override { return nullptr; }
-
-		uint64_t GetSize() const override { return 0; }
 
 		bool AllowedRenderTarget() const override { return m_IsRenderTarget; }
 		bool AllowedDepthStencil() const override { return m_IsDepthStencil; }
