@@ -66,8 +66,6 @@ namespace RB::Graphics::D3D12
 	void RenderInterfaceD3D12::InvalidateState()
 	{
 		m_RenderState = {};
-		
-		// TODO Maybe set some default states here, such as backface culling, depth testing on, etc.
 
 		if (m_CopyOperationsOnly)
 		{
@@ -504,10 +502,9 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
 	{
-		// TODO Keep the upload resource alive for a couple of frames maybe so we don't have to create an upload resource for every upload 
-		// if we do 10 uploads after eachother (so suballocate an upload resource in the full resource).Or maybe only do this batching 
-		// together in the Streamer pass? If we create such a big upload resource, make sure that when doing texture uploads, the starting 
-		// point of a allocation should be aligned by D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT!
+		// TODO Create a big upload resource and keep it alive for a couple of frames so we don't have to create an upload resource for every upload 
+		// if we do 10 uploads after eachother (so suballocate an upload resource in the full resource). If we create such a big upload resource, 
+		// make sure that when doing texture uploads, the starting point of a allocation should be aligned by D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT!
 
 		RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
 
@@ -638,7 +635,6 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::DispatchInternal()
 	{
-		// TODO
 	}
 
 	void RenderInterfaceD3D12::BindDescriptorHeaps()
