@@ -9,13 +9,13 @@ namespace RB::Graphics::D3D12
 	class BindlessDescriptorHeap
 	{
 	public:
-		BindlessDescriptorHeap(const wchar_t* name, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors);
+		BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors);
 
 		// Use this staging descriptor to create descriptors that will be inserted directly after creation into the BindlessDescriptorHeap
 		D3D12_CPU_DESCRIPTOR_HANDLE GetStagingDestinationDescriptor() const { return m_CpuHeapStaged; }
 		
 		// Call this to copy over the newly created non shader-visible descriptor over to the shader visible heap
-		DescriptorHandle InsertStagedDescriptor(DescriptorHandle* handle_overwrite = nullptr);
+		DescriptorHandle InsertStagedDescriptor(uint32_t offset, uint32_t max_descriptors_type, DescriptorHandle* handle_overwrite = nullptr);
 		
 		void InvalidateDescriptor(DescriptorHandle handle);
 
@@ -25,7 +25,6 @@ namespace RB::Graphics::D3D12
 
 	private:
 		List<bool>					m_AvailableSlots;
-		uint32_t					m_NextAvailable;
 
 		GPtr<ID3D12DescriptorHeap>	m_GpuHeap;
 		GPtr<ID3D12DescriptorHeap>	m_CpuHeap;
@@ -35,5 +34,15 @@ namespace RB::Graphics::D3D12
 		uint32_t					m_IncrementSize;
 	};
 
-	extern BindlessDescriptorHeap* g_BindlessTex2DHeap;
+	// Tex2D descriptors
+	#define BINDLESS_TEX2D_DESCRIPTORS		100
+	#define BINDLESS_TEX2D_START_OFFSET		0
+
+	// RwTex2D descriptors
+	#define BINDLESS_RWTEX2D_DESCRIPTORS	50
+	#define BINDLESS_RWTEX2D_START_OFFSET	(BINDLESS_TEX2D_START_OFFSET + BINDLESS_TEX2D_DESCRIPTORS)
+
+	#define BINDLESS_DESCRIPTOR_HEAP_SIZE	(BINDLESS_TEX2D_DESCRIPTORS + BINDLESS_RWTEX2D_DESCRIPTORS)
+
+	extern BindlessDescriptorHeap* g_BindlessSrvUavHeap;
 }

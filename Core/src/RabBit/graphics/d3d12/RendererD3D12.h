@@ -8,8 +8,6 @@
 
 namespace RB::Graphics::D3D12
 {
-	#define BINDLESS_TEX2D_DESCRIPTOR_HEAP_SIZE 500
-
 	class RendererD3D12 : public Renderer
 	{
 	public:

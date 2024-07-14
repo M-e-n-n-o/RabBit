@@ -383,9 +383,6 @@ namespace RB::Graphics
 					RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetConfiguration().friendlyName);
 
 					context->renderPasses[pass_index]->Render(context->graphicsInterface, &view_context, context->renderPassEntries[pass_index], (RenderResource**)&back_buffer, nullptr, nullptr);
-
-					// Invalidate the render state after every pass
-					context->graphicsInterface->InvalidateState();
 				}
 			}
 		}

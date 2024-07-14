@@ -138,13 +138,11 @@ namespace RB::Graphics::D3D12
 				max_width = Math::Max(max_width, tex->GetWidth());
 				max_height = Math::Max(max_height, tex->GetHeight());
 
-				GpuResource* res = (GpuResource*)tex->GetNativeResource();
-
-				g_ResourceStateManager->TransitionResource(res, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				TransitionResource(tex, ResourceState::RENDER_TARGET);
 
 				m_RenderState.rtvFormats[i] = ConvertToDXGIFormat(tex->GetFormat());
 
-				MarkResourceUsed(res);
+				MarkResourceUsed(tex);
 			}
 			else
 			{
@@ -161,13 +159,11 @@ namespace RB::Graphics::D3D12
 			{
 				depth_handle = &((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
 
-				GpuResource* res = (GpuResource*)depth_stencil->GetNativeResource();
-
-				g_ResourceStateManager->TransitionResource(res, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+				TransitionResource(depth_stencil, ResourceState::DEPTH_WRITE);
 
 				m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
 			
-				MarkResourceUsed(res);
+				MarkResourceUsed(depth_stencil);
 			}
 			else
 			{
@@ -188,6 +184,9 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::SetShaderResourceInput(RenderResource* resource, uint32_t slot)
 	{
+		TransitionResource(resource, ResourceState::PIXEL_SHADER_RESOURCE);
+		MarkResourceUsed(resource);
+
 		switch (resource->GetType())
 		{
 		case RenderResourceType::Texture2D:
@@ -277,7 +276,7 @@ namespace RB::Graphics::D3D12
 
 		MarkResourceUsed(resource);
 
-		g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+		TransitionResource(resource, ResourceState::RENDER_TARGET);
 		FlushResourceBarriers();
 
 		FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
@@ -641,7 +640,7 @@ namespace RB::Graphics::D3D12
 	{
 		ID3D12DescriptorHeap* descriptorHeaps[] = 
 		{
-			g_BindlessTex2DHeap->GetHeap().Get() // Bindless heap for Tex2D
+			g_BindlessSrvUavHeap->GetHeap().Get() // Bindless heap
 		};
 
 		m_CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
@@ -715,7 +714,7 @@ namespace RB::Graphics::D3D12
 
 			SetConstantShaderData(kTex2DTableSpace, &indices, sizeof(TextureIndices));
 
-			m_CommandList->SetGraphicsRootDescriptorTable(TEX2D_BINDLESS_ROOT_PARAMETER_INDEX, g_BindlessTex2DHeap->GetGpuStart());
+			m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_BindlessSrvUavHeap->GetGpuStart());
 		}
 
 		// Bind the CBV's

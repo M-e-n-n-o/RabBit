@@ -149,7 +149,7 @@ namespace RB::Graphics::D3D12
 	{
 		// SRV
 		{
-			D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessTex2DHeap->GetStagingDestinationDescriptor();
+			D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessSrvUavHeap->GetStagingDestinationDescriptor();
 
 			// TODO Add mip support
 
@@ -164,7 +164,7 @@ namespace RB::Graphics::D3D12
 
 			g_GraphicsDevice->Get()->CreateShaderResourceView(m_Resource->GetResource().Get(), &desc, staging_handle);
 
-			m_ReadHandle = g_BindlessTex2DHeap->InsertStagedDescriptor();
+			m_ReadHandle = g_BindlessSrvUavHeap->InsertStagedDescriptor(BINDLESS_TEX2D_START_OFFSET, BINDLESS_TEX2D_DESCRIPTORS);
 		}
 
 		// UAV

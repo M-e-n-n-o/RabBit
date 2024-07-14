@@ -4,11 +4,10 @@
 
 namespace RB::Graphics::D3D12
 {
-	BindlessDescriptorHeap* g_BindlessTex2DHeap = nullptr;
+	BindlessDescriptorHeap* g_BindlessSrvUavHeap = nullptr;
 
-	BindlessDescriptorHeap::BindlessDescriptorHeap(const wchar_t* name, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors)
+	BindlessDescriptorHeap::BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors)
 		: m_Type(type)
-		, m_NextAvailable(0)
 	{
 		RB_ASSERT_FATAL(LOGTAG_GRAPHICS, max_descriptors < 1e6, "The max total of descriptors cannot exceed 1 million");
 
@@ -31,7 +30,7 @@ namespace RB::Graphics::D3D12
 			RB_ASSERT_FATAL_D3D(g_GraphicsDevice->Get()->CreateDescriptorHeap(&gpu_desc, IID_PPV_ARGS(&m_GpuHeap)),
 				"Failed to create GPU visible descriptor heap");
 
-			m_GpuHeap->SetName(name);
+			m_GpuHeap->SetName(L"Bindless GPU heap");
 
 			m_GpuStart = m_GpuHeap->GetGPUDescriptorHandleForHeapStart();
 		}
@@ -57,7 +56,7 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	DescriptorHandle BindlessDescriptorHeap::InsertStagedDescriptor(DescriptorHandle* handle_overwrite)
+	DescriptorHandle BindlessDescriptorHeap::InsertStagedDescriptor(uint32_t offset, uint32_t max_descriptors_type, DescriptorHandle* handle_overwrite)
 	{
 		uint32_t slot;
 
@@ -67,21 +66,19 @@ namespace RB::Graphics::D3D12
 		}
 		else
 		{
-			uint32_t starting_point = m_NextAvailable;
+			slot = offset;
 
 			// Find the first available slot in the heap
-			while (!m_AvailableSlots[m_NextAvailable])
+			while (!m_AvailableSlots[slot])
 			{
-				m_NextAvailable = (m_NextAvailable + 1) % m_AvailableSlots.size();
+				slot = (slot + 1) % max_descriptors_type;
 
-				if (starting_point == m_NextAvailable)
+				if (slot == offset)
 				{
-					RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not find a free slot in the descriptor heap, overwriting a used one. Consider increasing the heap size!");
+					RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not find a free slot in the descriptor heap, increase the heap size!");
 					return -1;
 				}
 			}
-
-			slot = m_NextAvailable;
 		}
 
 		m_AvailableSlots[slot] = false;
@@ -90,8 +87,6 @@ namespace RB::Graphics::D3D12
 		cpu_handle.InitOffsetted(m_GpuHeap->GetCPUDescriptorHandleForHeapStart(), slot, m_IncrementSize);
 
 		g_GraphicsDevice->Get()->CopyDescriptorsSimple(1, cpu_handle, m_CpuHeapStaged, m_Type);
-
-		m_NextAvailable = (m_NextAvailable + 1) % m_AvailableSlots.size();
 
 		return slot;
 	}
