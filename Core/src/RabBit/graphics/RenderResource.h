@@ -44,6 +44,8 @@ namespace RB::Graphics
 		R32_FLOAT
 	};
 
+	uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
+
 	enum class RenderResourceType : uint32_t
 	{
 		Unknown					= (0 << 0),
@@ -136,6 +138,8 @@ namespace RB::Graphics
 	protected:
 		IndexBuffer(): Buffer(RenderResourceType::IndexBuffer) {}
 	};
+
+	#define MAX_TEXTURE_SUBRESOURCE_COUNT 8
 
 	class Texture : public RenderResource
 	{

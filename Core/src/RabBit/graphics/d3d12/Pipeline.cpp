@@ -81,7 +81,7 @@ namespace RB::Graphics::D3D12
 		uint64_t combined_cbv_mask = vs_mask.cbvMask | ps_mask.cbvMask;
 
 		// Num parameters:
-		// - 1 Descriptor table
+		// - 1 tex2D descriptor table
 		// - All inline CBV's
 		uint32_t num_parameters = NumberOfSetBits(combined_cbv_mask) + 1;
 
@@ -93,16 +93,19 @@ namespace RB::Graphics::D3D12
 
 			// Bindless SRV/UAV table
 			{
-				CD3DX12_DESCRIPTOR_RANGE ranges[1];
-			
-				// Texture2D SRV range
-				ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, BINDLESS_SRV_UAV_DESCRIPTOR_HEAP_SIZE, 0, kTex2DTableSpace, 0);
-				// Texture2D UAV range
-				//ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, BINDLESS_SRV_UAV_DESCRIPTOR_HEAP_SIZE, 0, kRwTex2DTableSpace, 0);
-
-				parameters[parameter_index].InitAsDescriptorTable(_countof(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
+				// Texture2D SRV table
+				CD3DX12_DESCRIPTOR_RANGE tex2d_range[1];
+				tex2d_range[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, BINDLESS_TEX2D_DESCRIPTOR_HEAP_SIZE, 0, kTex2DTableSpace, 0);
+				parameters[parameter_index].InitAsDescriptorTable(1, tex2d_range, D3D12_SHADER_VISIBILITY_ALL);
+				RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == TEX2D_BINDLESS_ROOT_PARAMETER_INDEX, "These should match!");
 
 				parameter_index++;
+
+				// Texture2D UAV table
+				//CD3DX12_DESCRIPTOR_RANGE rwtex2d_range[1];
+				//rwtex2d_range[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, BINDLESS_SRV_UAV_DESCRIPTOR_HEAP_SIZE, 0, kRwTex2DTableSpace, 0);
+				//parameters[parameter_index].InitAsDescriptorTable(1, rwtex2d_range, D3D12_SHADER_VISIBILITY_ALL);
+
 			}
 
 			// Inline CBV's

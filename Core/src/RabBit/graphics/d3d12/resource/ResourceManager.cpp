@@ -275,7 +275,7 @@ namespace RB::Graphics::D3D12
 
 		case ResourceManager::ResourceType::Texture2D:
 		{
-			D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+			D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COPY_DEST;
 
 			// TODO Fill in the optimized clear value for RenderTargets and DepthStencil textures
 

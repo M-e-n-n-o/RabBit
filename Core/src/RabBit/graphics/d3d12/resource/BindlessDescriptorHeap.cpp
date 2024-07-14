@@ -4,9 +4,9 @@
 
 namespace RB::Graphics::D3D12
 {
-	BindlessDescriptorHeap* g_BindlessSrvUavHeap = nullptr;
+	BindlessDescriptorHeap* g_BindlessTex2DHeap = nullptr;
 
-	BindlessDescriptorHeap::BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors)
+	BindlessDescriptorHeap::BindlessDescriptorHeap(const wchar_t* name, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors)
 		: m_Type(type)
 		, m_NextAvailable(0)
 	{
@@ -31,7 +31,9 @@ namespace RB::Graphics::D3D12
 			RB_ASSERT_FATAL_D3D(g_GraphicsDevice->Get()->CreateDescriptorHeap(&gpu_desc, IID_PPV_ARGS(&m_GpuHeap)),
 				"Failed to create GPU visible descriptor heap");
 
-			m_GpuHeap->SetName(L"Bindless GPU heap");
+			m_GpuHeap->SetName(name);
+
+			m_GpuStart = m_GpuHeap->GetGPUDescriptorHandleForHeapStart();
 		}
 
 		// Non shader-visible descriptor heap

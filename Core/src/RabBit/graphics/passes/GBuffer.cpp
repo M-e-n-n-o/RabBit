@@ -119,7 +119,7 @@ namespace RB::Graphics
 
 			render_interface->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-			render_interface->ClearShaderResourceInput(0);
+			//render_interface->SetShaderResourceInput(texture, 0);
 
 			render_interface->Draw();
 		}

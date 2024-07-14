@@ -149,7 +149,7 @@ namespace RB::Graphics::D3D12
 	{
 		// SRV
 		{
-			D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessSrvUavHeap->GetStagingDestinationDescriptor();
+			D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessTex2DHeap->GetStagingDestinationDescriptor();
 
 			// TODO Add mip support
 
@@ -164,25 +164,25 @@ namespace RB::Graphics::D3D12
 
 			g_GraphicsDevice->Get()->CreateShaderResourceView(m_Resource->GetResource().Get(), &desc, staging_handle);
 
-			m_ReadHandle = g_BindlessSrvUavHeap->InsertStagedDescriptor();
+			m_ReadHandle = g_BindlessTex2DHeap->InsertStagedDescriptor();
 		}
 
 		// UAV
 		if (m_AllowUAV)
 		{
-			D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessSrvUavHeap->GetStagingDestinationDescriptor();
+			//D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessSrvUavHeap->GetStagingDestinationDescriptor();
 
-			// Assume that a texture that has UAV access always has 1 mip
+			//// Assume that a texture that has UAV access always has 1 mip
 
-			D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
-			desc.Format					= ConvertToDXGIFormat(m_Format);
-			desc.ViewDimension			= D3D12_UAV_DIMENSION_TEXTURE2D;
-			desc.Texture2D.MipSlice		= 0;
-			desc.Texture2D.PlaneSlice	= 0;
+			//D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+			//desc.Format					= ConvertToDXGIFormat(m_Format);
+			//desc.ViewDimension			= D3D12_UAV_DIMENSION_TEXTURE2D;
+			//desc.Texture2D.MipSlice		= 0;
+			//desc.Texture2D.PlaneSlice	= 0;
 
-			g_GraphicsDevice->Get()->CreateUnorderedAccessView(m_Resource->GetResource().Get(), nullptr, &desc, staging_handle);
+			//g_GraphicsDevice->Get()->CreateUnorderedAccessView(m_Resource->GetResource().Get(), nullptr, &desc, staging_handle);
 
-			m_WriteHandle = g_BindlessSrvUavHeap->InsertStagedDescriptor();
+			//m_WriteHandle = g_BindlessSrvUavHeap->InsertStagedDescriptor();
 		}
 	}
 }

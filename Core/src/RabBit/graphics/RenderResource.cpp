@@ -5,6 +5,42 @@
 
 namespace RB::Graphics
 {
+	uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format)
+	{
+		switch (format)
+		{
+		case(RenderResourceFormat::R32G32B32A32_TYPELESS):
+		case(RenderResourceFormat::R32G32B32A32_FLOAT):
+			return 16;
+		case(RenderResourceFormat::R32G32_FLOAT):
+			return 8;
+		case(RenderResourceFormat::R11G11B10_FLOAT):
+			return DXGI_FORMAT_R11G11B10_FLOAT;
+		case(RenderResourceFormat::R32_UINT):
+		case(RenderResourceFormat::R8G8B8A8_TYPELESS):
+		case(RenderResourceFormat::R8G8B8A8_SRGB):
+		case(RenderResourceFormat::R8G8B8A8_UNORM):
+		case(RenderResourceFormat::R16G16_FLOAT):
+		case(RenderResourceFormat::R16G16_UINT):
+		case(RenderResourceFormat::R32_FLOAT):
+			return 4;
+		case(RenderResourceFormat::R16_FLOAT):
+		case(RenderResourceFormat::R16_UINT):
+		case(RenderResourceFormat::R16_UNORM):
+		case(RenderResourceFormat::R16_SNORM):
+			return 2;
+		case(RenderResourceFormat::R8_UNORM):
+		case(RenderResourceFormat::R8_UINT):
+			return 1;
+		case(RenderResourceFormat::Unkown):
+			return 0;
+		case(RenderResourceFormat::R16G16B16A16_FLOAT):
+		default:
+			RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
+			return 0;
+		}
+	}
+
 	RenderResourceType RenderResource::GetPrimitiveType() const
 	{
 		uint32_t last_primitive = (uint32_t)RenderResourceType::kLastPrimitiveType;
