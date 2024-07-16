@@ -18,9 +18,10 @@ namespace RB::Graphics
 	{
 		struct ModelEntry
 		{
-			VertexBuffer*  vb;
-			IndexBuffer*   ib;
-			Math::Float4x4 modelMatrix;
+			VertexBuffer*	vb;
+			IndexBuffer*	ib;
+			Texture*		texture;
+			Math::Float4x4	modelMatrix;
 		};
 
 		ModelEntry* entries;
@@ -65,6 +66,7 @@ namespace RB::Graphics
 			GBufferEntry::ModelEntry entry = {};
 			entry.vb			= mesh->GetVertexBuffer();
 			entry.ib			= mesh->GetIndexBuffer();
+			entry.texture		= mesh_renderer->GetMaterial()->GetTexture();
 			entry.modelMatrix	= transform->GetLocalToWorldMatrix();
 
 			entries[total_entries] = entry;
@@ -119,7 +121,7 @@ namespace RB::Graphics
 
 			render_interface->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-			//render_interface->SetShaderResourceInput(texture, 0);
+			render_interface->SetShaderResourceInput(model_entry.texture, 1);
 
 			render_interface->Draw();
 		}

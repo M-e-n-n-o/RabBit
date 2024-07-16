@@ -45,12 +45,32 @@ namespace RB::Entity
 		Graphics::IndexBuffer* m_IndexBuffer;
 	};
 
+	class Material
+	{
+	public:
+
+		Material(const char* file_name);
+
+		~Material()
+		{
+			delete m_Texture;
+		}
+
+		Graphics::Texture2D* GetTexture() const
+		{
+			return m_Texture;
+		}
+
+	private:
+		Graphics::Texture2D* m_Texture;
+	};
+
 	class MeshRenderer : public ObjectComponent
 	{
 	public:
 		DEFINE_COMP_TAG("MeshRenderer");
 
-		MeshRenderer(Mesh* mesh)
+		MeshRenderer(Mesh* mesh, Material* material)
 		{
 			m_Mesh = mesh;
 		}
@@ -60,7 +80,13 @@ namespace RB::Entity
 			return m_Mesh;
 		}
 
+		Material* GetMaterial() const
+		{
+			return m_Material;
+		}
+
 	private:
-		Mesh* m_Mesh;
+		Mesh*		m_Mesh;
+		Material*	m_Material;
 	};
 }

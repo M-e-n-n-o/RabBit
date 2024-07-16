@@ -8,10 +8,11 @@ using namespace RB::Math;
 class App : public RB::Application
 {
 private:
-	Mesh* m_Mesh;
+	Mesh*		m_Mesh;
+	Material*	m_Material;
 
-	Transform* m_Transform;
-	Transform* m_Camera;
+	Transform*	m_Transform;
+	Transform*	m_Camera;
 
 public:
 	App(RB::AppInfo& info): Application(info) {}
@@ -49,9 +50,10 @@ public:
 		//};
 
 		m_Mesh = new Mesh("Triangle", vertex_data, 6, _countof(vertex_data), index_data, _countof(index_data));
+		m_Material = new Material("TheRock.png");
 
 		GameObject* object = GetScene()->CreateGameObject();
-		object->AddComponent<MeshRenderer>(m_Mesh);
+		object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
 		Transform* t = object->AddComponent<Transform>();
 		t->position = Float3(0.0f, 0.0f, 5.0f);
 		t->rotation = Float3(45.0f, 0.0f, 0.0f);
@@ -106,6 +108,7 @@ public:
 	void OnStop() override
 	{
 		delete m_Mesh;
+		delete m_Material;
 	}
 };
 

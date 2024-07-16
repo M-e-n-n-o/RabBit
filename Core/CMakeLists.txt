@@ -39,6 +39,9 @@ target_include_directories(RabBit PUBLIC
 
     # DXC
     "external/DXC/inc"
+
+    # STB
+    "external/stb"
 )
 
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")

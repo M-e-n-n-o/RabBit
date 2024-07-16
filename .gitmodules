@@ -1,3 +1,6 @@
 [submodule "Core/external/GoogleTest"]
 	path = Core/external/GoogleTest
 	url = https://github.com/google/googletest
+[submodule "Core/external/stb"]
+	path = Core/external/stb
+	url = https://github.com/nothings/stb
