@@ -3,7 +3,7 @@
 #include "graphics/RenderInterface.h"
 #include "graphics/RenderResource.h"
 #include "graphics/shaders/shared/Common.h"
-#include "resource/BindlessDescriptorHeap.h"
+#include "resource/DescriptorHeap.h"
 
 #include <d3d12.h>
 

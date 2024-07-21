@@ -6,13 +6,13 @@ namespace RB::Graphics::D3D12
 {
 	using DescriptorHandle = int32_t;
 
-	class BindlessDescriptorHeap
+	class DescriptorHeap
 	{
 	public:
-		BindlessDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors);
+		DescriptorHeap(const wchar_t* name, bool shader_visible, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors);
 
-		// Use this staging descriptor to create descriptors that will be inserted directly after creation into the BindlessDescriptorHeap
-		D3D12_CPU_DESCRIPTOR_HANDLE GetStagingDestinationDescriptor() const { return m_CpuHeapStaged; }
+		// Use this staging descriptor to create descriptors that will be inserted directly after creation into the main heap
+		D3D12_CPU_DESCRIPTOR_HANDLE GetStagingDestinationDescriptor() const;
 		
 		// Call this to copy over the newly created non shader-visible descriptor over to the shader visible heap
 		DescriptorHandle InsertStagedDescriptor(uint32_t offset, uint32_t max_descriptors_type, DescriptorHandle* handle_overwrite = nullptr);
@@ -20,17 +20,18 @@ namespace RB::Graphics::D3D12
 		void InvalidateDescriptor(DescriptorHandle handle);
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuStart(uint32_t offset);
-		GPtr<ID3D12DescriptorHeap> GetHeap() const { return m_GpuHeap; }
+		GPtr<ID3D12DescriptorHeap> GetHeap() const { return m_MainHeap; }
 		D3D12_DESCRIPTOR_HEAP_TYPE GetHeapType() const { return m_Type; }
 
 	private:
 		List<bool>					m_AvailableSlots;
 
-		GPtr<ID3D12DescriptorHeap>	m_GpuHeap;
-		GPtr<ID3D12DescriptorHeap>	m_CpuHeap;
-		D3D12_CPU_DESCRIPTOR_HANDLE	m_CpuHeapStaged;
-		D3D12_GPU_DESCRIPTOR_HANDLE m_GpuStart;
+		GPtr<ID3D12DescriptorHeap>	m_MainHeap;
+		D3D12_GPU_DESCRIPTOR_HANDLE m_MainStart;
+		GPtr<ID3D12DescriptorHeap>	m_StagingHeap;
+		D3D12_CPU_DESCRIPTOR_HANDLE	m_StagingStart;
 		D3D12_DESCRIPTOR_HEAP_TYPE	m_Type;
+		bool						m_ShaderVisible;
 		uint32_t					m_IncrementSize;
 	};
 
@@ -44,5 +45,5 @@ namespace RB::Graphics::D3D12
 
 	#define BINDLESS_DESCRIPTOR_HEAP_SIZE	(BINDLESS_TEX2D_DESCRIPTORS + BINDLESS_RWTEX2D_DESCRIPTORS)
 
-	extern BindlessDescriptorHeap* g_BindlessSrvUavHeap;
+	extern DescriptorHeap* g_BindlessSrvUavHeap;
 }

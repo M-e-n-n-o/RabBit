@@ -2,7 +2,7 @@
 #include "Pipeline.h"
 #include "ShaderSystem.h"
 #include "GraphicsDevice.h"
-#include "resource/BindlessDescriptorHeap.h"
+#include "resource/DescriptorHeap.h"
 #include "graphics/shaders/shared/Common.h"
 
 namespace RB::Graphics::D3D12
