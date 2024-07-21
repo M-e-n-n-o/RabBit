@@ -28,10 +28,14 @@ namespace RB::Entity
 			return;
 		}
 
-		// The data size is probably wrong here
-		static_assert(false);
+		Graphics::RenderResourceFormat format = Graphics::RenderResourceFormat::R8G8B8A8_UNORM;
 
-		m_Texture = Graphics::Texture2D::Create("Cool Texture", img_data, data.size, Graphics::RenderResourceFormat::R8G8B8A8_UNORM, img_width, img_height, false, false, false);
+		uint32_t data_size = Graphics::GetElementSizeFromFormat(format) * img_width * img_height;
+
+		// TODO:
+		// - Make a wrapper around img_image (ImageLoader class?)
+
+		m_Texture = Graphics::Texture2D::Create("Cool Texture", img_data, data_size, Graphics::RenderResourceFormat::R8G8B8A8_UNORM, img_width, img_height, false, false, false);
 
 		stbi_image_free(img_data);
 	}

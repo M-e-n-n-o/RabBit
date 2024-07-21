@@ -19,7 +19,7 @@ namespace RB::Graphics::D3D12
 		
 		void InvalidateDescriptor(DescriptorHandle handle);
 
-		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuStart() const { return m_GpuStart; }
+		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuStart(uint32_t offset);
 		GPtr<ID3D12DescriptorHeap> GetHeap() const { return m_GpuHeap; }
 		D3D12_DESCRIPTOR_HEAP_TYPE GetHeapType() const { return m_Type; }
 

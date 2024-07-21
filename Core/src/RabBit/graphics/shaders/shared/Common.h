@@ -3,6 +3,7 @@
 
 typedef uint32_t			uint;
 
+typedef RB::Math::UInt4		uint4;
 typedef RB::Math::Float2	float2;
 typedef RB::Math::Float3	float3;
 typedef RB::Math::Float4x4	float4x4;
@@ -38,11 +39,13 @@ typedef RB::Math::Float4x4	float4x4;
 // Global constant buffer structs
 // ---------------------------------------------------------------
 
-#define SHADER_TEX2D_SLOTS 5
+#define SHAED_TEX2D_ARRAY_SIZE	2
+#define SHADER_TEX2D_SLOTS		(SHAED_TEX2D_ARRAY_SIZE * 4)
 
 struct TextureIndices
 {
-	uint tex2D[SHADER_TEX2D_SLOTS];
+	// Is in uint4 to avoid padding between elements in the array
+	uint4 tex2D[SHAED_TEX2D_ARRAY_SIZE];
 };
 
 struct FrameConstants
@@ -84,7 +87,9 @@ Texture2D Texture2DTable[] : TEXTURE_SPACE(kTex2DTableSpace);
 //TextureCube TextureCubeTable[] : registre(t0, kTexCubeTableSpace);
 //RWTexture2D RwTexture2DTable[] : register(t0, kRwTex2DTableSpace);
 
-#define FETCH_TEX2D(index) Texture2DTable[g_TextureIndices.tex2D[ index ]]
+static const uint g_TextureIndicesTex2D[SHADER_TEX2D_SLOTS] = (uint[SHADER_TEX2D_SLOTS])(g_TextureIndices.tex2D);
+
+#define FETCH_TEX2D(index) (Texture2DTable[g_TextureIndicesTex2D[(index)]])
 
 
 

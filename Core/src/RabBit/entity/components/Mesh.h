@@ -73,6 +73,7 @@ namespace RB::Entity
 		MeshRenderer(Mesh* mesh, Material* material)
 		{
 			m_Mesh = mesh;
+			m_Material = material;
 		}
 
 		Mesh* GetMesh() const

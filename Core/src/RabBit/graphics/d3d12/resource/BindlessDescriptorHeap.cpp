@@ -95,4 +95,12 @@ namespace RB::Graphics::D3D12
 	{
 		m_AvailableSlots[handle] = true;
 	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE BindlessDescriptorHeap::GetGpuStart(uint32_t offset)
+	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE handle;
+		handle.InitOffsetted(m_GpuStart, offset, m_IncrementSize);
+
+		return handle;
+	}
 }

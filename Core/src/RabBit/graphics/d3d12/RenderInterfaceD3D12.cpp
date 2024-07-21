@@ -700,22 +700,29 @@ namespace RB::Graphics::D3D12
 			// Set the Texture2D's
 			for (int i = 0; i < _countof(indices.tex2D); ++i)
 			{
-				if (m_RenderState.tex2DsrvHandles[i] >= 0)
+				for (int j = 0; j < 4; ++j)
 				{
-					indices.tex2D[i] = (uint32_t) m_RenderState.tex2DsrvHandles[i];
-				}
-				else
-				{
-					// Error texture
-					indices.tex2D[i] = (uint32_t) ((Texture2DD3D12*) g_TexDefaultError)->GetReadHandle();
-				}
+					uint32_t& value = indices.tex2D[i].arr[j];
 
+					uint32_t final_index = i + j;
+
+					if (m_RenderState.tex2DsrvHandles[final_index] >= 0)
+					{
+						value = (uint32_t)m_RenderState.tex2DsrvHandles[final_index];
+					}
+					else
+					{
+						// Error texture
+						value = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetReadHandle();
+					}
+				}
 			}
 
-			SetConstantShaderData(kTex2DTableSpace, &indices, sizeof(TextureIndices));
-
-			m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_BindlessSrvUavHeap->GetGpuStart());
+			SetConstantShaderData(kTexIndicesCB, &indices, sizeof(TextureIndices));
 		}
+		
+		// Set the bindless table
+		m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_BindlessSrvUavHeap->GetGpuStart(BINDLESS_TEX2D_START_OFFSET));
 
 		// Bind the CBV's
 		uint32_t root_index = 0;

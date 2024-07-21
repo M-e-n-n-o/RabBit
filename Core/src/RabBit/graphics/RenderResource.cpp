@@ -13,9 +13,8 @@ namespace RB::Graphics
 		case(RenderResourceFormat::R32G32B32A32_FLOAT):
 			return 16;
 		case(RenderResourceFormat::R32G32_FLOAT):
+		case(RenderResourceFormat::R16G16B16A16_FLOAT):
 			return 8;
-		case(RenderResourceFormat::R11G11B10_FLOAT):
-			return DXGI_FORMAT_R11G11B10_FLOAT;
 		case(RenderResourceFormat::R32_UINT):
 		case(RenderResourceFormat::R8G8B8A8_TYPELESS):
 		case(RenderResourceFormat::R8G8B8A8_SRGB):
@@ -34,7 +33,7 @@ namespace RB::Graphics
 			return 1;
 		case(RenderResourceFormat::Unkown):
 			return 0;
-		case(RenderResourceFormat::R16G16B16A16_FLOAT):
+		case(RenderResourceFormat::R11G11B10_FLOAT):
 		default:
 			RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
 			return 0;

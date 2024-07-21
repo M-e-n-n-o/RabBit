@@ -42,10 +42,29 @@ namespace RB::Math
 	struct Int4
 	{
 	public:
-		union { int32_t x, r; };
-		union { int32_t y, g; };
-		union { int32_t z, b; };
-		union { int32_t w, a; };
+		union
+		{
+			struct
+			{
+				int32_t arr[4];
+			};
+
+			struct
+			{
+				int32_t x;
+				int32_t y;
+				int32_t z;
+				int32_t w;
+			};
+
+			struct
+			{
+				int32_t r;
+				int32_t g;
+				int32_t b;
+				int32_t a;
+			};
+		};
 
 		Int4();
 		Int4(int32_t xyzw);
@@ -74,6 +93,62 @@ namespace RB::Math
 
 		// Returns the angle between the two vectors in radians
 		static int32_t Angle(const Int4& first, const Int4& second);
+	};
+
+	struct UInt4
+	{
+	public:
+		union
+		{
+			struct
+			{
+				uint32_t arr[4];
+			};
+
+			struct
+			{
+				uint32_t x;
+				uint32_t y;
+				uint32_t z;
+				uint32_t w;
+			};
+
+			struct
+			{
+				uint32_t r;
+				uint32_t g;
+				uint32_t b;
+				uint32_t a;
+			};
+		};
+
+		UInt4();
+		UInt4(uint32_t xyzw);
+		UInt4(uint32_t x, uint32_t y, uint32_t z, uint32_t w);
+		~UInt4() = default;
+
+		void Normalize();
+
+		float GetLength() const;
+
+		UInt4 operator+(const UInt4& other)  const;
+		UInt4 operator+(const uint32_t& other) const;
+
+		UInt4 operator-(const UInt4& other)  const;
+		UInt4 operator-(const uint32_t& other) const;
+
+		UInt4 operator*(const UInt4& other)  const;
+		UInt4 operator*(const uint32_t& other) const;
+
+		UInt4 operator/(const UInt4& other)  const;
+		UInt4 operator/(const uint32_t& other) const;
+
+		static UInt4 Cross(const UInt4& first, const UInt4& second);
+
+		static uint32_t Dot(const UInt4& first, const UInt4& second);
+
+		// Returns the angle between the two vectors in radians
+		static uint32_t Angle(const UInt4& first, const UInt4& second);
 	};
 
 	struct Float2
