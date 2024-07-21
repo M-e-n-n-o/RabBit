@@ -54,8 +54,9 @@ namespace RB
 		{
 			std::string s = offset;
 
-			int start = s.find_first_of("{") + 1;
-			int end = s.find_first_of("}");
+			int start = s.find_first_of("\"") + 1;
+			s = s.substr(start);
+			int end = s.find_first_of("\"");
 
 			if (s[end-1] != '/' && s[end-1] != '\\')
 			{
@@ -63,7 +64,7 @@ namespace RB
 				end++;
 			}
 
-			strcpy(asset_path, s.substr(start, (end - start)).c_str());
+			strcpy(asset_path, s.substr(0, end).c_str());
 		}
 		else
 		{

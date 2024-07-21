@@ -8,7 +8,7 @@ namespace RB::Entity
 		: m_Texture(nullptr)
 	{
 		Graphics::LoadedImage img;
-		bool success = Graphics::AssetManager::LoadImage8Bit("Therock.png", &img);
+		bool success = Graphics::AssetManager::LoadImage8Bit(file_name, &img);
 
 		if (success)
 		{

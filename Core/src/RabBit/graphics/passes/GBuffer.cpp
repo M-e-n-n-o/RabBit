@@ -50,8 +50,9 @@ namespace RB::Graphics
 		{
 			const Entity::MeshRenderer* mesh_renderer = (const Entity::MeshRenderer*)mesh_renderers[i];
 			const Entity::Mesh* mesh = mesh_renderer->GetMesh();
+			const Entity::Material* mat = mesh_renderer->GetMaterial();
 
-			if (mesh->GetVertexBuffer()->IsStreaming())
+			if (mesh->GetVertexBuffer()->IsStreaming() || mat->GetTexture()->IsStreaming())
 			{
 				continue;
 			}
@@ -66,7 +67,7 @@ namespace RB::Graphics
 			GBufferEntry::ModelEntry entry = {};
 			entry.vb			= mesh->GetVertexBuffer();
 			entry.ib			= mesh->GetIndexBuffer();
-			entry.texture		= mesh_renderer->GetMaterial()->GetTexture();
+			entry.texture		= mat->GetTexture();
 			entry.modelMatrix	= transform->GetLocalToWorldMatrix();
 
 			entries[total_entries] = entry;

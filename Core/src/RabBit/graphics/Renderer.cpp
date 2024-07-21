@@ -200,11 +200,13 @@ namespace RB::Graphics
 		{
 			Shared<GpuGuard> guard = m_ResourceStreamer->Stream(m_CopyInterface);
 
-			if (guard != nullptr)
-			{
-				// Place a GPU barrier on the graphics queue to wait on the streaming
-				m_GraphicsInterface->GpuWaitOn(guard.get());
-			}
+			// No need to place a GPU barrier as we do not use resources 
+			// on the graphics interface that are being streamed.
+			//if (guard != nullptr)
+			//{
+			//	// Place a GPU barrier on the graphics queue to wait on the streaming
+			//	m_GraphicsInterface->GpuWaitOn(guard.get());
+			//}
 		}
 
 		if (m_MultiThreadingSupport)
