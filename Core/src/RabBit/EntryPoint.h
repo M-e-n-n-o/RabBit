@@ -29,11 +29,13 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     auto* app = RB::CreateApplication(args);
 
-    app->Start(args);
+    bool success = app->Start(args);
 
-    app->Run();
-
-    app->Shutdown();
+    if (success)
+    {
+        app->Run();
+        app->Shutdown();
+    }
 
     delete app;
     delete RB::Input::Events::g_EventManager;

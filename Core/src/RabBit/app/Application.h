@@ -40,7 +40,7 @@ namespace RB
 		Application(AppInfo& info);
 		virtual ~Application();
 
-		void Start(const char* launch_args);
+		bool Start(const char* launch_args);
 		void Run();
 		void Shutdown();
 

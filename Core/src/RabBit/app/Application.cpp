@@ -5,6 +5,7 @@
 #include "graphics/RenderInterface.h"
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
+#include "graphics/AssetManager.h"
 
 #include "entity/Scene.h"
 
@@ -42,14 +43,40 @@ namespace RB
 
 	}
 
-	void Application::Start(const char* launch_args)
+	bool Application::Start(const char* launch_args)
 	{
 		RB_LOG(LOGTAG_MAIN, "");
 		RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
 		RB_LOG(LOGTAG_MAIN, "");
 
+		char asset_path[256];
+		if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
+		{
+			std::string s = offset;
+
+			int start = s.find_first_of("{") + 1;
+			int end = s.find_first_of("}");
+
+			if (s[end-1] != '/' && s[end-1] != '\\')
+			{
+				s.insert(s.begin() + end, '/');
+				end++;
+			}
+
+			strcpy(asset_path, s.substr(start, (end - start)).c_str());
+		}
+		else
+		{
+			RB_ASSERT_ALWAYS_RELEASE(LOGTAG_MAIN, "Did not fill in the asset path! Use the \"-assetPath {path|\" launch argument to specify the path");
+			return false;
+		}
+
+		RB_LOG(LOGTAG_MAIN, "Asset path: \"%s\"", asset_path);
+
+		AssetManager::Init(asset_path);
+
 		Renderer::SetAPI(RenderAPI::D3D12);
-		m_Renderer = Renderer::Create(true); //std::strstr(launch_args, "-renderDebug"));
+		m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
 		m_Renderer->Init();
 
 		m_Displays = Display::CreateDisplays();
@@ -81,6 +108,8 @@ namespace RB
 		RB_LOG(LOGTAG_MAIN, "");
 		RB_LOG(LOGTAG_MAIN, "======== STARTING MAIN LOOP =========");
 		RB_LOG(LOGTAG_MAIN, "");
+
+		return true;
 	}
 
 	void Application::Run()
