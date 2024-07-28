@@ -3,7 +3,7 @@
 #include "GraphicsDevice.h"
 #include "resource/ResourceManager.h"
 #include "resource/ResourceStateManager.h"
-#include "resource/DescriptorHeap.h"
+#include "resource/DescriptorManager.h"
 #include "ShaderSystem.h"
 #include "Pipeline.h"
 
@@ -13,7 +13,7 @@ namespace RB::Graphics::D3D12
 		: Renderer(true)
 	{
 		g_GraphicsDevice		= new GraphicsDevice(enable_debug_layer);
-		g_BindlessSrvUavHeap	= new DescriptorHeap(L"Bindless SRV/UAV heap", true, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, BINDLESS_DESCRIPTOR_HEAP_SIZE);
+		g_DescriptorManager		= new DescriptorManager();
 		g_ResourceManager		= new ResourceManager();
 		g_ResourceStateManager	= new ResourceStateManager();
 		g_ShaderSystem			= new ShaderSystem();
@@ -26,7 +26,7 @@ namespace RB::Graphics::D3D12
 		delete g_ShaderSystem;
 		delete g_ResourceStateManager;
 		delete g_ResourceManager;
-		delete g_BindlessSrvUavHeap;
+		delete g_DescriptorManager;
 		delete g_GraphicsDevice;
 	}
 

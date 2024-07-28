@@ -17,7 +17,7 @@ namespace RB::Graphics::D3D12
 		// Call this to copy over the newly created non shader-visible descriptor over to the shader visible heap
 		DescriptorHandle InsertStagedDescriptor(uint32_t offset, uint32_t max_descriptors_type, DescriptorHandle* handle_overwrite = nullptr);
 		
-		void InvalidateDescriptor(DescriptorHandle handle);
+		void InvalidateDescriptor(DescriptorHandle& handle);
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuStart(uint32_t offset);
 		GPtr<ID3D12DescriptorHeap> GetHeap() const { return m_MainHeap; }
@@ -34,16 +34,4 @@ namespace RB::Graphics::D3D12
 		bool						m_ShaderVisible;
 		uint32_t					m_IncrementSize;
 	};
-
-	// Tex2D descriptors
-	#define BINDLESS_TEX2D_DESCRIPTORS		100
-	#define BINDLESS_TEX2D_START_OFFSET		0
-
-	// RwTex2D descriptors
-	#define BINDLESS_RWTEX2D_DESCRIPTORS	50
-	#define BINDLESS_RWTEX2D_START_OFFSET	(BINDLESS_TEX2D_START_OFFSET + BINDLESS_TEX2D_DESCRIPTORS)
-
-	#define BINDLESS_DESCRIPTOR_HEAP_SIZE	(BINDLESS_TEX2D_DESCRIPTORS + BINDLESS_RWTEX2D_DESCRIPTORS)
-
-	extern DescriptorHeap* g_BindlessSrvUavHeap;
 }

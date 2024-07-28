@@ -97,6 +97,8 @@ namespace RB::Graphics::D3D12
 		, m_IsRenderTarget(is_render_target)
 		, m_IsDepthStencil(is_depth_stencil)
 		, m_AllowUAV(random_write_access)
+		, m_ReadHandle(-1)
+		, m_WriteHandle(-1)
 	{
 		m_Resource = new GpuResource(std::bind(&Texture2DD3D12::CreateViews, this, std::placeholders::_1));
 
@@ -142,6 +144,9 @@ namespace RB::Graphics::D3D12
 	
 	Texture2DD3D12::~Texture2DD3D12()
 	{
+		g_DescriptorManager->InvalidateDescriptor(m_ReadHandle);
+		g_DescriptorManager->InvalidateDescriptor(m_WriteHandle);
+
 		SAFE_DELETE(m_Resource);
 	}
 	
@@ -149,8 +154,6 @@ namespace RB::Graphics::D3D12
 	{
 		// SRV
 		{
-			D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessSrvUavHeap->GetStagingDestinationDescriptor();
-
 			// TODO Add mip support
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
@@ -162,16 +165,12 @@ namespace RB::Graphics::D3D12
 			desc.Texture2D.PlaneSlice			= 0;
 			desc.Texture2D.ResourceMinLODClamp	= 0.0f;
 
-			g_GraphicsDevice->Get()->CreateShaderResourceView(m_Resource->GetResource().Get(), &desc, staging_handle);
-
-			m_ReadHandle = g_BindlessSrvUavHeap->InsertStagedDescriptor(BINDLESS_TEX2D_START_OFFSET, BINDLESS_TEX2D_DESCRIPTORS);
+			m_ReadHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
 		}
 
 		// UAV
 		if (m_AllowUAV)
 		{
-			//D3D12_CPU_DESCRIPTOR_HANDLE staging_handle = g_BindlessSrvUavHeap->GetStagingDestinationDescriptor();
-
 			//// Assume that a texture that has UAV access always has 1 mip
 
 			//D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
@@ -180,9 +179,7 @@ namespace RB::Graphics::D3D12
 			//desc.Texture2D.MipSlice		= 0;
 			//desc.Texture2D.PlaneSlice	= 0;
 
-			//g_GraphicsDevice->Get()->CreateUnorderedAccessView(m_Resource->GetResource().Get(), nullptr, &desc, staging_handle);
-
-			//m_WriteHandle = g_BindlessSrvUavHeap->InsertStagedDescriptor();
+			//m_WriteHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
 		}
 	}
 }

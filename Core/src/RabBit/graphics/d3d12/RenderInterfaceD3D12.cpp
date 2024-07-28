@@ -5,6 +5,7 @@
 #include "resource/RenderResourceD3D12.h"
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
+#include "resource/DescriptorManager.h"
 #include "Pipeline.h"
 #include "ShaderSystem.h"
 #include "UtilsD3D12.h"
@@ -638,12 +639,9 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::BindDescriptorHeaps()
 	{
-		ID3D12DescriptorHeap* descriptorHeaps[] = 
-		{
-			g_BindlessSrvUavHeap->GetHeap().Get() // Bindless heap
-		};
-
-		m_CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		uint32_t num_heaps;
+		auto heaps = g_DescriptorManager->GetHeaps(num_heaps);
+		m_CommandList->SetDescriptorHeaps(num_heaps, heaps.data());
 	}
 
 	void RenderInterfaceD3D12::InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type)
@@ -722,7 +720,7 @@ namespace RB::Graphics::D3D12
 		}
 		
 		// Set the bindless table
-		m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_BindlessSrvUavHeap->GetGpuStart(BINDLESS_TEX2D_START_OFFSET));
+		m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_DescriptorManager->GetTex2DStart());
 
 		// Bind the CBV's
 		uint32_t root_index = 0;

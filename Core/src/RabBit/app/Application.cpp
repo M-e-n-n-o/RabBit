@@ -68,7 +68,7 @@ namespace RB
 		}
 		else
 		{
-			RB_ASSERT_ALWAYS_RELEASE(LOGTAG_MAIN, "Did not fill in the asset path! Use the \"-assetPath {path|\" launch argument to specify the path");
+			RB_ASSERT_ALWAYS_RELEASE(LOGTAG_MAIN, "Did not fill in the asset path! Use the \"-assetPath \"path\" launch argument to specify the path");
 			return false;
 		}
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "DescriptorHeap.h"
+#include "DescriptorManager.h"
 #include "graphics/RenderResource.h"
 
 // DirectX 12 specific headers.

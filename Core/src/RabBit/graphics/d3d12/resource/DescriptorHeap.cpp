@@ -4,8 +4,6 @@
 
 namespace RB::Graphics::D3D12
 {
-	DescriptorHeap* g_BindlessSrvUavHeap = nullptr;
-
 	DescriptorHeap::DescriptorHeap(const wchar_t* name, bool shader_visible, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t max_descriptors)
 		: m_Type(type)
 		, m_ShaderVisible(shader_visible)
@@ -109,8 +107,15 @@ namespace RB::Graphics::D3D12
 		return slot;
 	}
 
-	void DescriptorHeap::InvalidateDescriptor(DescriptorHandle handle)
+	void DescriptorHeap::InvalidateDescriptor(DescriptorHandle& handle)
 	{
+		if (handle == -1)
+		{
+			// Invalid handle
+			return;
+		}
+
+		handle = -1;
 		m_AvailableSlots[handle] = true;
 	}
 

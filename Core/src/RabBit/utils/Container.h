@@ -7,6 +7,9 @@ namespace RB
 	template<class T>
 	using List = std::vector<T>;
 
+	template<class T, size_t Size>
+	using Array = std::array<T, Size>;
+
 	template<class T1, class T2>
 	using Map = std::map<T1, T2>;
 
