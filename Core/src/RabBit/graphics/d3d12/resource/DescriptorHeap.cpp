@@ -32,7 +32,10 @@ namespace RB::Graphics::D3D12
 
 			m_MainHeap->SetName(name);
 
-			m_MainStart = m_MainHeap->GetGPUDescriptorHandleForHeapStart();
+			if (m_ShaderVisible)
+			{
+				m_MainStart = m_MainHeap->GetGPUDescriptorHandleForHeapStart();
+			}
 		}
 
 		// Staging descriptor heap (non shader-visible)
@@ -71,7 +74,72 @@ namespace RB::Graphics::D3D12
 		return m_StagingStart;
 	}
 
+	D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetDestinationDescriptor(DescriptorHandle& out_handle, uint32_t offset, uint32_t max_descriptors_type, DescriptorHandle* handle_overwrite)
+	{
+		if (m_ShaderVisible)
+		{
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Cannot directly retrieve a destination descriptor for a shader visible descriptor heap");
+			return {};
+		}
+
+		uint32_t slot = FindEmptyDescriptorSlot(offset, max_descriptors_type, handle_overwrite);
+
+		out_handle = slot;
+		m_AvailableSlots[slot] = false;
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_handle;
+		cpu_handle.InitOffsetted(m_MainHeap->GetCPUDescriptorHandleForHeapStart(), slot, m_IncrementSize);
+
+		return cpu_handle;
+	}
+
 	DescriptorHandle DescriptorHeap::InsertStagedDescriptor(uint32_t offset, uint32_t max_descriptors_type, DescriptorHandle* handle_overwrite)
+	{
+		if (!m_ShaderVisible)
+		{
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Cannot insert the staged descriptor on a non shader visible descriptor heap");
+			return -1;
+		}
+
+		uint32_t slot = FindEmptyDescriptorSlot(offset, max_descriptors_type, handle_overwrite);
+
+		m_AvailableSlots[slot] = false;
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_handle;
+		cpu_handle.InitOffsetted(m_MainHeap->GetCPUDescriptorHandleForHeapStart(), slot, m_IncrementSize);
+
+		g_GraphicsDevice->Get()->CopyDescriptorsSimple(1, cpu_handle, m_StagingStart, m_Type);
+
+		return slot;
+	}
+
+	void DescriptorHeap::InvalidateDescriptor(DescriptorHandle& handle)
+	{
+		if (handle < 0)
+		{
+			// Invalid handle
+			return;
+		}
+
+		m_AvailableSlots[handle] = true;
+		handle = -1;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::GetGpuStart(uint32_t offset)
+	{
+		if (!m_ShaderVisible)
+		{
+			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Cannot retrieve the GPU start from a non shader visible descriptor heap");
+			return {};
+		}
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE handle;
+		handle.InitOffsetted(m_MainStart, offset, m_IncrementSize);
+
+		return handle;
+	}
+
+	uint32_t DescriptorHeap::FindEmptyDescriptorSlot(uint32_t offset, uint32_t max_descriptors_type, DescriptorHandle* handle_overwrite)
 	{
 		uint32_t slot;
 
@@ -87,9 +155,9 @@ namespace RB::Graphics::D3D12
 			// TODO This is slow, improve this!
 			while (!m_AvailableSlots[slot])
 			{
-				slot = (slot + 1) % max_descriptors_type;
+				slot++;
 
-				if (slot == offset)
+				if (slot >= (offset + max_descriptors_type))
 				{
 					RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not find a free slot in the descriptor heap, increase the heap size!");
 					return -1;
@@ -97,33 +165,6 @@ namespace RB::Graphics::D3D12
 			}
 		}
 
-		m_AvailableSlots[slot] = false;
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_handle;
-		cpu_handle.InitOffsetted(m_MainHeap->GetCPUDescriptorHandleForHeapStart(), slot, m_IncrementSize);
-
-		g_GraphicsDevice->Get()->CopyDescriptorsSimple(1, cpu_handle, m_StagingStart, m_Type);
-
 		return slot;
-	}
-
-	void DescriptorHeap::InvalidateDescriptor(DescriptorHandle& handle)
-	{
-		if (handle == -1)
-		{
-			// Invalid handle
-			return;
-		}
-
-		handle = -1;
-		m_AvailableSlots[handle] = true;
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::GetGpuStart(uint32_t offset)
-	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE handle;
-		handle.InitOffsetted(m_MainStart, offset, m_IncrementSize);
-
-		return handle;
 	}
 }

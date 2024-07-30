@@ -7,14 +7,27 @@
 namespace RB::Graphics::D3D12
 {
 	// Tex2D descriptors
-	#define BINDLESS_TEX2D_DESCRIPTORS		100
-	#define BINDLESS_TEX2D_START_OFFSET		0
+	#define BINDLESS_TEX2D_DESCRIPTORS			100
+	#define BINDLESS_TEX2D_START_OFFSET			0
 	
 	// RwTex2D descriptors
-	#define BINDLESS_RWTEX2D_DESCRIPTORS	50
-	#define BINDLESS_RWTEX2D_START_OFFSET	(BINDLESS_TEX2D_START_OFFSET + BINDLESS_TEX2D_DESCRIPTORS)
+	#define BINDLESS_RWTEX2D_DESCRIPTORS		50
+	#define BINDLESS_RWTEX2D_START_OFFSET		(BINDLESS_TEX2D_START_OFFSET + BINDLESS_TEX2D_DESCRIPTORS)
 	
-	#define BINDLESS_DESCRIPTOR_HEAP_SIZE	(BINDLESS_TEX2D_DESCRIPTORS + BINDLESS_RWTEX2D_DESCRIPTORS)
+	#define BINDLESS_DESCRIPTOR_HEAP_SIZE		(BINDLESS_TEX2D_DESCRIPTORS + BINDLESS_RWTEX2D_DESCRIPTORS)
+
+	#define RENDERTARGET_DESCRIPTOR_HEAP_SIZE	100
+	#define DEPTHSTENCIL_DESCRIPTOR_HEAP_SIZE	100
+
+	enum class DescriptorHandleType
+	{
+		SRV,
+		UAV,
+		CBV,
+		RTV,
+		DSV,
+		Sampler
+	};
 
 	class DescriptorManager
 	{
@@ -24,8 +37,10 @@ namespace RB::Graphics::D3D12
 
 		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_SHADER_RESOURCE_VIEW_DESC& desc);
 		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc);
+		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_RENDER_TARGET_VIEW_DESC& desc);
+		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc);
 
-		void InvalidateDescriptor(DescriptorHandle& handle);
+		void InvalidateDescriptor(DescriptorHandle& handle, const DescriptorHandleType& type);
 
 		Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> GetHeaps(uint32_t& num_heaps);
 		
@@ -33,6 +48,8 @@ namespace RB::Graphics::D3D12
 
 	private:
 		DescriptorHeap* m_BindlessSrvUavHeap;
+		DescriptorHeap* m_RenderTargetHeap;
+		DescriptorHeap* m_DepthStencilHeap;
 	};
 
 	extern DescriptorManager* g_DescriptorManager;

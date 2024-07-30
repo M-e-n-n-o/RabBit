@@ -138,14 +138,23 @@ namespace RB::Graphics::D3D12
 		, m_IsRenderTarget(is_render_target)
 		, m_IsDepthStencil(is_depth_stencil)
 		, m_AllowUAV(random_write_access)
+		, m_ReadHandle(-1)
+		, m_WriteHandle(-1)
 	{
 
 	}
 	
 	Texture2DD3D12::~Texture2DD3D12()
 	{
-		g_DescriptorManager->InvalidateDescriptor(m_ReadHandle);
-		g_DescriptorManager->InvalidateDescriptor(m_WriteHandle);
+		if (m_ReadHandle)
+		{
+			g_DescriptorManager->InvalidateDescriptor(m_ReadHandle, DescriptorHandleType::SRV);
+		}
+
+		if (m_WriteHandle)
+		{
+			g_DescriptorManager->InvalidateDescriptor(m_WriteHandle, DescriptorHandleType::UAV);
+		}
 
 		SAFE_DELETE(m_Resource);
 	}
