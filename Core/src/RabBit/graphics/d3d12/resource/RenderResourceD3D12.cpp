@@ -99,6 +99,10 @@ namespace RB::Graphics::D3D12
 		, m_AllowUAV(random_write_access)
 		, m_ReadHandle(-1)
 		, m_WriteHandle(-1)
+		, m_RenderTargetHandle(-1)
+		, m_DepthStencilHandle(-1)
+		, m_RenderTargetDescriptor({})
+		, m_DepthStencilDescriptor({})
 	{
 		m_Resource = new GpuResource(std::bind(&Texture2DD3D12::CreateViews, this, std::placeholders::_1));
 
@@ -140,25 +144,34 @@ namespace RB::Graphics::D3D12
 		, m_AllowUAV(random_write_access)
 		, m_ReadHandle(-1)
 		, m_WriteHandle(-1)
+		, m_RenderTargetHandle(-1)
+		, m_DepthStencilHandle(-1)
+		, m_RenderTargetDescriptor({})
+		, m_DepthStencilDescriptor({})
 	{
 
 	}
 	
 	Texture2DD3D12::~Texture2DD3D12()
 	{
-		if (m_ReadHandle)
-		{
-			g_DescriptorManager->InvalidateDescriptor(m_ReadHandle, DescriptorHandleType::SRV);
-		}
-
-		if (m_WriteHandle)
-		{
-			g_DescriptorManager->InvalidateDescriptor(m_WriteHandle, DescriptorHandleType::UAV);
-		}
+		g_DescriptorManager->InvalidateDescriptor(m_ReadHandle,			DescriptorHandleType::SRV);
+		g_DescriptorManager->InvalidateDescriptor(m_WriteHandle,		DescriptorHandleType::UAV);
+		g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle, DescriptorHandleType::RTV);
+		g_DescriptorManager->InvalidateDescriptor(m_DepthStencilHandle, DescriptorHandleType::DSV);
 
 		SAFE_DELETE(m_Resource);
 	}
 	
+	void Texture2DD3D12::SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle)
+	{
+		if (m_RenderTargetHandle >= 0)
+		{
+			g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle, DescriptorHandleType::RTV);
+		}
+
+		m_RenderTargetDescriptor = handle;
+	}
+
 	void Texture2DD3D12::CreateViews(GpuResource* /*resource*/)
 	{
 		// SRV
@@ -180,15 +193,41 @@ namespace RB::Graphics::D3D12
 		// UAV
 		if (m_AllowUAV)
 		{
-			//// Assume that a texture that has UAV access always has 1 mip
+			// TODO Add mip support
 
-			//D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
-			//desc.Format					= ConvertToDXGIFormat(m_Format);
-			//desc.ViewDimension			= D3D12_UAV_DIMENSION_TEXTURE2D;
-			//desc.Texture2D.MipSlice		= 0;
-			//desc.Texture2D.PlaneSlice	= 0;
+			D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+			desc.Format					= ConvertToDXGIFormat(m_Format);
+			desc.ViewDimension			= D3D12_UAV_DIMENSION_TEXTURE2D;
+			desc.Texture2D.MipSlice		= 0;
+			desc.Texture2D.PlaneSlice	= 0;
 
-			//m_WriteHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+			m_WriteHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+		}
+
+		if (m_IsRenderTarget)
+		{
+			// TODO Add mip support
+
+			D3D12_RENDER_TARGET_VIEW_DESC desc = {};
+			desc.Format					= ConvertToDXGIFormat(m_Format);
+			desc.ViewDimension			= D3D12_RTV_DIMENSION_TEXTURE2D;
+			desc.Texture2D.MipSlice		= 0;
+			desc.Texture2D.PlaneSlice	= 0;
+
+			m_RenderTargetHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc, m_RenderTargetDescriptor);
+		}
+
+		if (m_IsDepthStencil)
+		{
+			// TODO Add mip support
+
+			D3D12_DEPTH_STENCIL_VIEW_DESC desc = {};
+			desc.Format					= ConvertToDXGIFormat(m_Format);
+			desc.ViewDimension			= D3D12_DSV_DIMENSION_TEXTURE2D;
+			desc.Flags					= D3D12_DSV_FLAG_NONE;
+			desc.Texture2D.MipSlice		= 0;		
+
+			m_DepthStencilHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc, m_DepthStencilDescriptor);
 		}
 	}
 }

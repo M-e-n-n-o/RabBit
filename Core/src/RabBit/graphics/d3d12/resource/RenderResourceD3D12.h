@@ -82,10 +82,9 @@ namespace RB::Graphics::D3D12
 		DescriptorHandle GetReadHandle() const { return m_ReadHandle; }
 		DescriptorHandle GetWriteHandle() const { return m_WriteHandle; }
 
-		void SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) { m_RenderTargetHandle = handle; }
-		D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetHandle() const { return m_RenderTargetHandle; }
-
-		D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilTargetHandle() const { return { 0 }; }
+		void SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle);
+		D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetHandle() const { return m_RenderTargetDescriptor; }
+		D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilTargetHandle() const { return m_DepthStencilDescriptor; }
 
 	private:
 		void CreateViews(GpuResource* resource);
@@ -102,6 +101,9 @@ namespace RB::Graphics::D3D12
 
 		DescriptorHandle				m_ReadHandle;
 		DescriptorHandle				m_WriteHandle;
-		D3D12_CPU_DESCRIPTOR_HANDLE		m_RenderTargetHandle;
+		DescriptorHandle				m_RenderTargetHandle;
+		D3D12_CPU_DESCRIPTOR_HANDLE		m_RenderTargetDescriptor;
+		DescriptorHandle				m_DepthStencilHandle;
+		D3D12_CPU_DESCRIPTOR_HANDLE		m_DepthStencilDescriptor;
 	};
 }

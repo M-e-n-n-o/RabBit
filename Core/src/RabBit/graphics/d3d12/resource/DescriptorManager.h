@@ -37,8 +37,8 @@ namespace RB::Graphics::D3D12
 
 		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_SHADER_RESOURCE_VIEW_DESC& desc);
 		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc);
-		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_RENDER_TARGET_VIEW_DESC& desc);
-		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc);
+		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_RENDER_TARGET_VIEW_DESC& desc, D3D12_CPU_DESCRIPTOR_HANDLE& descriptor);
+		DescriptorHandle CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc, D3D12_CPU_DESCRIPTOR_HANDLE& descriptor);
 
 		void InvalidateDescriptor(DescriptorHandle& handle, const DescriptorHandleType& type);
 

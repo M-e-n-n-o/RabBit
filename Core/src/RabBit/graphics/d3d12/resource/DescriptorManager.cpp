@@ -38,22 +38,22 @@ namespace RB::Graphics::D3D12
 		return m_BindlessSrvUavHeap->InsertStagedDescriptor(BINDLESS_RWTEX2D_START_OFFSET, BINDLESS_RWTEX2D_DESCRIPTORS);
 	}
 
-	DescriptorHandle DescriptorManager::CreateDescriptor(ID3D12Resource* res, const D3D12_RENDER_TARGET_VIEW_DESC& desc)
+	DescriptorHandle DescriptorManager::CreateDescriptor(ID3D12Resource* res, const D3D12_RENDER_TARGET_VIEW_DESC& desc, D3D12_CPU_DESCRIPTOR_HANDLE& descriptor)
 	{
 		DescriptorHandle handle;
-		D3D12_CPU_DESCRIPTOR_HANDLE dest_handle = m_RenderTargetHeap->GetDestinationDescriptor(handle, 0, RENDERTARGET_DESCRIPTOR_HEAP_SIZE);
+		descriptor = m_RenderTargetHeap->GetDestinationDescriptor(handle, 0, RENDERTARGET_DESCRIPTOR_HEAP_SIZE);
 
-		g_GraphicsDevice->Get()->CreateRenderTargetView(res, &desc, dest_handle);
+		g_GraphicsDevice->Get()->CreateRenderTargetView(res, &desc, descriptor);
 
 		return handle;
 	}
 
-	DescriptorHandle DescriptorManager::CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc)
+	DescriptorHandle DescriptorManager::CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc, D3D12_CPU_DESCRIPTOR_HANDLE& descriptor)
 	{
 		DescriptorHandle handle;
-		D3D12_CPU_DESCRIPTOR_HANDLE dest_handle = m_DepthStencilHeap->GetDestinationDescriptor(handle, 0, DEPTHSTENCIL_DESCRIPTOR_HEAP_SIZE);
+		descriptor = m_DepthStencilHeap->GetDestinationDescriptor(handle, 0, DEPTHSTENCIL_DESCRIPTOR_HEAP_SIZE);
 
-		g_GraphicsDevice->Get()->CreateDepthStencilView(res, &desc, dest_handle);
+		g_GraphicsDevice->Get()->CreateDepthStencilView(res, &desc, descriptor);
 
 		return handle;
 	}
