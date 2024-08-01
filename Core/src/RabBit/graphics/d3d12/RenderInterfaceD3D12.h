@@ -34,7 +34,7 @@ namespace RB::Graphics::D3D12
 		RenderInterfaceD3D12(bool allow_only_copy_operations);
 		~RenderInterfaceD3D12();
 
-		void InvalidateState() override;
+		void InvalidateState(bool rebind_descriptor_heap) override;
 
 		// This method executes the command list and sets a new internal valid command list
 		// Returns the execute ID (on which can be waited)
@@ -45,6 +45,7 @@ namespace RB::Graphics::D3D12
 		void FlushResourceBarriers() override;
 
 		void SetRenderTarget(RenderTargetBundle* bundle) override;
+		void SetRenderTarget(RenderResource* color_target) override;
 
 		void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override;
 		void ClearShaderResourceInput(uint32_t slot) override;

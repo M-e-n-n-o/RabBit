@@ -22,6 +22,7 @@ namespace RB::Graphics
 	class GpuGuard;
 	class ViewContext;
 	class ResourceStreamer;
+	class VertexBuffer;
 
 	class Renderer : public Input::Events::EventListener
 	{
@@ -68,6 +69,7 @@ namespace RB::Graphics
 		WorkerThread*			m_RenderThread;
 		JobTypeID				m_RenderJobType;
 		JobTypeID				m_EventJobType;
+		CRITICAL_SECTION		m_RenderThreadJobSubmitCS;
 
 		RenderInterface*		m_GraphicsInterface; // Used by the render passes
 		RenderInterface*		m_CopyInterface;	 // Used for resource streaming 
@@ -76,6 +78,8 @@ namespace RB::Graphics
 
 		uint64_t				m_RenderFrameIndex;
 		CRITICAL_SECTION		m_RenderFrameIndexCS;
+
+		VertexBuffer*			m_BackBufferCopyVB;
 
 		bool					m_MultiThreadingSupport;
 

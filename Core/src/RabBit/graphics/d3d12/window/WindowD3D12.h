@@ -55,6 +55,7 @@ namespace RB::Graphics::D3D12
 		RenderResourceFormat GetBackBufferFormat() override;
 		uint32_t GetCurrentBackBufferIndex() override;
 		Graphics::Texture2D* GetCurrentBackBuffer() override;
+		Graphics::Texture2D* GetVirtualBackBuffer() override;
 
 		HWND GetHandle() const { return m_WindowHandle; }
 
@@ -73,5 +74,6 @@ namespace RB::Graphics::D3D12
 		bool		m_IsTearingSupported;
 
 		Graphics::Texture2D* m_BackBuffers[BACK_BUFFER_COUNT];
+		Graphics::Texture2D* m_VirtualBackBuffer;
 	};
 }

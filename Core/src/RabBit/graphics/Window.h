@@ -56,6 +56,7 @@ namespace RB::Graphics
 		virtual RenderResourceFormat	GetBackBufferFormat() = 0;
 		virtual uint32_t				GetCurrentBackBufferIndex() = 0;
 		virtual Graphics::Texture2D*	GetCurrentBackBuffer() = 0;
+		virtual Graphics::Texture2D*	GetVirtualBackBuffer() = 0;
 
 				void			ProcessEvent(Input::Events::WindowEvent& event);
 

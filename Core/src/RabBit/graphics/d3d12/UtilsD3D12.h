@@ -12,7 +12,8 @@ namespace RB::Graphics::D3D12
 	{
 		switch (type)
 		{
-		case TopologyType::TriangleList: return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		case TopologyType::TriangleList:    return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        case TopologyType::TriangleStrip:   return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 
 		default:
 			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");

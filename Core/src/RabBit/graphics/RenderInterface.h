@@ -48,8 +48,7 @@ namespace RB::Graphics
 	public:
 		virtual ~RenderInterface() = default;
 
-		// Call after leaving from a third-party library that issues render commands
-		virtual void InvalidateState() = 0;
+		virtual void InvalidateState(bool executed_external_code) = 0;
 
 		Shared<GpuGuard> ExecuteOnGpu();
 
@@ -67,6 +66,7 @@ namespace RB::Graphics
 		virtual void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot = 0) = 0;
 
 		virtual void SetRenderTarget(RenderTargetBundle* bundle) = 0;
+		virtual void SetRenderTarget(RenderResource* color_target) = 0;
 
 		virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
 

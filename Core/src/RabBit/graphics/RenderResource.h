@@ -103,7 +103,8 @@ namespace RB::Graphics
 
 	enum class TopologyType
 	{
-		TriangleList
+		TriangleList,
+		TriangleStrip
 	};
 
 	class VertexBuffer : public Buffer
@@ -116,7 +117,6 @@ namespace RB::Graphics
 		virtual uint32_t GetVertexElementCount() const = 0;
 		virtual TopologyType GetTopologyType() const = 0;
 
-		// Make sure to keep the data alive until the resource has been uploaded to the GPU!
 		static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
 
 	protected:
@@ -132,7 +132,6 @@ namespace RB::Graphics
 
 		virtual uint64_t GetIndexCount() const = 0;
 
-		// Make sure to keep the data alive until the resource has been uploaded to the GPU!
 		static IndexBuffer* Create(const char* name, uint16_t* data, uint64_t data_size);
 
 	protected:
@@ -162,6 +161,7 @@ namespace RB::Graphics
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 
+		static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
 		static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
 		static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
 

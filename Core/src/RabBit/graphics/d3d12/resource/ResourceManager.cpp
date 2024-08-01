@@ -127,6 +127,8 @@ namespace RB::Graphics::D3D12
 
 	bool ResourceManager::WaitUntilResourceValid(GpuResource* resource)
 	{
+		EnterCriticalSection(&m_CS);
+
 		// Find the scheduled creation
 		auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool {
 			return resource == scheduled.resource;
@@ -134,6 +136,7 @@ namespace RB::Graphics::D3D12
 
 		if (itr == m_ScheduledCreations.end())
 		{
+			LeaveCriticalSection(&m_CS);
 			return false;
 		}
 
@@ -144,6 +147,8 @@ namespace RB::Graphics::D3D12
 		m_CreationThread->Sync(itr->jobID);
 
 		m_ScheduledCreations.erase(itr);
+
+		LeaveCriticalSection(&m_CS);
 
 		return true;
 	}
@@ -160,8 +165,12 @@ namespace RB::Graphics::D3D12
 		desc->name		= wname;
 		desc->buffer	= buffer_desc;
 
+		EnterCriticalSection(&m_CS);
+
 		JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
 		m_ScheduledCreations.push_back({ resource, id });
+
+		LeaveCriticalSection(&m_CS);
 	}
 
 	void ResourceManager::ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
@@ -176,8 +185,12 @@ namespace RB::Graphics::D3D12
 		desc->name		= wname;
 		desc->buffer	= buffer_desc;
 
+		EnterCriticalSection(&m_CS);
+
 		JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
 		m_ScheduledCreations.push_back({ resource, id });
+
+		LeaveCriticalSection(&m_CS);
 	}
 
 	void ResourceManager::ScheduleCreateIndexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
@@ -192,8 +205,12 @@ namespace RB::Graphics::D3D12
 		desc->name		= wname;
 		desc->buffer	= buffer_desc;
 
+		EnterCriticalSection(&m_CS);
+
 		JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
 		m_ScheduledCreations.push_back({ resource, id });
+
+		LeaveCriticalSection(&m_CS);
 	}
 
 	void ResourceManager::ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& tex_desc)
@@ -208,8 +225,12 @@ namespace RB::Graphics::D3D12
 		desc->name		= wname;
 		desc->tex2D		= tex_desc;
 
+		EnterCriticalSection(&m_CS);
+
 		JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
 		m_ScheduledCreations.push_back({ resource, id });
+
+		LeaveCriticalSection(&m_CS);
 	}
 
 	GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,

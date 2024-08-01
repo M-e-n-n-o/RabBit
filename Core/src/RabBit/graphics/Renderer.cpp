@@ -6,6 +6,7 @@
 #include "ViewContext.h"
 #include "ResourceDefaults.h"
 #include "ResourceStreamer.h"
+#include "codeGen/ShaderDefines.h"
 
 #include "app/Application.h"
 #include "input/events/WindowEvent.h"
@@ -42,7 +43,9 @@ namespace RB::Graphics
 											
 		uint64_t*							renderFrameIndex;
 		CRITICAL_SECTION*					renderFrameIndexCS;
-											
+		
+		VertexBuffer*						backBufferCopyVB;
+
 		std::function<void()>				OnRenderFrameStart;
 		std::function<void()>				OnRenderFrameEnd;
 		std::function<void()>				SyncWithGpu;
@@ -96,10 +99,22 @@ namespace RB::Graphics
 		m_RenderFrameIndex = 0;
 		InitializeCriticalSection(&m_RenderFrameIndexCS);
 
+		InitializeCriticalSection(&m_RenderThreadJobSubmitCS);
+
 		// Set the render passes
 		m_TotalPasses = 1;
 		m_RenderPasses = (RenderPass**) ALLOC_HEAP(sizeof(RenderPass*) * m_TotalPasses);
 		m_RenderPasses[0] = new GBufferPass();
+
+		float vertices[] =
+		{	// Pos			UV
+			-1.0f,  1.0f,	0.0f, 0.0f,
+			 1.0f,  1.0f,	1.0f, 0.0f,
+			-1.0f, -1.0f,	0.0f, 1.0f,
+			 1.0f, -1.0f,	1.0f, 1.0f,
+		};
+
+		m_BackBufferCopyVB = VertexBuffer::Create("BackBuffer copy VB", TopologyType::TriangleStrip, vertices, 4 * sizeof(float), sizeof(vertices));
 	}
 
 	Renderer::~Renderer()
@@ -128,9 +143,12 @@ namespace RB::Graphics
 		}
 		SAFE_FREE(m_RenderPasses);
 
+		SAFE_DELETE(m_BackBufferCopyVB);
+
 		delete m_ResourceStreamer;
 
 		DeleteCriticalSection(&m_RenderFrameIndexCS);
+		DeleteCriticalSection(&m_RenderThreadJobSubmitCS);
 
 		// Delete default resources
 		DeleteResourceDefaults();
@@ -164,13 +182,16 @@ namespace RB::Graphics
 			context->graphicsInterface				= m_GraphicsInterface;
 			context->renderFrameIndex				= &m_RenderFrameIndex;
 			context->renderFrameIndexCS				= &m_RenderFrameIndexCS;
+			context->backBufferCopyVB				= m_BackBufferCopyVB;
 			context->OnRenderFrameStart				= std::bind(&Renderer::OnFrameStart, this);
 			context->OnRenderFrameEnd				= std::bind(&Renderer::OnFrameEnd, this);
 			context->SyncWithGpu					= std::bind(&Renderer::SyncWithGpu, this);
 
 			if (m_MultiThreadingSupport)
 			{
+				EnterCriticalSection(&m_RenderThreadJobSubmitCS);
 				m_RenderThread->ScheduleJob(m_RenderJobType, context);
+				LeaveCriticalSection(&m_RenderThreadJobSubmitCS);
 			}
 			else
 			{
@@ -186,7 +207,9 @@ namespace RB::Graphics
 
 			if (m_MultiThreadingSupport)
 			{
+				EnterCriticalSection(&m_RenderThreadJobSubmitCS);
 				m_RenderThread->ScheduleJob(m_EventJobType, context);
+				LeaveCriticalSection(&m_RenderThreadJobSubmitCS);
 			}
 			else
 			{
@@ -248,6 +271,7 @@ namespace RB::Graphics
 
 			if (window == nullptr)
 			{
+				RB_LOG_WARN(LOGTAG_GRAPHICS, "Target window index of Camera is invalid");
 				out_context_count--;
 				continue;
 			}
@@ -259,7 +283,21 @@ namespace RB::Graphics
 			contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), window->GetAspectRatio(), false);
 			//contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * window->GetAspectRatio(), 1, -1, false);
 
-			contexts[context_index].displayIndex = camera->GetTargetWindowIndex();
+			contexts[context_index].clearColor = camera->GetClearColor();
+
+			Texture2D* render_texture = camera->GetRenderTexture();
+			if (render_texture == nullptr)
+			{
+				// Set window virtual backbuffer as finalColorTarget
+				contexts[context_index].isOffscreenContext = false;
+				contexts[context_index].windowIndex = camera->GetTargetWindowIndex();
+				contexts[context_index].finalColorTarget = window->GetVirtualBackBuffer();
+			}
+			else
+			{
+				contexts[context_index].isOffscreenContext = true;
+				contexts[context_index].finalColorTarget = render_texture;
+			}
 
 			context_index++;
 		}
@@ -301,6 +339,28 @@ namespace RB::Graphics
 		if (window)
 		{
 			window->ProcessEvent(*window_event);
+
+			switch (window_event->GetEventType())
+			{
+			case EventType::WindowCreated: 
+			case EventType::WindowCloseRequest: 
+			case EventType::WindowClose:
+			case EventType::WindowResize:
+			case EventType::WindowFullscreenToggle:
+			{
+				// Need to cancel all next jobs for the render thread as these will not be valid
+				EnterCriticalSection(&m_RenderThreadJobSubmitCS);
+				m_RenderThread->CancelAll();
+				LeaveCriticalSection(&m_RenderThreadJobSubmitCS);
+			}
+			break;
+
+			case EventType::WindowFocus:
+			case EventType::WindowLostFocus:
+			case EventType::WindowMoved:
+			default:
+				break;
+			}
 		}
 	}
 
@@ -341,34 +401,13 @@ namespace RB::Graphics
 
 				ViewContext& view_context = context->viewContexts[view_context_index];
 
-				Graphics::Window* window = Application::GetInstance()->GetWindow(view_context.displayIndex);
+				RenderResource* final_color_target = view_context.finalColorTarget;
 
-				if (!window || !window->IsValid() || window->IsMinimized())
-				{
-					continue;
-				}
-
-				// Wait until the backbuffer resource is available
-				// (TODO Later when the passes will not use the backbuffers directly, this wait will be moved just before the backbuffer copy)
-				if (view_context.displayIndex < context->backBufferAvailabilityGuards->size())
-				{
-					uint64_t back_buffer_index = window->GetCurrentBackBufferIndex();
-
-					auto guards = (*context->backBufferAvailabilityGuards)[view_context.displayIndex].guards;
-
-					if (guards[back_buffer_index])
-					{
-						guards[back_buffer_index]->WaitUntilFinishedRendering();
-					}
-				}
-
-				Texture2D* back_buffer = window->GetCurrentBackBuffer();
-
-				// Clear the backbuffer (TODO Create a GlobalPrepare pass to clear all necessary textures)
+				// Clear the final target (TODO Create a GlobalPrepare pass to clear all necessary textures)
 				{
 					RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
-					context->graphicsInterface->Clear(back_buffer, { 0.0f, 0.1f, 0.1f, 0.0f });
+					context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
 				}
 
 				// Render the different passes
@@ -384,24 +423,62 @@ namespace RB::Graphics
 
 					RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetConfiguration().friendlyName);
 
-					context->renderPasses[pass_index]->Render(context->graphicsInterface, &view_context, context->renderPassEntries[pass_index], (RenderResource**)&back_buffer, nullptr, nullptr);
+					context->graphicsInterface->InvalidateState(false);
+
+					context->renderPasses[pass_index]->Render(context->graphicsInterface, &view_context, context->renderPassEntries[pass_index], &final_color_target, nullptr, nullptr);
 				}
 			}
 		}
 
-		// Present to all windows
+		// Prepare draw(s) to backbuffer(s)
+		context->graphicsInterface->InvalidateState(false);
+		context->graphicsInterface->SetVertexShader(VS_Present);
+		context->graphicsInterface->SetPixelShader(PS_Present);
+		context->graphicsInterface->SetBlendMode(BlendMode::None);
+		context->graphicsInterface->SetCullMode(CullMode::Back);
+		context->graphicsInterface->SetDepthMode(DepthMode::Disabled);
+		context->graphicsInterface->SetVertexBuffer(context->backBufferCopyVB);
+
+		// Copy to real backbuffers and present
 		for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
 		{
-			uint32_t display_index = context->viewContexts[view_context_index].displayIndex;
+			ViewContext& view_context = context->viewContexts[view_context_index];
 
-			Graphics::Window* window = Application::GetInstance()->GetWindow(display_index);
+			if (view_context.isOffscreenContext)
+			{
+				continue;
+			}
+
+			uint32_t window_index = view_context.windowIndex;
+
+			Graphics::Window* window = Application::GetInstance()->GetWindow(window_index);
 
 			if (!window || !window->IsValid() || window->IsMinimized())
 			{
 				continue;
 			}
 
+			RB_PROFILE_GPU_SCOPED(command_list.Get(), "Present");
+
+			// Wait until the backbuffer resource is available
+			if (window_index < context->backBufferAvailabilityGuards->size())
+			{
+				uint64_t back_buffer_index = window->GetCurrentBackBufferIndex();
+
+				auto guards = (*context->backBufferAvailabilityGuards)[window_index].guards;
+
+				if (guards[back_buffer_index])
+				{
+					guards[back_buffer_index]->WaitUntilFinishedRendering();
+				}
+			}
+
 			Texture2D* back_buffer = window->GetCurrentBackBuffer();
+
+			// Backbuffer copy
+			context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
+			context->graphicsInterface->SetRenderTarget(back_buffer);
+			context->graphicsInterface->Draw();
 
 			context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);
 			context->graphicsInterface->FlushResourceBarriers();
@@ -409,44 +486,17 @@ namespace RB::Graphics
 			// Execute al the work to the GPU
 			Shared<GpuGuard> guard = context->graphicsInterface->ExecuteOnGpu();
 
-			if (display_index >= context->backBufferAvailabilityGuards->size())
+			if (window_index >= context->backBufferAvailabilityGuards->size())
 			{
 				context->backBufferAvailabilityGuards->push_back(Renderer::BackBufferGuard());
 			}
 
 			uint64_t buffer_index = window->GetCurrentBackBufferIndex();
-			(*context->backBufferAvailabilityGuards)[display_index].guards[buffer_index] = guard;
+			(*context->backBufferAvailabilityGuards)[window_index].guards[buffer_index] = guard;
 
 			window->Present(VsyncMode::On);
 		}
 
 		context->OnRenderFrameEnd();
-
-		/*
-			Rendering flow:
-			(command list 0, 1 & 2 are from frame i-2, 3, 4 & 5 are from frame i-1)
-
-			Firstly, we start filling command list 6 with game rendering. Before doing the executeCommandList on this,
-			we place a GPU barrier on the previous' frame commandlist 4 that contains upscaling, post and UI rendering
-			(as game, upscaling, post and UI rendering shares some resources).
-
-			Secondly, we start filling command list 7 with upscaling, if enabled, post and UI rendering. Before doing the executeCommandList on this,
-			we place a GPU barrier on the current' frame commandlist 6, that contains game rendering. This commandlist finally outputs on the game backbuffer.
-
-			Thirdly, we start filling command list 8 with copying to the actual backbuffer (+ optional letterboxing). Before doing the executeCommandList on this,
-			we place a GPU barrier on the current' frame commandlist 7, that contains upscaling, post and UI rendering,
-			but we also place a CPU barrier on frame i-2' commandlist 2 that waits until the current backbuffer is available again
-			(commandlist 2 contains the copy to backbuffer command list of the backbuffer that we want to use here again, because we have 2 backbuffers).
-
-			MAYBE INSTEAD OF ALWAYS SEPERATING PRE-UPSCALER AND POST-UPSCALER IN A SEPARATE COMMAND LIST,
-			JUST DO AN EXECUTE AFTER EVERY VIEWCONTEXT (AFTER UI RENDERING) + INTERMEDIATE EXECUTES AFTER EVERY X AMOUNT OF DRAW CALLS?
-
-			BUT HOW TO DO SYNC POINTS WITH MULTIPLE VIEW CONTEXTS??
-				- Do all offscreen contexts first (only game, upscaling, post and UI rendering, so no backbuffer)
-				- Then do the main context
-
-			When we need to change the render settings, then we will place a CPU wait until GPU idle and only then apply
-			the new settings and signal that the thread is idle again!
-		*/
 	}
 }

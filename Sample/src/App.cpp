@@ -62,8 +62,9 @@ public:
 		m_Transform = t;
 
 		GameObject* camera = GetScene()->CreateGameObject();
-		camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
 		m_Camera = camera->AddComponent<Transform>();
+		Camera* cam_comp = camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
+		cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.0f });
 	}
 
 	void OnUpdate() override

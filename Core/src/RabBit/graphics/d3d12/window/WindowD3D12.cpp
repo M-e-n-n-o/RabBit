@@ -78,6 +78,8 @@ namespace RB::Graphics::D3D12
 			{
 				m_BackBuffers[i] = nullptr;
 			}
+
+			m_VirtualBackBuffer = nullptr;
 		}
 
 		if (args.fullscreen)
@@ -232,6 +234,12 @@ namespace RB::Graphics::D3D12
 
 	Graphics::Texture2D* WindowD3D12::GetCurrentBackBuffer()
 	{
+		if (!m_IsValid)
+		{
+			RB_LOG_ERROR(LOGTAG_WINDOWING, "Cannot retrieve backbuffer from window as it is not valid");
+			return nullptr;
+		}
+
 		uint32_t index = m_SwapChain->GetCurrentBackBufferIndex();
 
 		if (m_BackBuffers[index] == nullptr)
@@ -246,6 +254,22 @@ namespace RB::Graphics::D3D12
 		return m_BackBuffers[index];
 	}
 
+	Graphics::Texture2D* WindowD3D12::GetVirtualBackBuffer()
+	{
+		if (!m_IsValid)
+		{
+			RB_LOG_ERROR(LOGTAG_WINDOWING, "Cannot retrieve virtual backbuffer from window as it is not valid");
+			return nullptr;
+		}
+
+		if (m_VirtualBackBuffer == nullptr)
+		{
+			m_VirtualBackBuffer = Texture2D::Create("Virtual backbuffer", GetBackBufferFormat(), GetWidth(), GetHeight(), true, false, true);
+		}
+
+		return m_VirtualBackBuffer;
+	}
+
 	void WindowD3D12::OnResize(uint32_t width, uint32_t height)
 	{
 		if (m_SwapChain->GetWidth() == width && m_SwapChain->GetHeight() == height)
@@ -257,6 +281,8 @@ namespace RB::Graphics::D3D12
 
 		width = std::max(1u, width);
 		height = std::max(1u, height);
+
+		SAFE_DELETE(m_VirtualBackBuffer);
 
 		// Release backbuffer references
 		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
@@ -276,6 +302,8 @@ namespace RB::Graphics::D3D12
 		RB_LOG(LOGTAG_WINDOWING, "Scheduled destroy of window");
 
 		m_IsValid = false;
+
+		SAFE_DELETE(m_VirtualBackBuffer);
 
 		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
 		{

@@ -45,7 +45,7 @@ namespace RB::Graphics::D3D12
 			m_Queue = g_GraphicsDevice->GetGraphicsQueue();
 
 		SetNewCommandList();
-		InvalidateState();
+		InvalidateState(true);
 	}
 
 	RenderInterfaceD3D12::~RenderInterfaceD3D12()
@@ -64,7 +64,7 @@ namespace RB::Graphics::D3D12
 		}
 	}
 
-	void RenderInterfaceD3D12::InvalidateState()
+	void RenderInterfaceD3D12::InvalidateState(bool rebind_descriptor_heap)
 	{
 		m_RenderState = {};
 
@@ -73,7 +73,11 @@ namespace RB::Graphics::D3D12
 			return;
 		}
 
-		BindDescriptorHeaps();
+		if (rebind_descriptor_heap)
+		{
+			BindDescriptorHeaps();
+		}
+
 		ClearDrawResources();
 	}
 
@@ -92,7 +96,7 @@ namespace RB::Graphics::D3D12
 		}
 
 		SetNewCommandList();
-		InvalidateState();
+		InvalidateState(true);
 
 		return CreateShared<GpuGuardD3D12>(fence_value, m_Queue);
 	}
@@ -113,6 +117,16 @@ namespace RB::Graphics::D3D12
 	void RenderInterfaceD3D12::FlushResourceBarriers()
 	{
 		g_ResourceStateManager->FlushPendingTransitions(m_CommandList.Get());
+	}
+
+	void RenderInterfaceD3D12::SetRenderTarget(RenderResource* color_target)
+	{
+		RenderTargetBundle bundle = {};
+		bundle.colorTargetsCount	= 1;
+		bundle.colorTargets[0]		= (Texture2D*)color_target;
+		bundle.depthStencilTarget	= nullptr;
+
+		SetRenderTarget(&bundle);
 	}
 
 	void RenderInterfaceD3D12::SetRenderTarget(RenderTargetBundle* bundle)
@@ -472,7 +486,8 @@ namespace RB::Graphics::D3D12
 
 		switch (base_vbo->GetTopologyType())
 		{
-		case TopologyType::TriangleList: m_RenderState.vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; break;
+		case TopologyType::TriangleStrip:
+		case TopologyType::TriangleList:	m_RenderState.vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; break;
 
 		default:
 			RB_LOG_ERROR(LOGTAG_GRAPHICS, "Topology type not yet implemented");
@@ -684,6 +699,9 @@ namespace RB::Graphics::D3D12
 
 	void RenderInterfaceD3D12::MarkResourceUsed(GpuResource* resource)
 	{
+		// Wait until the resource is created
+		resource->GetResource();
+
 		resource->MarkAsUsed(m_Queue);
 	}
 
