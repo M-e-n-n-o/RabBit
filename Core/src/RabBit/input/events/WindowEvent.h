@@ -26,7 +26,7 @@ namespace RB::Input::Events
 	public:
 		WindowCreatedEvent(void* window_handle): WindowEvent(window_handle) {}
 
-		DEFINE_CLASS_TYPE(WindowCreatedEvent, WindowCreated)
+		DEFINE_CLASS_TYPE(WindowCreatedEvent, WindowCreated, false)
 	};
 
 	class WindowResizeEvent : public WindowEvent
@@ -43,7 +43,7 @@ namespace RB::Input::Events
 		uint32_t GetWidth() const { return m_Width; }
 		uint32_t GetHeight() const { return m_Height; }
 
-		DEFINE_CLASS_TYPE(WindowResizeEvent, WindowResize)
+		DEFINE_CLASS_TYPE(WindowResizeEvent, WindowResize, true)
 
 	private:
 		uint32_t m_Width;
@@ -56,7 +56,7 @@ namespace RB::Input::Events
 	public:
 		WindowCloseEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		DEFINE_CLASS_TYPE(WindowCloseEvent, WindowClose)
+		DEFINE_CLASS_TYPE(WindowCloseEvent, WindowClose, false)
 	};
 
 	class WindowCloseRequestEvent : public WindowEvent
@@ -64,7 +64,7 @@ namespace RB::Input::Events
 	public:
 		WindowCloseRequestEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		DEFINE_CLASS_TYPE(WindowCloseRequestEvent, WindowCloseRequest)
+		DEFINE_CLASS_TYPE(WindowCloseRequestEvent, WindowCloseRequest, false)
 	};
 
 	class WindowOnFocusEvent : public WindowEvent
@@ -72,7 +72,7 @@ namespace RB::Input::Events
 	public:
 		WindowOnFocusEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		DEFINE_CLASS_TYPE(WindowOnFocusEvent, WindowFocus)
+		DEFINE_CLASS_TYPE(WindowOnFocusEvent, WindowFocus, false)
 	};
 
 	class WindowLostFocusEvent : public WindowEvent
@@ -80,7 +80,7 @@ namespace RB::Input::Events
 	public:
 		WindowLostFocusEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		DEFINE_CLASS_TYPE(WindowLostFocusEvent, WindowLostFocus)
+		DEFINE_CLASS_TYPE(WindowLostFocusEvent, WindowLostFocus, false)
 	};
 
 	class WindowFullscreenToggleEvent : public WindowEvent
@@ -88,6 +88,6 @@ namespace RB::Input::Events
 	public:
 		WindowFullscreenToggleEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-		DEFINE_CLASS_TYPE(WindowFullscreenToggleEvent, WindowFullscreenToggle)
+		DEFINE_CLASS_TYPE(WindowFullscreenToggleEvent, WindowFullscreenToggle, false)
 	};
 }

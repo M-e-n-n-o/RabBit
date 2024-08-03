@@ -68,8 +68,6 @@ namespace RB::Graphics
 		bool					m_IsShutdown;
 		WorkerThread*			m_RenderThread;
 		JobTypeID				m_RenderJobType;
-		JobTypeID				m_EventJobType;
-		CRITICAL_SECTION		m_RenderThreadJobSubmitCS;
 
 		RenderInterface*		m_GraphicsInterface; // Used by the render passes
 		RenderInterface*		m_CopyInterface;	 // Used for resource streaming 

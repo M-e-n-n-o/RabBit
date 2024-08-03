@@ -21,7 +21,7 @@ namespace RB::Input::Events
 		float GetMouseX() const { return m_MouseX; }
 		float GetMouseY() const { return m_MouseY; }
 
-		DEFINE_CLASS_TYPE(MouseMovedEvent, MouseMoved)
+		DEFINE_CLASS_TYPE(MouseMovedEvent, MouseMoved, false)
 		int GetCategoryFlags() const override { return kEventCat_Mouse; }
 
 	private:
@@ -38,7 +38,7 @@ namespace RB::Input::Events
 		float GetOffsetX() const { return m_OffsetX; }
 		float GetOffsetY() const { return m_OffsetY; }
 
-		DEFINE_CLASS_TYPE(MouseScrolledEvent, MouseScrolled)
+		DEFINE_CLASS_TYPE(MouseScrolledEvent, MouseScrolled, false)
 		int GetCategoryFlags() const override { return kEventCat_Mouse; }
 
 	private:
@@ -68,7 +68,7 @@ namespace RB::Input::Events
 	public:
 		MouseButtonPressedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
 
-		DEFINE_CLASS_TYPE(MouseButtonPressedEvent, MouseButtonPressed)
+		DEFINE_CLASS_TYPE(MouseButtonPressedEvent, MouseButtonPressed, false)
 	};
 
 
@@ -77,6 +77,6 @@ namespace RB::Input::Events
 	public:
 		MouseButtonReleasedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
 
-		DEFINE_CLASS_TYPE(MouseButtonReleasedEvent, MouseButtonReleased)
+		DEFINE_CLASS_TYPE(MouseButtonReleasedEvent, MouseButtonReleased, false)
 	};
 }

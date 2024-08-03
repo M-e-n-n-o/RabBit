@@ -110,6 +110,19 @@ namespace RB::Input::Events
 	void EventListener::AddEvent(const Event& e)
 	{
 		EnterCriticalSection(&m_CS);
+
+		if (e.IsOverwritable())
+		{
+			auto itr = std::find_if(m_QueuedEvents.begin(), m_QueuedEvents.end(), [&e](Event* other) -> bool {
+				return e.GetEventType() == other->GetEventType();
+			});
+
+			if (itr != m_QueuedEvents.end())
+			{
+				m_QueuedEvents.erase(itr);
+			}
+		}
+
 		m_QueuedEvents.push_back(e.Clone());
 		LeaveCriticalSection(&m_CS);
 	}

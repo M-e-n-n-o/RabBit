@@ -26,7 +26,6 @@ using namespace RB::Input::Events;
 namespace RB::Graphics
 {
 	void RenderJob(JobData* data);
-	void EventJob(JobData* data);
 
 	struct RenderContext : public JobData
 	{
@@ -49,6 +48,7 @@ namespace RB::Graphics
 		std::function<void()>				OnRenderFrameStart;
 		std::function<void()>				OnRenderFrameEnd;
 		std::function<void()>				SyncWithGpu;
+		std::function<void()>				ProcessEvents;
 
 		~RenderContext()
 		{
@@ -60,11 +60,6 @@ namespace RB::Graphics
 
 			SAFE_FREE(viewContexts);
 		}
-	};
-
-	struct EventContext : public JobData
-	{
-		std::function<void()> ProcessEvents;
 	};
 
 	Renderer::Renderer(bool multi_threading_support)
@@ -93,13 +88,10 @@ namespace RB::Graphics
 			m_RenderThread	= new WorkerThread(L"Render Thread", ThreadPriority::High);
 
 			m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
-			m_EventJobType  = m_RenderThread->AddJobType(&EventJob,  true);
 		}
 
 		m_RenderFrameIndex = 0;
 		InitializeCriticalSection(&m_RenderFrameIndexCS);
-
-		InitializeCriticalSection(&m_RenderThreadJobSubmitCS);
 
 		// Set the render passes
 		m_TotalPasses = 1;
@@ -148,7 +140,6 @@ namespace RB::Graphics
 		delete m_ResourceStreamer;
 
 		DeleteCriticalSection(&m_RenderFrameIndexCS);
-		DeleteCriticalSection(&m_RenderThreadJobSubmitCS);
 
 		// Delete default resources
 		DeleteResourceDefaults();
@@ -186,34 +177,15 @@ namespace RB::Graphics
 			context->OnRenderFrameStart				= std::bind(&Renderer::OnFrameStart, this);
 			context->OnRenderFrameEnd				= std::bind(&Renderer::OnFrameEnd, this);
 			context->SyncWithGpu					= std::bind(&Renderer::SyncWithGpu, this);
+			context->ProcessEvents					= std::bind(&Renderer::ProcessEvents, this);
 
 			if (m_MultiThreadingSupport)
 			{
-				EnterCriticalSection(&m_RenderThreadJobSubmitCS);
 				m_RenderThread->ScheduleJob(m_RenderJobType, context);
-				LeaveCriticalSection(&m_RenderThreadJobSubmitCS);
 			}
 			else
 			{
 				RenderJob(context);
-				delete context;
-			}
-		}
-
-		// Schedule an event handling job
-		{
-			EventContext* context = new EventContext();
-			context->ProcessEvents = std::bind(&Renderer::ProcessEvents, this);
-
-			if (m_MultiThreadingSupport)
-			{
-				EnterCriticalSection(&m_RenderThreadJobSubmitCS);
-				m_RenderThread->ScheduleJob(m_EventJobType, context);
-				LeaveCriticalSection(&m_RenderThreadJobSubmitCS);
-			}
-			else
-			{
-				EventJob(context);
 				delete context;
 			}
 		}
@@ -349,9 +321,7 @@ namespace RB::Graphics
 			case EventType::WindowFullscreenToggle:
 			{
 				// Need to cancel all next jobs for the render thread as these will not be valid
-				EnterCriticalSection(&m_RenderThreadJobSubmitCS);
 				m_RenderThread->CancelAll();
-				LeaveCriticalSection(&m_RenderThreadJobSubmitCS);
 			}
 			break;
 
@@ -376,12 +346,6 @@ namespace RB::Graphics
 		}
 
 		return nullptr;
-	}
-
-	void EventJob(JobData* data)
-	{
-		EventContext* context = (EventContext*) data;
-		context->ProcessEvents();
 	}
 
 	void RenderJob(JobData* data)
@@ -498,5 +462,8 @@ namespace RB::Graphics
 		}
 
 		context->OnRenderFrameEnd();
+
+		// Process window events
+		context->ProcessEvents();
 	}
 }

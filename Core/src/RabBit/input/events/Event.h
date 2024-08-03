@@ -24,10 +24,11 @@ namespace RB::Input::Events
 		kEventCat_All			= (kEventCat_Window | kEventCat_Input | kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton)
 	};
 
-	#define DEFINE_CLASS_TYPE(classType, type) static EventType GetStaticType() { return EventType::type; }\
+	#define DEFINE_CLASS_TYPE(classType, type, overwritable) static EventType GetStaticType() { return EventType::type; }\
 								virtual EventType GetEventType() const override { return GetStaticType(); }\
 								virtual const char* GetName() const override { return #type; }\
-								virtual Event* Clone() const override { return new classType(*this); }
+								virtual Event* Clone() const override { return new classType(*this); }\
+								virtual bool IsOverwritable() const override { return overwritable; }
 
 	#define RB_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
@@ -41,6 +42,7 @@ namespace RB::Input::Events
 		virtual const char* GetName()			const = 0;
 		virtual int			GetCategoryFlags()	const = 0;
 		virtual Event*		Clone()				const = 0;
+		virtual bool		IsOverwritable()	const = 0;
 
 		bool IsInCategory(const EventCategory cat) const;
 	};
@@ -48,7 +50,7 @@ namespace RB::Input::Events
 	class EmptyEvent : public Event
 	{
 	public:
-		DEFINE_CLASS_TYPE(EmptyEvent, None)
+		DEFINE_CLASS_TYPE(EmptyEvent, None, false)
 		int GetCategoryFlags() const override { return kEventCat_None; }
 	};
 
