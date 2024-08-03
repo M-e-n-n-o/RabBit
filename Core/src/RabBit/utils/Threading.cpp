@@ -368,7 +368,7 @@ namespace RB
 				EnterCriticalSection(&context->completedCS);
 				context->completedJobsCount++;
 				LeaveCriticalSection(&context->completedCS);
-				WakeConditionVariable(&context->completedCV);
+				WakeAllConditionVariable(&context->completedCV);
 			}
 		}
 
