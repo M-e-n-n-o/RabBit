@@ -149,7 +149,7 @@ namespace RB::Graphics::D3D12
 		LeaveCriticalSection(&m_CS);
 
 		// Sync until the job is completed
-		m_CreationThread->Sync(itr->jobID);
+		m_CreationThread->Sync(id);
 
 		return true;
 	}
