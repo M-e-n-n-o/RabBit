@@ -143,12 +143,13 @@ namespace RB::Graphics::D3D12
 		// Tell the thread to prioritize this resource creation as we are waiting for it
 		m_CreationThread->PrioritizeJob(itr->jobID);
 
-		// Sync until the job is completed
-		m_CreationThread->Sync(itr->jobID);
-
+		JobID id = itr->jobID;
 		m_ScheduledCreations.erase(itr);
 
 		LeaveCriticalSection(&m_CS);
+
+		// Sync until the job is completed
+		m_CreationThread->Sync(itr->jobID);
 
 		return true;
 	}
