@@ -43,10 +43,17 @@ namespace RB::Graphics::D3D12
 		uint32_t width = args.width;
 		uint32_t height = args.height;
 
-		if (args.fullscreen)
+		// TODO calculate this
+		static_assert(false);
+		m_VirtualWidth = args.virtualWidth;
+		m_VirtualHeight = args.virtualHeight;
+		m_VirtualTop = ;
+		m_VirtualLeft = ;
+
+		if (m_VirtualWidth == 0 || m_VirtualHeight == 0)
 		{
-			width = args.display->GetResolution().x;
-			height = args.display->GetResolution().y;
+			m_VirtualWidth = width;
+			m_VirtualHeight = height;
 		}
 
 		// Create window
@@ -137,6 +144,40 @@ namespace RB::Graphics::D3D12
 	uint32_t WindowD3D12::GetHeight() const
 	{
 		return m_SwapChain->GetHeight();
+	}
+
+	uint32_t WindowD3D12::GetVirtualWidth() const
+	{
+		return m_VirtualWidth;
+	}
+
+	uint32_t WindowD3D12::GetVirtualHeight() const
+	{
+		return m_VirtualHeight;
+	}
+
+	RenderRect WindowD3D12::GetWindowRect() const
+	{
+		RenderRect rect = {};
+		rect.width	= GetWidth();
+		rect.height = GetHeight();
+		rect.left	= 0;
+		rect.top	= 0;
+		rect.aspect = GetAspectRatio();
+
+		return rect;
+	}
+
+	RenderRect WindowD3D12::GetVirtualWindowRect() const
+	{
+		RenderRect rect = {};
+		rect.width	= m_VirtualWidth;
+		rect.height = m_VirtualHeight;
+		rect.left	= m_VirtualLeft;
+		rect.top	= m_VirtualTop;
+		rect.aspect = GetVirtualAspectRatio();
+
+		return rect;
 	}
 
 	bool WindowD3D12::IsMinimized() const

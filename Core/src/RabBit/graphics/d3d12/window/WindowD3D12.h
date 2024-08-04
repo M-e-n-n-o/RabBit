@@ -21,9 +21,10 @@ namespace RB::Graphics::D3D12
 		wchar_t*		className;
 		const char*		windowName;
 		bool			fullscreen;
-		Display*		display;
 		uint32_t		width;
 		uint32_t		height;
+		uint32_t		virtualScale;
+		uint32_t		virtualAspect;
 		uint32_t		windowStyle;
 	};
 
@@ -40,6 +41,10 @@ namespace RB::Graphics::D3D12
 		Math::Float4 GetWindowRectangle()	const override;
 		uint32_t	 GetWidth()				const override;
 		uint32_t	 GetHeight()			const override;
+		uint32_t	 GetVirtualWidth()		const override;
+		uint32_t	 GetVirtualHeight()		const override;
+		RenderRect	 GetWindowRect()		const override;
+		RenderRect	 GetVirtualWindowRect()	const override;
 		bool		 IsMinimized()			const override;
 		bool		 IsValid()				const override;
 
@@ -72,6 +77,11 @@ namespace RB::Graphics::D3D12
 
 		bool		m_IsValid;
 		bool		m_IsTearingSupported;
+
+		uint32_t	m_VirtualWidth;
+		uint32_t	m_VirtualHeight;
+		uint32_t	m_VirtualTop;
+		uint32_t	m_VirtualLeft;
 
 		Graphics::Texture2D* m_BackBuffers[BACK_BUFFER_COUNT];
 		Graphics::Texture2D* m_VirtualBackBuffer;

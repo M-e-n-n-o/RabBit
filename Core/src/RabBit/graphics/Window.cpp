@@ -31,6 +31,11 @@ namespace RB::Graphics
 		return (float) GetWidth() / (float) GetHeight();
 	}
 
+	float Window::GetVirtualAspectRatio() const
+	{
+		return (float) GetVirtualWidth() / (float) GetVirtualHeight();
+	}
+
 	void Window::ToggleFullscreen()
 	{
 		if (m_IsFullscreen)
@@ -131,19 +136,22 @@ namespace RB::Graphics
 		}
 	}
 	
-	Window* Window::Create(const char* window_name, Display* display, uint32_t window_style)
+	Window* Window::Create(const char* window_name, Display* display, uint32_t window_style, uint32_t virtual_scale, uint32_t virtual_aspect)
 	{
 		switch (Renderer::GetAPI())
 		{
 		case RenderAPI::D3D12:
 		{
+
+
 			D3D12::WindowArgs args = {};
 			args.className		= L"RabBit WindowClass";
 			args.instance		= GetModuleHandle(nullptr);
 			args.fullscreen		= true;
-			args.display		= display;
-			args.width			= 1;
-			args.height			= 1;
+			args.width			= display->GetResolution().x;
+			args.height			= display->GetResolution().y;
+			args.virtualScale	= virtual_scale;
+			args.virtualAspect	= virtual_aspect;
 			args.windowStyle	= window_style;
 			args.windowName		= window_name;
 
@@ -157,7 +165,7 @@ namespace RB::Graphics
 		return nullptr;
 	}
 
-	Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style)
+	Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, uint32_t virtual_scale, uint32_t virtual_aspect)
 	{
 		switch (Renderer::GetAPI())
 		{
@@ -167,9 +175,10 @@ namespace RB::Graphics
 			args.className		= L"RabBit WindowClass";
 			args.instance		= GetModuleHandle(nullptr);
 			args.fullscreen		= false;
-			args.display		= nullptr;
 			args.width			= window_width;
 			args.height			= window_height;
+			args.virtualScale	= virtual_scale;
+			args.virtualAspect	= virtual_aspect;
 			args.windowStyle	= window_style;
 			args.windowName		= window_name;
 

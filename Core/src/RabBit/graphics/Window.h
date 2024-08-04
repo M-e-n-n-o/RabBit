@@ -21,6 +21,15 @@ namespace RB::Graphics
 		Eighth	= 4
 	};
 
+	struct RenderRect
+	{
+		uint32_t left;
+		uint32_t top;
+		uint32_t width;
+		uint32_t height;
+		float	 aspect;
+	};
+
 	class Display;
 
 	static const uint32_t BACK_BUFFER_COUNT = 2u;
@@ -35,16 +44,26 @@ namespace RB::Graphics
 		virtual void			Present(const VsyncMode& mode) = 0;
 
 		// Returns width, height, x pos, and y pos of entire window
-		virtual Math::Float4	GetWindowRectangle() const = 0;
+		virtual Math::Float4	GetWindowRectangle()	const = 0;
 
-				float			GetAspectRatio()	const;
-		virtual uint32_t		GetWidth()			const = 0;
-		virtual uint32_t		GetHeight()			const = 0;
+				float			GetAspectRatio()		const;
+		virtual RenderRect		GetWindowRect()			const = 0;
+		virtual uint32_t		GetWidth()				const = 0;
+		virtual uint32_t		GetHeight()				const = 0;
 
-		virtual bool			IsMinimized()		const = 0;
-		virtual bool			IsValid()			const = 0;
+				float			GetVirtualAspectRatio() const;
+		virtual RenderRect		GetVirtualWindowRect()	const = 0;
+		virtual uint32_t		GetVirtualWidth()		const = 0;
+		virtual uint32_t		GetVirtualHeight()		const = 0;
 
-				bool			InFocus()			const;
+		// Create methods to be able to change the virtual scale and/or aspect ratio
+		// Also maybe add public methods to be able to resize/move the regular window (will just send events to the EventManager)
+		static_assert(false);
+
+		virtual bool			IsMinimized()			const = 0;
+		virtual bool			IsValid()				const = 0;
+
+				bool			InFocus()				const;
 
 		virtual Display*		GetParentDisplay() = 0;
 
@@ -60,8 +79,8 @@ namespace RB::Graphics
 
 				void			ProcessEvent(Input::Events::WindowEvent& event);
 
-		static Window*			Create(const char* window_name, Display* display, uint32_t window_style);
-		static Window*			Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style);
+		static Window*			Create(const char* window_name, Display* display, uint32_t window_style, uint32_t virtual_scale = 1, uint32_t virtual_aspect = 0);
+		static Window*			Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, uint32_t virtual_scale = 1, uint32_t virtual_aspect = 0);
 		
 	protected:
 		Window(bool is_fullscreen);

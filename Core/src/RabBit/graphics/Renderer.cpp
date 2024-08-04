@@ -6,7 +6,10 @@
 #include "ViewContext.h"
 #include "ResourceDefaults.h"
 #include "ResourceStreamer.h"
+
 #include "codeGen/ShaderDefines.h"
+#include "shaders/shared/Common.h"
+#include "shaders/shared/ConstantBuffers.h"
 
 #include "app/Application.h"
 #include "input/events/WindowEvent.h"
@@ -439,9 +442,18 @@ namespace RB::Graphics
 
 			Texture2D* back_buffer = window->GetCurrentBackBuffer();
 
-			// Backbuffer copy
+			RenderRect rect = window->GetVirtualWindowRect();
+
+			PresentCB present_data = {};
+			present_data.texOffsetAndSize	= Math::Float4(rect.left, rect.top, rect.width, rect.height);
+			present_data.currSize			= Math::Float2(window->GetWidth(), window->GetHeight());
+
+			context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
+
 			context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
 			context->graphicsInterface->SetRenderTarget(back_buffer);
+			
+			// Backbuffer copy
 			context->graphicsInterface->Draw();
 
 			context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);

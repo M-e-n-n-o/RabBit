@@ -25,15 +25,16 @@ typedef RB::Math::Float4x4	float4x4;
 // ---------------------------------------------------------------
 
 // Constant buffer slots
-#define kTexIndicesCB		0
-#define kFrameConstantsCB	1
-#define kInstanceCB			2
+#define kTexIndicesCB			0
+#define kFrameConstantsCB		1
+#define kInstanceCB				2
 
 // Sampler slots
-#define kClampSamplerSlot	0	
+#define kClampSamplerSlot		0
+#define kBlackBorderSamplerSlot	1
 
 // Texture spaces
-#define kTex2DTableSpace	0
+#define kTex2DTableSpace		0
 
 
 // Global constant buffer structs
@@ -96,8 +97,8 @@ static const uint g_TextureIndicesTex2D[SHADER_TEX2D_SLOTS] = (uint[SHADER_TEX2D
 // Global samplers
 // ---------------------------------------------------------------
 
-SamplerState g_ClampSampler : SAMPLER_REG(kClampSamplerSlot);
-
+SamplerState g_ClampSampler			: SAMPLER_REG(kClampSamplerSlot);
+SamplerState g_BlackBorderSampler	: SAMPLER_REG(kBlackBorderSamplerSlot);
 
 
 // Global helper functions
