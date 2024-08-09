@@ -1,0 +1,55 @@
+#pragma once
+#include "RabBitCommon.h"
+#include "entity/ObjectComponent.h"
+#include "graphics/RenderResource.h"
+#include "math/Vector.h"
+
+namespace RB::Entity
+{
+	class Camera : public ObjectComponent
+	{
+	public:
+		DEFINE_COMP_TAG("Camera");
+
+		// FOV in degrees
+		Camera(float near_plane, float far_plane, float vfov, uint32_t target_window_index)
+			: m_Near(near_plane)
+			, m_Far(far_plane)
+			, m_VFovDegrees(vfov)
+			, m_TargetWindowIndex(target_window_index)
+			, m_RenderTexture(nullptr)
+			, m_ClearColor(1.0f)
+		{
+		}
+
+		Camera(float near_plane, float far_plane, float vfov, Graphics::Texture2D* render_texture)
+			: m_Near(near_plane)
+			, m_Far(far_plane)
+			, m_VFovDegrees(vfov)
+			, m_TargetWindowIndex(-1)
+			, m_RenderTexture(render_texture)
+			, m_ClearColor(1.0f)
+		{
+		}
+
+		uint32_t GetTargetWindowIndex()	const { return m_TargetWindowIndex; }
+		Graphics::Texture2D* GetRenderTexture() const { return m_RenderTexture; }
+
+		void SetClearColor(const Math::Float4& color) { m_ClearColor = color; }
+		Math::Float4 GetClearColor() const { return m_ClearColor; }
+
+		float GetNearPlane()			const { return m_Near; }
+		float GetFarPlane()				const { return m_Far; }
+		float GetVerticalFovInDegrees()	const { return m_VFovDegrees; }
+		float GetVerticalFovInRadians()	const { return Math::DegreesToRadians(m_VFovDegrees); }
+
+	private:
+		float					m_Near;
+		float					m_Far;
+		float					m_VFovDegrees;
+
+		Math::Float4			m_ClearColor;
+		uint32_t				m_TargetWindowIndex;
+		Graphics::Texture2D*	m_RenderTexture;	
+	};
+}

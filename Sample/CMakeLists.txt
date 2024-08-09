@@ -18,10 +18,5 @@ target_include_directories(${APP_NAME} PUBLIC
 target_link_directories(${APP_NAME} PUBLIC RabBit)
 target_link_libraries(${APP_NAME} RabBit)
 
-# Add post build command to copy RabBit library to build location
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_custom_command(TARGET ${APP_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:RabBit>/RabBit.lib"
-            $<TARGET_FILE_DIR:${APP_NAME}>)
-endif()
+# Add post build command to copy RabBit libraries to build location
+copyExternalLibraries()

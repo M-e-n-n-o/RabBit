@@ -12,17 +12,19 @@
 	#ifdef RB_CONFIG_DEBUG
 		#define RB_ENABLE_ASSERTS
 		#define RB_ENABLE_LOGS
+		#define RB_DEBUG_BREAK __debugbreak()
 	#endif
 
-	#ifdef RB_CONFIG_RELEASE
+	#ifdef RB_CONFIG_OPTIMIZED
 		#define RB_ENABLE_ASSERTS
 		#define RB_ENABLE_LOGS
+		#define RB_DEBUG_BREAK
 	#endif
 
 	#ifdef RB_CONFIG_DIST
-
+		#define RB_DEBUG_BREAK
 	#endif
 
 #else
-	#error RabBit only supports Windows! Make sure to specify a supported platform in the CMakeLists.txt!
+	#error Make sure to specify a supported platform in the CMakeLists.txt! RabBit only supports Windows!
 #endif

@@ -51,6 +51,19 @@
 #include "RabBit/EntryPoint.h"
 // ---------------------------------
 
+#include "RabBit/utils/debug/Log.h"
+#include "RabBit/utils/debug/Assert.h"
+
 #include "RabBit/app/Application.h"
 
-#include "RabBit/utils/math/Vec.h"
+#include "RabBit/entity/Scene.h"
+#include "RabBit/entity/GameObject.h"
+#include "RabBit/entity/components/Mesh.h"
+#include "RabBit/entity/components/Camera.h"
+#include "RabBit/entity/components/Transform.h"
+
+#include "RabBit/input/Input.h"
+#include "RabBit/input/KeyCodes.h"
+#include "RabBit/input/MouseCodes.h"
+
+#include "RabBit/math/Vector.h"

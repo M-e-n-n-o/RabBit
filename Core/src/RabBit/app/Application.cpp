@@ -1,31 +1,41 @@
-#include "RabBitPch.h"
+#include "RabBitCommon.h"
 #include "Application.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include "graphics/Window.h"
+#include "graphics/RenderInterface.h"
+#include "graphics/Renderer.h"
+#include "graphics/Display.h"
+#include "graphics/AssetManager.h"
 
-#include <wrl.h>
+#include "entity/Scene.h"
 
-// DirectX 12 specific headers.
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <d3dcompiler.h>
-#include <DirectXMath.h>
+#include "input/events/KeyEvent.h"
+#include "input/KeyCodes.h"
+#include "input/Input.h"
 
-// D3D12 extension library.
-#include <D3DX12/d3dx12.h>
+using namespace RB::Graphics;
+using namespace RB::Input::Events;
+using namespace RB::Input;
+using namespace RB::Entity;
 
 namespace RB
 {
-	Application::Application()
+	Application* Application::s_Instance = nullptr;
+
+	Application::Application(AppInfo& info)
+		: EventListener(kEventCat_All)
+		, m_StartAppInfo(info)
+		, m_Initialized(false)
+		, m_ShouldStop(false)
+		, m_FrameIndex(0)
+		, m_CheckWindows(false)
+		, m_PrimaryWindowIndex(0)
 	{
-		RB_LOG_RELEASE("RabBit Engine version: %s.%s.%s\n", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
+		RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
+		s_Instance = this;
 
-		RB_ASSERT(1 == 1);
-
-		Microsoft::WRL::ComPtr<ID3D12Debug> debug_interface;
-		RB_ASSERT_D3D(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface)));
-		debug_interface->EnableDebugLayer();
+		RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
+		RB_LOG_RELEASE(LOGTAG_MAIN, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
 	}
 
 	Application::~Application()
@@ -33,11 +43,263 @@ namespace RB
 
 	}
 
+	bool Application::Start(const char* launch_args)
+	{
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
+		RB_LOG(LOGTAG_MAIN, "");
+
+		char asset_path[256];
+		if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
+		{
+			std::string s = offset;
+
+			int start = s.find_first_of("\"") + 1;
+			s = s.substr(start);
+			int end = s.find_first_of("\"");
+
+			if (s[end-1] != '/' && s[end-1] != '\\')
+			{
+				s.insert(s.begin() + end, '/');
+				end++;
+			}
+
+			strcpy(asset_path, s.substr(0, end).c_str());
+		}
+		else
+		{
+			RB_ASSERT_ALWAYS_RELEASE(LOGTAG_MAIN, "Did not fill in the asset path! Use the \"-assetPath \"path\" launch argument to specify the path");
+			return false;
+		}
+
+		RB_LOG(LOGTAG_MAIN, "Asset path: \"%s\"", asset_path);
+
+		AssetManager::Init(asset_path);
+
+		Renderer::SetAPI(RenderAPI::D3D12);
+		m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
+		m_Renderer->Init();
+
+		m_Displays = Display::CreateDisplays();
+
+		for (const AppInfo::Window& window : m_StartAppInfo.windows)
+		{
+			if (window.fullscreen)
+			{
+				m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
+			}
+			else
+			{
+				m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
+			}
+		}
+
+		m_Scene = new Scene();
+
+		m_Initialized = true;
+
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "========== STARTUP COMPLETE =========");
+		RB_LOG(LOGTAG_MAIN, "");
+
+		// Initialize app user
+		RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.appName);
+		OnStart();
+
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "======== STARTING MAIN LOOP =========");
+		RB_LOG(LOGTAG_MAIN, "");
+
+		return true;
+	}
+
 	void Application::Run()
 	{
-		while (true)
+		while (!m_ShouldStop)
 		{
-			Update();
+			// Poll inputs and update windows
+			for (Graphics::Window* window : m_Windows)
+			{
+				if (window->IsValid())
+				{
+					window->Update();
+				}
+				else
+				{
+					m_CheckWindows = true;
+				}
+			}
+
+			// Process the new received events
+			ProcessEvents();
+
+			// Firstly update the engine itself
+			UpdateInternal();
+
+			// Secondly update the application
+			OnUpdate();
+
+			// Submit the scene as context for rendering the next frame
+			m_Renderer->SubmitFrame(m_Scene);
+
+			// Check if there are any windows that should be closed/removed
+			if (m_CheckWindows)
+			{
+				m_Renderer->SyncRenderer(true);
+
+				for (int i = 0; i < m_Windows.size(); i++)
+				{
+					if (!m_Windows[i]->IsValid())
+					{
+						delete m_Windows[i];
+						m_Windows.erase(m_Windows.begin() + i);
+						i--;
+					}
+				}
+
+				if (m_Windows.size() == 0)
+				{
+					RB_LOG(LOGTAG_EVENT, "Last window has been closed, requesting to stop application");
+					m_ShouldStop = true;
+				}
+
+				m_CheckWindows = false;
+			}
+
+			// Update the frame index
+			++m_FrameIndex;
 		}
+	}
+
+	void Application::UpdateInternal()
+	{
+
+	}
+
+	void Application::Shutdown()
+	{
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "============= SHUTDOWN ==============");
+		RB_LOG(LOGTAG_MAIN, "");
+
+		// Shutdown app user
+		OnStop();
+
+		delete m_Scene;
+
+		for (int i = 0; i < m_Windows.size(); i++)
+		{
+			delete m_Windows[i];
+		}
+		m_Windows.clear();
+
+		for (int i = 0; i < m_Displays.size(); i++)
+		{
+			delete m_Displays[i];
+		}
+		m_Displays.clear();
+
+		m_Renderer->Shutdown();
+		delete m_Renderer;
+
+		RB_LOG(LOGTAG_MAIN, "");
+		RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
+		RB_LOG(LOGTAG_MAIN, "");
+	}
+
+	Graphics::Window* Application::GetPrimaryWindow() const
+	{
+		if (m_PrimaryWindowIndex >= m_Windows.size() || m_PrimaryWindowIndex < 0)
+		{
+			RB_LOG_ERROR(LOGTAG_WINDOWING, "There is no primary window");
+			return nullptr;
+		}
+
+		return m_Windows[m_PrimaryWindowIndex];
+	}
+
+	Graphics::Window* Application::GetWindow(uint32_t index) const
+	{
+		RB_ASSERT_FATAL(LOGTAG_MAIN, index < m_Windows.size() && index >= 0, "Trying to get a window that does not exist");
+
+		return m_Windows[index];
+	}
+
+	Graphics::Window* Application::FindWindow(void* window_handle) const
+	{
+		for (Graphics::Window* window : m_Windows)
+		{
+			if (window->IsSameWindow(window_handle))
+			{
+				return window;
+			}
+		}
+
+		RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+
+		return nullptr;
+	}
+
+	int32_t Application::FindWindowIndex(void* window_handle) const
+	{
+		for (int i = 0; i < m_Windows.size(); ++i)
+		{
+			if (m_Windows[i]->IsSameWindow(window_handle))
+			{
+				return i;
+			}
+		}
+
+		RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+
+		return -1;
+	}
+
+	void Application::OnEvent(Event& event)
+	{
+		if (!m_Initialized)
+		{
+			return;
+		}
+
+		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
+
+		BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
+		{
+			if (e.GetKeyCode() == KeyCode::F11 ||
+				(IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::Enter))
+			{
+				WindowFullscreenToggleEvent e(GetPrimaryWindow()->GetNativeWindowHandle());
+				g_EventManager->InsertEvent(e);
+			}
+
+			if (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
+			{
+				RB_LOG(LOGTAG_EVENT, "Instant close requested, requesting to close all windows..");
+
+				for (int i = 0; i < m_Windows.size(); i++)
+				{
+					WindowCloseRequestEvent e(m_Windows[i]->GetNativeWindowHandle());
+					g_EventManager->InsertEvent(e);
+				}
+			}
+
+		}, event);
+		
+		BindEvent<WindowOnFocusEvent>([this](WindowOnFocusEvent& focus_event)
+		{
+			int32_t window_index = FindWindowIndex(focus_event.GetWindowHandle());
+
+			if (window_index >= 0)
+			{
+				m_PrimaryWindowIndex = window_index;
+			}
+
+		}, event);
+
+		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
+		{
+			m_CheckWindows = true;
+		}, event);
 	}
 }
