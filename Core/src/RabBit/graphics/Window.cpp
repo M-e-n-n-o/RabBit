@@ -146,18 +146,13 @@ namespace RB::Graphics
 
 	void Window::CalculateVirtualSize()
 	{
-		uint32_t	width		= GetWidth();
-		uint32_t	height		= GetHeight();
-		float		aspect		= (float)width / (float)height;
+		uint32_t	width			= GetWidth();
+		uint32_t	height			= GetHeight();
+		float		aspect			= (float)width / (float)height;
+		float		virtual_aspect	= m_NewVirtualAspect == 0.0f ? aspect : m_NewVirtualAspect;
 
-		if (m_NewVirtualAspect == 0.0f)
-		{
-			// Use aspect ratio of window
-			m_NewVirtualAspect = GetAspectRatio();
-		}
-
-		float		min_aspect	= Math::Max(aspect, m_NewVirtualAspect);
-		float		max_aspect	= Math::Min(aspect, m_NewVirtualAspect);
+		float		min_aspect	= Math::Max(aspect, virtual_aspect);
+		float		max_aspect	= Math::Min(aspect, virtual_aspect);
 
 		m_CurrentVirtualResScale = m_NewVirtualResScale;
 
@@ -277,8 +272,6 @@ namespace RB::Graphics
 		{
 		case RenderAPI::D3D12:
 		{
-
-
 			D3D12::WindowArgs args = {};
 			args.className		= L"RabBit WindowClass";
 			args.instance		= GetModuleHandle(nullptr);

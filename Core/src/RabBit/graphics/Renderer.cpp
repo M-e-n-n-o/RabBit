@@ -411,6 +411,15 @@ namespace RB::Graphics
 		context->graphicsInterface->SetDepthMode(DepthMode::Disabled);
 		context->graphicsInterface->SetVertexBuffer(context->backBufferCopyVB);
 
+		struct WindowPair
+		{
+			Window* window;
+			uint32_t windowIndex;
+		};
+
+		uint32_t total_pairs = 0;
+		WindowPair* window_pairs = (WindowPair*) ALLOC_STACK(sizeof(WindowPair) * context->totalViewContexts);
+
 		// Copy to real backbuffers and present
 		for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
 		{
@@ -460,21 +469,30 @@ namespace RB::Graphics
 			// Backbuffer copy
 			context->graphicsInterface->Draw();
 
+			// Prepare present
 			context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);
 			context->graphicsInterface->FlushResourceBarriers();
 
-			// Execute al the work to the GPU
-			Shared<GpuGuard> guard = context->graphicsInterface->ExecuteOnGpu();
+			window_pairs[total_pairs].window = window;
+			window_pairs[total_pairs].windowIndex = window_index;
+			total_pairs++;
+		}
 
-			if (window_index >= context->backBufferAvailabilityGuards->size())
+		// Execute al the work to the GPU
+		Shared<GpuGuard> guard = context->graphicsInterface->ExecuteOnGpu();
+
+		// Present to each window
+		for (int pair_index = 0; pair_index < total_pairs; ++pair_index)
+		{
+			while (window_pairs[pair_index].windowIndex >= context->backBufferAvailabilityGuards->size())
 			{
 				context->backBufferAvailabilityGuards->push_back(Renderer::BackBufferGuard());
 			}
 
-			uint64_t buffer_index = window->GetCurrentBackBufferIndex();
-			(*context->backBufferAvailabilityGuards)[window_index].guards[buffer_index] = guard;
+			uint32_t back_buffer_index = window_pairs[pair_index].window->GetCurrentBackBufferIndex();
+			(*context->backBufferAvailabilityGuards)[window_pairs[pair_index].windowIndex].guards[back_buffer_index] = guard;
 
-			window->Present(VsyncMode::On);
+			window_pairs[pair_index].window->Present(VsyncMode::On);
 		}
 
 		context->OnRenderFrameEnd();
