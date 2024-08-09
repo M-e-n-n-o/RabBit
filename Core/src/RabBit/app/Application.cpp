@@ -220,7 +220,11 @@ namespace RB
 
 	Graphics::Window* Application::GetWindow(uint32_t index) const
 	{
-		RB_ASSERT_FATAL(LOGTAG_MAIN, index < m_Windows.size() && index >= 0, "Trying to get a window that does not exist");
+		if (index >= m_Windows.size() || index < 0)
+		{
+			RB_LOG_WARN(LOGTAG_MAIN, "Trying to get a window that does not exist");
+			return nullptr;
+		}
 
 		return m_Windows[index];
 	}
