@@ -23,8 +23,8 @@ namespace RB::Graphics::D3D12
 		bool			fullscreen;
 		uint32_t		width;
 		uint32_t		height;
-		uint32_t		virtualScale;
-		uint32_t		virtualAspect;
+		float			virtualScale;
+		float			virtualAspect;
 		uint32_t		windowStyle;
 	};
 
@@ -41,10 +41,7 @@ namespace RB::Graphics::D3D12
 		Math::Float4 GetWindowRectangle()	const override;
 		uint32_t	 GetWidth()				const override;
 		uint32_t	 GetHeight()			const override;
-		uint32_t	 GetVirtualWidth()		const override;
-		uint32_t	 GetVirtualHeight()		const override;
 		RenderRect	 GetWindowRect()		const override;
-		RenderRect	 GetVirtualWindowRect()	const override;
 		bool		 IsMinimized()			const override;
 		bool		 IsValid()				const override;
 
@@ -55,35 +52,28 @@ namespace RB::Graphics::D3D12
 		bool IsSameWindow(void* window_handle) const override;
 		void* GetNativeWindowHandle() const override;
 
-		void Resize(uint32_t width, uint32_t height, int32_t x, int32_t y) override;
 
 		RenderResourceFormat GetBackBufferFormat() override;
 		uint32_t GetCurrentBackBufferIndex() override;
 		Graphics::Texture2D* GetCurrentBackBuffer() override;
-		Graphics::Texture2D* GetVirtualBackBuffer() override;
 
 		HWND GetHandle() const { return m_WindowHandle; }
 
 	private:
-		void OnResize(uint32_t width, uint32_t height) override;
+		void ResizeWindow(uint32_t width, uint32_t height, int32_t x, int32_t y) override;
+		void ResizeBackBuffers(uint32_t width, uint32_t height) override;
 		void DestroyWindow() override;
 
 		void RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name);
 
 		void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style);
 
-		HWND		m_WindowHandle;
-		SwapChain*	m_SwapChain;
+		HWND					m_WindowHandle;
+		SwapChain*				m_SwapChain;
 
-		bool		m_IsValid;
-		bool		m_IsTearingSupported;
+		bool					m_IsValid;
+		bool					m_IsTearingSupported;
 
-		uint32_t	m_VirtualWidth;
-		uint32_t	m_VirtualHeight;
-		uint32_t	m_VirtualTop;
-		uint32_t	m_VirtualLeft;
-
-		Graphics::Texture2D* m_BackBuffers[BACK_BUFFER_COUNT];
-		Graphics::Texture2D* m_VirtualBackBuffer;
+		Graphics::Texture2D*	m_BackBuffers[BACK_BUFFER_COUNT];
 	};
 }

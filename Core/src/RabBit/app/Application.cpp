@@ -86,11 +86,11 @@ namespace RB
 		{
 			if (window.fullscreen)
 			{
-				m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default));
+				m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
 			}
 			else
 			{
-				m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default));
+				m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
 			}
 		}
 

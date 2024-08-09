@@ -24,7 +24,7 @@ namespace RB::Graphics::D3D12
 	LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
 	WindowD3D12::WindowD3D12(const WindowArgs args)
-		: Window(false)
+		: Window(false, args.virtualScale, args.virtualAspect)
 		, m_WindowHandle(nullptr)
 		, m_IsValid(true)
 	{
@@ -42,19 +42,6 @@ namespace RB::Graphics::D3D12
 
 		uint32_t width = args.width;
 		uint32_t height = args.height;
-
-		// TODO calculate this
-		static_assert(false);
-		m_VirtualWidth = args.virtualWidth;
-		m_VirtualHeight = args.virtualHeight;
-		m_VirtualTop = ;
-		m_VirtualLeft = ;
-
-		if (m_VirtualWidth == 0 || m_VirtualHeight == 0)
-		{
-			m_VirtualWidth = width;
-			m_VirtualHeight = height;
-		}
 
 		// Create window
 		{
@@ -85,8 +72,6 @@ namespace RB::Graphics::D3D12
 			{
 				m_BackBuffers[i] = nullptr;
 			}
-
-			m_VirtualBackBuffer = nullptr;
 		}
 
 		if (args.fullscreen)
@@ -131,7 +116,7 @@ namespace RB::Graphics::D3D12
 	Math::Float4 WindowD3D12::GetWindowRectangle() const
 	{
 		RECT window_rect;
-		GetWindowRect(m_WindowHandle, &window_rect);
+		::GetWindowRect(m_WindowHandle, &window_rect);
 
 		return Math::Float4(window_rect.right - window_rect.left, window_rect.bottom - window_rect.top, window_rect.left, window_rect.top);
 	}
@@ -146,16 +131,6 @@ namespace RB::Graphics::D3D12
 		return m_SwapChain->GetHeight();
 	}
 
-	uint32_t WindowD3D12::GetVirtualWidth() const
-	{
-		return m_VirtualWidth;
-	}
-
-	uint32_t WindowD3D12::GetVirtualHeight() const
-	{
-		return m_VirtualHeight;
-	}
-
 	RenderRect WindowD3D12::GetWindowRect() const
 	{
 		RenderRect rect = {};
@@ -164,18 +139,6 @@ namespace RB::Graphics::D3D12
 		rect.left	= 0;
 		rect.top	= 0;
 		rect.aspect = GetAspectRatio();
-
-		return rect;
-	}
-
-	RenderRect WindowD3D12::GetVirtualWindowRect() const
-	{
-		RenderRect rect = {};
-		rect.width	= m_VirtualWidth;
-		rect.height = m_VirtualHeight;
-		rect.left	= m_VirtualLeft;
-		rect.top	= m_VirtualTop;
-		rect.aspect = GetVirtualAspectRatio();
 
 		return rect;
 	}
@@ -231,35 +194,8 @@ namespace RB::Graphics::D3D12
 		return m_WindowHandle;
 	}
 
-	void WindowD3D12::Resize(uint32_t width, uint32_t height, int32_t x, int32_t y)
+	void WindowD3D12::ResizeWindow(uint32_t width, uint32_t height, int32_t x, int32_t y)
 	{
-		Math::Float2 display_res = GetParentDisplay()->GetResolution();
-
-		if (width == 0)
-		{
-			width = int(display_res.x / 2.0f);
-		}
-
-		if (height == 0)
-		{
-			height = int(display_res.y / 2.0f);
-		}
-
-		// When x or y is -1 that coordinate will be centered to the display
-
-		if (x == -1)
-		{
-			x = int32_t((display_res.x / 2.0f) - (width / 2.0f));
-		}
-
-		if (y == -1)
-		{
-			y = int32_t((display_res.y / 2.0f) - (height / 2.0f));
-		}
-
-		x = Math::Clamp(x, 0, int(display_res.x - (width / 2.0f)));
-		y = Math::Clamp(y, 0, int(display_res.y - (height / 2.0f)));
-
 		SetWindowPos(m_WindowHandle, HWND_TOP, x, y, width, height, SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED);
 	}
 
@@ -295,23 +231,7 @@ namespace RB::Graphics::D3D12
 		return m_BackBuffers[index];
 	}
 
-	Graphics::Texture2D* WindowD3D12::GetVirtualBackBuffer()
-	{
-		if (!m_IsValid)
-		{
-			RB_LOG_ERROR(LOGTAG_WINDOWING, "Cannot retrieve virtual backbuffer from window as it is not valid");
-			return nullptr;
-		}
-
-		if (m_VirtualBackBuffer == nullptr)
-		{
-			m_VirtualBackBuffer = Texture2D::Create("Virtual backbuffer", GetBackBufferFormat(), GetWidth(), GetHeight(), true, false, true);
-		}
-
-		return m_VirtualBackBuffer;
-	}
-
-	void WindowD3D12::OnResize(uint32_t width, uint32_t height)
+	void WindowD3D12::ResizeBackBuffers(uint32_t width, uint32_t height)
 	{
 		if (m_SwapChain->GetWidth() == width && m_SwapChain->GetHeight() == height)
 		{
@@ -322,8 +242,6 @@ namespace RB::Graphics::D3D12
 
 		width = std::max(1u, width);
 		height = std::max(1u, height);
-
-		SAFE_DELETE(m_VirtualBackBuffer);
 
 		// Release backbuffer references
 		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
@@ -343,8 +261,6 @@ namespace RB::Graphics::D3D12
 		RB_LOG(LOGTAG_WINDOWING, "Scheduled destroy of window");
 
 		m_IsValid = false;
-
-		SAFE_DELETE(m_VirtualBackBuffer);
 
 		for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
 		{

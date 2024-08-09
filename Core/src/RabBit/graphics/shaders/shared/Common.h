@@ -1,4 +1,5 @@
 #if !SHADER
+#pragma once
 #include "RabBitCommon.h"
 
 typedef uint32_t			uint;
@@ -30,8 +31,8 @@ typedef RB::Math::Float4x4	float4x4;
 #define kInstanceCB				2
 
 // Sampler slots
-#define kClampSamplerSlot		0
-#define kBlackBorderSamplerSlot	1
+#define kClampAnisoSamplerSlot		0
+#define kClampPointSamplerSlot		1
 
 // Texture spaces
 #define kTex2DTableSpace		0
@@ -97,8 +98,8 @@ static const uint g_TextureIndicesTex2D[SHADER_TEX2D_SLOTS] = (uint[SHADER_TEX2D
 // Global samplers
 // ---------------------------------------------------------------
 
-SamplerState g_ClampSampler			: SAMPLER_REG(kClampSamplerSlot);
-SamplerState g_BlackBorderSampler	: SAMPLER_REG(kBlackBorderSamplerSlot);
+SamplerState g_ClampAnisoSampler	: SAMPLER_REG(kClampAnisoSamplerSlot);
+SamplerState g_ClampPointSampler	: SAMPLER_REG(kClampPointSamplerSlot);
 
 
 // Global helper functions

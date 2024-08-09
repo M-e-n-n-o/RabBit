@@ -29,6 +29,18 @@ namespace RB::Math
 	}
 
 	template<typename T>
+	inline T Floor(T value)
+	{
+		return floor(value);
+	}
+
+	template<>
+	inline float Floor<float>(float value)
+	{
+		return floorf(value);
+	}
+
+	template<typename T>
 	inline T AlignUpWithMask(T value, size_t mask)
 	{
 		return (T)(((size_t)value + mask) & ~mask);

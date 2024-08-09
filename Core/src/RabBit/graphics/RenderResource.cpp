@@ -40,6 +40,11 @@ namespace RB::Graphics
 		}
 	}
 
+	float Texture2D::GetAspectRatio() const
+	{
+		return (float)GetWidth() / (float)GetHeight();
+	}
+
 	RenderResourceType RenderResource::GetPrimitiveType() const
 	{
 		uint32_t last_primitive = (uint32_t)RenderResourceType::kLastPrimitiveType;

@@ -145,7 +145,7 @@ namespace RB::Graphics::D3D12
 
 			// Clamp sampler
 			static_samplers[0] = {};
-			static_samplers[0].ShaderRegister	= kClampSamplerSlot;
+			static_samplers[0].ShaderRegister	= kClampAnisoSamplerSlot;
 			static_samplers[0].RegisterSpace	= 0;
 			static_samplers[0].Filter			= D3D12_FILTER_ANISOTROPIC;
 			static_samplers[0].AddressU			= D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -161,14 +161,14 @@ namespace RB::Graphics::D3D12
 
 			// Black border sampler
 			static_samplers[1] = {};
-			static_samplers[1].ShaderRegister	= kBlackBorderSamplerSlot;
+			static_samplers[1].ShaderRegister	= kClampPointSamplerSlot;
 			static_samplers[1].RegisterSpace	= 0;
-			static_samplers[1].Filter			= D3D12_FILTER_ANISOTROPIC;
-			static_samplers[1].AddressU			= D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			static_samplers[1].AddressV			= D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			static_samplers[1].AddressW			= D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+			static_samplers[1].Filter			= D3D12_FILTER_MIN_MAG_MIP_POINT;
+			static_samplers[1].AddressU			= D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			static_samplers[1].AddressV			= D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			static_samplers[1].AddressW			= D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 			static_samplers[1].MipLODBias		= 0;
-			static_samplers[1].MaxAnisotropy	= 8;
+			static_samplers[1].MaxAnisotropy	= 1;
 			static_samplers[1].ComparisonFunc	= D3D12_COMPARISON_FUNC_LESS_EQUAL;
 			static_samplers[1].BorderColor		= D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
 			static_samplers[1].MinLOD			= 0.0f;

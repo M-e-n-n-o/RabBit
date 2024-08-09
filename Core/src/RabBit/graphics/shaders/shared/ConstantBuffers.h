@@ -13,6 +13,6 @@ typedef RB::Math::Float4x4	float4x4;
 
 struct PresentCB
 {
-	float4 texOffsetAndSize;
+	float2 texOffset;
 	float2 currSize;
 };

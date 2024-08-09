@@ -253,13 +253,6 @@ namespace RB::Graphics
 
 			contexts[context_index] = {};
 
-			contexts[context_index].viewFrustum = {};
-			contexts[context_index].viewFrustum.SetTransform(transform->GetLocalToWorldMatrix());
-			contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), window->GetAspectRatio(), false);
-			//contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * window->GetAspectRatio(), 1, -1, false);
-
-			contexts[context_index].clearColor = camera->GetClearColor();
-
 			Texture2D* render_texture = camera->GetRenderTexture();
 			if (render_texture == nullptr)
 			{
@@ -273,6 +266,13 @@ namespace RB::Graphics
 				contexts[context_index].isOffscreenContext = true;
 				contexts[context_index].finalColorTarget = render_texture;
 			}
+
+			contexts[context_index].viewFrustum = {};
+			contexts[context_index].viewFrustum.SetTransform(transform->GetLocalToWorldMatrix());
+			contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetAspectRatio(), false);
+			//contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, false);
+
+			contexts[context_index].clearColor = camera->GetClearColor();
 
 			context_index++;
 		}
@@ -313,16 +313,17 @@ namespace RB::Graphics
 
 		if (window)
 		{
-			window->ProcessEvent(*window_event);
-
 			switch (window_event->GetEventType())
 			{
 			case EventType::WindowCreated: 
 			case EventType::WindowCloseRequest: 
 			case EventType::WindowClose:
 			case EventType::WindowResize:
-			case EventType::WindowFullscreenToggle:
 			{
+				// Force the main thread to sync with the render thread
+				// TODO Better to just make an event out of this instead of forcing the sync by sleeping!
+				Sleep(m_RenderThreadTimeoutMs);
+
 				// Need to cancel all next jobs for the render thread as these will not be valid
 				m_RenderThread->CancelAll();
 			}
@@ -331,9 +332,13 @@ namespace RB::Graphics
 			case EventType::WindowFocus:
 			case EventType::WindowLostFocus:
 			case EventType::WindowMoved:
+			case EventType::WindowFullscreenToggle:
 			default:
 				break;
 			}
+
+			// Actually process the event
+			window->ProcessEvent(*window_event);
 		}
 	}
 
@@ -441,12 +446,11 @@ namespace RB::Graphics
 			}
 
 			Texture2D* back_buffer = window->GetCurrentBackBuffer();
-
 			RenderRect rect = window->GetVirtualWindowRect();
 
 			PresentCB present_data = {};
-			present_data.texOffsetAndSize	= Math::Float4(rect.left, rect.top, rect.width, rect.height);
-			present_data.currSize			= Math::Float2(window->GetWidth(), window->GetHeight());
+			present_data.currSize  = Math::Float2(window->GetWidth(), window->GetHeight());
+			present_data.texOffset = Math::Float2(rect.left, rect.top);
 
 			context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
 
@@ -477,5 +481,10 @@ namespace RB::Graphics
 
 		// Process window events
 		context->ProcessEvents();
+
+		// Update the render frame index
+		EnterCriticalSection(context->renderFrameIndexCS);
+		context->renderFrameIndex++;
+		LeaveCriticalSection(context->renderFrameIndexCS);
 	}
 }

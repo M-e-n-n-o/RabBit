@@ -49,7 +49,7 @@ public:
 		//	0.5f, -0.5f, 0,		0, 0, 1,
 		//};
 
-		m_Mesh = new Mesh("Triangle", vertex_data, 6, _countof(vertex_data), index_data, _countof(index_data));
+		m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
 		m_Material = new Material("TheRock.png");
 
 		GameObject* object = GetScene()->CreateGameObject();
@@ -119,9 +119,11 @@ RB::Application* RB::CreateApplication(const char* launch_args)
 	app_info.appName		= "RabBit App";
 
 	AppInfo::Window window1 = {};
-	window1.windowName		= "Window 1";
-	window1.windowWidth		= 1280;
-	window1.windowHeight	= 720;
+	window1.windowName			= "Window 1";
+	window1.windowWidth			= 1280;
+	window1.windowHeight		= 720;
+	window1.forcedRenderAspect	= 21.0f / 9.0f;
+	window1.renderScale			= 0.25f;
 	app_info.windows.push_back(window1);
 
 	//AppInfo::Window window2 = {};

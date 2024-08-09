@@ -27,6 +27,8 @@ namespace RB
 			bool		fullscreen;
 			uint32_t    windowWidth;
 			uint32_t    windowHeight;
+			float		forcedRenderAspect = 0.0f;
+			float		renderScale = 1.0f;
 			bool		semiTransparent;
 		};
 
