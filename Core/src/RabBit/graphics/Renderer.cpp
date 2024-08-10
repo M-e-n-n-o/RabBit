@@ -43,8 +43,7 @@ namespace RB::Graphics
 						 
 		RenderInterface*					graphicsInterface;
 											
-		uint64_t*							renderFrameIndex;
-		CRITICAL_SECTION*					renderFrameIndexCS;
+		ThreadedVariable<uint64_t>*			renderFrameIndex;
 		
 		VertexBuffer*						backBufferCopyVB;
 
@@ -69,6 +68,8 @@ namespace RB::Graphics
 		: EventListener(kEventCat_Window)
 		, m_IsShutdown(true)
 		, m_MultiThreadingSupport(multi_threading_support)
+		, m_RenderFrameIndex(0)
+		, m_ForceSync(false)
 	{
 
 	}
@@ -93,8 +94,8 @@ namespace RB::Graphics
 			m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
 		}
 
-		m_RenderFrameIndex = 0;
-		InitializeCriticalSection(&m_RenderFrameIndexCS);
+		m_RenderFrameIndex.SetValue(0);
+		m_ForceSync.SetValue(false);
 
 		// Set the render passes
 		m_TotalPasses = 1;
@@ -142,8 +143,6 @@ namespace RB::Graphics
 
 		delete m_ResourceStreamer;
 
-		DeleteCriticalSection(&m_RenderFrameIndexCS);
-
 		// Delete default resources
 		DeleteResourceDefaults();
 
@@ -175,7 +174,6 @@ namespace RB::Graphics
 			context->totalPasses					= m_TotalPasses;
 			context->graphicsInterface				= m_GraphicsInterface;
 			context->renderFrameIndex				= &m_RenderFrameIndex;
-			context->renderFrameIndexCS				= &m_RenderFrameIndexCS;
 			context->backBufferCopyVB				= m_BackBufferCopyVB;
 			context->OnRenderFrameStart				= std::bind(&Renderer::OnFrameStart, this);
 			context->OnRenderFrameEnd				= std::bind(&Renderer::OnFrameEnd, this);
@@ -209,10 +207,15 @@ namespace RB::Graphics
 
 		if (m_MultiThreadingSupport)
 		{
-			// Sync with the render thread on a stall
+			bool force = m_ForceSync.GetValue();
+
+			// Sync with the render thread on a stall or when forced
 			JobID stalling_job;
-			if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job))
+			if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job) || force)
 			{
+				// Notify that we are going to do the force sync (if forced)
+				m_ForceSync.SetValue(false);
+
 				RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
 				SyncRenderer(false);
 			}
@@ -298,11 +301,7 @@ namespace RB::Graphics
 
 	uint64_t Renderer::GetRenderFrameIndex()
 	{
-		EnterCriticalSection(&m_RenderFrameIndexCS);
-		uint64_t index = m_RenderFrameIndex;
-		LeaveCriticalSection(&m_RenderFrameIndexCS);
-
-		return index;
+		return m_RenderFrameIndex.GetValue();
 	}
 
 	void Renderer::OnEvent(Event& event)
@@ -315,20 +314,23 @@ namespace RB::Graphics
 		{
 			switch (window_event->GetEventType())
 			{
-			case EventType::WindowCreated: 
-			case EventType::WindowCloseRequest: 
-			case EventType::WindowClose:
 			case EventType::WindowResize:
 			{
-				// Force the main thread to sync with the render thread
-				// TODO Better to just make an event out of this instead of forcing the sync by sleeping!
-				Sleep(m_RenderThreadTimeoutMs);
+				// Force the main thread to sync with the render thread (wait until the main thread has set the value to false)
+				m_ForceSync.SetValue(true);
+				m_ForceSync.WaitUntilConditionMet([](const bool& new_value) -> bool
+					{
+						return new_value == false;
+					});
 
 				// Need to cancel all next jobs for the render thread as these will not be valid
 				m_RenderThread->CancelAll();
 			}
 			break;
 
+			case EventType::WindowCreated: 
+			case EventType::WindowCloseRequest: 
+			case EventType::WindowClose:
 			case EventType::WindowFocus:
 			case EventType::WindowLostFocus:
 			case EventType::WindowMoved:
@@ -361,6 +363,8 @@ namespace RB::Graphics
 		RenderContext* context = (RenderContext*) data;
 
 		GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
+
+		uint64_t frame_index = context->renderFrameIndex->GetValue();
 
 		context->OnRenderFrameStart();
 
@@ -501,8 +505,7 @@ namespace RB::Graphics
 		context->ProcessEvents();
 
 		// Update the render frame index
-		EnterCriticalSection(context->renderFrameIndexCS);
-		context->renderFrameIndex++;
-		LeaveCriticalSection(context->renderFrameIndexCS);
+		frame_index++;
+		context->renderFrameIndex->SetValue(frame_index);
 	}
 }

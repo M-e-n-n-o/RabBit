@@ -65,23 +65,23 @@ namespace RB::Graphics
 
 		inline static RenderAPI s_Api = RenderAPI::None;
 
-		bool					m_IsShutdown;
-		WorkerThread*			m_RenderThread;
-		JobTypeID				m_RenderJobType;
+		bool						m_IsShutdown;
+		WorkerThread*				m_RenderThread;
+		JobTypeID					m_RenderJobType;
 
-		RenderInterface*		m_GraphicsInterface; // Used by the render passes
-		RenderInterface*		m_CopyInterface;	 // Used for resource streaming 
-		RenderPass**			m_RenderPasses;
-		uint32_t				m_TotalPasses;
+		RenderInterface*			m_GraphicsInterface; // Used by the render passes
+		RenderInterface*			m_CopyInterface;	 // Used for resource streaming 
+		RenderPass**				m_RenderPasses;
+		uint32_t					m_TotalPasses;
 
-		uint64_t				m_RenderFrameIndex;
-		CRITICAL_SECTION		m_RenderFrameIndexCS;
+		ThreadedVariable<uint64_t>	m_RenderFrameIndex;
+		ThreadedVariable<bool>		m_ForceSync;
 
-		VertexBuffer*			m_BackBufferCopyVB;
+		VertexBuffer*				m_BackBufferCopyVB;
 
-		bool					m_MultiThreadingSupport;
+		bool						m_MultiThreadingSupport;
 
-		ResourceStreamer*		m_ResourceStreamer;
+		ResourceStreamer*			m_ResourceStreamer;
 
 	public:
 		struct BackBufferGuard
@@ -90,8 +90,8 @@ namespace RB::Graphics
 		};
 	private:
 
-		List<BackBufferGuard>	m_BackBufferAvailabilityGuards;
+		List<BackBufferGuard>		m_BackBufferAvailabilityGuards;
 
-		const uint32_t			m_RenderThreadTimeoutMs = 100;
+		const uint32_t				m_RenderThreadTimeoutMs = 100;
 	};
 }

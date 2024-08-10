@@ -44,6 +44,10 @@
 * 
 * Include this file in your project to make use of the RabBit engine.
 * Every class, function and variable in this engine is inside the RB namespace. 
+* 
+* Command line options:
+*	-assetPath "<path>"		->	(REQUIRED) Specify the asset locaion path
+*	-renderDebug			->	Enables native graphics API validation (does not when RB_CONFIG_DIST is defined)
 */
 
 

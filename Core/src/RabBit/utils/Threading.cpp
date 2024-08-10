@@ -3,6 +3,10 @@
 
 namespace RB
 {
+	// ---------------------------------------------------------------------------
+	//								WorkerThread
+	// ---------------------------------------------------------------------------
+
 	DWORD WINAPI WorkerThreadLoop(PVOID param);
 
 	WorkerThread::WorkerThread(const wchar_t* name, const ThreadPriority& priority)

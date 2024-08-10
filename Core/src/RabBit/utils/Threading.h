@@ -4,6 +4,10 @@
 
 namespace RB
 {
+	// ---------------------------------------------------------------------------
+	//								WorkerThread
+	// ---------------------------------------------------------------------------
+
 	enum class ThreadPriority
 	{
 		Low		= 0,
@@ -105,4 +109,72 @@ namespace RB
 
 		friend DWORD WINAPI WorkerThreadLoop(PVOID param);
 	};
+
+	// ---------------------------------------------------------------------------
+	//							ThreadedVariable
+	// ---------------------------------------------------------------------------
+
+	template<typename T>
+	class ThreadedVariable
+	{
+	public:
+		ThreadedVariable(const T& value);
+		~ThreadedVariable();
+
+		void SetValue(const T& value);
+		T	 GetValue();
+
+		void WaitUntilConditionMet(std::function<bool(const T&)> condition);
+
+	private:
+		T					m_Variable;
+		CRITICAL_SECTION	m_CS;
+		CONDITION_VARIABLE	m_CV;
+	};
+
+	template<typename T>
+	inline ThreadedVariable<T>::ThreadedVariable(const T& value)
+	{
+		m_Variable = value;
+		InitializeCriticalSection(&m_CS);
+		InitializeConditionVariable(&m_CV);
+	}
+
+	template<typename T>
+	inline ThreadedVariable<T>::~ThreadedVariable()
+	{
+		DeleteCriticalSection(&m_CS);
+	}
+
+	template<typename T>
+	inline void ThreadedVariable<T>::SetValue(const T& value)
+	{
+		EnterCriticalSection(&m_CS);
+		m_Variable = value;
+		LeaveCriticalSection(&m_CS);
+		WakeAllConditionVariable(&m_CV);
+	}
+
+	template<typename T>
+	inline T ThreadedVariable<T>::GetValue()
+	{
+		EnterCriticalSection(&m_CS);
+		const T& value = m_Variable;
+		LeaveCriticalSection(&m_CS);
+
+		return value;
+	}
+
+	template<typename T>
+	inline void ThreadedVariable<T>::WaitUntilConditionMet(std::function<bool(const T&)> condition)
+	{
+		EnterCriticalSection(&m_CS);
+
+		while (!condition(m_Variable))
+		{
+			SleepConditionVariableCS(&m_CV, &m_CS, INFINITE);
+		}
+
+		LeaveCriticalSection(&m_CS);
+	}
 }
