@@ -32,6 +32,8 @@ namespace RB::Entity
 		{
 		}
 
+		// TODO Using the window index to specify which window to render to breaks when adding/removing windows as indices will change, 
+		// so use another method to specify which window to render to. Maybe just a pointer to the window?
 		uint32_t GetTargetWindowIndex()	const { return m_TargetWindowIndex; }
 		Graphics::Texture2D* GetRenderTexture() const { return m_RenderTexture; }
 
