@@ -46,22 +46,22 @@ typedef RB::Math::Float4x4	float4x4;
 
 struct TextureIndices
 {
-	// Is in uint4 to avoid padding between elements in the array
-	uint4 tex2D[SHAED_TEX2D_ARRAY_SIZE];
+    // Is in uint4 to avoid padding between elements in the array
+    uint4 tex2D[SHAED_TEX2D_ARRAY_SIZE];
 };
 
 struct FrameConstants
 {
-	/*
-		When passing matrix data to HLSL, it stores
-		it in column major order. So make sure to
-		first transpose matrices before sending them
-		to the GPU as they are stored in row major
-		on the CPU.
-	*/
+    /*
+        When passing matrix data to HLSL, it stores
+        it in column major order. So make sure to
+        first transpose matrices before sending them
+        to the GPU as they are stored in row major
+        on the CPU.
+    */
 
-	float4x4 worldToViewMat;	// View matrix	(transposed)
-	float4x4 viewToClipMat;		// Projection matrix
+    float4x4 worldToViewMat;	// View matrix	(transposed)
+    float4x4 viewToClipMat;		// Projection matrix
 };
 
 #if SHADER
@@ -72,12 +72,12 @@ struct FrameConstants
 // TODO Maybe make this a Buffer (or ByteAddressBuffer)
 cbuffer TextureIndicesCB : CBUFFER_REG(kTexIndicesCB)
 {
-	TextureIndices g_TextureIndices;
+    TextureIndices g_TextureIndices;
 }
 
 cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
 {
-	FrameConstants g_FC;
+    FrameConstants g_FC;
 }
 
 
@@ -98,8 +98,8 @@ static const uint g_TextureIndicesTex2D[SHADER_TEX2D_SLOTS] = (uint[SHADER_TEX2D
 // Global samplers
 // ---------------------------------------------------------------
 
-SamplerState g_ClampAnisoSampler	: SAMPLER_REG(kClampAnisoSamplerSlot);
-SamplerState g_ClampPointSampler	: SAMPLER_REG(kClampPointSamplerSlot);
+SamplerState g_ClampAnisoSampler : SAMPLER_REG(kClampAnisoSamplerSlot);
+SamplerState g_ClampPointSampler : SAMPLER_REG(kClampPointSamplerSlot);
 
 
 // Global helper functions
@@ -107,22 +107,22 @@ SamplerState g_ClampPointSampler	: SAMPLER_REG(kClampPointSamplerSlot);
 
 float4 TransformPosition(float3 position, float4x4 transform)
 {
-	return (position.xxxx * transform[0]) + (position.yyyy * transform[1]) + (position.zzzz * transform[2]) + transform[3];
+    return (position.xxxx * transform[0]) + (position.yyyy * transform[1]) + (position.zzzz * transform[2]) + transform[3];
 }
 
 float3 TransformLocalToWorld(float3 local_pos, float4x4 obj_to_world)
 {
-	return mul(obj_to_world, float4(local_pos, 1.0f)).xyz;
+    return mul(obj_to_world, float4(local_pos, 1.0f)).xyz;
 }
 
 float3 TransformWorldToView(float3 world_pos)
 {
-	return mul(g_FC.worldToViewMat, float4(world_pos, 1.0f)).xyz;
+    return mul(g_FC.worldToViewMat, float4(world_pos, 1.0f)).xyz;
 }
 
 float4 TransformViewToClip(float3 view_pos)
 {
-	return TransformPosition(view_pos, g_FC.viewToClipMat);
+    return TransformPosition(view_pos, g_FC.viewToClipMat);
 }
 
 #endif

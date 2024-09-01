@@ -21,9 +21,9 @@ struct v2p
 
 v2p VS_VertexColor(vertexInfo input)
 {
-    float3 world_pos    = TransformLocalToWorld(input.position, localToWorldMat);
-    float3 view_pos     = TransformWorldToView(world_pos);
-    float4 clip_pos     = TransformViewToClip(view_pos);
+    float3 world_pos = TransformLocalToWorld(input.position, localToWorldMat);
+    float3 view_pos  = TransformWorldToView(world_pos);
+    float4 clip_pos  = TransformViewToClip(view_pos);
 
     v2p output;
     output.position = clip_pos;

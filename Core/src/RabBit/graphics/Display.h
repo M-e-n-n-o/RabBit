@@ -5,20 +5,20 @@
 
 namespace RB::Graphics
 {
-	class Display
-	{
-	public:
-		virtual ~Display();
+    class Display
+    {
+    public:
+        virtual ~Display();
 
-		virtual const char* GetName() = 0;
+        virtual const char* GetName() = 0;
 
-		virtual Math::Float2 GetResolution() = 0;
+        virtual Math::Float2 GetResolution() = 0;
 
-		virtual void* GetNativeHandle() = 0;
+        virtual void* GetNativeHandle() = 0;
 
-		static List<Display*> CreateDisplays();
+        static List<Display*> CreateDisplays();
 
-	protected:
-		Display();
-	};
+    protected:
+        Display();
+    };
 }

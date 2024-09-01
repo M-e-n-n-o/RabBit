@@ -5,7 +5,7 @@
 
 namespace RB::Input
 {
-	bool IsKeyDown(const KeyCode& key);
+    bool IsKeyDown(const KeyCode& key);
 
-	bool IsMouseKeyDown(const MouseCode& mouse_button);
+    bool IsMouseKeyDown(const MouseCode& mouse_button);
 }

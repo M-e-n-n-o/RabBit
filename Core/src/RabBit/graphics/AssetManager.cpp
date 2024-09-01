@@ -5,67 +5,120 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <ufbx.h>
+
 namespace RB::Graphics
 {
-	LoadedImage::LoadedImage()
-		: data(nullptr)
-	{}
+    LoadedImage::LoadedImage()
+        : data(nullptr)
+    {}
 
-	LoadedImage::~LoadedImage()
-	{
-		stbi_image_free(data);
-		data = nullptr;
-	}
+    LoadedImage::~LoadedImage()
+    {
+        stbi_image_free(data);
+        data = nullptr;
+    }
 
-	namespace AssetManager
-	{
-		static const char* g_AssetPath = nullptr;
+    LoadedModel::LoadedModel()
+        : internalScene(nullptr)
+        , vertices(nullptr)
+        , indices(nullptr)
+        , uvs(nullptr)
+    {}
 
-		void Init(const char* asset_path)
-		{
-			g_AssetPath = asset_path;
-		}
+    LoadedModel::~LoadedModel()
+    {
+        SAFE_DELETE(vertices);
+        SAFE_DELETE(indices);
+        SAFE_DELETE(uvs);
 
-		bool LoadImage8Bit(const char* path, LoadedImage* out_image, uint32_t force_channels)
-		{
-			std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+        ufbx_free_scene((ufbx_scene*)internalScene);
+    }
 
-			auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileModeRead | OpenFileMode::kFileModeBinary);
+    namespace AssetManager
+    {
+        static const char* g_AssetPath = nullptr;
 
-			FileData data = file_handle->ReadFull();
+        void Init(const char* asset_path)
+        {
+            g_AssetPath = asset_path;
+        }
 
-			// Note that this loads a 8 bit per channel image (use stbi_load_16_from_memory or stbi_loadf_from_memory for 16 or 32 bit)
-			out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &out_image->channels, force_channels);
+        bool LoadImage8Bit(const char* path, LoadedImage* out_image, uint32_t force_channels)
+        {
+            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
-			if (out_image->data == NULL)
-			{
-				const char* error_msg = stbi_failure_reason();
-				RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
-				return false;
-			}
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileModeRead | OpenFileMode::kFileModeBinary);
 
-			if (force_channels != 0)
-			{
-				// We forced to read only certain channels
-				out_image->channels = force_channels;
-			}
+            FileData data = file_handle->ReadFull();
 
-			switch (out_image->channels)
-			{
-			case 1: out_image->format = RenderResourceFormat::R8_UNORM; break;
-			case 4: out_image->format = RenderResourceFormat::R8G8B8A8_UNORM; break;
-			case 0:
-			case 2:
-			case 3:
-			default:
-				RB_LOG_ERROR(LOGTAG_GRAPHICS, "This many channels for an 8 bit image is not supported");
-				out_image->format = RenderResourceFormat::Unkown;
-				break;
-			}
+            // Note that this loads a 8 bit per channel image (use stbi_load_16_from_memory or stbi_loadf_from_memory for 16 or 32 bit)
+            out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &out_image->channels, force_channels);
 
-			out_image->dataSize = GetElementSizeFromFormat(out_image->format) * out_image->width * out_image->height;
+            if (out_image->data == NULL)
+            {
+                const char* error_msg = stbi_failure_reason();
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
+                return false;
+            }
 
-			return true;
-		}
-	}
+            if (force_channels != 0)
+            {
+                // We forced to read only certain channels
+                out_image->channels = force_channels;
+            }
+
+            switch (out_image->channels)
+            {
+            case 1: out_image->format = RenderResourceFormat::R8_UNORM; break;
+            case 4: out_image->format = RenderResourceFormat::R8G8B8A8_UNORM; break;
+            case 0:
+            case 2:
+            case 3:
+            default:
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "This many channels for an 8 bit image is not supported");
+                out_image->format = RenderResourceFormat::Unkown;
+                break;
+            }
+
+            out_image->dataSize = GetElementSizeFromFormat(out_image->format) * out_image->width * out_image->height;
+
+            return true;
+        }
+
+        bool LoadModel(const char* path, LoadedModel* out_model)
+        {
+            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileModeRead | OpenFileMode::kFileModeBinary);
+
+            FileData data = file_handle->ReadFull();
+
+            ufbx_load_opts opts = {};
+            opts.target_axes        = ufbx_axes_right_handed_y_up;
+            opts.target_unit_meters = 1.0f;
+
+            ufbx_error error;
+            out_model->internalScene = ufbx_load_memory(data.data, data.size, &opts, &error);
+
+            if (out_model->internalScene == nullptr)
+            {
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load model \"%s\" with ufbx, error message: %s", final_path.c_str(), error.description.data);
+                return false;
+            }
+
+            // Just only load the first model for now, we can implement all the rest later
+            {
+                ufbx_mesh* mesh = ((ufbx_scene*)out_model->internalScene)->nodes[0]->mesh;
+
+                out_model->vertices = (uint32_t*) ALLOC_HEAP(sizeof(uint32_t) * mesh->num_vertices);
+                out_model->indices  = (uint16_t*) ALLOC_HEAP(sizeof(uint16_t) * mesh->num_indices);
+                out_model->uvs      = (uint32_t*) ALLOC_HEAP(sizeof(uint32_t) * mesh->vertex_uv.values.count);
+
+
+            }
+
+            return true;
+        }
+    }
 }

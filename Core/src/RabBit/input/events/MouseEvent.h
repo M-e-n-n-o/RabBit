@@ -5,78 +5,78 @@
 
 namespace RB::Input::Events
 {
-	class MouseEvent : public Event
-	{
-	public:
-		virtual EventType GetEventType() const override = 0;
-		virtual const char* GetName() const override = 0;
-		virtual int GetCategoryFlags() const override = 0;
-	};
+    class MouseEvent : public Event
+    {
+    public:
+        virtual EventType GetEventType() const override = 0;
+        virtual const char* GetName() const override = 0;
+        virtual int GetCategoryFlags() const override = 0;
+    };
 
-	class MouseMovedEvent : public MouseEvent
-	{
-	public:
-		MouseMovedEvent(const float x, const float y) : m_MouseX(x), m_MouseY(y) {}
+    class MouseMovedEvent : public MouseEvent
+    {
+    public:
+        MouseMovedEvent(const float x, const float y) : m_MouseX(x), m_MouseY(y) {}
 
-		float GetMouseX() const { return m_MouseX; }
-		float GetMouseY() const { return m_MouseY; }
+        float GetMouseX() const { return m_MouseX; }
+        float GetMouseY() const { return m_MouseY; }
 
-		DEFINE_CLASS_TYPE(MouseMovedEvent, MouseMoved, false)
-		int GetCategoryFlags() const override { return kEventCat_Mouse; }
+        DEFINE_CLASS_TYPE(MouseMovedEvent, MouseMoved, false)
+        int GetCategoryFlags() const override { return kEventCat_Mouse; }
 
-	private:
-		float m_MouseX;
-		float m_MouseY;
-	};
-
-
-	class MouseScrolledEvent : public MouseEvent
-	{
-	public:
-		MouseScrolledEvent(const float x, const float y) : m_OffsetX(x), m_OffsetY(y) {}
-
-		float GetOffsetX() const { return m_OffsetX; }
-		float GetOffsetY() const { return m_OffsetY; }
-
-		DEFINE_CLASS_TYPE(MouseScrolledEvent, MouseScrolled, false)
-		int GetCategoryFlags() const override { return kEventCat_Mouse; }
-
-	private:
-		float m_OffsetX;
-		float m_OffsetY;
-	};
+    private:
+        float m_MouseX;
+        float m_MouseY;
+    };
 
 
-	class MouseButtonEvent : public MouseEvent
-	{
-	protected:
-		MouseButtonEvent(const MouseCode mouseCode) : m_MouseCode(mouseCode) {}
-		virtual ~MouseButtonEvent() = default;
+    class MouseScrolledEvent : public MouseEvent
+    {
+    public:
+        MouseScrolledEvent(const float x, const float y) : m_OffsetX(x), m_OffsetY(y) {}
 
-	public:
-		MouseCode GetMouseButton() const { return m_MouseCode; }
+        float GetOffsetX() const { return m_OffsetX; }
+        float GetOffsetY() const { return m_OffsetY; }
 
-		int GetCategoryFlags() const override { return kEventCat_Mouse | kEventCat_MouseButton; }
+        DEFINE_CLASS_TYPE(MouseScrolledEvent, MouseScrolled, false)
+        int GetCategoryFlags() const override { return kEventCat_Mouse; }
 
-	protected:
-		MouseCode m_MouseCode;
-	};
-
-
-	class MouseButtonPressedEvent : public MouseButtonEvent
-	{
-	public:
-		MouseButtonPressedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
-
-		DEFINE_CLASS_TYPE(MouseButtonPressedEvent, MouseButtonPressed, false)
-	};
+    private:
+        float m_OffsetX;
+        float m_OffsetY;
+    };
 
 
-	class MouseButtonReleasedEvent : public MouseButtonEvent
-	{
-	public:
-		MouseButtonReleasedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
+    class MouseButtonEvent : public MouseEvent
+    {
+    protected:
+        MouseButtonEvent(const MouseCode mouseCode) : m_MouseCode(mouseCode) {}
+        virtual ~MouseButtonEvent() = default;
 
-		DEFINE_CLASS_TYPE(MouseButtonReleasedEvent, MouseButtonReleased, false)
-	};
+    public:
+        MouseCode GetMouseButton() const { return m_MouseCode; }
+
+        int GetCategoryFlags() const override { return kEventCat_Mouse | kEventCat_MouseButton; }
+
+    protected:
+        MouseCode m_MouseCode;
+    };
+
+
+    class MouseButtonPressedEvent : public MouseButtonEvent
+    {
+    public:
+        MouseButtonPressedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
+
+        DEFINE_CLASS_TYPE(MouseButtonPressedEvent, MouseButtonPressed, false)
+    };
+
+
+    class MouseButtonReleasedEvent : public MouseButtonEvent
+    {
+    public:
+        MouseButtonReleasedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
+
+        DEFINE_CLASS_TYPE(MouseButtonReleasedEvent, MouseButtonReleased, false)
+    };
 }

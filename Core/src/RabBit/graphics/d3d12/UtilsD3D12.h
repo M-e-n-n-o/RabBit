@@ -8,18 +8,18 @@
 
 namespace RB::Graphics::D3D12
 {
-	static D3D_PRIMITIVE_TOPOLOGY ConvertToD3D12Topology(const TopologyType& type)
-	{
-		switch (type)
-		{
-		case TopologyType::TriangleList:    return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    static D3D_PRIMITIVE_TOPOLOGY ConvertToD3D12Topology(const TopologyType& type)
+    {
+        switch (type)
+        {
+        case TopologyType::TriangleList:    return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         case TopologyType::TriangleStrip:   return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 
-		default:
-			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
-			break;
-		}
-	}
+        default:
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+    }
 
     static D3D12_RESOURCE_STATES ConvertToD3D12ResourceState(const ResourceState& state)
     {
@@ -110,9 +110,9 @@ namespace RB::Graphics::D3D12
         }
     }
 
-	static RenderResourceFormat ConvertToEngineFormat(const DXGI_FORMAT& format)
-	{
-        switch (format) 
+    static RenderResourceFormat ConvertToEngineFormat(const DXGI_FORMAT& format)
+    {
+        switch (format)
         {
         case(DXGI_FORMAT_R32G32B32A32_TYPELESS):
             return RenderResourceFormat::R32G32B32A32_TYPELESS;
@@ -156,5 +156,5 @@ namespace RB::Graphics::D3D12
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
             return RenderResourceFormat::Unkown;
         }
-	}
+    }
 }

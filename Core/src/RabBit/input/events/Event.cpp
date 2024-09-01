@@ -3,127 +3,127 @@
 
 namespace RB::Input::Events
 {
-	// ----------------------------------------------------------------------------
-	//									Event
-	// ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    //									Event
+    // ----------------------------------------------------------------------------
 
-	Event::Event()
-	{
-	}
+    Event::Event()
+    {
+    }
 
-	Event::~Event()
-	{
-	}
+    Event::~Event()
+    {
+    }
 
-	bool Event::IsInCategory(const EventCategory cat) const
-	{
-		return (GetCategoryFlags() & cat) > 0;
-	}
+    bool Event::IsInCategory(const EventCategory cat) const
+    {
+        return (GetCategoryFlags() & cat) > 0;
+    }
 
-	// ----------------------------------------------------------------------------
-	//								EventManager
-	// ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    //								EventManager
+    // ----------------------------------------------------------------------------
 
-	EventManager* g_EventManager = nullptr;
+    EventManager* g_EventManager = nullptr;
 
-	EventManager::EventManager()
-	{
-		
-	}
+    EventManager::EventManager()
+    {
 
-	EventManager::~EventManager()
-	{
-		//for (int i = 0; i < EVENT_HISTORY_COUNT; i++)
-		//{
-		//	delete m_LastEvents[i];
-		//}
+    }
 
-		//m_LastEvents.clear();
-	}
+    EventManager::~EventManager()
+    {
+        //for (int i = 0; i < EVENT_HISTORY_COUNT; i++)
+        //{
+        //	delete m_LastEvents[i];
+        //}
 
-	void EventManager::AddListener(EventListener* listener)
-	{
-		m_Listeners.push_back(listener);
-	}
+        //m_LastEvents.clear();
+    }
 
-	void EventManager::RemoveListener(EventListener* listener)
-	{
-		m_Listeners.erase(std::remove(m_Listeners.begin(), m_Listeners.end(), listener), m_Listeners.end());
-	}
+    void EventManager::AddListener(EventListener* listener)
+    {
+        m_Listeners.push_back(listener);
+    }
 
-	void EventManager::InsertEvent(const Event& event) 
-	{
-		//m_LastEvents.insert(m_LastEvents.begin(), event);
+    void EventManager::RemoveListener(EventListener* listener)
+    {
+        m_Listeners.erase(std::remove(m_Listeners.begin(), m_Listeners.end(), listener), m_Listeners.end());
+    }
 
-		for (EventListener* listener : m_Listeners)
-		{
-			if (listener->ListensToCategory((EventCategory) event.GetCategoryFlags()))
-			{
-				listener->AddEvent(event);
-			}
-		}
+    void EventManager::InsertEvent(const Event& event)
+    {
+        //m_LastEvents.insert(m_LastEvents.begin(), event);
 
-		//while (m_LastEvents.size() > EVENT_HISTORY_COUNT)
-		//{
-		//	delete m_LastEvents[m_LastEvents.size() - 1];
-		//	m_LastEvents.pop_back();
-		//}
-	}
+        for (EventListener* listener : m_Listeners)
+        {
+            if (listener->ListensToCategory((EventCategory)event.GetCategoryFlags()))
+            {
+                listener->AddEvent(event);
+            }
+        }
 
-	// ----------------------------------------------------------------------------
-	//								EventListener
-	// ----------------------------------------------------------------------------
-	
-	EventListener::EventListener(EventCategory category)
-		: m_ListenerCategory(category)
-	{
-		InitializeCriticalSection(&m_CS);
+        //while (m_LastEvents.size() > EVENT_HISTORY_COUNT)
+        //{
+        //	delete m_LastEvents[m_LastEvents.size() - 1];
+        //	m_LastEvents.pop_back();
+        //}
+    }
 
-		m_QueuedEvents.reserve(10);
+    // ----------------------------------------------------------------------------
+    //								EventListener
+    // ----------------------------------------------------------------------------
 
-		g_EventManager->AddListener(this);
-	}
+    EventListener::EventListener(EventCategory category)
+        : m_ListenerCategory(category)
+    {
+        InitializeCriticalSection(&m_CS);
 
-	EventListener::~EventListener()
-	{
-		g_EventManager->RemoveListener(this);
-		DeleteCriticalSection(&m_CS);
-	}
+        m_QueuedEvents.reserve(10);
 
-	void EventListener::ProcessEvents()
-	{
-		EnterCriticalSection(&m_CS);
+        g_EventManager->AddListener(this);
+    }
 
-		for (auto itr = m_QueuedEvents.begin(); itr < m_QueuedEvents.end();)
-		{
-			Event* e = *itr;
+    EventListener::~EventListener()
+    {
+        g_EventManager->RemoveListener(this);
+        DeleteCriticalSection(&m_CS);
+    }
 
-			OnEvent(*e);
+    void EventListener::ProcessEvents()
+    {
+        EnterCriticalSection(&m_CS);
 
-			itr = m_QueuedEvents.erase(itr);
-			delete e;
-		}
+        for (auto itr = m_QueuedEvents.begin(); itr < m_QueuedEvents.end();)
+        {
+            Event* e = *itr;
 
-		LeaveCriticalSection(&m_CS);
-	}
-	
-	void EventListener::AddEvent(const Event& e)
-	{
-		EnterCriticalSection(&m_CS);
+            OnEvent(*e);
 
-		if (e.IsOverwritable())
-		{
-			auto itr = std::find_if(m_QueuedEvents.begin(), m_QueuedEvents.end(), [&e](Event* other) -> bool {
-				return e.GetEventType() == other->GetEventType();
-			});
+            itr = m_QueuedEvents.erase(itr);
+            delete e;
+        }
 
-			if (itr != m_QueuedEvents.end())
-			{
-				m_QueuedEvents.erase(itr);
-			}
-		}
+        LeaveCriticalSection(&m_CS);
+    }
 
-		m_QueuedEvents.push_back(e.Clone());
-		LeaveCriticalSection(&m_CS);
-	}
+    void EventListener::AddEvent(const Event& e)
+    {
+        EnterCriticalSection(&m_CS);
+
+        if (e.IsOverwritable())
+        {
+            auto itr = std::find_if(m_QueuedEvents.begin(), m_QueuedEvents.end(), [&e](Event* other) -> bool {
+                return e.GetEventType() == other->GetEventType();
+                });
+
+            if (itr != m_QueuedEvents.end())
+            {
+                m_QueuedEvents.erase(itr);
+            }
+        }
+
+        m_QueuedEvents.push_back(e.Clone());
+        LeaveCriticalSection(&m_CS);
+    }
 }

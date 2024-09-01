@@ -5,19 +5,19 @@
 
 namespace RB::Graphics
 {
-	class RenderInterface;
-	class Texture2D;
+    class RenderInterface;
+    class Texture2D;
 
-	class ViewContext
-	{
-	public:
-		bool			isOffscreenContext;
-		uint32_t		windowIndex;
-		Texture2D*		finalColorTarget;
-		Math::Float4	clearColor;
+    class ViewContext
+    {
+    public:
+        bool			isOffscreenContext;
+        uint32_t		windowIndex;
+        Texture2D*      finalColorTarget;
+        Math::Float4	clearColor;
 
-		Frustum			viewFrustum;
+        Frustum			viewFrustum;
 
-		void SetFrameConstants(RenderInterface* render_interface) const;
-	};
+        void SetFrameConstants(RenderInterface* render_interface) const;
+    };
 }

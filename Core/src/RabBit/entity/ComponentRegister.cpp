@@ -2,9 +2,9 @@
 #include "ComponentRegister.h"
 
 namespace RB::Entity
-{	
-	ComponentRegister::ComponentRegister()
-		: m_NextID(0)
-	{
-	}
+{
+    ComponentRegister::ComponentRegister()
+        : m_NextID(0)
+    {
+    }
 }

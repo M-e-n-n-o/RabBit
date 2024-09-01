@@ -4,3 +4,6 @@
 [submodule "Core/external/stb"]
 	path = Core/external/stb
 	url = https://github.com/nothings/stb
+[submodule "Core/external/ufbx"]
+	path = Core/external/ufbx
+	url = https://github.com/ufbx/ufbx
