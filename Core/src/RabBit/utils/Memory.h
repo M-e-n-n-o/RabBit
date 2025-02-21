@@ -20,13 +20,15 @@
 
 namespace RB
 {
-    #define ALLOC_STACK(size)		alloca((size))
-    #define ALLOC_HEAP(size)		malloc((size))
+    #define ALLOC_STACK(size)		    alloca((size))
+    #define ALLOC_STACKC(type, count)   (type*)alloca(sizeof(type) * (count))
+    #define ALLOC_HEAP(size)		    malloc((size))
+    #define ALLOC_HEAPC(type, count)	(type*)malloc(sizeof(type) * (count))
     
-    #define SAFE_RELEASE(obj)		(obj)->Release();
-    #define SAFE_DELETE(obj)		if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
-    #define SAFE_DELETE_ARR(obj)	if ((obj) != nullptr) { delete[] (obj); (obj) = nullptr; }
-    #define SAFE_FREE(obj)			if ((obj) != nullptr) { free(obj); (obj) = nullptr; }
+    #define SAFE_RELEASE(obj)		    (obj)->Release();
+    #define SAFE_DELETE(obj)		    if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
+    #define SAFE_DELETE_ARR(obj)	    if ((obj) != nullptr) { delete[] (obj); (obj) = nullptr; }
+    #define SAFE_FREE(obj)			    if ((obj) != nullptr) { free(obj); (obj) = nullptr; }
 
     // Custom graphics pointer
     template<class T>

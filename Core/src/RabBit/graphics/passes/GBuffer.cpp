@@ -52,7 +52,7 @@ namespace RB::Graphics
             const Entity::Mesh* mesh = mesh_renderer->GetMesh();
             const Entity::Material* mat = mesh_renderer->GetMaterial();
 
-            if (mesh->GetVertexBuffer()->IsStreaming() || mat->GetTexture()->IsStreaming())
+            if (mesh->GetVertexBuffer()->CanRender() || mat->GetTexture()->CanRender())
             {
                 continue;
             }
@@ -90,8 +90,8 @@ namespace RB::Graphics
     void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, RenderPassEntry* entry_context,
         RenderResource** output_textures, RenderResource** working_textures, RenderResource** dependency_textures)
     {
-        render_interface->SetVertexShader(VS_VertexColor);
-        render_interface->SetPixelShader(PS_VertexColor);
+        render_interface->SetVertexShader(VS_Simple);
+        render_interface->SetPixelShader(PS_Simple);
 
         render_interface->SetBlendMode(BlendMode::None);
         render_interface->SetCullMode(CullMode::Back);

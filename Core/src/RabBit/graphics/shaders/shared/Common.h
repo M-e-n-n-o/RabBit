@@ -1,5 +1,6 @@
-#if !SHADER
 #pragma once
+
+#if !SHADER
 #include "RabBitCommon.h"
 
 typedef uint32_t			uint;

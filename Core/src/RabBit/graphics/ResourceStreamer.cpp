@@ -26,7 +26,7 @@ namespace RB::Graphics
             {
                 // Free the upload data and set the resource as being finished with streaming
                 SAFE_FREE(itr->streamables[i].uploadData);
-                itr->streamables[i].resource->SetIsStreaming(false);
+                itr->streamables[i].resource->SetStreaming(false);
             }
         }
 
@@ -36,7 +36,7 @@ namespace RB::Graphics
     void ResourceStreamer::ScheduleForStream(const Streamable& streamable)
     {
         // Set the resource as streaming
-        streamable.resource->SetIsStreaming(true);
+        streamable.resource->SetStreaming(true);
 
         Streamable copy;
         copy.resource   = streamable.resource;
@@ -95,7 +95,7 @@ namespace RB::Graphics
                 {
                     // Free the upload data and set the resource as being finished with streaming
                     SAFE_FREE(itr->streamables[i].uploadData);
-                    itr->streamables[i].resource->SetIsStreaming(false);
+                    itr->streamables[i].resource->SetStreaming(false);
                 }
 
                 itr = m_StreamedEntries.erase(itr);

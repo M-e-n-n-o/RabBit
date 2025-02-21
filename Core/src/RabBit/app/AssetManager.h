@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "RenderResource.h"
+#include "graphics/RenderResource.h"
 
 #if defined(LoadImage)
 #undef LoadImage
@@ -24,11 +24,16 @@ namespace RB::Graphics
 
     struct LoadedModel
     {
-        uint32_t*               vertices;
+        struct Vertex
+        {
+            Math::Float3 position;
+            Math::Float3 normal;
+            Math::Float2 uv;
+        };
+
+        Vertex*                 vertices;
         uint32_t                verticesCount;
-        uint32_t*               uvs;
-        uint32_t                uvsCount;
-        uint16_t*               indices;
+        uint32_t*               indices;
         uint32_t                indicesCount;
         void*                   internalScene;
 

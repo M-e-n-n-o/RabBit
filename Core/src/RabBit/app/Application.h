@@ -23,13 +23,13 @@ namespace RB
     {
         struct Window
         {
-            const char* windowName;
-            bool		fullscreen;
-            uint32_t    windowWidth;
-            uint32_t    windowHeight;
-            float		forcedRenderAspect;
-            float		renderScale;
-            bool		semiTransparent;
+            const char* windowName          = "RabBit App";
+            bool		fullscreen          = false;
+            uint32_t    windowWidth         = 1280;
+            uint32_t    windowHeight        = 720;
+            float		forcedRenderAspect  = 0.0f;
+            float		renderScale         = 1.0f;
+            bool		semiTransparent     = false;
         };
 
         const char*		appName;

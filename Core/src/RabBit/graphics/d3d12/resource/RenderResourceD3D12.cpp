@@ -52,7 +52,7 @@ namespace RB::Graphics::D3D12
     //								IndexBuffer
     // ---------------------------------------------------------------------------
 
-    IndexBufferD3D12::IndexBufferD3D12(const char* name, uint16_t* data, uint64_t data_size)
+    IndexBufferD3D12::IndexBufferD3D12(const char* name, uint32_t* data, uint64_t data_size)
         : m_Name(name)
         , m_Size(data_size)
         , m_Data(data)

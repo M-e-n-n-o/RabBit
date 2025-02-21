@@ -1,11 +1,11 @@
 #include "RabBitCommon.h"
 #include "Application.h"
+#include "AssetManager.h"
 
 #include "graphics/Window.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
-#include "graphics/AssetManager.h"
 
 #include "entity/Scene.h"
 

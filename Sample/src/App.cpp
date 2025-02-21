@@ -21,26 +21,26 @@ public:
     {
         RB_LOG("Hoiii");
 
-        float vertex_data[] = {
-            // Pos					Color				UV
-            -1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f,	0, 1,	// 0
-            -1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f,	0, 1,	// 1
-             1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f,	0, 1,	// 2
-             1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f,	0, 1,	// 3
-            -1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f,	0, 1,	// 4
-            -1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f,	0, 1,	// 5
-             1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	0, 1,	// 6
-             1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f,	0, 1,	// 7
-        };
+        //float vertex_data[] = {
+        //    // Pos					Color				UV
+        //    -1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f,	0, 1,	// 0
+        //    -1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f,	0, 1,	// 1
+        //     1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f,	0, 1,	// 2
+        //     1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f,	0, 1,	// 3
+        //    -1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f,	0, 1,	// 4
+        //    -1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f,	0, 1,	// 5
+        //     1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	0, 1,	// 6
+        //     1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f,	0, 1,	// 7
+        //};
 
-        uint16_t index_data[] = {
-            0, 1, 2, 0, 2, 3,
-            4, 6, 5, 4, 7, 6,
-            4, 5, 1, 4, 1, 0,
-            3, 2, 6, 3, 6, 7,
-            1, 5, 6, 1, 6, 2,
-            4, 0, 3, 4, 3, 7
-        };
+        //uint32_t index_data[] = {
+        //    0, 1, 2, 0, 2, 3,
+        //    4, 6, 5, 4, 7, 6,
+        //    4, 5, 1, 4, 1, 0,
+        //    3, 2, 6, 3, 6, 7,
+        //    1, 5, 6, 1, 6, 2,
+        //    4, 0, 3, 4, 3, 7
+        //};
 
         //float vertex_data[] = {
         //	// Pos				Color
@@ -49,7 +49,8 @@ public:
         //	0.5f, -0.5f, 0,		0, 0, 1,
         //};
 
-        m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
+        //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
+        m_Mesh = new Mesh("Bunny.fbx");
         m_Material = new Material("TheRock.png");
 
         GameObject* object = GetScene()->CreateGameObject();
@@ -63,13 +64,13 @@ public:
 
         GameObject* camera = GetScene()->CreateGameObject();
         m_Camera = camera->AddComponent<Transform>();
-        Camera* cam_comp = camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 1);
+        Camera* cam_comp = camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.0f });
 
-        GameObject* camera2 = GetScene()->CreateGameObject();
-        camera2->AddComponent<Transform>();
-        Camera* cam_comp2 = camera2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
-        cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
+        //GameObject* camera2 = GetScene()->CreateGameObject();
+        //camera2->AddComponent<Transform>();
+        //Camera* cam_comp2 = camera2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
+        //cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
     }
 
     void OnUpdate() override
@@ -87,19 +88,19 @@ public:
 
         if (IsKeyDown(KeyCode::W))
         {
-            m_Camera->position.z += 0.0001f;
+            m_Camera->position.z += 0.001f;
         }
         if (IsKeyDown(KeyCode::A))
         {
-            m_Camera->position.x -= 0.0001f;
+            m_Camera->position.x -= 0.001f;
         }
         if (IsKeyDown(KeyCode::S))
         {
-            m_Camera->position.z -= 0.0001f;
+            m_Camera->position.z -= 0.001f;
         }
         if (IsKeyDown(KeyCode::D))
         {
-            m_Camera->position.x += 0.0001f;
+            m_Camera->position.x += 0.001f;
         }
         if (IsKeyDown(KeyCode::LeftShift))
         {
@@ -128,16 +129,16 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window1.windowWidth         = 1280;
     window1.windowHeight        = 720;
     window1.forcedRenderAspect  = 4.0f / 3.0f;
-    window1.renderScale         = 0.25f;
+    //window1.renderScale         = 0.25f;
     app_info.windows.push_back(window1);
 
-    AppInfo::Window window2 = {};
-    window2.windowName          = "Window 2";
-    window2.fullscreen          = true;
-    window2.semiTransparent     = true;
-    window2.forcedRenderAspect  = 0.0f;
-    window2.renderScale         = 1.0f;
-    app_info.windows.push_back(window2);
+    //AppInfo::Window window2 = {};
+    //window2.windowName          = "Window 2";
+    //window2.fullscreen          = true;
+    //window2.semiTransparent     = true;
+    //window2.forcedRenderAspect  = 0.0f;
+    //window2.renderScale         = 1.0f;
+    //app_info.windows.push_back(window2);
 
     return new App(app_info);
 }

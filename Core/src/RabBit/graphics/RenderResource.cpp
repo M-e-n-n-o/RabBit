@@ -69,7 +69,7 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    IndexBuffer* IndexBuffer::Create(const char* name, uint16_t* data, uint64_t data_size)
+    IndexBuffer* IndexBuffer::Create(const char* name, uint32_t* data, uint64_t data_size)
     {
         switch (Renderer::GetAPI())
         {

@@ -74,8 +74,8 @@ namespace RB::Graphics
 
         virtual RenderResourceFormat GetFormat() const = 0;
 
-        bool IsStreaming() const { return m_IsStreaming; }
-        void SetIsStreaming(bool is_streaming) { m_IsStreaming = is_streaming; }
+        bool CanRender() const { return m_IsStreaming; }
+        void SetStreaming(bool is_streaming) { m_IsStreaming = is_streaming; }
 
         RenderResourceType GetType() const { return m_Type; }
         RenderResourceType GetPrimitiveType() const;
@@ -132,7 +132,7 @@ namespace RB::Graphics
 
         virtual uint64_t GetIndexCount() const = 0;
 
-        static IndexBuffer* Create(const char* name, uint16_t* data, uint64_t data_size);
+        static IndexBuffer* Create(const char* name, uint32_t* data, uint64_t data_size);
 
     protected:
         IndexBuffer() : Buffer(RenderResourceType::IndexBuffer) {}

@@ -8,18 +8,18 @@ cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
 struct vertexInfo
 {
     float3 position : POSITION;
-    float3 color    : COLOR;
+    float3 normal   : NORMAL;
     float2 uv       : TEXCOORD0;
 };
 
 struct v2p
 {
     float4 position : SV_POSITION;
-    float3 color    : COLOR0;
+    float3 normal    : NORMAL;
     float2 uv       : TEXCOORD0;
 };
 
-v2p VS_VertexColor(vertexInfo input)
+v2p VS_Simple(vertexInfo input)
 {
     float3 world_pos = TransformLocalToWorld(input.position, localToWorldMat);
     float3 view_pos  = TransformWorldToView(world_pos);
@@ -27,13 +27,13 @@ v2p VS_VertexColor(vertexInfo input)
 
     v2p output;
     output.position = clip_pos;
-    output.color    = input.color;
+    output.normal   = input.normal;
     output.uv       = input.uv;
 
     return output;
 }
 
-float4 PS_VertexColor(v2p input) : SV_TARGET
+float4 PS_Simple(v2p input) : SV_TARGET
 {
     float4 color = FETCH_TEX2D(1).Sample(g_ClampAnisoSampler, input.uv);
     return float4(color.rgb, 1.0f);

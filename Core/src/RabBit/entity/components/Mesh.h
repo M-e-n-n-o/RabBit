@@ -9,20 +9,8 @@ namespace RB::Entity
     {
     public:
 
-        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count)
-            : m_VertexBuffer(nullptr)
-            , m_IndexBuffer(nullptr)
-        {
-            m_VertexBuffer = Graphics::VertexBuffer::Create(name, RB::Graphics::TopologyType::TriangleList, vertex_data, elements_per_vertex * sizeof(float), vertex_data_count * sizeof(float));
-
-            if (index_data_count > 0)
-            {
-                std::string index_name = name;
-                index_name += " index";
-
-                m_IndexBuffer = Graphics::IndexBuffer::Create(index_name.c_str(), index_data, index_data_count * sizeof(uint16_t));
-            }
-        }
+        Mesh(const char* file_name);
+        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data, uint64_t index_data_count);
 
         ~Mesh()
         {
