@@ -350,6 +350,29 @@ namespace RB::Graphics::D3D12
         }
         break;
 
+        case BlendMode::SrcAlphaLerp:
+        {
+            desc.AlphaToCoverageEnable = false;
+            desc.IndependentBlendEnable = false;
+
+            D3D12_RENDER_TARGET_BLEND_DESC rt_desc;
+            rt_desc.BlendEnable             = true;
+            rt_desc.LogicOpEnable           = false;
+            rt_desc.SrcBlend                = D3D12_BLEND_SRC_ALPHA;
+            rt_desc.DestBlend               = D3D12_BLEND_INV_SRC_ALPHA;
+            rt_desc.BlendOp                 = D3D12_BLEND_OP_ADD;
+            rt_desc.SrcBlendAlpha           = D3D12_BLEND_INV_DEST_ALPHA;
+            rt_desc.DestBlendAlpha          = D3D12_BLEND_ONE;
+            rt_desc.BlendOpAlpha            = D3D12_BLEND_OP_ADD;
+            rt_desc.RenderTargetWriteMask   = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+            for (int i = 0; i < _countof(desc.RenderTarget); ++i)
+            {
+                desc.RenderTarget[i] = rt_desc;
+            }
+        }
+        break;
+
         default:
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Did not yet implement this blend mode for the RenderInterfaceD3D12");
             return;
@@ -650,6 +673,7 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::DispatchInternal()
     {
+        // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
     }
 
     void RenderInterfaceD3D12::BindDescriptorHeaps()

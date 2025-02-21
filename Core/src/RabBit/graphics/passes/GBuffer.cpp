@@ -35,7 +35,23 @@ namespace RB::Graphics
 
     RenderPassConfig GBufferPass::GetConfiguration()
     {
-        return RenderPassConfigBuilder(RenderPassType::GBuffer, "GBuffer", false).Build();
+        return RenderPassConfig(
+            {
+                "GBuffer",
+                RenderPassType::GBuffer,
+
+                // Dependencies
+                {},
+                0,
+
+                // Working textures
+                {},
+                0,
+
+                // Output textures
+                {},
+                0
+            });
     }
 
     RenderPassEntry* GBufferPass::SubmitEntry(const Entity::Scene* const scene)

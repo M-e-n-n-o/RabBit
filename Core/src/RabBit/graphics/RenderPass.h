@@ -1,5 +1,7 @@
 #pragma once
 
+#include "RenderResource.h"
+
 namespace RB::Entity
 {
     class Scene;
@@ -14,40 +16,48 @@ namespace RB::Graphics
     enum class RenderPassType
     {
         None,
-        Streamer,
         GBuffer,
+    };
+
+    enum class RenderTextureSize : uint8_t
+    {
+        Full   = 0,
+        Half   = 1
+    };
+
+    enum class RenderTextureFlag : uint32_t
+    {
+        None                    = 0,
+        DenyRenderTarget        = (1 << 1),
+        AllowRandomGpuWrites    = (1 << 2), // Is UAV allowed?
+    };
+
+    struct RenderTextureDesc
+    {
+        const char*             name;
+        RenderResourceFormat    format;
+        RenderTextureSize       width;
+        RenderTextureSize       height;
+        RenderTextureSize       depth;
+        uint32_t                flags;
+    };
+
+    struct RenderTextureInputDesc
+    {
+        const char*             name;
+        RenderResourceFormat    format;
     };
 
     struct RenderPassConfig
     {
-        const char*         friendlyName;
-        RenderPassType		type;
-        bool				onlyExecuteWhenDependedOn;
-        RenderPassType		dependencies[8];
-        //RenderTextureDesc	workingTextures[8];
-        //RenderTextureDesc	outputTextures[8];
-    };
-
-    class RenderPassConfigBuilder
-    {
-    public:
-        RenderPassConfigBuilder(const RenderPassType& type, const char* friendly_name, bool only_execute_when_depended_on);
-
-        RenderPassConfigBuilder& AddDependency(RenderPassType type);
-
-        // Here you can add textures you need as input for the pass
-        // (aside from getting the outputs from the depending passes)
-        //RenderPassConfigBuilder& AddWorkingTexture(RenderTextureDesc desc);
-
-        // Maybe it should be possible to not only output rendertextures, but also buffers?
-        //RenderPassConfigBuilder& AddOutput(RenderTextureDesc desc);
-
-        RenderPassConfig Build();
-
-    private:
-
-        RenderPassConfig m_Config;
-        uint32_t		 m_TotalDependencies;
+        const char*             name;
+        RenderPassType		    type;
+        RenderTextureInputDesc	dependencies[8];
+        uint32_t                totalDependencies;
+        RenderTextureDesc	    workingTextures[8];
+        uint32_t                totalWorkingTextures;
+        RenderTextureDesc	    outputTextures[8]; // Maybe it should be possible to not only output rendertextures, but also buffers?
+        uint32_t                totalOutputTextures;
     };
 
     // Make sure to do all your deletes and free's in the destructor!

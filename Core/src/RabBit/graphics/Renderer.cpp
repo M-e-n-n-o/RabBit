@@ -397,7 +397,7 @@ namespace RB::Graphics
                         continue;
                     }
 
-                    RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetConfiguration().friendlyName);
+                    RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetConfiguration().name);
 
                     context->graphicsInterface->InvalidateState(false);
 
@@ -410,7 +410,7 @@ namespace RB::Graphics
         context->graphicsInterface->InvalidateState(false);
         context->graphicsInterface->SetVertexShader(VS_Present);
         context->graphicsInterface->SetPixelShader(PS_Present);
-        context->graphicsInterface->SetBlendMode(BlendMode::None);
+        context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
         context->graphicsInterface->SetCullMode(CullMode::Back);
         context->graphicsInterface->SetDepthMode(DepthMode::Disabled);
         context->graphicsInterface->SetVertexBuffer(context->backBufferCopyVB);
@@ -469,6 +469,9 @@ namespace RB::Graphics
 
             context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
             context->graphicsInterface->SetRenderTarget(back_buffer);
+
+            // Clear the backbuffer
+            context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
 
             // Backbuffer copy
             context->graphicsInterface->Draw();

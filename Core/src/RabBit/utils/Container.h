@@ -7,6 +7,9 @@ namespace RB
     template<class T>
     using List = std::vector<T>;
 
+    template<class T>
+    using InitList = std::initializer_list<T>;
+
     template<class T, size_t Size>
     using Array = std::array<T, Size>;
 

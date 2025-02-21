@@ -35,7 +35,7 @@ namespace RB::Graphics
         if (m_VirtualBackBuffer == nullptr)
         {
             CalculateVirtualSize();
-            m_VirtualBackBuffer = Texture2D::Create("Virtual backbuffer", GetBackBufferFormat(), GetVirtualWidth(), GetVirtualHeight(), true, false, true);
+            m_VirtualBackBuffer = Texture2D::Create("Virtual backbuffer", GetBackBufferFormat(), GetVirtualWidth(), GetVirtualHeight(), true, true);
         }
 
         return m_VirtualBackBuffer;

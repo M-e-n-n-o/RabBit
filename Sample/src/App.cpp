@@ -65,7 +65,7 @@ public:
         GameObject* camera = GetScene()->CreateGameObject();
         m_Camera = camera->AddComponent<Transform>();
         Camera* cam_comp = camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
-        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.0f });
+        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
 
         //GameObject* camera2 = GetScene()->CreateGameObject();
         //camera2->AddComponent<Transform>();
@@ -130,6 +130,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window1.windowHeight        = 720;
     window1.forcedRenderAspect  = 4.0f / 3.0f;
     //window1.renderScale         = 0.25f;
+    window1.semiTransparent     = true;
     app_info.windows.push_back(window1);
 
     //AppInfo::Window window2 = {};

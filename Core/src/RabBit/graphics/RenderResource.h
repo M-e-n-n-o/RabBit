@@ -45,6 +45,7 @@ namespace RB::Graphics
     };
 
     uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
+    bool IsDepthFormat(const RenderResourceFormat& format);
 
     enum class RenderResourceType : uint32_t
     {
@@ -162,9 +163,9 @@ namespace RB::Graphics
         virtual uint32_t GetHeight() const = 0;
         float	         GetAspectRatio() const;
 
-        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
-        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
-        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
+        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access);
+        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access);
+        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access);
 
     protected:
         Texture2D() : Texture(RenderResourceType::Texture2D) {}

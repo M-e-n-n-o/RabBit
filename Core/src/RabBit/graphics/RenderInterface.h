@@ -16,7 +16,8 @@ namespace RB::Graphics
 
     enum class BlendMode
     {
-        None
+        None,
+        SrcAlphaLerp
     };
 
     enum class CullMode

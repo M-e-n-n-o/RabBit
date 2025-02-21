@@ -29,7 +29,7 @@ namespace RB::Graphics
 
     void InitResourceDefaults()
     {
-        g_TexDefaultError = Texture2D::Create("Default error texture 2D", g_TexDefaultErrorData, sizeof(g_TexDefaultErrorData), RenderResourceFormat::R8G8B8A8_UNORM, 4, 4, false, false, false);
+        g_TexDefaultError = Texture2D::Create("Default error texture 2D", g_TexDefaultErrorData, sizeof(g_TexDefaultErrorData), RenderResourceFormat::R8G8B8A8_UNORM, 4, 4, false, false);
     }
 
     void DeleteResourceDefaults()

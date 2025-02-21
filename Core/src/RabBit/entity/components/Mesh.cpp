@@ -53,7 +53,7 @@ namespace RB::Entity
 
         if (success)
         {
-            m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false, false);
+            m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
         }
     }
 }
