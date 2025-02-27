@@ -397,7 +397,7 @@ namespace RB::Graphics
                         continue;
                     }
 
-                    RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetConfiguration().name);
+                    RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetName());
 
                     context->graphicsInterface->InvalidateState(false);
 

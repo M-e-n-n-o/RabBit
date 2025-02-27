@@ -48,15 +48,16 @@ namespace RB::Graphics
         RenderResourceFormat    format;
     };
 
+    #define MAX_INOUT_RESOURCES_PER_RENDERPASS      8
+    #define MAX_WORKING_RESOURCES_PER_RENDERPASS    8
+
     struct RenderPassConfig
     {
-        const char*             name;
-        RenderPassType		    type;
-        RenderTextureInputDesc	dependencies[8];
+        RenderTextureInputDesc	dependencies[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         uint32_t                totalDependencies;
-        RenderTextureDesc	    workingTextures[8];
+        RenderTextureDesc	    workingTextures[MAX_WORKING_RESOURCES_PER_RENDERPASS];
         uint32_t                totalWorkingTextures;
-        RenderTextureDesc	    outputTextures[8]; // Maybe it should be possible to not only output rendertextures, but also buffers?
+        RenderTextureDesc	    outputTextures[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // Maybe it should be possible to not only output rendertextures, but also buffers?
         uint32_t                totalOutputTextures;
     };
 
@@ -66,12 +67,19 @@ namespace RB::Graphics
         virtual ~RenderPassEntry() = default;
     };
 
+    struct RenderPassSettings
+    {
+        virtual ~RenderPassSettings() = default;
+    };
+
     class RenderPass
     {
     public:
         virtual ~RenderPass() = default;
 
-        virtual RenderPassConfig GetConfiguration() = 0;
+        virtual const char* GetName() = 0;
+
+        virtual RenderPassConfig GetConfiguration(const RenderPassSettings& settings) = 0;
 
         // Executed on the main thread after the game logic update. This method just gives the needed context of the 
         // current frame' viewcontext to the renderpass (as the renderpass will run next frame as it is ~1 frame behind). 

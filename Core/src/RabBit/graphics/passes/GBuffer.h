@@ -3,10 +3,17 @@
 
 namespace RB::Graphics
 {
+    struct GBufferSettings : public RenderPassSettings
+    {
+        // No settings
+    };
+
     class GBufferPass : public RenderPass
     {
     public:
-        RenderPassConfig GetConfiguration() override;
+        const char* GetName() override { return "GBuffer"; }
+
+        RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
 
         RenderPassEntry* SubmitEntry(const Entity::Scene* const scene) override;
 

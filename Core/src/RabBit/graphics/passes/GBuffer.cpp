@@ -33,13 +33,12 @@ namespace RB::Graphics
         }
     };
 
-    RenderPassConfig GBufferPass::GetConfiguration()
+    RenderPassConfig GBufferPass::GetConfiguration(const RenderPassSettings& setting)
     {
+        const GBufferSettings& s = (const GBufferSettings&) setting;
+
         return RenderPassConfig(
             {
-                "GBuffer",
-                RenderPassType::GBuffer,
-
                 // Dependencies
                 {},
                 0,
