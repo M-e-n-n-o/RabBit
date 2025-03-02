@@ -19,6 +19,7 @@ namespace RB::Graphics
 
         void Render(RenderInterface* render_interface,
             ViewContext* view_context,
+            Viewport* viewport,
             RenderPassEntry* entry_context,
             RenderResource** output_textures,
             RenderResource** working_textures,

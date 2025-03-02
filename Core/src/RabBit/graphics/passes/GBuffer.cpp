@@ -3,7 +3,7 @@
 
 #include "graphics/RenderResource.h"
 #include "graphics/RenderInterface.h"
-#include "graphics/ViewContext.h"
+#include "graphics/View.h"
 
 #include "entity/Scene.h"
 #include "entity/components/Mesh.h"
@@ -49,7 +49,10 @@ namespace RB::Graphics
 
                 // Output textures
                 {},
-                0
+                0,
+
+                // Async compute compatible
+                false
             });
     }
 
@@ -102,7 +105,7 @@ namespace RB::Graphics
         return entry;
     }
 
-    void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, RenderPassEntry* entry_context,
+    void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, Viewport* viewport, RenderPassEntry* entry_context,
         RenderResource** output_textures, RenderResource** working_textures, RenderResource** dependency_textures)
     {
         render_interface->SetVertexShader(VS_Simple);

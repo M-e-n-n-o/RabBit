@@ -23,11 +23,11 @@ namespace RB::Graphics
 
             for (int i = 0; i < m_RenderFlow.size(); ++i)
             {
-                RenderPass* pass = m_UnorderedPasses[m_RenderFlow[i].m_PassID];
+                RenderPass* pass = m_UnorderedPasses[m_RenderFlow[i].passID];
 
                 //pass->Render(dependencies);
 
-
+                m_RenderFlow[i].parameterIDs == -1
             }
         }
 
@@ -36,13 +36,15 @@ namespace RB::Graphics
 
         struct FlowNode
         {
-            uint32_t        m_PassID;
-            List<uint32_t>  m_ParameterIDs;
+            uint32_t passID;
+            int32_t  parameterIDs[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // -1 means not valid
+            int32_t  workingIDs[MAX_WORKING_RESOURCES_PER_RENDERPASS];
+            int32_t  outputIDs[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         };
 
-        RenderPass**       m_UnorderedPasses;
-        RenderResource**   m_Resources; // All the resources used by the graph
-        List<FlowNode>     m_RenderFlow;
+        RenderPass**        m_UnorderedPasses;
+        RenderResource**    m_Resources; // All the resources used by the graph
+        List<FlowNode>      m_RenderFlow;
     };
 
     // ---------------------------------------------------------------------------
@@ -66,6 +68,8 @@ namespace RB::Graphics
         RenderGraph Build();
 
     private:
+        RenderPassType GetNextLeafPass(uint64_t processed_mask, RenderPassType current_type);
+
         using ResourceConnections = List<uint32_t>;
 
         // Yes, I know, these types are getting very long and confusing :(

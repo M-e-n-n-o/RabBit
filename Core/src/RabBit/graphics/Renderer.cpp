@@ -3,7 +3,7 @@
 #include "RenderInterface.h"
 #include "RenderPass.h"
 #include "Window.h"
-#include "ViewContext.h"
+#include "View.h"
 #include "ResourceDefaults.h"
 #include "ResourceStreamer.h"
 
@@ -379,6 +379,8 @@ namespace RB::Graphics
 
                 RenderResource* final_color_target = view_context.finalColorTarget;
 
+                Viewport vp = {};
+
                 // Clear the final target (TODO Create a GlobalPrepare pass to clear all necessary textures)
                 {
                     RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
@@ -401,7 +403,7 @@ namespace RB::Graphics
 
                     context->graphicsInterface->InvalidateState(false);
 
-                    context->renderPasses[pass_index]->Render(context->graphicsInterface, &view_context, context->renderPassEntries[pass_index], &final_color_target, nullptr, nullptr);
+                    context->renderPasses[pass_index]->Render(context->graphicsInterface, &view_context, &vp, context->renderPassEntries[pass_index], &final_color_target, nullptr, nullptr);
                 }
             }
         }

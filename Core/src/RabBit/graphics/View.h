@@ -20,4 +20,13 @@ namespace RB::Graphics
 
         void SetFrameConstants(RenderInterface* render_interface) const;
     };
+
+    class Viewport
+    {
+    public:
+        uint32_t        left;
+        uint32_t        top;
+        uint32_t        width;
+        uint32_t        height;
+    };
 }

@@ -21,15 +21,16 @@ namespace RB::Graphics
 
     enum class RenderTextureSize : uint8_t
     {
-        Full   = 0,
-        Half   = 1
+        Full            = 0,
+        Half            = 1,
     };
 
     enum class RenderTextureFlag : uint32_t
     {
         None                    = 0,
-        DenyRenderTarget        = (1 << 1),
+        DenyRenderTarget        = (1 << 1), // Will not be used as a RenderTarget?
         AllowRandomGpuWrites    = (1 << 2), // Is UAV allowed?
+        ContainsHistory         = (1 << 3)  // Makes sure this resource is not shared between passes
     };
 
     struct RenderTextureDesc
@@ -39,6 +40,8 @@ namespace RB::Graphics
         RenderTextureSize       width;
         RenderTextureSize       height;
         RenderTextureSize       depth;
+        bool                    uiSized;
+        bool                    upscaledSized;
         uint32_t                flags;
     };
 
@@ -46,6 +49,13 @@ namespace RB::Graphics
     {
         const char*             name;
         RenderResourceFormat    format;
+    };
+
+    enum class ViewportType : uint8_t
+    {
+        Standard    = 0,
+        Upscaled    = 1,
+        UI          = 2
     };
 
     #define MAX_INOUT_RESOURCES_PER_RENDERPASS      8
@@ -59,6 +69,7 @@ namespace RB::Graphics
         uint32_t                totalWorkingTextures;
         RenderTextureDesc	    outputTextures[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // Maybe it should be possible to not only output rendertextures, but also buffers?
         uint32_t                totalOutputTextures;
+        bool                    asyncComputeCompatible  = false;
     };
 
     // Make sure to do all your deletes and free's in the destructor!
@@ -95,6 +106,7 @@ namespace RB::Graphics
         // Runs for every ViewContext
         virtual void Render(RenderInterface* render_interface,
                             ViewContext*     view_context,
+                            Viewport*        viewport,
                             RenderPassEntry* entry_context,
                             RenderResource** output_textures,
                             RenderResource** working_textures,

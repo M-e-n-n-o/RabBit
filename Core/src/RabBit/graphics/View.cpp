@@ -1,5 +1,5 @@
 #include "RabBitCommon.h"
-#include "ViewContext.h"
+#include "View.h"
 #include "RenderInterface.h"
 
 // Shader code
