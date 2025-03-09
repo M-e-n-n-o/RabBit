@@ -8,19 +8,6 @@ namespace RB::Graphics
     class RenderInterface;
     class Texture2D;
 
-    class ViewContext
-    {
-    public:
-        bool			isOffscreenContext;
-        uint32_t		windowIndex;
-        Texture2D*      finalColorTarget;
-        Math::Float4	clearColor;
-
-        Frustum			viewFrustum;
-
-        void SetFrameConstants(RenderInterface* render_interface) const;
-    };
-
     class Viewport
     {
     public:
@@ -28,5 +15,21 @@ namespace RB::Graphics
         uint32_t        top;
         uint32_t        width;
         uint32_t        height;
+    };
+
+    class ViewContext
+    {
+    public:
+        bool			isOffscreenContext;
+        uint32_t		windowIndex;
+        Texture2D*      finalColorTarget;
+        Math::Float4	clearColor;
+        uint32_t        renderGraphType;
+
+        // RenderPasses can change the properties of the viewport if needed
+        Viewport        viewport;
+        Frustum			viewFrustum;
+
+        void SetFrameConstants(RenderInterface* render_interface) const;
     };
 }

@@ -8,10 +8,10 @@ namespace RB
 
     enum OpenFileMode : uint32_t
     {
-        kFileModeNone   = 0,
-        kFileModeRead   = (1 << 0),
-        kFileModeWrite  = (1 << 1),
-        kFileModeBinary = (1 << 2)
+        kFileMode_None   = 0,
+        kFileMode_Read   = (1 << 0),
+        kFileMode_Write  = (1 << 1),
+        kFileMode_Binary = (1 << 2)
     };
 
     class FileLoader

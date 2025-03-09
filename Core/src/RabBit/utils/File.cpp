@@ -9,11 +9,11 @@ namespace RB
     {
         std::ios_base::openmode mode = 0;
 
-        if ((open_mode & OpenFileMode::kFileModeRead) > 0)
+        if ((open_mode & OpenFileMode::kFileMode_Read) > 0)
             mode |= std::fstream::in;
-        if ((open_mode & OpenFileMode::kFileModeWrite) > 0)
+        if ((open_mode & OpenFileMode::kFileMode_Write) > 0)
             mode |= std::fstream::out;
-        if ((open_mode & OpenFileMode::kFileModeBinary) > 0)
+        if ((open_mode & OpenFileMode::kFileMode_Binary) > 0)
             mode |= std::fstream::binary;
 
         std::fstream* stream = new std::fstream();
@@ -49,9 +49,9 @@ namespace RB
     FileHandle::FileHandle(void* stream, uint32_t open_mode)
         : m_IsValid(true)
         , m_Stream(stream)
-        , m_ReadAccess((open_mode& OpenFileMode::kFileModeRead) > 0)
-        , m_WriteAccess((open_mode& OpenFileMode::kFileModeWrite) > 0)
-        , m_BinaryMode((open_mode& OpenFileMode::kFileModeBinary) > 0)
+        , m_ReadAccess((open_mode& OpenFileMode::kFileMode_Read) > 0)
+        , m_WriteAccess((open_mode& OpenFileMode::kFileMode_Write) > 0)
+        , m_BinaryMode((open_mode& OpenFileMode::kFileMode_Binary) > 0)
     {
     }
 

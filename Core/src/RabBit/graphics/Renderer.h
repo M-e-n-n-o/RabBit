@@ -18,11 +18,19 @@ namespace RB::Graphics
     };
 
     class RenderInterface;
-    class RenderPass;
     class GpuGuard;
     class ViewContext;
     class ResourceStreamer;
     class VertexBuffer;
+    class RenderGraph;
+    class RenderGraphContext;
+
+    enum RenderGraphType
+    {
+        kRenderGraphType_Normal = 0,
+
+        kRenderGraphType_Count
+    };
 
     class Renderer : public Input::Events::EventListener
     {
@@ -69,10 +77,10 @@ namespace RB::Graphics
         WorkerThread*               m_RenderThread;
         JobTypeID					m_RenderJobType;
 
-        RenderInterface*            m_GraphicsInterface; // Used by the render passes
+        RenderInterface*            m_GraphicsInterface; // Used by the render graphs
         RenderInterface*            m_CopyInterface;	 // Used for resource streaming 
-        RenderPass**                m_RenderPasses;
-        uint32_t					m_TotalPasses;
+        RenderGraph*                m_RenderGraphs[kRenderGraphType_Count];
+        RenderGraphContext*         m_RenderGraphContext;
 
         ThreadedVariable<uint64_t>	m_RenderFrameIndex;
         ThreadedVariable<bool>		m_ForceSync;

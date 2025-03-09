@@ -1,15 +1,18 @@
 #pragma once
 
 #include "RenderPass.h"
+#include "RenderGraphContext.h"
 
 namespace RB::Graphics
 {
+    class RenderGraphContext;
     class RenderGraphBuilder;
 
     // ---------------------------------------------------------------------------
     //                               RenderGraph
     // ---------------------------------------------------------------------------
 
+    // Contains all the different RenderPasses that are needed to render a ViewContext
     class RenderGraph
     {
     public:
@@ -17,33 +20,23 @@ namespace RB::Graphics
 
         RenderGraph() = default;
 
-        void RunGraph(ViewContext*)
-        {
-            
-
-            for (int i = 0; i < m_RenderFlow.size(); ++i)
-            {
-                RenderPass* pass = m_UnorderedPasses[m_RenderFlow[i].passID];
-
-                //pass->Render(dependencies);
-
-                m_RenderFlow[i].parameterIDs == -1
-            }
-        }
+        RenderPassEntry** SubmitEntry(const Entity::Scene* const scene);
+        void RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context);
 
     private:
         friend class RenderGraphBuilder;
 
         struct FlowNode
         {
-            uint32_t passID;
-            int32_t  parameterIDs[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // -1 means not valid
-            int32_t  workingIDs[MAX_WORKING_RESOURCES_PER_RENDERPASS];
-            int32_t  outputIDs[MAX_INOUT_RESOURCES_PER_RENDERPASS];
+            uint32_t    passID;
+            ResourceID  parameterIDs[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // -1 means not valid
+            ResourceID  workingIDs[MAX_WORKING_RESOURCES_PER_RENDERPASS];
+            ResourceID  outputIDs[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         };
 
-        RenderPass**        m_UnorderedPasses;
-        RenderResource**    m_Resources; // All the resources used by the graph
+        uint32_t            m_ID;
+        uint32_t            m_FinalOutputResourceID;
+        List<RenderPass*>   m_UnorderedPasses;
         List<FlowNode>      m_RenderFlow;
     };
 
@@ -62,23 +55,53 @@ namespace RB::Graphics
 
         RenderGraphBuilder& SetFinalPass(RenderPassType type, uint32_t output_id);
 
+        /*
+            Example:
+            AddLink(RenderPassType::None, RenderPassType::None, 
+                0u,     ->     0u,  // Output number 0 of left pass is input number 0 of the right pass
+                1u,     ->     3u); // Output number 1 of left pass is input number 3 of the right pass
+        */
         template<class ...ConnectionID>
         RenderGraphBuilder& AddLink(RenderPassType from, RenderPassType to, const ConnectionID&... connection_ids);
 
-        RenderGraph Build();
+        RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context);
 
     private:
         RenderPassType GetNextLeafPass(uint64_t processed_mask, RenderPassType current_type);
+
+        // TODO Finish this method
+        ResourceID GetAlias(const RenderTextureDesc& desc, RenderGraphContext* context, uint32_t graph_id);
 
         using ResourceConnections = List<uint32_t>;
 
         // Yes, I know, these types are getting very long and confusing :(
         RenderPassType                                                                  m_FinalPassType;
+        uint32_t                                                                        m_FinalResourceId;
         UnorderedMap<RenderPassType, RenderPass*>                                       m_Passes;
         UnorderedMap<RenderPassType, RenderPassSettings>                                m_PassSettings;
         //           To                           From            Resources
         UnorderedMap<RenderPassType, UnorderedMap<RenderPassType, ResourceConnections>> m_Connections;
     };
+
+    template<class Pass>
+    inline RenderGraphBuilder& RenderGraphBuilder::AddPass(RenderPassType type, const RenderPassSettings& settings)
+    {
+        RenderPass* pass = new Pass();
+
+        auto itr = m_Passes.emplace(type, pass);
+
+        if (itr.second)
+        {
+            m_PassSettings.emplace(type, settings);
+        }
+        else
+        {
+            // Already inserted
+            delete pass;
+        }
+
+        return *this;
+    }
 
     template<class ...ConnectionID>
     inline RenderGraphBuilder& RenderGraphBuilder::AddLink(RenderPassType from, RenderPassType to, const ConnectionID& ...cs)

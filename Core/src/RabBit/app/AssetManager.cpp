@@ -45,7 +45,7 @@ namespace RB::Graphics
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
-            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileModeRead | OpenFileMode::kFileModeBinary);
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
             FileData data = file_handle->ReadFull();
 
@@ -87,7 +87,7 @@ namespace RB::Graphics
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
-            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileModeRead | OpenFileMode::kFileModeBinary);
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
             FileData data = file_handle->ReadFull();
 

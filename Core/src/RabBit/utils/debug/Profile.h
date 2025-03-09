@@ -31,8 +31,8 @@ namespace RB::Utils::Debug
         ID3D12GraphicsCommandList* m_CommandList;
     };
 
-    #define RB_PROFILE_GPU_SCOPED(commandList, name)				RB::Utils::Debug::RbProfileGpuScoped rb_profile_gpu_scoped(commandList, 0, name);
-    #define RB_PROFILE_GPU_SCOPED_COLOR(commandList, name, color)	RB::Utils::Debug::RbProfileGpuScoped rb_profile_gpu_scoped(commandList, color, name);
+    #define RB_PROFILE_GPU_SCOPED_D3D12(commandList, name)				RB::Utils::Debug::RbProfileGpuScoped rb_profile_gpu_scoped(commandList, 0, name);
+    #define RB_PROFILE_GPU_SCOPED_COLOR_D3D12(commandList, name, color)	RB::Utils::Debug::RbProfileGpuScoped rb_profile_gpu_scoped(commandList, color, name);
 
 #else
 

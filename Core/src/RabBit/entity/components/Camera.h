@@ -2,6 +2,7 @@
 #include "RabBitCommon.h"
 #include "entity/ObjectComponent.h"
 #include "graphics/RenderResource.h"
+#include "graphics/Renderer.h"
 #include "math/Vector.h"
 
 namespace RB::Entity
@@ -18,6 +19,7 @@ namespace RB::Entity
             , m_VFovDegrees(vfov)
             , m_TargetWindowIndex(target_window_index)
             , m_RenderTexture(nullptr)
+            , m_RenderGraphType(Graphics::kRenderGraphType_Normal)
             , m_ClearColor(1.0f)
         {
         }
@@ -28,9 +30,13 @@ namespace RB::Entity
             , m_VFovDegrees(vfov)
             , m_TargetWindowIndex(-1)
             , m_RenderTexture(render_texture)
+            , m_RenderGraphType(Graphics::kRenderGraphType_Normal)
             , m_ClearColor(1.0f)
         {
         }
+
+        void SetRenderGraphType(Graphics::RenderGraphType type) { m_RenderGraphType = type; }
+        uint32_t GetRenderGraphType() const { return m_RenderGraphType; }
 
         // TODO Using the window index to specify which window to render to breaks when adding/removing windows as indices will change, 
         // so use another method to specify which window to render to. Maybe just a pointer to the window?
@@ -46,12 +52,13 @@ namespace RB::Entity
         float GetVerticalFovInRadians()	const { return Math::DegreesToRadians(m_VFovDegrees); }
 
     private:
-        float					m_Near;
-        float					m_Far;
-        float					m_VFovDegrees;
+        float					    m_Near;
+        float					    m_Far;
+        float					    m_VFovDegrees;
 
-        Math::Float4			m_ClearColor;
-        uint32_t				m_TargetWindowIndex;
-        Graphics::Texture2D* m_RenderTexture;
+        Math::Float4			    m_ClearColor;
+        uint32_t				    m_TargetWindowIndex;
+        Graphics::Texture2D*        m_RenderTexture;
+        Graphics::RenderGraphType   m_RenderGraphType;
     };
 }

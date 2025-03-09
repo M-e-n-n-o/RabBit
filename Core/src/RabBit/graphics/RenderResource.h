@@ -75,8 +75,8 @@ namespace RB::Graphics
 
         virtual RenderResourceFormat GetFormat() const = 0;
 
-        bool CanRender() const { return m_IsStreaming; }
-        void SetStreaming(bool is_streaming) { m_IsStreaming = is_streaming; }
+        bool ReadyToRender() const { return m_IsStreaming; } // TODO Make this thread safe
+        void SetStreaming(bool is_streaming) { m_IsStreaming = is_streaming; } // TODO Make this thread safe
 
         RenderResourceType GetType() const { return m_Type; }
         RenderResourceType GetPrimitiveType() const;

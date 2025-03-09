@@ -6,6 +6,7 @@
 #include "View.h"
 #include "ResourceDefaults.h"
 #include "ResourceStreamer.h"
+#include "RenderGraph.h"
 
 #include "codeGen/ShaderDefines.h"
 #include "shaders/shared/Common.h"
@@ -13,6 +14,7 @@
 
 #include "app/Application.h"
 #include "input/events/WindowEvent.h"
+#include "input/events/ApplicationEvent.h"
 
 #include "entity/Scene.h"
 #include "entity/components/Camera.h"
@@ -24,6 +26,7 @@
 // Needed for the PIX markers, need to make an abstraction for this
 #include "d3d12/RenderInterfaceD3D12.h"
 
+using namespace RB::Math;
 using namespace RB::Input::Events;
 
 namespace RB::Graphics
@@ -37,9 +40,9 @@ namespace RB::Graphics
 
         List<Renderer::BackBufferGuard>*    backBufferAvailabilityGuards;
 
-        RenderPass**                        renderPasses;
-        RenderPassEntry**                   renderPassEntries;
-        uint32_t							totalPasses;
+        RenderGraphContext*                 graphContext;
+        RenderGraph**                       renderGraphs;
+        RenderPassEntry***                  renderPassEntries;
 
         RenderInterface*                    graphicsInterface;
 
@@ -54,18 +57,13 @@ namespace RB::Graphics
 
         ~RenderContext()
         {
-            for (int i = 0; i < totalPasses; ++i)
-            {
-                SAFE_DELETE(renderPassEntries[i]);
-            }
             SAFE_FREE(renderPassEntries);
-
             SAFE_FREE(viewContexts);
         }
     };
 
     Renderer::Renderer(bool multi_threading_support)
-        : EventListener(kEventCat_Window)
+        : EventListener(kEventCat_Window | kEventCat_Application)
         , m_IsShutdown(true)
         , m_MultiThreadingSupport(multi_threading_support)
         , m_RenderFrameIndex(0)
@@ -97,10 +95,22 @@ namespace RB::Graphics
         m_RenderFrameIndex.SetValue(0);
         m_ForceSync.SetValue(false);
 
+        m_RenderGraphContext = new RenderGraphContext();
+
         // Set the render passes
-        m_TotalPasses       = 1;
-        m_RenderPasses      = (RenderPass**)ALLOC_HEAP(sizeof(RenderPass*) * m_TotalPasses);
-        m_RenderPasses[0]   = new GBufferPass();
+        for (uint32_t i = 0; i < kRenderGraphType_Count; ++i)
+        {
+            m_RenderGraphs[i] = nullptr;
+        }
+
+        m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
+            .AddPass<GBufferPass>(RenderPassType::GBuffer, RenderPassSettings{})
+            .SetFinalPass(RenderPassType::GBuffer, 0)
+            .Build(kRenderGraphType_Normal, m_RenderGraphContext);
+
+        m_RenderGraphContext->CreateGraphResources();
+
+
 
         float vertices[] =
         {	// Pos			UV
@@ -133,11 +143,11 @@ namespace RB::Graphics
 
         SyncWithGpu();
 
-        for (int i = 0; i < m_TotalPasses; ++i)
+        for (int i = 0; i < kRenderGraphType_Count; ++i)
         {
-            delete m_RenderPasses[i];
+            SAFE_DELETE(m_RenderGraphs[i]);
         }
-        SAFE_FREE(m_RenderPasses);
+        SAFE_DELETE(m_RenderGraphContext);
 
         SAFE_DELETE(m_BackBufferCopyVB);
 
@@ -157,21 +167,20 @@ namespace RB::Graphics
             uint32_t total_view_contexts;
             ViewContext* view_contexts = CreateViewContexts(scene, total_view_contexts);
 
-            RenderPassEntry** entries = (RenderPassEntry**)ALLOC_HEAP(sizeof(RenderPassEntry*) * m_TotalPasses);
-
-            // Gather the entries from all render passes
-            for (int i = 0; i < m_TotalPasses; i++)
+            // Gather the entries from all render passes for every view context
+            RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
+            for (int i = 0; i < total_view_contexts; ++i)
             {
-                entries[i] = m_RenderPasses[i]->SubmitEntry(scene);
+                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(scene);
             }
 
             RenderContext* context                  = new RenderContext();
             context->viewContexts                   = view_contexts;
             context->totalViewContexts              = total_view_contexts;
             context->backBufferAvailabilityGuards   = &m_BackBufferAvailabilityGuards;
-            context->renderPasses                   = m_RenderPasses;
+            context->graphContext                   = m_RenderGraphContext;
+            context->renderGraphs                   = m_RenderGraphs;
             context->renderPassEntries              = entries;
-            context->totalPasses                    = m_TotalPasses;
             context->graphicsInterface              = m_GraphicsInterface;
             context->renderFrameIndex               = &m_RenderFrameIndex;
             context->backBufferCopyVB               = m_BackBufferCopyVB;
@@ -276,6 +285,7 @@ namespace RB::Graphics
             //contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, false);
 
             contexts[context_index].clearColor = camera->GetClearColor();
+            contexts[context_index].renderGraphType = camera->GetRenderGraphType();
 
             context_index++;
         }
@@ -306,41 +316,59 @@ namespace RB::Graphics
 
     void Renderer::OnEvent(Event& event)
     {
-        WindowEvent* window_event = static_cast<WindowEvent*>(&event);
-
-        Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
-
-        if (window)
+        auto sync = [&](Float2 size, Float2 upscaled_size, Float2 ui_size) 
         {
-            switch (window_event->GetEventType())
-            {
-            case EventType::WindowResize:
-            {
-                // Force the main thread to sync with the render thread (wait until the main thread has set the value to false)
-                m_ForceSync.SetValue(true);
-                m_ForceSync.WaitUntilConditionMet([](const bool& new_value) -> bool
-                    {
-                        return new_value == false;
-                    });
+            // Force the main thread to sync with the render thread (wait until the main thread has set the value to false)
+            m_ForceSync.SetValue(true);
+            m_ForceSync.WaitUntilConditionMet([](const bool& new_value) -> bool
+                {
+                    return new_value == false;
+                });
 
-                // Need to cancel all next jobs for the render thread as these will not be valid
-                m_RenderThread->CancelAll();
-            }
-            break;
+            // Need to cancel all next jobs for the render thread as these will not be valid
+            m_RenderThread->CancelAll();
 
-            case EventType::WindowCreated:
-            case EventType::WindowCloseRequest:
-            case EventType::WindowClose:
-            case EventType::WindowFocus:
-            case EventType::WindowLostFocus:
-            case EventType::WindowMoved:
-            case EventType::WindowFullscreenToggle:
-            default:
+            m_RenderGraphContext->DeleteGraphResources();
+            m_RenderGraphContext->CreateGraphResources(size, upscaled_size, ui_size);
+        };
+
+        if (event.IsInCategory(kEventCat_Window))
+        {
+            WindowEvent* window_event = static_cast<WindowEvent*>(&event);
+
+            Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
+
+            if (window)
+            {
+                switch (window_event->GetEventType())
+                {
+                case EventType::WindowResize:
+                {
+                    sync()
+                }
                 break;
-            }
 
-            // Actually process the event
-            window->ProcessEvent(*window_event);
+                case EventType::WindowCreated:
+                case EventType::WindowCloseRequest:
+                case EventType::WindowClose:
+                case EventType::WindowFocus:
+                case EventType::WindowLostFocus:
+                case EventType::WindowMoved:
+                case EventType::WindowFullscreenToggle:
+                default:
+                    break;
+                }
+
+                // Actually process the event
+                window->ProcessEvent(*window_event);
+            }
+        }
+        else if (event.IsInCategory(kEventCat_Application))
+        {
+            BindEvent<AppChangedSettingsEvent>([this](AppChangedSettingsEvent& app_event)
+            {
+                sync();
+            }, event);
         }
     }
 
@@ -369,42 +397,27 @@ namespace RB::Graphics
         context->OnRenderFrameStart();
 
         {
-            RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
+            //RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
 
             for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
             {
-                RB_PROFILE_GPU_SCOPED(command_list.Get(), "ViewContext");
+                //RB_PROFILE_GPU_SCOPED(command_list.Get(), "ViewContext");
 
                 ViewContext& view_context = context->viewContexts[view_context_index];
 
                 RenderResource* final_color_target = view_context.finalColorTarget;
 
-                Viewport vp = {};
-
                 // Clear the final target (TODO Create a GlobalPrepare pass to clear all necessary textures)
                 {
-                    RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
+                    //RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
 
                     context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
                 }
 
+                context->graphicsInterface->InvalidateState(false);
+
                 // Render the different passes
-                for (int pass_index = 0; pass_index < context->totalPasses; ++pass_index)
-                {
-                    RenderPassEntry* entry = context->renderPassEntries[pass_index];
-
-                    // Do not render the pass if it did not submit an entry
-                    if (entry == nullptr)
-                    {
-                        continue;
-                    }
-
-                    RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetName());
-
-                    context->graphicsInterface->InvalidateState(false);
-
-                    context->renderPasses[pass_index]->Render(context->graphicsInterface, &view_context, &vp, context->renderPassEntries[pass_index], &final_color_target, nullptr, nullptr);
-                }
+                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
             }
         }
 
@@ -445,7 +458,7 @@ namespace RB::Graphics
                 continue;
             }
 
-            RB_PROFILE_GPU_SCOPED(command_list.Get(), "Present");
+            //RB_PROFILE_GPU_SCOPED(command_list.Get(), "Present");
 
             // Wait until the backbuffer resource is available
             if (window_index < context->backBufferAvailabilityGuards->size())
