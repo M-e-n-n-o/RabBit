@@ -10,7 +10,7 @@ namespace RB::Input::Events
         WindowCreated, WindowCloseRequest, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved, WindowFullscreenToggle,
         KeyPressed, KeyReleased, KeyTyped,
         MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
-        AppChangedSettings
+        GraphicsSettingsChanged
     };
 
     enum EventCategory

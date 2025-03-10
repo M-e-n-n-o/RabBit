@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core.h"
+#include "Settings.h"
 #include "input/events/Event.h"
 
 #include <cstdint>
@@ -53,6 +54,10 @@ namespace RB
         Graphics::Window* FindWindow(void* window_handle) const;
         int32_t			  FindWindowIndex(void* window_handle) const;
 
+        void ApplyNewGraphicsSettings(GraphicsSettings& settings);
+        GraphicsSettings GetGraphicsSettings() { return m_GraphicsSettings; }
+        const GraphicsSettings& GetGraphicsSettings() const { return m_GraphicsSettings; }
+
         Graphics::Renderer* GetRenderer() const { return m_Renderer; }
 
         Entity::Scene* GetScene() const { return m_Scene; }
@@ -67,7 +72,7 @@ namespace RB
         virtual void OnStop() = 0;
 
         void UpdateInternal();
-
+        void PrintSettings(const GraphicsSettings& settings);
         void OnEvent(Input::Events::Event& event) override;
 
         const AppInfo				m_StartAppInfo;
@@ -83,6 +88,7 @@ namespace RB
         int32_t						m_PrimaryWindowIndex;
         bool						m_CheckWindows;
 
+        GraphicsSettings            m_GraphicsSettings;
         Graphics::Renderer*			m_Renderer;
 
         Entity::Scene*				m_Scene;

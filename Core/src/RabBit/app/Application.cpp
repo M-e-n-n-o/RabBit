@@ -9,6 +9,7 @@
 
 #include "entity/Scene.h"
 
+#include "input/events/ApplicationEvent.h"
 #include "input/events/KeyEvent.h"
 #include "input/KeyCodes.h"
 #include "input/Input.h"
@@ -77,6 +78,12 @@ namespace RB
         AssetManager::Init(asset_path);
 
         Renderer::SetAPI(RenderAPI::D3D12);
+
+        m_GraphicsSettings = {};
+        m_GraphicsSettings.renderWidth = // What size to set here??
+
+        PrintSettings(m_GraphicsSettings);
+
         m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
         m_Renderer->Init();
 
@@ -259,6 +266,24 @@ namespace RB
         return -1;
     }
 
+    void Application::ApplyNewGraphicsSettings(GraphicsSettings& settings)
+    {
+        settings.Validate();
+
+        PrintSettings(settings);
+
+        GraphicsSettingsChangedEvent e(settings);
+        g_EventManager->InsertEvent(e);
+    }
+
+    void Application::PrintSettings(const GraphicsSettings& settings)
+    {
+        RB_LOG(LOGTAG_MAIN, "");
+        RB_LOG(LOGTAG_MAIN, "======== INSERTING NEW GRAPHICS SETTINGS ========");
+        // TODO Print settings
+        RB_LOG(LOGTAG_MAIN, "");
+    }
+
     void Application::OnEvent(Event& event)
     {
         if (!m_Initialized)
@@ -304,6 +329,12 @@ namespace RB
         BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
         {
             m_CheckWindows = true;
+        }, event);
+
+        
+        BindEvent<GraphicsSettingsChangedEvent>([this](GraphicsSettingsChangedEvent& settings_event)
+        {
+            m_GraphicsSettings = settings_event.GetSettings();
         }, event);
     }
 }

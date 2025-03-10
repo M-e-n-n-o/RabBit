@@ -7,7 +7,9 @@
 
 #include <ufbx.h>
 
-namespace RB::Graphics
+using namespace RB::Graphics;
+
+namespace RB
 {
     LoadedImage::LoadedImage()
         : data(nullptr)

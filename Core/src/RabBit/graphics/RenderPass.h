@@ -55,6 +55,12 @@ namespace RB::Graphics
                     uiSized == other.uiSized &&
                     upscaledSized == other.upscaledSized);
         }
+
+        void CombineFlags(const uint32_t other_flags)
+        {
+            // Just combine all the flags right now
+            flags |= other_flags;
+        }
     };
 
     struct RenderTextureInputDesc

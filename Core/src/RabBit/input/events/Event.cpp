@@ -55,11 +55,11 @@ namespace RB::Input::Events
     {
         //m_LastEvents.insert(m_LastEvents.begin(), event);
 
-        for (EventListener* listener : m_Listeners)
+        for (int i = 0; i < m_Listeners.size(); ++i)
         {
-            if (listener->ListensToCategory((EventCategory)event.GetCategoryFlags()))
+            if (m_Listeners[i]->ListensToCategory((EventCategory)event.GetCategoryFlags()))
             {
-                listener->AddEvent(event);
+                m_Listeners[i]->AddEvent(event);
             }
         }
 

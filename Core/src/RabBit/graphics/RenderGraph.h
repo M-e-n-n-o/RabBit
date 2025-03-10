@@ -69,9 +69,6 @@ namespace RB::Graphics
     private:
         RenderPassType GetNextLeafPass(uint64_t processed_mask, RenderPassType current_type);
 
-        // TODO Finish this method
-        ResourceID GetAlias(const RenderTextureDesc& desc, RenderGraphContext* context, uint32_t graph_id);
-
         using ResourceConnections = List<uint32_t>;
 
         // Yes, I know, these types are getting very long and confusing :(

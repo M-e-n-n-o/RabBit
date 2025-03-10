@@ -149,6 +149,56 @@ namespace RB::Graphics
 
             RenderPassConfig config = pass_ptr->second->GetConfiguration(settings_ptr->second);
 
+            auto GetAlias = [&](const RenderTextureDesc& desc, bool check_lifetime) -> ResourceID
+            {
+                ResourceID id = -1;
+
+                // Get the already scheduled resources for this graph
+                List<ResourceID>& resources = context->GetScheduledGraphResources(graph_id);
+
+                for (const ResourceID& other_id : resources)
+                {
+                    const RenderTextureDesc& other = context->GetScheduledResource(other_id);
+
+                    if (!desc.IsAliasableWith(other))
+                        continue;
+
+                    // Check to not alias with resurces from the current pass
+                    {
+                        bool match = false;
+
+                        for (int i = 0; i < _countof(parameter_ids); ++i)
+                        {
+                            if (parameter_ids[i] == other_id)
+                                match = true;
+                        }
+                        for (int i = 0; i < _countof(working_ids); ++i)
+                        {
+                            if (working_ids[i] == other_id)
+                                match = true;
+                        }
+                        for (int i = 0; i < _countof(output_ids); ++i)
+                        {
+                            if (output_ids[i] == other_id)
+                                match = true;
+                        }
+
+                        if (match)
+                            continue;
+                    }
+
+                    if (!check_lifetime)
+                    {
+                        id = other_id;
+                        break;
+                    }
+
+                    // TODO Future optimization, figure out if they overlap in lifetime and use as alias
+                }
+
+                return id;
+            };
+
             // Parameter ID's
             auto connections_ptr = m_Connections.find(pass_type);
             if (connections_ptr != m_Connections.end())
@@ -180,7 +230,7 @@ namespace RB::Graphics
 
                         const RenderTextureDesc& desc = from_config.outputTextures[i];
 
-                        ResourceID id = GetAlias(desc, context, graph_id);
+                        ResourceID id = GetAlias(desc, true);
 
                         if (id == -1)
                         {
@@ -191,7 +241,6 @@ namespace RB::Graphics
                         {
                             // Found an alias
                             parameter_ids[param_idx] = id;
-
                             // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
                             context->CombineScheduledResourceFlags(id, desc.flags);
                         }
@@ -212,8 +261,22 @@ namespace RB::Graphics
             {
                 const RenderTextureDesc& desc = config.workingTextures[i];
 
-                // No need to check the lifetime of working textures, they are only used by this pass
-                working_ids[i] = context->ScheduleNewResource(desc, graph_id);
+                // No need to check the full lifetime of working textures, they are only used by this pass
+                ResourceID id = GetAlias(desc, false);
+
+                if (id == -1)
+                {
+                    // No alias found
+                    working_ids[i] = context->ScheduleNewResource(desc, graph_id);
+                }
+                else
+                {
+                    // Found an alias
+                    working_ids[i] = id;
+                    // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
+                    context->CombineScheduledResourceFlags(id, desc.flags);
+                }
+
             }
 
             // Output ID's
@@ -233,7 +296,7 @@ namespace RB::Graphics
 
                 const RenderTextureDesc& desc = config.outputTextures[i];
 
-                ResourceID id = GetAlias(desc, context, graph_id);
+                ResourceID id = GetAlias(desc, true);
 
                 if (id == -1)
                 {
@@ -244,7 +307,6 @@ namespace RB::Graphics
                 {
                     // Found an alias
                     output_ids[i] = id;
-
                     // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
                     context->CombineScheduledResourceFlags(id, desc.flags);
                 }
@@ -304,24 +366,5 @@ namespace RB::Graphics
 
         // All inputs of this pass are processed
         return current_type;
-    }
-    
-    ResourceID RenderGraphBuilder::GetAlias(const RenderTextureDesc& desc, RenderGraphContext* context, uint32_t graph_id)
-    {
-        ResourceID id = -1;
-
-        List<ResourceID>& resources = context->GetScheduledGraphResources(graph_id);
-
-        for (const ResourceID& other_id : resources)
-        {
-            const RenderTextureDesc& other = context->GetScheduledResource(other_id);
-
-            if (!desc.IsAliasableWith(other))
-                continue;
-
-            // TODO Future optimization, figure out if they overlap in lifetime and use as alias
-        }
-
-        return id;
     }
 }

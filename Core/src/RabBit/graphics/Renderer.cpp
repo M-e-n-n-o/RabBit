@@ -103,14 +103,16 @@ namespace RB::Graphics
             m_RenderGraphs[i] = nullptr;
         }
 
+        const GraphicsSettings& settings = Application::GetInstance()->GetGraphicsSettings();
+
         m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
             .AddPass<GBufferPass>(RenderPassType::GBuffer, RenderPassSettings{})
             .SetFinalPass(RenderPassType::GBuffer, 0)
             .Build(kRenderGraphType_Normal, m_RenderGraphContext);
 
+        // TODO What sizes do we actually set here? Cause we can have multiple displays. Can we delay creating the RenderGraphContext until we know the ViewContexts (sizes)?
+        // What are we also going to do if we have multiple view context with different sizes?
         m_RenderGraphContext->CreateGraphResources();
-
-
 
         float vertices[] =
         {	// Pos			UV
@@ -316,7 +318,7 @@ namespace RB::Graphics
 
     void Renderer::OnEvent(Event& event)
     {
-        auto sync = [&](Float2 size, Float2 upscaled_size, Float2 ui_size) 
+        auto sync = [this]() 
         {
             // Force the main thread to sync with the render thread (wait until the main thread has set the value to false)
             m_ForceSync.SetValue(true);
@@ -327,9 +329,6 @@ namespace RB::Graphics
 
             // Need to cancel all next jobs for the render thread as these will not be valid
             m_RenderThread->CancelAll();
-
-            m_RenderGraphContext->DeleteGraphResources();
-            m_RenderGraphContext->CreateGraphResources(size, upscaled_size, ui_size);
         };
 
         if (event.IsInCategory(kEventCat_Window))
@@ -344,7 +343,11 @@ namespace RB::Graphics
                 {
                 case EventType::WindowResize:
                 {
-                    sync()
+                    sync();
+
+                    m_RenderGraphContext->DeleteGraphResources();
+                    SyncWithGpu();
+                    m_RenderGraphContext->CreateGraphResources(size, upscaled_size, ui_size);
                 }
                 break;
 
@@ -354,7 +357,7 @@ namespace RB::Graphics
                 case EventType::WindowFocus:
                 case EventType::WindowLostFocus:
                 case EventType::WindowMoved:
-                case EventType::WindowFullscreenToggle:
+                case EventType::WindowFullscreenToggle: // Also toggles a window resize event after this
                 default:
                     break;
                 }
@@ -365,9 +368,13 @@ namespace RB::Graphics
         }
         else if (event.IsInCategory(kEventCat_Application))
         {
-            BindEvent<AppChangedSettingsEvent>([this](AppChangedSettingsEvent& app_event)
+            BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& app_event)
             {
                 sync();
+
+                // TODO We actually need to recreate the entire RenderGraph's here cause the RenderPassSettings might have changed
+                // Also make sure that we delete and create an entirely new m_RenderGraphContext!
+
             }, event);
         }
     }

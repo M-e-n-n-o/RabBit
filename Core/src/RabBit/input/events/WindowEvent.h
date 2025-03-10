@@ -88,6 +88,6 @@ namespace RB::Input::Events
     public:
         WindowFullscreenToggleEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-        DEFINE_CLASS_TYPE(WindowFullscreenToggleEvent, WindowFullscreenToggle, false)
+        DEFINE_CLASS_TYPE(WindowFullscreenToggleEvent, WindowFullscreenToggle, true)
     };
 }

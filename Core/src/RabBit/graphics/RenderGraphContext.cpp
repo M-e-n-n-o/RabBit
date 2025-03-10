@@ -90,10 +90,7 @@ namespace RB::Graphics
             return;
         }
 
-        RenderTextureDesc& desc = m_Descriptions[id];
-
-        // Just combine all the flags right now
-        desc.flags |= new_flags;
+        m_Descriptions[id].CombineFlags(new_flags);
     }
 
     RenderTextureDesc RenderGraphContext::GetScheduledResource(ResourceID id)

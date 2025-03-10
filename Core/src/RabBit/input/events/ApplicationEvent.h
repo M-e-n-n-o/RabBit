@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Event.h"
+#include "app/Settings.h"
 
 namespace RB::Input::Events
 {
@@ -19,11 +20,16 @@ namespace RB::Input::Events
         void* m_WindowHandle;
     };
 
-    class AppChangedSettingsEvent : public ApplicationEvent
+    class GraphicsSettingsChangedEvent : public ApplicationEvent
     {
     public:
-        AppChangedSettingsEvent() {}
+        GraphicsSettingsChangedEvent(const GraphicsSettings& new_settings) : m_NewSettings(new_settings) {}
 
-        DEFINE_CLASS_TYPE(AppChangedSettingsEvent, AppSettingsChanged, true)
+        const GraphicsSettings& GetSettings() const { return m_NewSettings; }
+
+        DEFINE_CLASS_TYPE(GraphicsSettingsChangedEvent, GraphicsSettingsChanged, true)
+
+    private:
+        GraphicsSettings m_NewSettings;
     };
 }

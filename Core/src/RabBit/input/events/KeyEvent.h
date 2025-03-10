@@ -8,7 +8,7 @@ namespace RB::Input::Events
     class KeyEvent : public Event
     {
     protected:
-        KeyEvent(const KeyCode keyCode) : m_KeyCode(keyCode) {}
+        KeyEvent(const KeyCode key_code) : m_KeyCode(key_code) {}
         virtual ~KeyEvent() = default;
 
     public:
@@ -23,7 +23,7 @@ namespace RB::Input::Events
     class KeyPressedEvent : public KeyEvent
     {
     public:
-        KeyPressedEvent(const KeyCode keyCode, bool isRepeat) : KeyEvent(keyCode), m_IsRepeat(isRepeat) {}
+        KeyPressedEvent(const KeyCode key_code, bool is_repeat) : KeyEvent(key_code), m_IsRepeat(is_repeat) {}
 
         bool IsRepeatEvent() const { return m_IsRepeat; }
 
@@ -37,7 +37,7 @@ namespace RB::Input::Events
     class KeyReleasedEvent : public KeyEvent
     {
     public:
-        KeyReleasedEvent(const KeyCode keyCode) : KeyEvent(keyCode) {}
+        KeyReleasedEvent(const KeyCode key_code) : KeyEvent(key_code) {}
 
         DEFINE_CLASS_TYPE(KeyReleasedEvent, KeyReleased, false)
     };
@@ -46,7 +46,7 @@ namespace RB::Input::Events
     class KeyTypedEvent : public KeyEvent
     {
     public:
-        KeyTypedEvent(const KeyCode keyCode) : KeyEvent(keyCode) {}
+        KeyTypedEvent(const KeyCode key_code) : KeyEvent(key_code) {}
 
         DEFINE_CLASS_TYPE(KeyTypedEvent, KeyTyped, false)
     };

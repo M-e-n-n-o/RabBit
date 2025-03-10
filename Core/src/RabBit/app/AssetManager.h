@@ -7,16 +7,16 @@
 #undef LoadImage
 #endif
 
-namespace RB::Graphics
+namespace RB
 {
     struct LoadedImage
     {
-        void*                   data;
-        uint32_t				dataSize;
-        RenderResourceFormat	format;
-        int32_t					width;
-        int32_t					height;
-        int32_t					channels;
+        void*                           data;
+        uint32_t				        dataSize;
+        Graphics::RenderResourceFormat	format;
+        int32_t					        width;
+        int32_t					        height;
+        int32_t					        channels;
 
         LoadedImage();
         ~LoadedImage();

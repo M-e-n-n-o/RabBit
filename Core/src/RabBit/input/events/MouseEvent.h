@@ -50,7 +50,7 @@ namespace RB::Input::Events
     class MouseButtonEvent : public MouseEvent
     {
     protected:
-        MouseButtonEvent(const MouseCode mouseCode) : m_MouseCode(mouseCode) {}
+        MouseButtonEvent(const MouseCode mouse_code) : m_MouseCode(mouse_code) {}
         virtual ~MouseButtonEvent() = default;
 
     public:
@@ -66,7 +66,7 @@ namespace RB::Input::Events
     class MouseButtonPressedEvent : public MouseButtonEvent
     {
     public:
-        MouseButtonPressedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
+        MouseButtonPressedEvent(const MouseCode mouse_code) : MouseButtonEvent(mouse_code) {}
 
         DEFINE_CLASS_TYPE(MouseButtonPressedEvent, MouseButtonPressed, false)
     };
@@ -75,7 +75,7 @@ namespace RB::Input::Events
     class MouseButtonReleasedEvent : public MouseButtonEvent
     {
     public:
-        MouseButtonReleasedEvent(const MouseCode mouseCode) : MouseButtonEvent(mouseCode) {}
+        MouseButtonReleasedEvent(const MouseCode mouse_code) : MouseButtonEvent(mouse_code) {}
 
         DEFINE_CLASS_TYPE(MouseButtonReleasedEvent, MouseButtonReleased, false)
     };
