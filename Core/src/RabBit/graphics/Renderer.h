@@ -3,6 +3,7 @@
 #include "Window.h"
 #include "input/events/Event.h"
 #include "utils/Threading.h"
+#include "app/Settings.h"
 
 namespace RB::Entity
 {
@@ -67,6 +68,8 @@ namespace RB::Graphics
 
     private:
         ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
+        void CreateRenderGraphs(const GraphicsSettings& settings);
+        void UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count);
 
         // Should only be called from the render thread!
         void OnEvent(Input::Events::Event& event) override;
@@ -81,6 +84,7 @@ namespace RB::Graphics
         RenderInterface*            m_CopyInterface;	 // Used for resource streaming 
         RenderGraph*                m_RenderGraphs[kRenderGraphType_Count];
         RenderGraphContext*         m_RenderGraphContext;
+        uint32_t                    m_CurrentValidRenderGraphSizes;
 
         ThreadedVariable<uint64_t>	m_RenderFrameIndex;
         ThreadedVariable<bool>		m_ForceSync;

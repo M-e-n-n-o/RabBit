@@ -46,9 +46,9 @@ namespace RB::Utils::Debug
 
         va_list args;
         va_start(args, format);
-        wprintf(L"[RabBit-%s] ", tag);
+        if (wcslen(tag) != 0)
+            wprintf(L"[RabBit-%s] ", tag);
         vprintf(format, args);
-        wprintf(L"\n");
         va_end(args);
     }
 
@@ -62,9 +62,9 @@ namespace RB::Utils::Debug
 
         va_list args;
         va_start(args, format);
-        wprintf(L"[RabBit-%s] ", tag);
+        if (wcslen(tag) != 0)
+            wprintf(L"[RabBit-%s] ", tag);
         vwprintf(format, args);
-        wprintf(L"\n");
         va_end(args);
     }
 
@@ -80,7 +80,6 @@ namespace RB::Utils::Debug
         va_start(args, format);
         wprintf(L"[App] ");
         vprintf(format, args);
-        wprintf(L"\n");
         va_end(args);
     }
 }

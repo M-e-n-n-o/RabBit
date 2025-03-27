@@ -20,6 +20,7 @@ namespace RB::Graphics
     class ViewContext
     {
     public:
+        bool            enabled;
         bool			isOffscreenContext;
         uint32_t		windowIndex;
         Texture2D*      finalColorTarget;

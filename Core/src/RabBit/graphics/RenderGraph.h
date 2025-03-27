@@ -64,6 +64,7 @@ namespace RB::Graphics
         template<class ...ConnectionID>
         RenderGraphBuilder& AddLink(RenderPassType from, RenderPassType to, const ConnectionID&... connection_ids);
 
+        // Allocates a RenderGraph using new when succeeded! 
         RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context);
 
     private:

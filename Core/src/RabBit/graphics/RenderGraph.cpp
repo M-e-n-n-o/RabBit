@@ -242,7 +242,7 @@ namespace RB::Graphics
                             // Found an alias
                             parameter_ids[param_idx] = id;
                             // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
-                            context->CombineScheduledResourceFlags(id, desc.flags);
+                            context->GetScheduledResource(id).CombineFlags(desc.flags);
                         }
 
                         param_idx++;
@@ -274,7 +274,7 @@ namespace RB::Graphics
                     // Found an alias
                     working_ids[i] = id;
                     // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
-                    context->CombineScheduledResourceFlags(id, desc.flags);
+                    context->GetScheduledResource(id).CombineFlags(desc.flags);
                 }
 
             }
@@ -308,7 +308,7 @@ namespace RB::Graphics
                     // Found an alias
                     output_ids[i] = id;
                     // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
-                    context->CombineScheduledResourceFlags(id, desc.flags);
+                    context->GetScheduledResource(id).CombineFlags(desc.flags);
                 }
             }
 

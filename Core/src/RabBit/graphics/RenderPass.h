@@ -19,10 +19,12 @@ namespace RB::Graphics
         GBuffer,
     };
 
-    enum class RenderTextureSize : uint8_t
+    enum class RenderTextureSize : uint32_t
     {
         Full            = 0,
         Half            = 1,
+
+        Count
     };
 
     enum class RenderTextureFlag : uint32_t
@@ -30,30 +32,32 @@ namespace RB::Graphics
         None                    = 0,
         AllowRenderTarget       = (1 << 0), // Will not be used as a RenderTarget?
         AllowRandomGpuWrites    = (1 << 1), // Is UAV allowed?
-        DenyAliasing            = (1 << 2)  // Makes sure this resource is not shared between passes (likely contains history data)
+        DenyAliasing            = (1 << 2), // Makes sure this resource is not shared between passes (likely contains history data)
+        CustomSized             = (1 << 3), // Are the width & height properties using custom sizes?
+        UiSized                 = (1 << 4), // Are the width & height properties based on UI sizes?
+        UpscaledSized           = (1 << 5)  // Are the width & height properties based after the upscale?
     };
 
     struct RenderTextureDesc
     {
         const char*             name;
         RenderResourceFormat    format;
-        RenderTextureSize       width;
-        RenderTextureSize       height;
-        RenderTextureSize       depth;
-        bool                    uiSized;
-        bool                    upscaledSized;
+        uint32_t                width;  // RenderTextureSize
+        uint32_t                height; // RenderTextureSize
+        uint32_t                depth;
         uint32_t                flags;
 
         bool IsAliasableWith(const RenderTextureDesc& other) const
         {
             return ((flags & (uint32_t) RenderTextureFlag::DenyAliasing) == 0 &&
                     (other.flags & (uint32_t) RenderTextureFlag::DenyAliasing) == 0 &&
+                    ((flags & (uint32_t) RenderTextureFlag::CustomSized) == (other.flags & (uint32_t)RenderTextureFlag::CustomSized)) &&
+                    ((flags & (uint32_t) RenderTextureFlag::UiSized) == (other.flags & (uint32_t)RenderTextureFlag::UiSized)) &&
+                    ((flags & (uint32_t) RenderTextureFlag::UpscaledSized) == (other.flags & (uint32_t)RenderTextureFlag::UpscaledSized)) &&
                     format == other.format &&
                     width == other.width &&
                     height == other.height &&
-                    depth == other.depth &&
-                    uiSized == other.uiSized &&
-                    upscaledSized == other.upscaledSized);
+                    depth == other.depth);
         }
 
         void CombineFlags(const uint32_t other_flags)

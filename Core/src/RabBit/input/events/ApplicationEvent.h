@@ -15,21 +15,20 @@ namespace RB::Input::Events
         virtual const char* GetName() const override = 0;
 
         int GetCategoryFlags() const override { return kEventCat_Application; }
-
-    private:
-        void* m_WindowHandle;
     };
 
     class GraphicsSettingsChangedEvent : public ApplicationEvent
     {
     public:
-        GraphicsSettingsChangedEvent(const GraphicsSettings& new_settings) : m_NewSettings(new_settings) {}
+        GraphicsSettingsChangedEvent(const GraphicsSettings& new_settings, const GraphicsSettings& old_settings) : m_NewSettings(new_settings), m_OldSettings(old_settings) {}
 
-        const GraphicsSettings& GetSettings() const { return m_NewSettings; }
+        const GraphicsSettings& GetNewSettings() const { return m_NewSettings; }
+        const GraphicsSettings& GetOldSettings() const { return m_OldSettings; }
 
         DEFINE_CLASS_TYPE(GraphicsSettingsChangedEvent, GraphicsSettingsChanged, true)
 
     private:
         GraphicsSettings m_NewSettings;
+        GraphicsSettings m_OldSettings;
     };
 }

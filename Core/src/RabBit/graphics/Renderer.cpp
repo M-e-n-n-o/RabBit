@@ -96,23 +96,9 @@ namespace RB::Graphics
         m_ForceSync.SetValue(false);
 
         m_RenderGraphContext = new RenderGraphContext();
+        m_CurrentValidRenderGraphSizes = 0;
 
-        // Set the render passes
-        for (uint32_t i = 0; i < kRenderGraphType_Count; ++i)
-        {
-            m_RenderGraphs[i] = nullptr;
-        }
-
-        const GraphicsSettings& settings = Application::GetInstance()->GetGraphicsSettings();
-
-        m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
-            .AddPass<GBufferPass>(RenderPassType::GBuffer, RenderPassSettings{})
-            .SetFinalPass(RenderPassType::GBuffer, 0)
-            .Build(kRenderGraphType_Normal, m_RenderGraphContext);
-
-        // TODO What sizes do we actually set here? Cause we can have multiple displays. Can we delay creating the RenderGraphContext until we know the ViewContexts (sizes)?
-        // What are we also going to do if we have multiple view context with different sizes?
-        m_RenderGraphContext->CreateGraphResources();
+        CreateRenderGraphs(Application::GetInstance()->GetGraphicsSettings());
 
         float vertices[] =
         {	// Pos			UV
@@ -168,6 +154,8 @@ namespace RB::Graphics
         {
             uint32_t total_view_contexts;
             ViewContext* view_contexts = CreateViewContexts(scene, total_view_contexts);
+
+            UpdateRenderGraphSizes(view_contexts, total_view_contexts);
 
             // Gather the entries from all render passes for every view context
             RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
@@ -239,6 +227,7 @@ namespace RB::Graphics
 
         out_context_count = camera_components.size();
 
+        // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around?
         ViewContext* contexts = (ViewContext*)ALLOC_HEAP(sizeof(ViewContext) * out_context_count);
 
         uint32_t context_index = 0;
@@ -267,6 +256,19 @@ namespace RB::Graphics
 
             contexts[context_index] = {};
 
+            if (!camera->IsEnabled())
+            {
+                // Still keep this ViewContext around, just not render it for now
+                contexts[context_index].enabled = false;
+                context_index++;
+                continue;
+            }
+
+            contexts[context_index].enabled = true;
+
+            contexts[context_index].viewport.left = 0; // TODO Add DRS support
+            contexts[context_index].viewport.top = 0;
+
             Texture2D* render_texture = camera->GetRenderTexture();
             if (render_texture == nullptr)
             {
@@ -274,11 +276,15 @@ namespace RB::Graphics
                 contexts[context_index].isOffscreenContext  = false;
                 contexts[context_index].windowIndex         = camera->GetTargetWindowIndex();
                 contexts[context_index].finalColorTarget    = window->GetVirtualBackBuffer();
+                contexts[context_index].viewport.width      = window->GetVirtualBackBuffer()->GetWidth();
+                contexts[context_index].viewport.height     = window->GetVirtualBackBuffer()->GetHeight();
             }
             else
             {
-                contexts[context_index].isOffscreenContext = true;
-                contexts[context_index].finalColorTarget = render_texture;
+                contexts[context_index].isOffscreenContext  = true;
+                contexts[context_index].finalColorTarget    = render_texture;
+                contexts[context_index].viewport.width      = render_texture->GetWidth();
+                contexts[context_index].viewport.height     = render_texture->GetHeight();
             }
 
             contexts[context_index].viewFrustum = {};
@@ -293,6 +299,50 @@ namespace RB::Graphics
         }
 
         return contexts;
+    }
+
+    void Renderer::CreateRenderGraphs(const GraphicsSettings& settings)
+    {
+        // Set the render passes
+        for (uint32_t i = 0; i < kRenderGraphType_Count; ++i)
+        {
+            m_RenderGraphs[i] = nullptr;
+        }
+
+        m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
+            .AddPass<GBufferPass>(RenderPassType::GBuffer, RenderPassSettings{})
+            .SetFinalPass(RenderPassType::GBuffer, 0)
+            .Build(kRenderGraphType_Normal, m_RenderGraphContext);
+    }
+
+    void Renderer::UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count)
+    {
+        if (m_CurrentValidRenderGraphSizes == context_count)
+        {
+            // Render graph context is up-to-date
+            return;
+        }
+
+        // Make sure that the RenderThread is idle before altering the sizes
+        SyncRenderer(false);
+
+        m_RenderGraphContext->DeleteGraphResources();
+        m_RenderGraphContext->DeleteSizes();
+
+        for (uint32_t i = 0; i < context_count; ++i)
+        {
+            RenderGraphSize graph_size = {};
+            graph_size.size         = Math::Float2(view_contexts[i].viewport.width, view_contexts[i].viewport.height);
+            graph_size.uiSize       = graph_size.size; // TODO Add support for separate resolutions for UI (rendering the UI always at window resolution)
+            graph_size.upscaledSize = graph_size.size; // TODO Add support for upscalers
+
+            m_RenderGraphContext->AddGraphSize(view_contexts[i].renderGraphType, graph_size);
+        }
+
+        // Make sure that the previous resources are done rendering and have been released before creating new ones
+        SyncWithGpu();
+
+        m_RenderGraphContext->CreateGraphResources();
     }
 
     void Renderer::SyncRenderer(bool gpu_sync)
@@ -345,9 +395,8 @@ namespace RB::Graphics
                 {
                     sync();
 
-                    m_RenderGraphContext->DeleteGraphResources();
-                    SyncWithGpu();
-                    m_RenderGraphContext->CreateGraphResources(size, upscaled_size, ui_size);
+                    // Recreate the render resources with the new sizes before rendering the next frame
+                    m_CurrentValidRenderGraphSizes = 0;
                 }
                 break;
 
@@ -370,11 +419,27 @@ namespace RB::Graphics
         {
             BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& app_event)
             {
+                const GraphicsSettings& settings = app_event.GetNewSettings();
+
+                if (!settings.RequiresNewResources(app_event.GetOldSettings()))
+                {
+                    // We don't have to recreate the render resources on this setting change
+                    return false;
+                }
+
                 sync();
 
-                // TODO We actually need to recreate the entire RenderGraph's here cause the RenderPassSettings might have changed
-                // Also make sure that we delete and create an entirely new m_RenderGraphContext!
+                for (int i = 0; i < kRenderGraphType_Count; ++i)
+                {
+                    SAFE_DELETE(m_RenderGraphs[i]);
+                }
 
+                m_RenderGraphContext->DeleteGraphResourceDescriptions();
+
+                CreateRenderGraphs(settings);
+
+                // Makes sure to recreate the render resources with the new graphs before rendering the next frame
+                m_CurrentValidRenderGraphSizes = 0;
             }, event);
         }
     }
@@ -408,9 +473,14 @@ namespace RB::Graphics
 
             for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
             {
-                //RB_PROFILE_GPU_SCOPED(command_list.Get(), "ViewContext");
-
                 ViewContext& view_context = context->viewContexts[view_context_index];
+
+                if (!view_context.enabled)
+                {
+                    continue;
+                }
+
+                //RB_PROFILE_GPU_SCOPED(command_list.Get(), "ViewContext");
 
                 RenderResource* final_color_target = view_context.finalColorTarget;
 
@@ -451,7 +521,7 @@ namespace RB::Graphics
         {
             ViewContext& view_context = context->viewContexts[view_context_index];
 
-            if (view_context.isOffscreenContext)
+            if (!view_context.enabled || view_context.isOffscreenContext)
             {
                 continue;
             }

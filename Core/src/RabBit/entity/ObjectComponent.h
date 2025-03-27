@@ -16,8 +16,12 @@ namespace RB::Entity
 
         GameObject* GetGameObject() const { return m_GameObject; }
 
+        bool IsEnabled() const { return m_Enabled; }
+        void SetEnabled(bool enabled) { m_Enabled = enabled; }
+
     protected:
         GameObject* m_GameObject;
+        bool        m_Enabled;
 
     private:
         friend class GameObject;

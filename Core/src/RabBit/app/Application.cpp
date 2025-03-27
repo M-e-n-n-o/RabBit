@@ -272,7 +272,7 @@ namespace RB
 
         PrintSettings(settings);
 
-        GraphicsSettingsChangedEvent e(settings);
+        GraphicsSettingsChangedEvent e(settings, m_GraphicsSettings);
         g_EventManager->InsertEvent(e);
     }
 
@@ -334,7 +334,7 @@ namespace RB
         
         BindEvent<GraphicsSettingsChangedEvent>([this](GraphicsSettingsChangedEvent& settings_event)
         {
-            m_GraphicsSettings = settings_event.GetSettings();
+            m_GraphicsSettings = settings_event.GetNewSettings();
         }, event);
     }
 }
