@@ -80,7 +80,7 @@ namespace RB
         Renderer::SetAPI(RenderAPI::D3D12);
 
         m_GraphicsSettings = {};
-        m_GraphicsSettings.renderWidth = // What size to set here??
+        //m_GraphicsSettings.renderWidth = // What size to set here??
 
         PrintSettings(m_GraphicsSettings);
 
@@ -312,7 +312,6 @@ namespace RB
                     g_EventManager->InsertEvent(e);
                 }
             }
-
         }, event);
         
         BindEvent<WindowOnFocusEvent>([this](WindowOnFocusEvent& focus_event)
@@ -323,7 +322,6 @@ namespace RB
             {
                 m_PrimaryWindowIndex = window_index;
             }
-
         }, event);
 
         BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)

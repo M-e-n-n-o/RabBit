@@ -67,10 +67,10 @@ public:
         Camera* cam_comp = camera->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
 
-        //GameObject* camera2 = GetScene()->CreateGameObject();
-        //camera2->AddComponent<Transform>();
-        //Camera* cam_comp2 = camera2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 0);
-        //cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
+        GameObject* camera2 = GetScene()->CreateGameObject();
+        camera2->AddComponent<Transform>();
+        Camera* cam_comp2 = camera2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, 1);
+        cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
     }
 
     void OnUpdate() override
@@ -133,13 +133,13 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window1.semiTransparent     = true;
     app_info.windows.push_back(window1);
 
-    //AppInfo::Window window2 = {};
-    //window2.windowName          = "Window 2";
-    //window2.fullscreen          = true;
+    AppInfo::Window window2 = {};
+    window2.windowName          = "Window 2";
+    window2.fullscreen          = true;
     //window2.semiTransparent     = true;
-    //window2.forcedRenderAspect  = 0.0f;
-    //window2.renderScale         = 1.0f;
-    //app_info.windows.push_back(window2);
+    window2.forcedRenderAspect  = 0.0f;
+    window2.renderScale         = 1.0f;
+    app_info.windows.push_back(window2);
 
     return new App(app_info);
 }

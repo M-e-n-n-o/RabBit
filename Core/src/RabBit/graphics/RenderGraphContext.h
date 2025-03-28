@@ -42,7 +42,7 @@ namespace RB::Graphics
         // All the resources used by all graphs
         List<RenderResource*>       m_Resources;
         // Points to the actual resources in the list above
-        List<uint32_t>              m_ResourcePointers;
+        uint32_t*                   m_ResourcePointers;
         
         // The rendertexture sizes for each graph
         List<List<RenderGraphSize>> m_GraphSizes;

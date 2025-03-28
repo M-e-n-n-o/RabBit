@@ -57,6 +57,10 @@ namespace RB::Graphics
 
         ~RenderContext()
         {
+            for (int i = 0; i < totalViewContexts; ++i)
+            {
+                renderGraphs[viewContexts[i].renderGraphType]->DestroyEntries(renderPassEntries[i]);
+            }
             SAFE_FREE(renderPassEntries);
             SAFE_FREE(viewContexts);
         }
@@ -206,17 +210,25 @@ namespace RB::Graphics
 
         if (m_MultiThreadingSupport)
         {
-            bool force = m_ForceSync.GetValue();
+            bool waiting_for_sync = m_ForceSync.GetValue();
 
-            // Sync with the render thread on a stall or when forced
+            // Sync with the render thread on a stall or when it has asked for a sync
             JobID stalling_job;
-            if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job) || force)
+            if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job) || waiting_for_sync)
             {
                 // Notify that we are going to do the force sync (if forced)
                 m_ForceSync.SetValue(false);
 
                 RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
                 SyncRenderer(false);
+
+
+                static_assert(false);
+                // TODO:
+                // - Make sure that everything still works when you close a window (not hanging)
+                // - Add the option to link to the output of a different RenderGraph
+                // - Fix deadlock when main thread sync here because of a stall, but then the renderthread starts to do a force sync.
+                //   The RenderThread should check if its already being waited on and then not do the force sync.
             }
         }
     }
@@ -343,6 +355,8 @@ namespace RB::Graphics
         SyncWithGpu();
 
         m_RenderGraphContext->CreateGraphResources();
+
+        m_CurrentValidRenderGraphSizes = context_count;
     }
 
     void Renderer::SyncRenderer(bool gpu_sync)
@@ -351,7 +365,13 @@ namespace RB::Graphics
         {
             if (!m_RenderThread->IsCurrentThread())
             {
-                m_RenderThread->SyncAll();
+                bool is_waiting = m_ForceSync.GetValue();
+
+                // Make sure the render thread is not waiting as well
+                if (!is_waiting)
+                {
+                    m_RenderThread->SyncAll();
+                }
             }
         }
 
@@ -368,7 +388,7 @@ namespace RB::Graphics
 
     void Renderer::OnEvent(Event& event)
     {
-        auto sync = [this]() 
+        auto sync = [this]() -> void
         {
             // Force the main thread to sync with the render thread (wait until the main thread has set the value to false)
             m_ForceSync.SetValue(true);

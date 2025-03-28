@@ -103,6 +103,8 @@ namespace RB::Graphics::D3D12
         , m_RenderTargetDescriptor({})
         , m_DepthStencilDescriptor({})
     {
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, width > 0 && height > 0, "Cannot create a texture with a width or height smaller than 1");
+
         m_Resource = new GpuResource(std::bind(&Texture2DD3D12::CreateViews, this, std::placeholders::_1));
 
         m_IsDepthStencil = IsDepthFormat(format);

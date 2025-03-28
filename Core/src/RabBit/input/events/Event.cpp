@@ -74,7 +74,7 @@ namespace RB::Input::Events
     //								EventListener
     // ----------------------------------------------------------------------------
 
-    EventListener::EventListener(EventCategory category)
+    EventListener::EventListener(int category)
         : m_ListenerCategory(category)
     {
         InitializeCriticalSection(&m_CS);

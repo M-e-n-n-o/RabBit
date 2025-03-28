@@ -76,10 +76,16 @@ namespace RB::Graphics
             //RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetName());
 
             pass->Render(render_interface, view_context, entry, outputs, intermediates, parameters);
-
-            SAFE_DELETE(entry);
         }
-        
+    }
+
+    void RenderGraph::DestroyEntries(RenderPassEntry** entries)
+    {
+        for (int i = 0; i < m_RenderFlow.size(); ++i)
+        {
+            SAFE_DELETE(entries[m_RenderFlow[i].passID]);
+        }
+
         SAFE_FREE(entries);
     }
 

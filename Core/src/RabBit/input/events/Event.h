@@ -96,7 +96,7 @@ namespace RB::Input::Events
     class EventListener
     {
     public:
-        EventListener(EventCategory category);
+        EventListener(int category);
         virtual ~EventListener();
 
         bool ListensToCategory(const EventCategory cat) const
@@ -111,7 +111,7 @@ namespace RB::Input::Events
 
         virtual void OnEvent(Event& event) = 0;
 
-        EventCategory		m_ListenerCategory;
+        int		            m_ListenerCategory;
         List<Event*>		m_QueuedEvents;
         CRITICAL_SECTION	m_CS;
 

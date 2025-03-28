@@ -23,6 +23,8 @@ namespace RB::Graphics
         RenderPassEntry** SubmitEntry(const Entity::Scene* const scene);
         void RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context);
 
+        void DestroyEntries(RenderPassEntry** entries);
+
     private:
         friend class RenderGraphBuilder;
 
@@ -63,6 +65,8 @@ namespace RB::Graphics
         */
         template<class ...ConnectionID>
         RenderGraphBuilder& AddLink(RenderPassType from, RenderPassType to, const ConnectionID&... connection_ids);
+
+        // TODO Add the option to link to the output of a different RenderGraph
 
         // Allocates a RenderGraph using new when succeeded! 
         RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context);

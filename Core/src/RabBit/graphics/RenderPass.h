@@ -60,6 +60,11 @@ namespace RB::Graphics
                     depth == other.depth);
         }
 
+        bool HasFlag(RenderTextureFlag flag) const
+        {
+            return (flags & (uint32_t)flag) != 0;
+        }
+
         void CombineFlags(const uint32_t other_flags)
         {
             // Just combine all the flags right now

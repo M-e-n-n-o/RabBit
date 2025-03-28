@@ -8,15 +8,15 @@ namespace RB::Entity
         : m_VertexBuffer(nullptr)
         , m_IndexBuffer(nullptr)
     {
-        Graphics::LoadedModel model;
-        bool success = Graphics::AssetManager::LoadModel(file_name, &model);
+        LoadedModel model;
+        bool success = AssetManager::LoadModel(file_name, &model);
 
         if (success)
         {
             std::string vertex_name = file_name;
             vertex_name += " vertices";
 
-            uint32_t vertex_size = sizeof(Graphics::LoadedModel::Vertex);
+            uint32_t vertex_size = sizeof(LoadedModel::Vertex);
 
             m_VertexBuffer = Graphics::VertexBuffer::Create(vertex_name.c_str(), RB::Graphics::TopologyType::TriangleList, model.vertices, vertex_size, vertex_size * model.verticesCount);
 
@@ -48,8 +48,8 @@ namespace RB::Entity
     Material::Material(const char* file_name)
         : m_Texture(nullptr)
     {
-        Graphics::LoadedImage img;
-        bool success = Graphics::AssetManager::LoadImage8Bit(file_name, &img);
+        LoadedImage img;
+        bool success = AssetManager::LoadImage8Bit(file_name, &img);
 
         if (success)
         {
