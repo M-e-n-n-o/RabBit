@@ -44,6 +44,8 @@ namespace RB::Utils::Debug
             return;
         }
 
+        // TODO Also print out the timestamp
+
         va_list args;
         va_start(args, format);
         if (wcslen(tag) != 0)

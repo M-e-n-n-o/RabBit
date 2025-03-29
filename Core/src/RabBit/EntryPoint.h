@@ -36,6 +36,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         app->Run();
         app->Shutdown();
     }
+    else
+    {
+        RB_LOG_CRITICAL("Failed to start application, exiting...");
+    }
 
     delete app;
     delete RB::Events::g_EventManager;

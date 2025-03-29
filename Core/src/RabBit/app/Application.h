@@ -2,6 +2,7 @@
 
 #include "Core.h"
 #include "Settings.h"
+#include "ApplicationLayer.h"
 #include "events/Event.h"
 
 #include <cstdint>
@@ -47,6 +48,12 @@ namespace RB
         void Run();
         void Shutdown();
 
+        template<class Layer, typename... Args>
+        void PushLayer(Args... args);
+
+        template<class Overlay, typename... Args>
+        void PushOverlay(Args... args);
+
         List<Graphics::Display*> GetDisplays() const { return m_Displays; }
 
         Graphics::Window* GetPrimaryWindow() const;
@@ -68,11 +75,11 @@ namespace RB
 
     private:
         virtual void OnStart() = 0;
-        virtual void OnUpdate() = 0;
         virtual void OnStop() = 0;
 
         void UpdateInternal();
-        void PrintSettings(const GraphicsSettings& settings);
+        void UpdateApp();
+        void OnNewLayerPushed(ApplicationLayer* layer);
         void OnEvent(Events::Event& event) override;
 
         const AppInfo				m_StartAppInfo;
@@ -93,8 +100,26 @@ namespace RB
 
         Entity::Scene*				m_Scene;
 
+        LayerStack                  m_LayerStack;
+
         static Application*			s_Instance;
     };
+
+    template<class Layer, typename... Args>
+    inline void Application::PushLayer(Args... args)
+    {
+        ApplicationLayer* layer = new Layer(args...);
+        m_LayerStack.PushLayer(layer);
+        OnNewLayerPushed(layer);
+    }
+
+    template<class Overlay, typename... Args>
+    inline void Application::PushOverlay(Args... args)
+    {
+        ApplicationLayer* overlay = new Overlay(args...);
+        m_LayerStack.PushLayer(overlay);
+        OnNewLayerPushed(overlay);
+    }
 
     // To be defined in client
     Application* CreateApplication(const char* launch_args);

@@ -235,7 +235,7 @@ namespace RB::Graphics
 
                 static_assert(false);
                 // TODO:
-                // - Make sure that everything still works when you close a window (implement the event layers, with stops when the event is handled. This so that the sample app knows when the window gets closed and destroys the camera)
+                // - Make sure that the Camera component does not keep a window index, but some sort of window handle (cause an index can get invalid when a different window with a lower index before it closes)
                 // - Add the option to link to the output of a different RenderGraph
             }
         }

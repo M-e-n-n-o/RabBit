@@ -38,6 +38,8 @@ namespace RB::Graphics::D3D12
     {
         EnterCriticalSection(&m_CS);
 
+        // TODO Future improvement would be to free the resources on the ResourceCreation thread as this can also be pretty expensive
+
         // Check which resources have finished executing on the GPU
         for (auto itr = m_InFlight.begin(); itr != m_InFlight.end();)
         {

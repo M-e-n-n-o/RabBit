@@ -81,7 +81,7 @@ namespace RB
         m_GraphicsSettings = {};
         //m_GraphicsSettings.renderWidth = // What size to set here??
 
-        PrintSettings(m_GraphicsSettings);
+        m_GraphicsSettings.Print();
 
         m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
         m_Renderer->Init();
@@ -143,7 +143,7 @@ namespace RB
             UpdateInternal();
 
             // Secondly update the application
-            OnUpdate();
+            UpdateApp();
 
             // Submit the scene as context for rendering the next frame
             m_Renderer->SubmitFrame(m_Scene);
@@ -182,11 +182,31 @@ namespace RB
 
     }
 
+    void Application::UpdateApp()
+    {
+        // Update the application layers
+        for (ApplicationLayer* layer : m_LayerStack)
+        {
+            if (layer->IsEnabled()) 
+            { 
+                layer->OnUpdate(); 
+            }
+        }
+    }
+
     void Application::Shutdown()
     {
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "============= SHUTDOWN ==============");
         RB_LOG(LOGTAG_MAIN, "");
+
+        for (ApplicationLayer* layer : m_LayerStack)
+        {
+            layer->OnDetach();
+            delete layer;
+        }
+
+        m_LayerStack.ClearStack();
 
         // Shutdown app user
         OnStop();
@@ -211,6 +231,12 @@ namespace RB
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
         RB_LOG(LOGTAG_MAIN, "");
+    }
+
+    void Application::OnNewLayerPushed(ApplicationLayer* layer)
+    {
+        RB_LOG(LOGTAG_MAIN, "Adding a new layer to the application: %s", layer->GetName());
+        layer->OnAttach();
     }
 
     Graphics::Window* Application::GetPrimaryWindow() const
@@ -268,19 +294,10 @@ namespace RB
     void Application::ApplyNewGraphicsSettings(GraphicsSettings& settings)
     {
         settings.Validate();
-
-        PrintSettings(settings);
+        settings.Print();
 
         GraphicsSettingsChangedEvent e(settings, m_GraphicsSettings);
         g_EventManager->InsertEvent(e);
-    }
-
-    void Application::PrintSettings(const GraphicsSettings& settings)
-    {
-        RB_LOG(LOGTAG_MAIN, "");
-        RB_LOG(LOGTAG_MAIN, "======== INSERTING NEW GRAPHICS SETTINGS ========");
-        // TODO Print settings
-        RB_LOG(LOGTAG_MAIN, "");
     }
 
     void Application::OnEvent(Event& event)
@@ -292,11 +309,15 @@ namespace RB
 
         // BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
 
-        BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
+        bool passtrough_layers = true;
+
+        BindEvent<KeyPressedEvent>([&](KeyPressedEvent& e)
         {
             if (e.GetKeyCode() == KeyCode::F11 ||
                 (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::Enter))
             {
+                passtrough_layers = false;
+
                 WindowFullscreenToggleEvent e(GetPrimaryWindow()->GetNativeWindowHandle());
                 g_EventManager->InsertEvent(e);
             }
@@ -304,6 +325,7 @@ namespace RB
             if (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
             {
                 RB_LOG(LOGTAG_EVENT, "Instant close requested, requesting to close all windows..");
+                passtrough_layers = false;
 
                 for (int i = 0; i < m_Windows.size(); i++)
                 {
@@ -313,8 +335,10 @@ namespace RB
             }
         }, event);
         
-        BindEvent<WindowOnFocusEvent>([this](WindowOnFocusEvent& focus_event)
+        BindEvent<WindowOnFocusEvent>([&](WindowOnFocusEvent& focus_event)
         {
+            passtrough_layers = false;
+
             int32_t window_index = FindWindowIndex(focus_event.GetWindowHandle());
 
             if (window_index >= 0)
@@ -323,15 +347,31 @@ namespace RB
             }
         }, event);
 
-        BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
+        BindEvent<WindowCloseRequestEvent>([&](WindowCloseRequestEvent& close_event)
         {
             m_CheckWindows = true;
         }, event);
 
         
-        BindEvent<GraphicsSettingsChangedEvent>([this](GraphicsSettingsChangedEvent& settings_event)
+        BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& settings_event)
         {
             m_GraphicsSettings = settings_event.GetNewSettings();
         }, event);
+
+        if (passtrough_layers)
+        {
+            // Pass the event to the layers
+            for (ApplicationLayer* layer : m_LayerStack)
+            {
+                if (layer->IsEnabled())
+                {
+                    // If the event got handled by this layer, do not pass it to any layers after this one
+                    if (layer->OnEvent(event))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
