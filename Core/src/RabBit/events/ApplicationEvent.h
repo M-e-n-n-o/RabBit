@@ -3,7 +3,7 @@
 #include "Event.h"
 #include "app/Settings.h"
 
-namespace RB::Input::Events
+namespace RB::Events
 {
     class ApplicationEvent : public Event
     {

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace RB::Input
+namespace RB::Events
 {
     enum class MouseCode
     {

@@ -9,14 +9,13 @@
 
 #include "entity/Scene.h"
 
-#include "input/events/ApplicationEvent.h"
-#include "input/events/KeyEvent.h"
-#include "input/KeyCodes.h"
-#include "input/Input.h"
+#include "events/ApplicationEvent.h"
+#include "events/KeyEvent.h"
+#include "events/input/KeyCodes.h"
+#include "events/input/Input.h"
 
 using namespace RB::Graphics;
-using namespace RB::Input::Events;
-using namespace RB::Input;
+using namespace RB::Events;
 using namespace RB::Entity;
 
 namespace RB

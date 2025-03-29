@@ -11,12 +11,11 @@
 #include "graphics/d3d12/resource/GpuResource.h"
 #include "graphics/d3d12/resource/RenderResourceD3D12.h"
 
-#include "input/events/WindowEvent.h"
-#include "input/events/MouseEvent.h"
-#include "input/events/KeyEvent.h"
+#include "events/WindowEvent.h"
+#include "events/MouseEvent.h"
+#include "events/KeyEvent.h"
 
-using namespace RB::Input;
-using namespace RB::Input::Events;
+using namespace RB::Events;
 
 namespace RB::Graphics::D3D12
 {

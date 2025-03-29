@@ -66,8 +66,8 @@
 #include "RabBit/entity/components/Camera.h"
 #include "RabBit/entity/components/Transform.h"
 
-#include "RabBit/input/Input.h"
-#include "RabBit/input/KeyCodes.h"
-#include "RabBit/input/MouseCodes.h"
+#include "RabBit/events/input/Input.h"
+#include "RabBit/events/input/KeyCodes.h"
+#include "RabBit/events/input/MouseCodes.h"
 
 #include "RabBit/math/Vector.h"

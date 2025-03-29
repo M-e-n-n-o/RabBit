@@ -1,7 +1,7 @@
 #include <RabBit.h>
 
 using namespace RB;
-using namespace RB::Input;
+using namespace RB::Events;
 using namespace RB::Entity;
 using namespace RB::Math;
 
@@ -135,8 +135,10 @@ RB::Application* RB::CreateApplication(const char* launch_args)
 
     AppInfo::Window window2 = {};
     window2.windowName          = "Window 2";
-    window2.fullscreen          = true;
+    //window2.fullscreen          = true;
     //window2.semiTransparent     = true;
+    window2.windowWidth         = 1280;
+    window2.windowHeight        = 720;
     window2.forcedRenderAspect  = 0.0f;
     window2.renderScale         = 1.0f;
     app_info.windows.push_back(window2);

@@ -2,7 +2,7 @@
 
 #include "Event.h"
 
-namespace RB::Input::Events
+namespace RB::Events
 {
     class WindowEvent : public Event
     {

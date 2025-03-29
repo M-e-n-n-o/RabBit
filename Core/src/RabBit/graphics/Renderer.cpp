@@ -13,8 +13,8 @@
 #include "shaders/shared/ConstantBuffers.h"
 
 #include "app/Application.h"
-#include "input/events/WindowEvent.h"
-#include "input/events/ApplicationEvent.h"
+#include "events/WindowEvent.h"
+#include "events/ApplicationEvent.h"
 
 #include "entity/Scene.h"
 #include "entity/components/Camera.h"
@@ -27,7 +27,7 @@
 #include "d3d12/RenderInterfaceD3D12.h"
 
 using namespace RB::Math;
-using namespace RB::Input::Events;
+using namespace RB::Events;
 
 namespace RB::Graphics
 {
@@ -66,12 +66,19 @@ namespace RB::Graphics
         }
     };
 
+    enum ForceSyncState
+    {
+        kForceSyncState_None = 0,
+        kForceSyncState_RenderSyncing,
+        kForceSyncState_MainSyncing
+    };
+
     Renderer::Renderer(bool multi_threading_support)
         : EventListener(kEventCat_Window | kEventCat_Application)
         , m_IsShutdown(true)
         , m_MultiThreadingSupport(multi_threading_support)
         , m_RenderFrameIndex(0)
-        , m_ForceSync(false)
+        , m_ForceSync(kForceSyncState_None)
     {
 
     }
@@ -97,7 +104,7 @@ namespace RB::Graphics
         }
 
         m_RenderFrameIndex.SetValue(0);
-        m_ForceSync.SetValue(false);
+        m_ForceSync.SetValue(kForceSyncState_None);
 
         m_RenderGraphContext = new RenderGraphContext();
         m_CurrentValidRenderGraphSizes = 0;
@@ -210,25 +217,26 @@ namespace RB::Graphics
 
         if (m_MultiThreadingSupport)
         {
-            bool waiting_for_sync = m_ForceSync.GetValue();
+            bool waiting_for_sync = m_ForceSync.GetValue() == kForceSyncState_RenderSyncing;
 
             // Sync with the render thread on a stall or when it has asked for a sync
             JobID stalling_job;
             if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job) || waiting_for_sync)
             {
                 // Notify that we are going to do the force sync (if forced)
-                m_ForceSync.SetValue(false);
+                m_ForceSync.SetValue(kForceSyncState_MainSyncing);
 
                 RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
                 SyncRenderer(false);
 
+                // Notify that we are done syncing
+                m_ForceSync.SetValue(kForceSyncState_None);
+
 
                 static_assert(false);
                 // TODO:
-                // - Make sure that everything still works when you close a window (not hanging)
+                // - Make sure that everything still works when you close a window (implement the event layers, with stops when the event is handled. This so that the sample app knows when the window gets closed and destroys the camera)
                 // - Add the option to link to the output of a different RenderGraph
-                // - Fix deadlock when main thread sync here because of a stall, but then the renderthread starts to do a force sync.
-                //   The RenderThread should check if its already being waited on and then not do the force sync.
             }
         }
     }
@@ -261,7 +269,7 @@ namespace RB::Graphics
 
             if (window == nullptr)
             {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Target window index of Camera is invalid");
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Target window index of Camera is invalid, skipping...");
                 out_context_count--;
                 continue;
             }
@@ -365,10 +373,10 @@ namespace RB::Graphics
         {
             if (!m_RenderThread->IsCurrentThread())
             {
-                bool is_waiting = m_ForceSync.GetValue();
+                uint32_t sync_value = m_ForceSync.GetValue();
 
                 // Make sure the render thread is not waiting as well
-                if (!is_waiting)
+                if (sync_value != kForceSyncState_RenderSyncing)
                 {
                     m_RenderThread->SyncAll();
                 }
@@ -390,12 +398,17 @@ namespace RB::Graphics
     {
         auto sync = [this]() -> void
         {
-            // Force the main thread to sync with the render thread (wait until the main thread has set the value to false)
-            m_ForceSync.SetValue(true);
-            m_ForceSync.WaitUntilConditionMet([](const bool& new_value) -> bool
-                {
-                    return new_value == false;
-                });
+            uint32_t is_main_waiting = m_ForceSync.GetValue() == kForceSyncState_MainSyncing;
+
+            if (!is_main_waiting)
+            {
+                // Force the main thread to sync with the render thread (wait until the main thread has set the value to kForceSyncState_MainSyncing)
+                m_ForceSync.SetValue(kForceSyncState_RenderSyncing);
+                m_ForceSync.WaitUntilConditionMet([](const uint32_t& new_value) -> bool
+                    {
+                        return new_value == kForceSyncState_MainSyncing;
+                    });
+            }
 
             // Need to cancel all next jobs for the render thread as these will not be valid
             m_RenderThread->CancelAll();

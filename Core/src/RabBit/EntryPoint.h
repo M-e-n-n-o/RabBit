@@ -5,7 +5,7 @@
 
 #include "utils/String.h"
 #include "utils/debug/Log.h"
-#include "input/events/Event.h"
+#include "events/Event.h"
 #include "app/Application.h"
 
 extern RB::Application* RB::CreateApplication(const char* launch_args);
@@ -21,7 +21,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     RB::Utils::Debug::Logger::OpenConsole();
 #endif
 
-    RB::Input::Events::g_EventManager = new RB::Input::Events::EventManager();
+    RB::Events::g_EventManager = new RB::Events::EventManager();
 
     char args[100];
     RB_ASSERT_FATAL(_countof(args) >= (wcslen(lpCmdLine) + 1), "Launch arguments copy should be made longer!");
@@ -38,7 +38,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     }
 
     delete app;
-    delete RB::Input::Events::g_EventManager;
+    delete RB::Events::g_EventManager;
 
     return 0;
 }

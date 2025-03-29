@@ -3,7 +3,7 @@
 #include "Event.h"
 #include "input/MouseCodes.h"
 
-namespace RB::Input::Events
+namespace RB::Events
 {
     class MouseEvent : public Event
     {

@@ -2,7 +2,7 @@
 
 #include "RabBitCommon.h"
 
-namespace RB::Input::Events
+namespace RB::Events
 {
     enum class EventType
     {

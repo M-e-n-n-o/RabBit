@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "Event.h"
 
-namespace RB::Input::Events
+namespace RB::Events
 {
     // ----------------------------------------------------------------------------
     //									Event

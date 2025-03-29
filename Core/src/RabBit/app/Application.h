@@ -2,7 +2,7 @@
 
 #include "Core.h"
 #include "Settings.h"
-#include "input/events/Event.h"
+#include "events/Event.h"
 
 #include <cstdint>
 
@@ -37,7 +37,7 @@ namespace RB
         List<Window>	windows;
     };
 
-    class Application : public Input::Events::EventListener
+    class Application : public Events::EventListener
     {
     public:
         Application(AppInfo& info);
@@ -73,7 +73,7 @@ namespace RB
 
         void UpdateInternal();
         void PrintSettings(const GraphicsSettings& settings);
-        void OnEvent(Input::Events::Event& event) override;
+        void OnEvent(Events::Event& event) override;
 
         const AppInfo				m_StartAppInfo;
 

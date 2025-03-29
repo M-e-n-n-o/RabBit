@@ -3,9 +3,9 @@
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
 #include "graphics/d3d12/window/WindowD3D12.h"
-#include "input/events/WindowEvent.h"
+#include "events/WindowEvent.h"
 
-using namespace RB::Input::Events;
+using namespace RB::Events;
 
 namespace RB::Graphics
 {

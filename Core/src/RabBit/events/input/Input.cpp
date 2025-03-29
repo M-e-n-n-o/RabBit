@@ -3,7 +3,7 @@
 
 #include <winuser.h>
 
-namespace RB::Input
+namespace RB::Events
 {
     bool IsKeyDown(const KeyCode& key)
     {

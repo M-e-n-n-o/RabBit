@@ -1,6 +1,6 @@
 #pragma once
 
-#include "input/events/WindowEvent.h"
+#include "events/WindowEvent.h"
 #include "graphics/RenderResource.h"
 #include "math/Vector.h"
 
@@ -77,7 +77,7 @@ namespace RB::Graphics
 
         void		   Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1);
 
-        void		   ProcessEvent(Input::Events::WindowEvent& event);
+        void		   ProcessEvent(Events::WindowEvent& event);
 
         static Window* Create(const char* window_name, Display* display, uint32_t window_style, float virtual_resolution_scale = 1, float virtual_aspect = 0);
         static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, float virtual_resolution_scale = 1, float virtual_aspect = 0);

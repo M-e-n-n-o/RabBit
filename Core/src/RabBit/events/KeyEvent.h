@@ -3,7 +3,7 @@
 #include "Event.h"
 #include "input/KeyCodes.h"
 
-namespace RB::Input::Events
+namespace RB::Events
 {
     class KeyEvent : public Event
     {

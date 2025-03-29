@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Window.h"
-#include "input/events/Event.h"
+#include "events/Event.h"
 #include "utils/Threading.h"
 #include "app/Settings.h"
 
@@ -33,7 +33,7 @@ namespace RB::Graphics
         kRenderGraphType_Count
     };
 
-    class Renderer : public Input::Events::EventListener
+    class Renderer : public Events::EventListener
     {
     public:
         virtual ~Renderer();
@@ -72,7 +72,7 @@ namespace RB::Graphics
         void UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count);
 
         // Should only be called from the render thread!
-        void OnEvent(Input::Events::Event& event) override;
+        void OnEvent(Events::Event& event) override;
 
         inline static RenderAPI s_Api = RenderAPI::None;
 
@@ -87,7 +87,7 @@ namespace RB::Graphics
         uint32_t                    m_CurrentValidRenderGraphSizes;
 
         ThreadedVariable<uint64_t>	m_RenderFrameIndex;
-        ThreadedVariable<bool>		m_ForceSync;
+        ThreadedVariable<uint32_t>	m_ForceSync;
 
         VertexBuffer*               m_BackBufferCopyVB;
 
