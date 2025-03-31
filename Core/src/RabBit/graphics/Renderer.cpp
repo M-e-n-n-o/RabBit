@@ -235,7 +235,6 @@ namespace RB::Graphics
 
                 static_assert(false);
                 // TODO:
-                // - Make sure that the Camera component does not keep a window index, but some sort of window handle (cause an index can get invalid when a different window with a lower index before it closes)
                 // - Add the option to link to the output of a different RenderGraph
             }
         }
@@ -265,7 +264,7 @@ namespace RB::Graphics
                 continue;
             }
 
-            Window* window = Application::GetInstance()->GetWindow(camera->GetTargetWindowIndex());
+            Window* window = Application::GetInstance()->FindWindow(camera->GetTargetWindowHandle());
 
             if (window == nullptr)
             {
@@ -294,7 +293,7 @@ namespace RB::Graphics
             {
                 // Set window virtual backbuffer as finalColorTarget
                 contexts[context_index].isOffscreenContext  = false;
-                contexts[context_index].windowIndex         = camera->GetTargetWindowIndex();
+                contexts[context_index].windowIndex         = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
                 contexts[context_index].finalColorTarget    = window->GetVirtualBackBuffer();
                 contexts[context_index].viewport.width      = window->GetVirtualBackBuffer()->GetWidth();
                 contexts[context_index].viewport.height     = window->GetVirtualBackBuffer()->GetHeight();

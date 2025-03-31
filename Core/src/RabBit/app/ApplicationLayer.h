@@ -51,9 +51,7 @@ namespace RB
 		// Add an overlay to the stack (gets updated before the regular layers)
 		void PushOverlay(ApplicationLayer* overlay);
 		// Remove a layer from the stack
-		void PopLayer(ApplicationLayer* layer);
-		// Remove an overlay from the stack
-		void PopOverlay(ApplicationLayer* overlay);
+		bool PopLayer(ApplicationLayer* layer);
 
 		void ClearStack();
 

@@ -239,6 +239,22 @@ namespace RB
         layer->OnAttach();
     }
 
+    void Application::PopLayer(ApplicationLayer* layer)
+    {
+        bool success = m_LayerStack.PopLayer(layer);
+
+        if (success)
+        {
+            RB_LOG(LOGTAG_MAIN, "Removed layer from the application: %s", layer->GetName());
+            layer->OnDetach();
+            delete layer;
+        }
+        else
+        {
+            RB_LOG_ERROR(LOGTAG_MAIN, "Could not find layer %s to remove from the application", layer->GetName());
+        }
+    }
+
     Graphics::Window* Application::GetPrimaryWindow() const
     {
         if (m_PrimaryWindowIndex >= m_Windows.size() || m_PrimaryWindowIndex < 0)

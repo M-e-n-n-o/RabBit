@@ -49,10 +49,12 @@ namespace RB
         void Shutdown();
 
         template<class Layer, typename... Args>
-        void PushLayer(Args... args);
+        ApplicationLayer* PushLayer(Args... args);
 
         template<class Overlay, typename... Args>
-        void PushOverlay(Args... args);
+        ApplicationLayer* PushOverlay(Args... args);
+
+        void PopLayer(ApplicationLayer* layer);
 
         List<Graphics::Display*> GetDisplays() const { return m_Displays; }
 
@@ -106,19 +108,21 @@ namespace RB
     };
 
     template<class Layer, typename... Args>
-    inline void Application::PushLayer(Args... args)
+    inline ApplicationLayer* Application::PushLayer(Args... args)
     {
         ApplicationLayer* layer = new Layer(args...);
         m_LayerStack.PushLayer(layer);
         OnNewLayerPushed(layer);
+        return layer;
     }
 
     template<class Overlay, typename... Args>
-    inline void Application::PushOverlay(Args... args)
+    inline ApplicationLayer* Application::PushOverlay(Args... args)
     {
         ApplicationLayer* overlay = new Overlay(args...);
-        m_LayerStack.PushLayer(overlay);
+        m_LayerStack.PushOverlay(overlay);
         OnNewLayerPushed(overlay);
+        return overlay;
     }
 
     // To be defined in client
