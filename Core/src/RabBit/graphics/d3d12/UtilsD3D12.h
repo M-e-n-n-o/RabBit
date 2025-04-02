@@ -19,6 +19,8 @@ namespace RB::Graphics::D3D12
             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
         }
+
+        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     }
 
     static D3D12_RESOURCE_STATES ConvertToD3D12ResourceState(const ResourceState& state)

@@ -44,8 +44,13 @@ namespace RB::Utils::Debug
         #define RB_LOG_WARN(...)
         #define RB_LOG_ERROR(...)
         
+    #ifdef RB_CORE_ACCESS
         #define RB_LOG_RELEASE(tag, ...)	{ char msg[500]; sprintf(msg, __VA_ARGS__);  OutputDebugStringA(msg); OutputDebugStringA("\n"); }
         #define RB_LOG_CRITICAL(tag, ...)	RB_LOG_RELEASE(tag, "Critical error:") RB_LOG_RELEASE(tag, __VA_ARGS__)
+    #else
+        #define RB_LOG_RELEASE(...)	{ char msg[500]; sprintf(msg, __VA_ARGS__);  OutputDebugStringA(msg); OutputDebugStringA("\n"); }
+        #define RB_LOG_CRITICAL(...)	RB_LOG_RELEASE("Critical error:") RB_LOG_RELEASE(__VA_ARGS__)
+    #endif
 
 #endif
 
