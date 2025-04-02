@@ -821,12 +821,12 @@ namespace RB::Graphics::D3D12
 
         #undef CHECK_SET
 
-            if (m_RenderState.rootSignatureDirty)
-            {
-                m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.vsShader, m_RenderState.psShader);
+        if (m_RenderState.rootSignatureDirty)
+        {
+            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.vsShader, m_RenderState.psShader);
 
-                m_RenderState.rootSignatureDirty = false;
-            }
+            m_RenderState.rootSignatureDirty = false;
+        }
 
         List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader);
 

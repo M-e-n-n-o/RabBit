@@ -48,8 +48,11 @@ namespace RB::Graphics
                 0,
 
                 // Output textures
-                {},
-                0,
+                {
+                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, RTSize_Full, RTSize_Full, RTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, RTSize_Full, RTSize_Full, RTFlag_AllowRenderTarget},
+                },
+                1,
 
                 // Async compute compatible
                 false
@@ -118,6 +121,7 @@ namespace RB::Graphics
         RenderTargetBundle bundle = {};
         bundle.colorTargetsCount  = 1;
         bundle.colorTargets[0]    = (Texture2D*)output_textures[0];
+        bundle.colorTargets[1]    = (Texture2D*)output_textures[1];
         bundle.depthStencilTarget = nullptr;
 
         render_interface->SetRenderTarget(&bundle);

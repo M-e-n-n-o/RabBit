@@ -19,23 +19,23 @@ namespace RB::Graphics
         GBuffer,
     };
 
-    enum class RenderTextureSize : uint32_t
+    enum RenderTextureSize
     {
-        Full            = 0,
-        Half            = 1,
+        RTSize_Full     = 0,
+        RTSize_Half     = 1,
 
-        Count
+        RTSize_Count
     };
 
-    enum class RenderTextureFlag : uint32_t
+    enum RenderTextureFlag : uint32_t
     {
-        None                    = 0,
-        AllowRenderTarget       = (1 << 0), // Will not be used as a RenderTarget?
-        AllowRandomGpuWrites    = (1 << 1), // Is UAV allowed?
-        DenyAliasing            = (1 << 2), // Makes sure this resource is not shared between passes (likely contains history data)
-        CustomSized             = (1 << 3), // Are the width & height properties using custom sizes?
-        UiSized                 = (1 << 4), // Are the width & height properties based on UI sizes?
-        UpscaledSized           = (1 << 5)  // Are the width & height properties based after the upscale?
+        RTFlag_None                    = 0,
+        RTFlag_AllowRenderTarget       = (1 << 0), // Will not be used as a RenderTarget?
+        RTFlag_AllowRandomGpuWrites    = (1 << 1), // Is UAV allowed?
+        RTFlag_DenyAliasing            = (1 << 2), // Makes sure this resource is not shared between passes (likely contains history data)
+        RTFlag_CustomSized             = (1 << 3), // Are the width & height properties using custom sizes?
+        RTFlag_UiSized                 = (1 << 4), // Are the width & height properties based on UI sizes?
+        RTFlag_UpscaledSized           = (1 << 5)  // Are the width & height properties based after the upscale?
     };
 
     struct RenderTextureDesc
@@ -44,25 +44,23 @@ namespace RB::Graphics
         RenderResourceFormat    format;
         uint32_t                width;  // RenderTextureSize
         uint32_t                height; // RenderTextureSize
-        uint32_t                depth;
         uint32_t                flags;
 
         bool IsAliasableWith(const RenderTextureDesc& other) const
         {
-            return ((flags & (uint32_t) RenderTextureFlag::DenyAliasing) == 0 &&
-                    (other.flags & (uint32_t) RenderTextureFlag::DenyAliasing) == 0 &&
-                    ((flags & (uint32_t) RenderTextureFlag::CustomSized) == (other.flags & (uint32_t)RenderTextureFlag::CustomSized)) &&
-                    ((flags & (uint32_t) RenderTextureFlag::UiSized) == (other.flags & (uint32_t)RenderTextureFlag::UiSized)) &&
-                    ((flags & (uint32_t) RenderTextureFlag::UpscaledSized) == (other.flags & (uint32_t)RenderTextureFlag::UpscaledSized)) &&
+            return ((flags & RTFlag_DenyAliasing) == 0 &&
+                    (other.flags & RTFlag_DenyAliasing) == 0 &&
+                    ((flags & RTFlag_CustomSized) == (other.flags & RTFlag_CustomSized)) &&
+                    ((flags & RTFlag_UiSized) == (other.flags & RTFlag_UiSized)) &&
+                    ((flags & RTFlag_UpscaledSized) == (other.flags & RTFlag_UpscaledSized)) &&
                     format == other.format &&
                     width == other.width &&
-                    height == other.height &&
-                    depth == other.depth);
+                    height == other.height);
         }
 
         bool HasFlag(RenderTextureFlag flag) const
         {
-            return (flags & (uint32_t)flag) != 0;
+            return (flags & flag) != 0;
         }
 
         void CombineFlags(const uint32_t other_flags)
@@ -74,8 +72,7 @@ namespace RB::Graphics
 
     struct RenderTextureInputDesc
     {
-        const char*             name;
-        RenderResourceFormat    format;
+        const char* name;
     };
 
     #define MAX_INOUT_RESOURCES_PER_RENDERPASS      8
