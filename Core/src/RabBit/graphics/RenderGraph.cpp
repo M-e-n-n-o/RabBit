@@ -1,6 +1,7 @@
 #include "RabBitCommon.h"
 #include "RenderGraph.h"
 #include "RenderGraphContext.h"
+#include "RenderInterface.h"
 #include "View.h"
 
 namespace RB::Graphics
@@ -73,7 +74,7 @@ namespace RB::Graphics
                 outputs[m_FinalOutputResourceID] = view_context->finalColorTarget;
             }
 
-            //RB_PROFILE_GPU_SCOPED(command_list.Get(), context->renderPasses[pass_index]->GetName());
+            RB_PROFILE_GPU_SCOPED(render_interface, pass->GetName());
 
             pass->Render(render_interface, view_context, entry, outputs, intermediates, parameters);
         }

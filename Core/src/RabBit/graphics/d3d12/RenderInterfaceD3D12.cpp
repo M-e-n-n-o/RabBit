@@ -12,6 +12,9 @@
 #include "GraphicsDevice.h"
 #include "graphics/ResourceDefaults.h"
 
+#define USE_PIX
+#include <pix3.h>
+
 namespace RB::Graphics::D3D12
 {
     GpuGuardD3D12::GpuGuardD3D12(uint64_t fence_value, DeviceQueue* queue)
@@ -674,6 +677,16 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::DispatchInternal()
     {
         // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
+    }
+
+    void RenderInterfaceD3D12::ProfileMarkerBegin(uint64_t color, const char* name)
+    {
+        PIXBeginEvent(m_CommandList.Get(), color, name);
+    }
+
+    void RenderInterfaceD3D12::ProfileMarkerEnd()
+    {
+        PIXEndEvent(m_CommandList.Get());
     }
 
     void RenderInterfaceD3D12::BindDescriptorHeaps()

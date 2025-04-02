@@ -7,10 +7,18 @@ namespace RB::Math
 
 namespace RB::Graphics
 {
+    // GPU markers
+#ifdef RB_ENABLE_LOGS
+    #define RB_PROFILE_GPU_SCOPED(render_interface, name)				ProfileGpuScoped rb_profile_gpu_scoped(render_interface, 0, name);
+    #define RB_PROFILE_GPU_SCOPED_COLOR(render_interface, name, color)	ProfileGpuScoped rb_profile_gpu_scoped(render_interface, color, name);
+#else
+    #define RB_PROFILE_GPU_SCOPED(render_interface, name)		
+    #define RB_PROFILE_GPU_SCOPED_COLOR(render_interface, name, color) 
+#endif
+
     #define INTERMEDIATE_EXECUTE_THRESHOLD 350
 
     class RenderResource;
-    class RenderInterface;
     class RenderTargetBundle;
     enum class ResourceState;
 
@@ -89,6 +97,9 @@ namespace RB::Graphics
         void Draw();
         void Dispatch();
 
+        virtual void ProfileMarkerBegin(uint64_t color, const char* name) = 0;
+        virtual void ProfileMarkerEnd() = 0;
+
         static RenderInterface* Create(bool allow_only_copy_operations);
 
     protected:
@@ -102,4 +113,24 @@ namespace RB::Graphics
 
         uint32_t m_TotalDraws = 0;
     };
+
+#ifdef RB_ENABLE_LOGS
+    class ProfileGpuScoped
+    {
+    public:
+        ProfileGpuScoped(RenderInterface* i, uint64_t color, const char* name)
+        {
+            m_Interface = i;
+            m_Interface->ProfileMarkerBegin(color, name);
+        }
+
+        ~ProfileGpuScoped()
+        {
+            m_Interface->ProfileMarkerEnd();
+        }
+
+    private:
+        RenderInterface* m_Interface;
+    };
+#endif
 }

@@ -23,8 +23,6 @@
 #include "passes/GBuffer.h"
 
 #include "d3d12/RendererD3D12.h"
-// Needed for the PIX markers, need to make an abstraction for this
-#include "d3d12/RenderInterfaceD3D12.h"
 
 using namespace RB::Math;
 using namespace RB::Events;
@@ -231,11 +229,6 @@ namespace RB::Graphics
 
                 // Notify that we are done syncing
                 m_ForceSync.SetValue(kForceSyncState_None);
-
-
-                static_assert(false);
-                // TODO:
-                // - Add the option to link to the output of a different RenderGraph
             }
         }
     }
@@ -456,7 +449,7 @@ namespace RB::Graphics
                 if (!settings.RequiresNewResources(app_event.GetOldSettings()))
                 {
                     // We don't have to recreate the render resources on this setting change
-                    return false;
+                    return;
                 }
 
                 sync();
@@ -494,14 +487,12 @@ namespace RB::Graphics
     {
         RenderContext* context = (RenderContext*)data;
 
-        GPtr<ID3D12GraphicsCommandList2> command_list = ((D3D12::RenderInterfaceD3D12*)context->graphicsInterface)->GetCommandList();
-
         uint64_t frame_index = context->renderFrameIndex->GetValue();
 
         context->OnRenderFrameStart();
 
         {
-            //RB_PROFILE_GPU_SCOPED(command_list.Get(), "Frame");
+            RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Frame");
 
             for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
             {
@@ -512,13 +503,13 @@ namespace RB::Graphics
                     continue;
                 }
 
-                //RB_PROFILE_GPU_SCOPED(command_list.Get(), "ViewContext");
+                RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "ViewContext");
 
                 RenderResource* final_color_target = view_context.finalColorTarget;
 
                 // Clear the final target (TODO Create a GlobalPrepare pass to clear all necessary textures)
                 {
-                    //RB_PROFILE_GPU_SCOPED(command_list.Get(), "Clear");
+                    RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Clear");
 
                     context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
                 }
@@ -548,6 +539,8 @@ namespace RB::Graphics
         uint32_t total_pairs = 0;
         WindowPair* window_pairs = (WindowPair*)ALLOC_STACK(sizeof(WindowPair) * context->totalViewContexts);
 
+        // TODO Future optimize to batch the resource barriers that are done below
+
         // Copy to real backbuffers and present
         for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
         {
@@ -567,7 +560,7 @@ namespace RB::Graphics
                 continue;
             }
 
-            //RB_PROFILE_GPU_SCOPED(command_list.Get(), "Present");
+            RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Present");
 
             // Wait until the backbuffer resource is available
             if (window_index < context->backBufferAvailabilityGuards->size())

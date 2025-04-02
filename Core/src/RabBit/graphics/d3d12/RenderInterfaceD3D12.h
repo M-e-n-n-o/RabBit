@@ -75,6 +75,9 @@ namespace RB::Graphics::D3D12
         void DrawInternal() override;
         void DispatchInternal() override;
 
+        void ProfileMarkerBegin(uint64_t color, const char* name) override;
+        void ProfileMarkerEnd() override;
+
         GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
     private:
