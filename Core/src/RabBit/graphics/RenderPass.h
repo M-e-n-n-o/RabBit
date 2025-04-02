@@ -100,6 +100,16 @@ namespace RB::Graphics
         virtual ~RenderPassSettings() = default;
     };
 
+    struct RenderPassInput
+    {
+        ViewContext*     viewContext;
+        RenderInterface* renderInterface;
+        RenderPassEntry* entryContext;
+        RenderResource** dependencyTextures;
+        RenderResource** workingTextures;
+        RenderResource** outputTextures;
+    };
+
     class RenderPass
     {
     public:
@@ -114,18 +124,10 @@ namespace RB::Graphics
         // It can also do some preprocessing before the actual Render() call to, for example, determine which RenderEntries 
         // this pass needs, so the RenderThread does not need to do this. But it can maybe also determine if the pass needs 
         // to run at all even.
-        // 
-        // TODO This method might have to run for every ViewContext, so we can change things depening on the type of view 
-        // context, lower quality for example.
-        virtual RenderPassEntry* SubmitEntry(const Entity::Scene* const scene) = 0;
+        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene) = 0;
 
         // Executed on the render thread
         // Runs for every ViewContext
-        virtual void Render(RenderInterface* render_interface,
-                            ViewContext*     view_context,
-                            RenderPassEntry* entry_context,
-                            RenderResource** output_textures,
-                            RenderResource** working_textures,
-                            RenderResource** dependency_textures) = 0;
+        virtual void Render(RenderPassInput& inputs) = 0;
     };
 }

@@ -170,7 +170,7 @@ namespace RB::Graphics
             RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
             for (int i = 0; i < total_view_contexts; ++i)
             {
-                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(scene);
+                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], scene);
             }
 
             RenderContext* context                  = new RenderContext();

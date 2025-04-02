@@ -10,7 +10,7 @@ namespace RB::Graphics
     //                               RenderGraph
     // ---------------------------------------------------------------------------
 
-    RenderPassEntry** RenderGraph::SubmitEntry(const Entity::Scene* const scene)
+    RenderPassEntry** RenderGraph::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
         RenderPassEntry** entries = (RenderPassEntry**)ALLOC_HEAP(sizeof(RenderPassEntry*) * m_UnorderedPasses.size());
 
@@ -26,7 +26,7 @@ namespace RB::Graphics
             }
 
             submitted[m_RenderFlow[i].passID] = true;
-            entries[i] = m_UnorderedPasses[m_RenderFlow[i].passID]->SubmitEntry(scene);
+            entries[i] = m_UnorderedPasses[m_RenderFlow[i].passID]->SubmitEntry(view_context, scene);
         }
 
         return entries;
@@ -76,7 +76,15 @@ namespace RB::Graphics
 
             RB_PROFILE_GPU_SCOPED(render_interface, pass->GetName());
 
-            pass->Render(render_interface, view_context, entry, outputs, intermediates, parameters);
+            RenderPassInput input;
+            input.viewContext           = view_context;
+            input.renderInterface       = render_interface;
+            input.entryContext          = entry;
+            input.dependencyTextures    = parameters;
+            input.workingTextures       = intermediates;
+            input.outputTextures        = outputs;
+
+            pass->Render(input);
         }
     }
 

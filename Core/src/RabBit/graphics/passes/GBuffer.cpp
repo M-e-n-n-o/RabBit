@@ -59,7 +59,7 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* GBufferPass::SubmitEntry(const Entity::Scene* const scene)
+    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
         auto mesh_renderers = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
 
@@ -108,45 +108,44 @@ namespace RB::Graphics
         return entry;
     }
 
-    void GBufferPass::Render(RenderInterface* render_interface, ViewContext* view_context, RenderPassEntry* entry_context,
-        RenderResource** output_textures, RenderResource** working_textures, RenderResource** dependency_textures)
+    void GBufferPass::Render(RenderPassInput& in)
     {
-        render_interface->SetVertexShader(VS_Simple);
-        render_interface->SetPixelShader(PS_Simple);
+        in.renderInterface->SetVertexShader(VS_Simple);
+        in.renderInterface->SetPixelShader(PS_Simple);
 
-        render_interface->SetBlendMode(BlendMode::None);
-        render_interface->SetCullMode(CullMode::Back);
-        render_interface->SetDepthMode(DepthMode::Disabled);
+        in.renderInterface->SetBlendMode(BlendMode::None);
+        in.renderInterface->SetCullMode(CullMode::Back);
+        in.renderInterface->SetDepthMode(DepthMode::Disabled);
 
         RenderTargetBundle bundle = {};
         bundle.colorTargetsCount  = 1;
-        bundle.colorTargets[0]    = (Texture2D*)output_textures[0];
-        bundle.colorTargets[1]    = (Texture2D*)output_textures[1];
+        bundle.colorTargets[0]    = (Texture2D*)in.outputTextures[0];
+        bundle.colorTargets[1]    = (Texture2D*)in.outputTextures[1];
         bundle.depthStencilTarget = nullptr;
 
-        render_interface->SetRenderTarget(&bundle);
+        in.renderInterface->SetRenderTarget(&bundle);
 
-        GBufferEntry* entry = (GBufferEntry*)entry_context;
+        GBufferEntry* entry = (GBufferEntry*)in.entryContext;
 
         // Set the frame constants
-        view_context->SetFrameConstants(render_interface);
+        in.viewContext->SetFrameConstants(in.renderInterface);
 
         for (int i = 0; i < entry->totalEntries; ++i)
         {
             GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 
-            render_interface->SetVertexBuffer(model_entry.vb);
+            in.renderInterface->SetVertexBuffer(model_entry.vb);
 
             if (model_entry.ib)
             {
-                render_interface->SetIndexBuffer(model_entry.ib);
+                in.renderInterface->SetIndexBuffer(model_entry.ib);
             }
 
-            render_interface->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+            in.renderInterface->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-            render_interface->SetShaderResourceInput(model_entry.texture, 1);
+            in.renderInterface->SetShaderResourceInput(model_entry.texture, 1);
 
-            render_interface->Draw();
+            in.renderInterface->Draw();
         }
     }
 }

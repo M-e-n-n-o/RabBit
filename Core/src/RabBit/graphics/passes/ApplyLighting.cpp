@@ -46,15 +46,14 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* ApplyLightingPass::SubmitEntry(const Entity::Scene* const scene)
+    RenderPassEntry* ApplyLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
         // Just create an empty entry
         ApplyLightingEntry* entry = new ApplyLightingEntry();
         return entry;
     }
 
-    void ApplyLightingPass::Render(RenderInterface* render_interface, ViewContext* view_context, RenderPassEntry* entry_context,
-        RenderResource** output_textures, RenderResource** working_textures, RenderResource** dependency_textures)
+    void ApplyLightingPass::Render(RenderPassInput& inputs)
     {
         static_assert(false);
         // TODO
