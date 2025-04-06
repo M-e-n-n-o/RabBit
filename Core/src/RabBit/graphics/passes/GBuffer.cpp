@@ -49,10 +49,10 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, RTSize_Full, RTSize_Full, RTFlag_AllowRenderTarget},
-                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, RTSize_Full, RTSize_Full, RTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
                 },
-                1,
+                2,
 
                 // Async compute compatible
                 false

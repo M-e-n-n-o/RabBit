@@ -3,15 +3,15 @@
 
 namespace RB::Graphics
 {
-    struct ApplyLightingSettings : public RenderPassSettings
+    struct DeferredLightingSettings : public RenderPassSettings
     {
         // No settings
     };
 
-    class ApplyLightingPass : public RenderPass
+    class DeferredLightingPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "ApplyLighting"; }
+        const char* GetName() override { return "DeferredLighting"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
 

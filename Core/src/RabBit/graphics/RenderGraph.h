@@ -16,7 +16,7 @@ namespace RB::Graphics
     class RenderGraph
     {
     public:
-        virtual ~RenderGraph() = default;
+        ~RenderGraph();
 
         RenderGraph() = default;
 
@@ -36,10 +36,10 @@ namespace RB::Graphics
             ResourceID  outputIDs[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         };
 
-        uint32_t            m_ID;
-        uint32_t            m_FinalOutputResourceID;
-        List<RenderPass*>   m_UnorderedPasses;
-        List<FlowNode>      m_RenderFlow;
+        uint32_t                             m_ID;
+        uint32_t                             m_FinalOutputResourceID;
+        UnorderedMap<uint32_t, RenderPass*>  m_UnorderedPasses;
+        List<FlowNode>                       m_RenderFlow;
     };
 
     // ---------------------------------------------------------------------------

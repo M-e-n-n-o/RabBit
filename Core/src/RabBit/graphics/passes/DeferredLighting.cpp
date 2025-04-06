@@ -1,5 +1,5 @@
 #include "RabBitCommon.h"
-#include "ApplyLighting.h"
+#include "DeferredLighting.h"
 
 #include "graphics/RenderResource.h"
 #include "graphics/RenderInterface.h"
@@ -14,13 +14,13 @@
 
 namespace RB::Graphics
 {
-    struct ApplyLightingEntry : public RenderPassEntry
+    struct DeferredLightingEntry : public RenderPassEntry
     {
     };
 
-    RenderPassConfig ApplyLightingPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings& setting)
     {
-        const ApplyLightingSettings& s = (const ApplyLightingSettings&)setting;
+        const DeferredLightingSettings& s = (const DeferredLightingSettings&)setting;
 
         return RenderPassConfig(
             {
@@ -29,7 +29,7 @@ namespace RB::Graphics
                     RenderTextureInputDesc{"GBuffer Color"},
                     RenderTextureInputDesc{"GBuffer Normal"}
                 },
-                0,
+                2,
 
                 // Working textures
                 {},
@@ -37,7 +37,7 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, RTSize_Full, RTSize_Full, RTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
                 },
                 1,
 
@@ -46,17 +46,18 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* ApplyLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
+    RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
         // Just create an empty entry
-        ApplyLightingEntry* entry = new ApplyLightingEntry();
+        DeferredLightingEntry* entry = new DeferredLightingEntry();
         return entry;
     }
 
-    void ApplyLightingPass::Render(RenderPassInput& inputs)
+    void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        static_assert(false);
+        //static_assert(false);
         // TODO
+        // - Add depth testing
         // - Implement a simple apply lighting pass
         // - Add this new pass to the render graph
     }

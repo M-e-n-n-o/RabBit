@@ -104,6 +104,10 @@ namespace RB::Graphics::D3D12
             return DXGI_FORMAT_R32_FLOAT;
         case(RenderResourceFormat::R8_UINT):
             return DXGI_FORMAT_R8_UINT;
+        case(RenderResourceFormat::D32_FLOAT):
+            return DXGI_FORMAT_D32_FLOAT;
+        case(RenderResourceFormat::D16_UNORM):
+            return DXGI_FORMAT_D16_UNORM;
         case(RenderResourceFormat::Unkown):
             return DXGI_FORMAT_UNKNOWN;
         default:
@@ -152,6 +156,10 @@ namespace RB::Graphics::D3D12
             return RenderResourceFormat::R8_UNORM;
         case(DXGI_FORMAT_R8_UINT):
             return RenderResourceFormat::R8_UINT;
+        case(DXGI_FORMAT_D32_FLOAT):
+            return RenderResourceFormat::D32_FLOAT;
+        case(DXGI_FORMAT_D16_UNORM):
+            return RenderResourceFormat::D16_UNORM;
         case(DXGI_FORMAT_UNKNOWN):
             return RenderResourceFormat::Unkown;
         default:

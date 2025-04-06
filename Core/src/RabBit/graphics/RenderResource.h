@@ -24,6 +24,8 @@ namespace RB::Graphics
     enum class RenderResourceFormat
     {
         Unkown,
+
+        // Regular format
         R32G32B32A32_TYPELESS,
         R32G32B32A32_FLOAT,
         R16G16B16A16_FLOAT,
@@ -41,7 +43,11 @@ namespace RB::Graphics
         R16_UNORM,
         R16_SNORM,
         R8_UNORM,
-        R32_FLOAT
+        R32_FLOAT,
+
+        // Depth formats
+        D32_FLOAT,
+        D16_UNORM
     };
 
     uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);

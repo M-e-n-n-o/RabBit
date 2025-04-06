@@ -83,17 +83,17 @@ namespace RB::Graphics
                 RenderTextureDesc current_desc = m_Descriptions[current_id];
 
                 // First make sure to update the size of the description to the actual size
-                if (!current_desc.HasFlag(RTFlag_CustomSized))
+                if (!current_desc.HasFlag(kRTFlag_CustomSized))
                 {
                     uint32_t width = (uint32_t)biggest_size.size.x;
                     uint32_t height = (uint32_t)biggest_size.size.y;
 
-                    if (current_desc.HasFlag(RTFlag_UiSized))
+                    if (current_desc.HasFlag(kRTFlag_UiSized))
                     {
                         width = (uint32_t)biggest_size.uiSize.x;
                         height = (uint32_t)biggest_size.uiSize.y;
                     }
-                    else if (current_desc.HasFlag(RTFlag_UpscaledSized))
+                    else if (current_desc.HasFlag(kRTFlag_UpscaledSized))
                     {
                         width = (uint32_t)biggest_size.upscaledSize.x;
                         height = (uint32_t)biggest_size.upscaledSize.y;
@@ -102,7 +102,7 @@ namespace RB::Graphics
                     // Divide the width & height to the desired size
                     current_desc.width = (width >> current_desc.width);
                     current_desc.height = (height >> current_desc.height);
-                    current_desc.CombineFlags(RTFlag_CustomSized);
+                    current_desc.CombineFlags(kRTFlag_CustomSized);
                 }
 
                 RB_ASSERT_FATAL(LOGTAG_GRAPHICS, current_graph_id < 64, "We can not have more than 64 graphs, then the RenderGraph logic will break");
@@ -162,8 +162,8 @@ namespace RB::Graphics
                                                     aliased_desc.desc.format, 
                                                     aliased_desc.desc.width, 
                                                     aliased_desc.desc.height, 
-                                                    aliased_desc.desc.HasFlag(RTFlag_AllowRenderTarget),
-                                                    aliased_desc.desc.HasFlag(RTFlag_AllowRandomGpuWrites)));
+                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
+                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRandomGpuWrites)));
 
             // Make sure that the ResourceID's point to the correct resource in the m_Resources list
             uint32_t pointer_id = m_Resources.size() - 1;

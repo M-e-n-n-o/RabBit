@@ -22,11 +22,13 @@ namespace RB::Graphics
         case(RenderResourceFormat::R16G16_FLOAT):
         case(RenderResourceFormat::R16G16_UINT):
         case(RenderResourceFormat::R32_FLOAT):
+        case(RenderResourceFormat::D32_FLOAT):
             return 4;
         case(RenderResourceFormat::R16_FLOAT):
         case(RenderResourceFormat::R16_UINT):
         case(RenderResourceFormat::R16_UNORM):
         case(RenderResourceFormat::R16_SNORM):
+        case(RenderResourceFormat::D16_UNORM):
             return 2;
         case(RenderResourceFormat::R8_UNORM):
         case(RenderResourceFormat::R8_UINT):
@@ -44,6 +46,10 @@ namespace RB::Graphics
     {
         switch (format)
         {
+        case RenderResourceFormat::D32_FLOAT:
+        case RenderResourceFormat::D16_UNORM:
+            return true;
+
         case RenderResourceFormat::R32G32B32A32_TYPELESS:
         case RenderResourceFormat::R32G32B32A32_FLOAT:
         case RenderResourceFormat::R16G16B16A16_FLOAT:

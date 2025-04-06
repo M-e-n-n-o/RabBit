@@ -17,25 +17,27 @@ namespace RB::Graphics
     {
         None,
         GBuffer,
+
+        Count
     };
 
     enum RenderTextureSize
     {
-        RTSize_Full     = 0,
-        RTSize_Half     = 1,
+        kRTSize_Full     = 0,
+        kRTSize_Half     = 1,
 
-        RTSize_Count
+        kRTSize_Count
     };
 
     enum RenderTextureFlag : uint32_t
     {
-        RTFlag_None                    = 0,
-        RTFlag_AllowRenderTarget       = (1 << 0), // Will not be used as a RenderTarget?
-        RTFlag_AllowRandomGpuWrites    = (1 << 1), // Is UAV allowed?
-        RTFlag_DenyAliasing            = (1 << 2), // Makes sure this resource is not shared between passes (likely contains history data)
-        RTFlag_CustomSized             = (1 << 3), // Are the width & height properties using custom sizes?
-        RTFlag_UiSized                 = (1 << 4), // Are the width & height properties based on UI sizes?
-        RTFlag_UpscaledSized           = (1 << 5)  // Are the width & height properties based after the upscale?
+        kRTFlag_None                    = 0,
+        kRTFlag_AllowRenderTarget       = (1 << 0), // Will not be used as a RenderTarget?
+        kRTFlag_AllowRandomGpuWrites    = (1 << 1), // Is UAV allowed?
+        kRTFlag_DenyAliasing            = (1 << 2), // Makes sure this resource is not shared between passes (likely contains history data)
+        kRTFlag_CustomSized             = (1 << 3), // Are the width & height properties using custom sizes?
+        kRTFlag_UiSized                 = (1 << 4), // Are the width & height properties based on UI sizes?
+        kRTFlag_UpscaledSized           = (1 << 5)  // Are the width & height properties based after the upscale?
     };
 
     struct RenderTextureDesc
@@ -48,11 +50,11 @@ namespace RB::Graphics
 
         bool IsAliasableWith(const RenderTextureDesc& other) const
         {
-            return ((flags & RTFlag_DenyAliasing) == 0 &&
-                    (other.flags & RTFlag_DenyAliasing) == 0 &&
-                    ((flags & RTFlag_CustomSized) == (other.flags & RTFlag_CustomSized)) &&
-                    ((flags & RTFlag_UiSized) == (other.flags & RTFlag_UiSized)) &&
-                    ((flags & RTFlag_UpscaledSized) == (other.flags & RTFlag_UpscaledSized)) &&
+            return ((flags & kRTFlag_DenyAliasing) == 0 &&
+                    (other.flags & kRTFlag_DenyAliasing) == 0 &&
+                    ((flags & kRTFlag_CustomSized) == (other.flags & kRTFlag_CustomSized)) &&
+                    ((flags & kRTFlag_UiSized) == (other.flags & kRTFlag_UiSized)) &&
+                    ((flags & kRTFlag_UpscaledSized) == (other.flags & kRTFlag_UpscaledSized)) &&
                     format == other.format &&
                     width == other.width &&
                     height == other.height);
@@ -73,6 +75,10 @@ namespace RB::Graphics
     struct RenderTextureInputDesc
     {
         const char* name;
+        bool        depthFormat;
+        // Points to an optional output texture (usefull for depth textures that we want to read from and write to)
+        // If this is set, then the dependencyTexture stays nullptr and the RenderPass should use the outputTexture
+        int32_t     outputTextureIndex;
     };
 
     #define MAX_INOUT_RESOURCES_PER_RENDERPASS      8

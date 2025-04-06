@@ -10,23 +10,35 @@ namespace RB::Graphics
     //                               RenderGraph
     // ---------------------------------------------------------------------------
 
+    RenderGraph::~RenderGraph()
+    {
+        for (const auto& pass : m_UnorderedPasses) 
+        {
+            // Delete the renderpasses
+            delete pass.second;
+        }
+    }
+
     RenderPassEntry** RenderGraph::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
         RenderPassEntry** entries = (RenderPassEntry**)ALLOC_HEAP(sizeof(RenderPassEntry*) * m_UnorderedPasses.size());
 
-        bool* submitted = (bool*)ALLOC_STACK(m_UnorderedPasses.size() * sizeof(bool));
-        memset(&submitted[0], false, m_UnorderedPasses.size() * sizeof(bool));
+        bool* submitted = (bool*)ALLOC_STACK(((uint32_t)RenderPassType::Count) * sizeof(bool));
+        memset(&submitted[0], false, ((uint32_t)RenderPassType::Count) * sizeof(bool));
 
         // Gather the entries from all render passes
-        for (int i = 0; i < m_RenderFlow.size(); ++i)
+        for (int idx = 0; idx < m_RenderFlow.size(); ++idx)
         {
-            if (submitted[m_RenderFlow[i].passID])
+            uint32_t id = m_RenderFlow[idx].passID;
+
+            if (submitted[id])
             {
+                // We can not submit an entry to the same pass multiple times
                 continue;
             }
 
-            submitted[m_RenderFlow[i].passID] = true;
-            entries[i] = m_UnorderedPasses[m_RenderFlow[i].passID]->SubmitEntry(view_context, scene);
+            submitted[id] = true;
+            entries[idx] = m_UnorderedPasses[id]->SubmitEntry(view_context, scene);
         }
 
         return entries;
@@ -36,9 +48,8 @@ namespace RB::Graphics
     {
         for (int i = 0; i < m_RenderFlow.size(); ++i)
         {
-            RenderPass* pass = m_UnorderedPasses[m_RenderFlow[i].passID];
-
-            RenderPassEntry* entry = entries[m_RenderFlow[i].passID];
+            RenderPass*      pass  = m_UnorderedPasses[m_RenderFlow[i].passID];
+            RenderPassEntry* entry = entries[i];
 
             // Do not render the pass if it did not submit an entry
             if (entry == nullptr)
@@ -54,18 +65,24 @@ namespace RB::Graphics
             {
                 if (m_RenderFlow[i].parameterIDs[j] != -1)
                     parameters[j] = graph_context->GetResource(m_RenderFlow[i].parameterIDs[j]);
+                else
+                    parameters[j] = nullptr;
             }
 
             for (int j = 0; j < MAX_WORKING_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].workingIDs[j] != -1)
                     intermediates[j] = graph_context->GetResource(m_RenderFlow[i].workingIDs[j]);
+                else
+                    intermediates[j] = nullptr;
             }
 
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].outputIDs[j] != -1)
                     outputs[j] = graph_context->GetResource(m_RenderFlow[i].outputIDs[j]);
+                else
+                    outputs[j] = nullptr;
             }
 
             // The final pass uses the output target of the ViewContext
@@ -92,7 +109,7 @@ namespace RB::Graphics
     {
         for (int i = 0; i < m_RenderFlow.size(); ++i)
         {
-            SAFE_DELETE(entries[m_RenderFlow[i].passID]);
+            SAFE_DELETE(entries[i]);
         }
 
         SAFE_FREE(entries);
@@ -128,7 +145,7 @@ namespace RB::Graphics
         uint64_t processed_mask = 0;
         RenderPassType pass_type = m_FinalPassType;
 
-        List<RenderPass*> passes;
+        UnorderedMap<uint32_t, RenderPass*> passes;
         List<RenderGraph::FlowNode> render_flow;
 
         // Process from back to front
@@ -148,10 +165,10 @@ namespace RB::Graphics
             // Mark pass type as processed
             processed_mask |= (1u << (uint64_t) pass_type);
 
-            passes.push_back(pass_ptr->second);
+            passes.emplace((uint32_t)pass_ptr->first, pass_ptr->second);
 
             RenderGraph::FlowNode node = {};
-            node.passID = passes.size() - 1;
+            node.passID = (uint32_t)pass_ptr->first;
 
             // Figure out the lifetime of the resources
             ResourceID parameter_ids[MAX_INOUT_RESOURCES_PER_RENDERPASS];
@@ -182,17 +199,17 @@ namespace RB::Graphics
                     {
                         bool match = false;
 
-                        for (int i = 0; i < _countof(parameter_ids); ++i)
+                        for (int i = 0; i < _countof(parameter_ids) && !match; ++i)
                         {
                             if (parameter_ids[i] == other_id)
                                 match = true;
                         }
-                        for (int i = 0; i < _countof(working_ids); ++i)
+                        for (int i = 0; i < _countof(working_ids) && !match; ++i)
                         {
                             if (working_ids[i] == other_id)
                                 match = true;
                         }
-                        for (int i = 0; i < _countof(output_ids); ++i)
+                        for (int i = 0; i < _countof(output_ids) && !match; ++i)
                         {
                             if (output_ids[i] == other_id)
                                 match = true;
@@ -208,18 +225,16 @@ namespace RB::Graphics
                         break;
                     }
 
-                    // TODO Future optimization, figure out if they overlap in lifetime and use as alias
+                    // TODO Future optimization, figure out if they don't overlap in lifetime and use as alias
                 }
 
                 return id;
             };
 
-            // Parameter ID's
+            // Parameter ID's & linked inouts
             auto connections_ptr = m_Connections.find(pass_type);
             if (connections_ptr != m_Connections.end())
             {
-                uint32_t param_idx = 0;
-
                 for (const auto& from_ptr : connections_ptr->second)
                 {
                     RenderPassType from_type = from_ptr.first;
@@ -235,32 +250,92 @@ namespace RB::Graphics
 
                     RenderPassConfig from_config = from_pass_ptr->second->GetConfiguration(from_settings_ptr->second);
 
-                    for (uint32_t i = 0; i < from_ptr.second.size(); i++)
+                    for (uint32_t i = 0; i < from_ptr.second.size(); i += 2)
                     {
-                        if (param_idx >= MAX_INOUT_RESOURCES_PER_RENDERPASS)
+                        uint32_t from_res_idx = from_ptr.second[i];
+                        uint32_t to_res_idx = from_ptr.second[i + 1];
+
+                        if (to_res_idx >= config.totalDependencies)
+                        {
+                            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has more linked input resources from RenderPass %d than expected", (uint32_t)pass_type, (uint32_t)from_pass_ptr->first);
+                            return nullptr;
+                        }
+
+                        if (to_res_idx >= MAX_INOUT_RESOURCES_PER_RENDERPASS)
                         {
                             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has too many input resources, we currently only support %d", (uint32_t)pass_type, MAX_INOUT_RESOURCES_PER_RENDERPASS);
                             return nullptr;
                         }
 
-                        const RenderTextureDesc& desc = from_config.outputTextures[i];
+                        const RenderTextureDesc& from_desc = from_config.outputTextures[from_res_idx];
 
-                        ResourceID id = GetAlias(desc, true);
-
-                        if (id == -1)
+                        if (IsDepthFormat(from_desc.format) != config.dependencies[to_res_idx].depthFormat)
                         {
-                            // No alias found
-                            parameter_ids[param_idx] = context->ScheduleNewResource(desc, graph_id);
+                            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has resource %d linked from RenderPass %d which have incompatible formats", (uint32_t)pass_type, to_res_idx, (uint32_t)from_pass_ptr->first);
+                            return nullptr;
+                        }
+                        
+                        int32_t linked_out_idx = config.dependencies[to_res_idx].outputTextureIndex;
+                        if (linked_out_idx >= 0)
+                        {
+                            // This parameter is also an output
+                            if (IsDepthFormat(config.outputTextures[linked_out_idx].format) != config.dependencies[to_res_idx].depthFormat)
+                            {
+                                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has resource %d that is an in- and output that have incompatible formats", (uint32_t)pass_type, to_res_idx);
+                                return nullptr;
+                            }
+
+                            if (from_pass_ptr->first == m_FinalPassType && from_res_idx == m_FinalResourceId)
+                            {
+                                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Its currently not possible for the final output resource of the rendergraph to be an inout resource", (uint32_t)pass_type, to_res_idx);
+                                return nullptr;
+                            }
+
+                            // The pass will use the output parameter to access this input
+                            parameter_ids[to_res_idx] = -1;
+
+                            const RenderTextureDesc& desc = config.outputTextures[linked_out_idx];
+
+                            // Create the linked inout texture
+                            ResourceID id = GetAlias(desc, true);
+
+                            if (id == -1)
+                            {
+                                // No alias found
+                                output_ids[linked_out_idx] = context->ScheduleNewResource(desc, graph_id);
+                            }
+                            else
+                            {
+                                // Found an alias
+                                output_ids[linked_out_idx] = id;
+                                // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
+                                context->GetScheduledResource(id).CombineFlags(desc.flags);
+                            }
                         }
                         else
                         {
-                            // Found an alias
-                            parameter_ids[param_idx] = id;
-                            // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
-                            context->GetScheduledResource(id).CombineFlags(desc.flags);
-                        }
+                            // This is just a regular input
 
-                        param_idx++;
+                            ResourceID from_res = -1;
+
+                            // Find the scheduled resources of the from pass
+                            for (const auto& node : render_flow)
+                            {
+                                if (node.passID == (uint32_t)from_pass_ptr->first)
+                                {
+                                    node.outputIDs[from_res_idx];
+                                    break;
+                                }
+                            }
+
+                            if (from_res == -1)
+                            {
+                                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Something is wrong in the logic of the RenderGraphBuilder, the output RenderPass %d should have been processed before RenderPass %d", (uint32_t)from_pass_ptr->first, (uint32_t)pass_type);
+                                return nullptr;
+                            }
+
+                            parameter_ids[to_res_idx] = from_res;
+                        }
                     }
                 }
             }
@@ -309,6 +384,12 @@ namespace RB::Graphics
                     continue;
                 }
 
+                if (output_ids[i] != -1)
+                {
+                    // This output texture is also an input texture linked to a different pass, so we don't have to create a new texture
+                    continue;
+                }
+
                 const RenderTextureDesc& desc = config.outputTextures[i];
 
                 ResourceID id = GetAlias(desc, true);
@@ -345,9 +426,19 @@ namespace RB::Graphics
         // Remove all the passes that were not needed in the end, if any
         for (auto itr = m_Passes.begin(); itr != m_Passes.end(); ++itr)
         {
-            if (std::find(passes.begin(), passes.end(), itr->second) == passes.end())
+            bool found = false;
+            for (auto other_itr = passes.begin(); other_itr != passes.end(); other_itr++)
             {
-                RB_LOG(LOGTAG_GRAPHICS, "Found an unused RenderPass in the graph, %d", (uint32_t)itr->first);
+                if ((uint32_t)itr->first == other_itr->first)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                RB_LOG(LOGTAG_GRAPHICS, "Detected an unused RenderPass in the graph, %d", (uint32_t)itr->first);
                 delete itr->second;
             }
         }
