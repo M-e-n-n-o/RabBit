@@ -80,7 +80,7 @@ namespace RB::Graphics
         void		   ProcessEvent(Events::WindowEvent& event);
 
         static Window* Create(const char* window_name, Display* display, uint32_t window_style, float virtual_resolution_scale = 1, float virtual_aspect = 0);
-        static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, float virtual_resolution_scale = 1, float virtual_aspect = 0);
+        static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, RenderResourceFormat window_format, float virtual_resolution_scale = 1, float virtual_aspect = 0);
 
     protected:
         Window(bool is_fullscreen, float virtual_scale, float virtual_aspect);

@@ -55,8 +55,9 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        //static_assert(false);
+        static_assert(false);
         // TODO
+        // - Remove the totalDependencies, totalWorkingTextures & totalOutputTextures indices from the RenderPassConfig, they are confusing and not very fool proof (me)
         // - Add depth testing
         // - Implement a simple apply lighting pass
         // - Add this new pass to the render graph

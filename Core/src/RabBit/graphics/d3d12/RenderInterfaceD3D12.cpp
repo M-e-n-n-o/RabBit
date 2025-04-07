@@ -134,8 +134,8 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetRenderTarget(RenderTargetBundle* bundle)
     {
-        uint32_t max_width = 0;
-        uint32_t max_height = 0;
+        uint32_t width = ((Texture2DD3D12*)bundle->colorTargets[0])->GetWidth();
+        uint32_t height = ((Texture2DD3D12*)bundle->colorTargets[0])->GetHeight();
 
         D3D12_CPU_DESCRIPTOR_HANDLE color_handles[8];
 
@@ -151,16 +151,22 @@ namespace RB::Graphics::D3D12
                     continue;
                 }
 
+                // This also waits until the resource has been created
+                MarkResourceUsed(tex);
+
                 color_handles[i] = tex->GetRenderTargetHandle();
 
-                max_width = Math::Max(max_width, tex->GetWidth());
-                max_height = Math::Max(max_height, tex->GetHeight());
+                if (width != tex->GetWidth() || height != tex->GetHeight())
+                {
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work though");
+                    width = Math::Max(width, tex->GetWidth());
+                    height = Math::Max(height, tex->GetHeight());
+                }
+
 
                 TransitionResource(tex, ResourceState::RENDER_TARGET);
 
                 m_RenderState.rtvFormats[i] = ConvertToDXGIFormat(tex->GetFormat());
-
-                MarkResourceUsed(tex);
             }
             else
             {
@@ -175,13 +181,14 @@ namespace RB::Graphics::D3D12
         {
             if (depth_stencil->AllowedDepthStencil())
             {
+                // This also waits until the resource has been created
+                MarkResourceUsed(depth_stencil);
+
                 depth_handle = &((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
 
                 TransitionResource(depth_stencil, ResourceState::DEPTH_WRITE);
 
                 m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
-
-                MarkResourceUsed(depth_stencil);
             }
             else
             {
@@ -189,13 +196,17 @@ namespace RB::Graphics::D3D12
             }
         }
 
-        m_CommandList->OMSetRenderTargets(bundle->colorTargetsCount, color_handles, true, depth_handle);
+        m_CommandList->OMSetRenderTargets(bundle->colorTargetsCount, color_handles, false, depth_handle);
 
         m_RenderState.numRenderTargets = bundle->colorTargetsCount;
 
-        // Also set the scissor and rect
-        SetScissorRect(0, LONG_MAX, 0, LONG_MAX);
-        SetViewport(0, 0, max_width, max_height);
+        // Also set the viewport
+        Viewport vp;
+        vp.left   = 0;
+        vp.top    = 0;
+        vp.width  = width;
+        vp.height = height;
+        SetViewport(vp);
 
         m_RenderState.psoDirty = true;
     }
@@ -301,33 +312,36 @@ namespace RB::Graphics::D3D12
         m_CommandList->ClearRenderTargetView(((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle(), clear_color, 0, nullptr);
     }
 
-    void RenderInterfaceD3D12::SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom)
+    void RenderInterfaceD3D12::SetViewport(const Viewport& viewport)
     {
-        D3D12_RECT rect = {};
-        rect.left   = left;
-        rect.right  = right;
-        rect.top    = top;
-        rect.bottom = bottom;
-
-        m_CommandList->RSSetScissorRects(1, &rect);
-
-        m_RenderState.scissorSet = true;
-
-        m_RenderState.psoDirty = true;
+        SetViewports(&viewport, 1);
     }
 
-    void RenderInterfaceD3D12::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+    void RenderInterfaceD3D12::SetViewports(const Viewport* viewports, uint32_t total_viewports)
     {
-        D3D12_VIEWPORT viewport = {};
-        viewport.TopLeftX   = x;
-        viewport.TopLeftY   = y;
-        viewport.Width      = width;
-        viewport.Height     = height;
-        viewport.MinDepth   = D3D12_MIN_DEPTH;
-        viewport.MaxDepth   = D3D12_MAX_DEPTH;
+        D3D12_VIEWPORT* sizes = ALLOC_STACKC(D3D12_VIEWPORT, total_viewports);
+        D3D12_RECT* rects = ALLOC_STACKC(D3D12_RECT, total_viewports);
 
-        m_CommandList->RSSetViewports(1, &viewport);
+        for (uint32_t i = 0; i < total_viewports; ++i)
+        {
+            sizes[i].TopLeftX   = viewports[i].left;
+            sizes[i].TopLeftY   = viewports[i].top;
+            sizes[i].Width      = viewports[i].width;
+            sizes[i].Height     = viewports[i].height;
+            sizes[i].MinDepth   = D3D12_MIN_DEPTH;
+            sizes[i].MaxDepth   = D3D12_MAX_DEPTH;
 
+            // Hardcoded scissor rects for now
+            rects[i].left       = 0;
+            rects[i].right      = LONG_MAX;
+            rects[i].top        = 0;
+            rects[i].bottom     = LONG_MAX;
+        }
+
+        m_CommandList->RSSetScissorRects(total_viewports, rects);
+        m_CommandList->RSSetViewports(total_viewports, sizes);
+
+        m_RenderState.scissorSet = true;
         m_RenderState.viewportSet = true;
 
         m_RenderState.psoDirty = true;

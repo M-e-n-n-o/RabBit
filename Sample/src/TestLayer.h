@@ -64,8 +64,8 @@ public:
         GameObject* object = scene->CreateGameObject();
         object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
         Transform* t = object->AddComponent<Transform>();
-        t->position = Float3(0.0f, 0.0f, 5.0f);
-        t->rotation = Float3(45.0f, 0.0f, 0.0f);
+        t->position = Float3(0.0f, 0.0f, 300.0f);
+        t->rotation = Float3(45.0f, 180.0f, 0.0f);
         t->scale = Float3(1.0f);
 
         m_Transform = t;

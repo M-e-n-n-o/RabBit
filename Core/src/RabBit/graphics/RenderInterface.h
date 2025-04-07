@@ -1,5 +1,7 @@
 #pragma once
 
+#include "View.h"
+
 namespace RB::Math
 {
     struct Float4;
@@ -82,8 +84,8 @@ namespace RB::Graphics
         virtual void SetShaderResourceInput(RenderResource* resource, uint32_t slot) = 0;
         virtual void ClearShaderResourceInput(uint32_t slot) = 0;
 
-        virtual void SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom) = 0;
-        virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
+        virtual void SetViewport(const Viewport& viewport) = 0;
+        virtual void SetViewports(const Viewport* viewports, uint32_t total_viewports) = 0;
 
         virtual void SetBlendMode(const BlendMode& mode) = 0;
         virtual void SetCullMode(const CullMode& mode) = 0;

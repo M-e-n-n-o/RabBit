@@ -138,7 +138,7 @@ namespace RB::Graphics
                 LinkedDesc linked_desc = {};
                 linked_desc.desc = current_desc;
                 linked_desc.graphs = (1u << current_graph_id);
-                aliased_descs[aliased_id].ids.push_back(current_id);
+                linked_desc.ids.push_back(current_id);
 
                 aliased_descs.push_back(linked_desc);
             }
@@ -222,6 +222,11 @@ namespace RB::Graphics
 
     List<ResourceID> RenderGraphContext::GetScheduledGraphResources(uint32_t graph_id)
     {
+        if (m_GraphDescriptions.empty())
+        {
+            return {};
+        }
+
         if (graph_id >= m_GraphDescriptions.size())
         {
             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Trying to grab an invalid list of resource ID's from the RenderGraphContext");

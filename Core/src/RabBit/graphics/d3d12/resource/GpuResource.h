@@ -33,6 +33,7 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12Resource>				m_Resource;
         D3D12_RESOURCE_STATES				m_State;
         bool								m_OwnsResource;
+        bool                                m_IsValid;
         std::function<void(GpuResource*)>	m_OnCreationCallback;
     };
 }

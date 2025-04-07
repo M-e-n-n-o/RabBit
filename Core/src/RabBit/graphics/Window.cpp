@@ -1,9 +1,10 @@
 #include "RabBitCommon.h"
 #include "Window.h"
+#include "events/WindowEvent.h"
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
 #include "graphics/d3d12/window/WindowD3D12.h"
-#include "events/WindowEvent.h"
+#include "graphics/d3d12/UtilsD3D12.h"
 
 using namespace RB::Events;
 
@@ -282,6 +283,7 @@ namespace RB::Graphics
             args.virtualAspect  = virtual_aspect;
             args.windowStyle    = window_style;
             args.windowName     = window_name;
+            args.format         = D3D12::ConvertToDXGIFormat(RenderResourceFormat::R16G16B16A16_FLOAT); // TODO Do this based on the display
 
             return new D3D12::WindowD3D12(args);
         }
@@ -293,7 +295,7 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, float virtual_scale, float virtual_aspect)
+    Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, RenderResourceFormat window_format, float virtual_scale, float virtual_aspect)
     {
         switch (Renderer::GetAPI())
         {
@@ -309,6 +311,7 @@ namespace RB::Graphics
             args.virtualAspect  = virtual_aspect;
             args.windowStyle    = window_style;
             args.windowName     = window_name;
+            args.format         = D3D12::ConvertToDXGIFormat(window_format);
 
             return new D3D12::WindowD3D12(args);
         }

@@ -21,7 +21,9 @@ namespace RB::Graphics
 
     RenderPassEntry** RenderGraph::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
-        RenderPassEntry** entries = (RenderPassEntry**)ALLOC_HEAP(sizeof(RenderPassEntry*) * m_UnorderedPasses.size());
+        size_t size = sizeof(RenderPassEntry*) * m_RenderFlow.size();
+        RenderPassEntry** entries = (RenderPassEntry**)ALLOC_HEAP(size);
+        memset(&entries[0], 0, size);
 
         bool* submitted = (bool*)ALLOC_STACK(((uint32_t)RenderPassType::Count) * sizeof(bool));
         memset(&submitted[0], false, ((uint32_t)RenderPassType::Count) * sizeof(bool));
@@ -380,6 +382,12 @@ namespace RB::Graphics
             {
                 if (pass_type == m_FinalPassType && i == m_FinalResourceId)
                 {
+                    if (config.outputTextures[i].width != kRTSize_Full || config.outputTextures[i].height != kRTSize_Full)
+                    {
+                        RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "The final resource (%d) of the final RenderPass (%d) should have a width and height of kRTSize_Full", m_FinalResourceId, (uint32_t)pass_type);
+                        return nullptr;
+                    }
+
                     // The final pass doesn't need a dedicated output texture for this one, it will use the one of the ViewContext
                     continue;
                 }

@@ -11,6 +11,8 @@
 #undef CreateWindow
 #endif
 
+#include <d3d12.h>
+
 namespace RB::Graphics::D3D12
 {
     class SwapChain;
@@ -26,6 +28,7 @@ namespace RB::Graphics::D3D12
         float			virtualScale;
         float			virtualAspect;
         uint32_t		windowStyle;
+        DXGI_FORMAT     format;
     };
 
     class WindowD3D12 : public Window

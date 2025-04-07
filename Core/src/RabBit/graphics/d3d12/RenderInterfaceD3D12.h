@@ -57,8 +57,8 @@ namespace RB::Graphics::D3D12
 
         void Clear(RenderResource* resource, const Math::Float4& color) override;
 
-        void SetScissorRect(uint32_t left, uint32_t right, uint32_t top, uint32_t bottom) override;
-        void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
+        void SetViewport(const Viewport& viewport) override;
+        void SetViewports(const Viewport* viewports, uint32_t total_viewports) override;
 
         void SetBlendMode(const BlendMode& mode) override;
         void SetCullMode(const CullMode& mode) override;

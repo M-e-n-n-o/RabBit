@@ -49,8 +49,8 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
-                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
                 },
                 2,
 
@@ -118,7 +118,7 @@ namespace RB::Graphics
         in.renderInterface->SetDepthMode(DepthMode::Disabled);
 
         RenderTargetBundle bundle = {};
-        bundle.colorTargetsCount  = 1;
+        bundle.colorTargetsCount  = 2;
         bundle.colorTargets[0]    = (Texture2D*)in.outputTextures[0];
         bundle.colorTargets[1]    = (Texture2D*)in.outputTextures[1];
         bundle.depthStencilTarget = nullptr;

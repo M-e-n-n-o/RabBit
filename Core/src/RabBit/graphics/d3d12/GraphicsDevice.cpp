@@ -239,7 +239,9 @@ namespace RB::Graphics::D3D12
         {
             D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
             D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
-            D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE
+            D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+
+            D3D12_MESSAGE_ID_DRAW_POTENTIALLY_OUTSIDE_OF_VALID_RENDER_AREA, // For binding multiple rendertargets with different resolutions (which is not really allowed, but does just work for me)
         };
 
         D3D12_INFO_QUEUE_FILTER filter = {};

@@ -129,6 +129,12 @@ namespace RB::Graphics::D3D12
 
     bool ResourceManager::WaitUntilResourceValid(GpuResource* resource)
     {
+        if (m_CreationThread->IsCurrentThread())
+        {
+            // Its possible the creation thread might get in here because of the creation callback of the GpuResource
+            return true;
+        }
+
         EnterCriticalSection(&m_CS);
 
         // Find the scheduled creation

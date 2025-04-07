@@ -63,7 +63,7 @@ namespace RB::Graphics::D3D12
                 width, height,
                 m_IsTearingSupported,
                 BACK_BUFFER_COUNT,
-                DXGI_FORMAT_R8G8B8A8_UNORM,
+                args.format,
                 (bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
             );
 

@@ -8,6 +8,7 @@ namespace RB::Graphics::D3D12
         : m_Resource(nullptr)
         , m_State(D3D12_RESOURCE_STATE_COMMON)
         , m_OwnsResource(true)
+        , m_IsValid(false)
         , m_OnCreationCallback(on_resource_created_callback)
     {
     }
@@ -16,6 +17,7 @@ namespace RB::Graphics::D3D12
         : m_Resource(resource)
         , m_State(state)
         , m_OwnsResource(transfer_ownership)
+        , m_IsValid(true)
         , m_OnCreationCallback(nullptr)
     {
     }
@@ -35,7 +37,6 @@ namespace RB::Graphics::D3D12
             if (!g_ResourceManager->WaitUntilResourceValid(this))
             {
                 RB_LOG_ERROR(LOGTAG_GRAPHICS, "Resource failed to get valid");
-                return nullptr;
             }
         }
 
@@ -44,7 +45,7 @@ namespace RB::Graphics::D3D12
 
     bool GpuResource::IsValid() const
     {
-        return m_Resource != nullptr;
+        return m_IsValid;
     }
 
     void GpuResource::MarkAsUsed(DeviceQueue* queue)
@@ -76,5 +77,7 @@ namespace RB::Graphics::D3D12
         {
             m_OnCreationCallback(this);
         }
+
+        m_IsValid = true;
     }
 }
