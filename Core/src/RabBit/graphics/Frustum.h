@@ -30,6 +30,8 @@ namespace RB::Graphics
 
         void SetOrthographicProjection(float near_plane, float far_plane, float left, float right, float top, float bottom, bool reverse_depth);
 
+        bool IsReversedDepth() const { return m_ReversedDepth; }
+
     private:
         Math::Float4x4	m_WorldToViewMat;	// World space to view space matrix
         //Math::Float4x4	m_ViewToWorldMat;
@@ -39,5 +41,6 @@ namespace RB::Graphics
         float			m_HFov;
         float			m_AspectRatio;
         float			m_ViewLength;
+        bool            m_ReversedDepth;
     };
 }

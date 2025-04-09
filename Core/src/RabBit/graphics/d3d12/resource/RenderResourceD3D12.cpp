@@ -112,10 +112,13 @@ namespace RB::Graphics::D3D12
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
         if (m_IsRenderTarget)
             flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        if (m_IsDepthStencil)
-            flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
         if (m_AllowUAV)
             flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        if (m_IsDepthStencil)
+        {
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        }
 
         // TODO Add mip support
 
@@ -181,6 +184,7 @@ namespace RB::Graphics::D3D12
     void Texture2DD3D12::CreateViews(GpuResource* /*resource*/)
     {
         // SRV
+        if (!m_IsDepthStencil)
         {
             // TODO Add mip support
 

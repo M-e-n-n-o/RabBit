@@ -39,6 +39,16 @@ namespace RB::Graphics
         }
     }
 
+    void RenderInterface::Clear(RenderResource* resource)
+    {
+        Clear(resource, Math::Float4(0, 0, 0, 0));
+    }
+
+    void RenderInterface::ClearDepth(RenderResource* resource, bool reversed_depth)
+    {
+        Clear(resource, Math::Float4(reversed_depth ? 0 : 1, 0, 0, 0));
+    }
+
     RenderInterface* RenderInterface::Create(bool allow_only_copy_operations)
     {
         switch (Renderer::GetAPI())

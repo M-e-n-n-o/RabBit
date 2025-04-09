@@ -158,7 +158,7 @@ namespace RB::Graphics::D3D12
 
                 if (width != tex->GetWidth() || height != tex->GetHeight())
                 {
-                    RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work though");
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work for debugging though");
                     width = Math::Max(width, tex->GetWidth());
                     height = Math::Max(height, tex->GetHeight());
                 }
@@ -300,16 +300,35 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::Clear(RenderResource* resource, const Math::Float4& color)
     {
-        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, resource->GetPrimitiveType() == RenderResourceType::Texture, "Only textures are currently supported for clears");
-        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, ((Texture*)resource)->AllowedRenderTarget(), "Only render targets are currently supported for clears");
+        if (resource->GetPrimitiveType() != RenderResourceType::Texture)
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not clear RenderResource as its not a texture and textures are currently only supported for clears");
+            return;
+        }
 
-        MarkResourceUsed(resource);
+        Texture* tex = ((Texture*)resource);
 
-        TransitionResource(resource, ResourceState::RENDER_TARGET);
-        FlushResourceBarriers();
+        if (tex->AllowedRenderTarget())
+        {
+            MarkResourceUsed(resource);
+            TransitionResource(resource, ResourceState::RENDER_TARGET);
+            FlushResourceBarriers();
 
-        FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
-        m_CommandList->ClearRenderTargetView(((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle(), clear_color, 0, nullptr);
+            FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
+            m_CommandList->ClearRenderTargetView(((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle(), clear_color, 0, nullptr);
+        }
+        else if (tex->AllowedDepthStencil())
+        {
+            MarkResourceUsed(resource);
+            TransitionResource(resource, ResourceState::DEPTH_WRITE);
+            FlushResourceBarriers();
+
+            m_CommandList->ClearDepthStencilView(((D3D12::Texture2DD3D12*)resource)->GetDepthStencilTargetHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_DEPTH, color.r, color.g, 0, nullptr);
+        }
+        else
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not clear RenderResource as its not a rendertarget or a depth stencil");
+        }
     }
 
     void RenderInterfaceD3D12::SetViewport(const Viewport& viewport)
@@ -432,7 +451,7 @@ namespace RB::Graphics::D3D12
         m_RenderState.psoDirty = true;
     }
 
-    void RenderInterfaceD3D12::SetDepthMode(const DepthMode& mode)
+    void RenderInterfaceD3D12::SetDepthMode(const DepthMode& mode, bool write_depth, bool reversed_depth)
     {
         D3D12_DEPTH_STENCIL_DESC desc = {};
         desc.StencilEnable                  = FALSE;
@@ -449,11 +468,27 @@ namespace RB::Graphics::D3D12
 
         switch (mode)
         {
-        case DepthMode::Disabled:
+        case DepthMode::PassAll:
         {
-            desc.DepthEnable    = FALSE;
-            desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+            desc.DepthEnable    = write_depth ? TRUE : FALSE;
+            desc.DepthWriteMask = write_depth ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
             desc.DepthFunc      = D3D12_COMPARISON_FUNC_ALWAYS;
+        }
+        break;
+
+        case DepthMode::PassCloser:
+        {
+            desc.DepthEnable    = TRUE;
+            desc.DepthWriteMask = write_depth ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+            desc.DepthFunc      = reversed_depth ? D3D12_COMPARISON_FUNC_GREATER : D3D12_COMPARISON_FUNC_LESS;
+        }
+        break;
+
+        case DepthMode::PassFurther:
+        {
+            desc.DepthEnable    = TRUE;
+            desc.DepthWriteMask = write_depth ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+            desc.DepthFunc      = reversed_depth ? D3D12_COMPARISON_FUNC_LESS : D3D12_COMPARISON_FUNC_GREATER;
         }
         break;
 
@@ -785,7 +820,7 @@ namespace RB::Graphics::D3D12
                 }
             }
 
-            SetConstantShaderData(kTexIndicesCB, &indices, sizeof(TextureIndices));
+            SetConstantShaderData(kTexIndicesCB, &indices, sizeof(TextureIndices)); // TODO Make the texture indices a root constant instead of a CBV
         }
 
         // Set the bindless table

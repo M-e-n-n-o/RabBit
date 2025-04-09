@@ -12,8 +12,8 @@
 namespace RB::Graphics
 {
     Frustum::Frustum()
+        : m_ReversedDepth(false)
     {
-
     }
 
     void Frustum::SetTransform(Math::Float3 position, Math::Float3 rotation)
@@ -75,6 +75,8 @@ namespace RB::Graphics
         m_AspectRatio = (right - left) / (bottom - top);
 
         m_ViewLength = far - near;
+
+        m_ReversedDepth = reverse_depth;
     }
 
     void Frustum::SetOrthographicProjection(float near, float far, float left, float right, float top, float bottom, bool reverse_depth)
@@ -106,5 +108,7 @@ namespace RB::Graphics
 
         m_AspectRatio = (right - left) / (bottom - top);
         m_ViewLength = far - near;
+
+        m_ReversedDepth = reverse_depth;
     }
 }

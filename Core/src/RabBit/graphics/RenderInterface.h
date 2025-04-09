@@ -39,7 +39,9 @@ namespace RB::Graphics
 
     enum class DepthMode
     {
-        Disabled,
+        PassAll,
+        PassFurther,
+        PassCloser,
     };
 
     class GpuGuard
@@ -89,9 +91,11 @@ namespace RB::Graphics
 
         virtual void SetBlendMode(const BlendMode& mode) = 0;
         virtual void SetCullMode(const CullMode& mode) = 0;
-        virtual void SetDepthMode(const DepthMode& mode) = 0;
+        virtual void SetDepthMode(const DepthMode& mode, bool write_depth, bool reversed_depth) = 0;
 
+        virtual void Clear(RenderResource* resource); // Clears to black
         virtual void Clear(RenderResource* resource, const Math::Float4& color) = 0;
+        virtual void ClearDepth(RenderResource* resource, bool reversed_depth);
 
         virtual void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) = 0;
         virtual void CopyResource(RenderResource* src, RenderResource* dest) = 0;

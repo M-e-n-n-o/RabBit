@@ -301,8 +301,8 @@ namespace RB::Graphics
 
             contexts[context_index].viewFrustum = {};
             contexts[context_index].viewFrustum.SetTransform(transform->GetLocalToWorldMatrix());
-            contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetAspectRatio(), false);
-            //contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, false);
+            contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetAspectRatio(), true);
+            //contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, true);
 
             contexts[context_index].clearColor = camera->GetClearColor();
             contexts[context_index].renderGraphType = camera->GetRenderGraphType();
@@ -527,7 +527,7 @@ namespace RB::Graphics
         context->graphicsInterface->SetPixelShader(PS_Present);
         context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
         context->graphicsInterface->SetCullMode(CullMode::Back);
-        context->graphicsInterface->SetDepthMode(DepthMode::Disabled);
+        context->graphicsInterface->SetDepthMode(DepthMode::PassAll, false, false);
         context->graphicsInterface->SetVertexBuffer(context->backBufferCopyVB);
 
         struct WindowPair

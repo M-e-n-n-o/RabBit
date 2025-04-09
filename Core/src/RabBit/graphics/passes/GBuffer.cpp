@@ -49,10 +49,11 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
-                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
+                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
+                    RenderTextureDesc{"GBuffer Depth",  RenderResourceFormat::D32_FLOAT,      kRTSize_Full, kRTSize_Full, kRTFlag_None              },
                 },
-                2,
+                3,
 
                 // Async compute compatible
                 false
@@ -115,13 +116,15 @@ namespace RB::Graphics
 
         in.renderInterface->SetBlendMode(BlendMode::None);
         in.renderInterface->SetCullMode(CullMode::Back);
-        in.renderInterface->SetDepthMode(DepthMode::Disabled);
+        in.renderInterface->SetDepthMode(DepthMode::PassCloser, true, in.viewContext->viewFrustum.IsReversedDepth());
 
         RenderTargetBundle bundle = {};
         bundle.colorTargetsCount  = 2;
         bundle.colorTargets[0]    = (Texture2D*)in.outputTextures[0];
         bundle.colorTargets[1]    = (Texture2D*)in.outputTextures[1];
-        bundle.depthStencilTarget = nullptr;
+        bundle.depthStencilTarget = (Texture2D*)in.outputTextures[2];
+
+        in.renderInterface->ClearDepth(bundle.depthStencilTarget, in.viewContext->viewFrustum.IsReversedDepth());
 
         in.renderInterface->SetRenderTarget(&bundle);
 

@@ -46,7 +46,7 @@ PO_SIMPLE PS_Simple(PI_SIMPLE input) : SV_TARGET
     float4 color = FETCH_TEX2D(1).Sample(g_ClampAnisoSampler, input.uv);
 
     output.color    = float4(color.rgb, 1.0f);
-    output.normal   = float4(input.normal, 0.0f);
+    output.normal   = float4(input.normal, 1.0f);
 
     return output;
 }

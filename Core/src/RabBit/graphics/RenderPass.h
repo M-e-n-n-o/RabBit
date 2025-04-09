@@ -86,6 +86,8 @@ namespace RB::Graphics
 
     struct RenderPassConfig
     {
+        // TODO Remove the totalDependencies, totalWorkingTextures& totalOutputTextures indices, they are confusing and not very fool/me proof
+
         RenderTextureInputDesc	dependencies[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         uint32_t                totalDependencies;
         RenderTextureDesc	    workingTextures[MAX_WORKING_RESOURCES_PER_RENDERPASS];

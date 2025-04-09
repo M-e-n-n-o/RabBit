@@ -259,7 +259,7 @@ namespace RB::Graphics
 
                         if (to_res_idx >= config.totalDependencies)
                         {
-                            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has more linked input resources from RenderPass %d than expected", (uint32_t)pass_type, (uint32_t)from_pass_ptr->first);
+                            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has more linked input resources from RenderPass %d than it has inputs", (uint32_t)pass_type, (uint32_t)from_pass_ptr->first);
                             return nullptr;
                         }
 

@@ -62,7 +62,7 @@ namespace RB::Graphics::D3D12
 
         void SetBlendMode(const BlendMode& mode) override;
         void SetCullMode(const CullMode& mode) override;
-        void SetDepthMode(const DepthMode& mode) override;
+        void SetDepthMode(const DepthMode& mode, bool write_depth, bool reversed_depth) override;
 
         void SetIndexBuffer(RenderResource* index_resource) override;
         void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot) override;

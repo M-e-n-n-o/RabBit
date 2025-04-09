@@ -237,11 +237,12 @@ namespace RB::Graphics::D3D12
         // Suppress individual messages by their ID
         D3D12_MESSAGE_ID ids[] =
         {
-            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
             D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
             D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
 
-            D3D12_MESSAGE_ID_DRAW_POTENTIALLY_OUTSIDE_OF_VALID_RENDER_AREA, // For binding multiple rendertargets with different resolutions (which is not really allowed, but does just work for me)
+            D3D12_MESSAGE_ID_DRAW_POTENTIALLY_OUTSIDE_OF_VALID_RENDER_AREA, // For binding multiple rendertargets with different resolutions (which is not really allowed, but is nice for debugging purposes)
+            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // For not setting a proper clear value when creating the resource
+            D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE,   // For not setting a proper clear value when creating the resource
         };
 
         D3D12_INFO_QUEUE_FILTER filter = {};

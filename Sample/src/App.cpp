@@ -30,10 +30,10 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window1.windowName          = "Window 1";
     window1.windowWidth         = 1280;
     window1.windowHeight        = 720;
-    window1.forcedRenderAspect  = 4.0f / 3.0f;
+    //window1.forcedRenderAspect  = 4.0f / 3.0f;
     //window1.renderScale         = 0.25f;
     window1.semiTransparent     = true;
-    app_info.windows.push_back(window1);
+    //app_info.windows.push_back(window1);
 
     AppInfo::Window window2 = {};
     window2.windowName          = "Window 2";
