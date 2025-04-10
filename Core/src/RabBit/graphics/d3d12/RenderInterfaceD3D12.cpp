@@ -222,7 +222,10 @@ namespace RB::Graphics::D3D12
         {
             RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.tex2DsrvHandles), "Shader resource input slot out of range");
 
-            m_RenderState.tex2DsrvHandles[slot] = ((Texture2DD3D12*)resource)->GetReadHandle();
+            Texture2DD3D12* tex = (Texture2DD3D12*)resource;
+
+            m_RenderState.tex2DsrvHandles[slot] = tex->GetReadHandle();
+            m_RenderState.tex2DSRGBs[slot] = tex->GetColorSpace() == TextureColorSpace::sRGB;
         }
         break;
 
@@ -235,6 +238,7 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
     {
         m_RenderState.tex2DsrvHandles[slot] = -1;
+        m_RenderState.tex2DSRGBs[slot] = false;
     }
 
     void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
@@ -802,21 +806,19 @@ namespace RB::Graphics::D3D12
             // Set the Texture2D's
             for (int i = 0; i < _countof(indices.tex2D); ++i)
             {
-                for (int j = 0; j < 4; ++j)
+                uint32_t& index  = indices.tex2D[i].tableID;
+                uint32_t& isSRGB = indices.tex2D[i].isSRGB;
+
+                if (m_RenderState.tex2DsrvHandles[i] >= 0)
                 {
-                    uint32_t& value = indices.tex2D[i].arr[j];
-
-                    uint32_t final_index = i + j;
-
-                    if (m_RenderState.tex2DsrvHandles[final_index] >= 0)
-                    {
-                        value = (uint32_t)m_RenderState.tex2DsrvHandles[final_index];
-                    }
-                    else
-                    {
-                        // Error texture
-                        value = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetReadHandle();
-                    }
+                    index  = (uint32_t)m_RenderState.tex2DsrvHandles[i];
+                    isSRGB = m_RenderState.tex2DSRGBs[i];
+                }
+                else
+                {
+                    // Error texture
+                    index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetReadHandle();
+                    isSRGB = false;
                 }
             }
 

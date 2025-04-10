@@ -43,15 +43,20 @@ PO_SIMPLE PS_Simple(PI_SIMPLE input) : SV_TARGET
 {
     PO_SIMPLE output;
 
-    float4 color = FETCH_TEX2D(1).Sample(g_ClampAnisoSampler, input.uv);
+    bool tex_is_srgb;
+    Texture2D tex = FetchTex2D(1, tex_is_srgb);
+
+    float4 color = tex.Sample(g_ClampAnisoSampler, input.uv);
 
     output.color    = float4(color.rgb, 1.0f);
     output.normal   = float4(input.normal, 1.0f);
 
-    // Hardcode convert from sRGB to linear space (inverted gamma)
-    // TODO Add a checkbox to the texture if its in sRGB or linear space
-    float gamma = 2.2f;
-    output.color.rgb = pow(output.color.rgb, gamma);
+    if (tex_is_srgb)
+    {
+        // Convert from sRGB to linear space (apply inverted gamma)
+        const float gamma = 2.2f; // Hardcoded gamma value, TODO is this always correct?
+        output.color.rgb = pow(output.color.rgb, gamma);
+    }
 
     return output;
 }

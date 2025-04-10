@@ -37,7 +37,7 @@ namespace RB::Entity
     {
     public:
 
-        Material(const char* file_name);
+        Material(const char* file_name, Graphics::TextureColorSpace color_space = Graphics::TextureColorSpace::sRGB);
 
         ~Material()
         {

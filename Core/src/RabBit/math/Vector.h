@@ -95,6 +95,58 @@ namespace RB::Math
         static int32_t Angle(const Int4& first, const Int4& second);
     };
 
+    struct UInt2
+    {
+    public:
+        union
+        {
+            struct
+            {
+                uint32_t arr[2];
+            };
+
+            struct
+            {
+                uint32_t x;
+                uint32_t y;
+            };
+
+            struct
+            {
+                uint32_t r;
+                uint32_t g;
+            };
+        };
+
+        UInt2();
+        UInt2(uint32_t xy);
+        UInt2(uint32_t x, uint32_t y);
+        ~UInt2() = default;
+
+        void Normalize();
+
+        float GetLength() const;
+
+        UInt2 operator+(const UInt2& other)  const;
+        UInt2 operator+(const uint32_t& other) const;
+
+        UInt2 operator-(const UInt2& other)  const;
+        UInt2 operator-(const uint32_t& other) const;
+
+        UInt2 operator*(const UInt2& other)  const;
+        UInt2 operator*(const uint32_t& other) const;
+
+        UInt2 operator/(const UInt2& other)  const;
+        UInt2 operator/(const uint32_t& other) const;
+
+        static UInt2 Cross(const UInt2& first, const UInt2& second);
+
+        static uint32_t Dot(const UInt2& first, const UInt2& second);
+
+        // Returns the angle between the two vectors in radians
+        static uint32_t Angle(const UInt2& first, const UInt2& second);
+    };
+
     struct UInt4
     {
     public:

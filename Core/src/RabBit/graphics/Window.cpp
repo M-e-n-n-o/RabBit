@@ -305,7 +305,7 @@ namespace RB::Graphics
             args.virtualAspect  = virtual_aspect;
             args.windowStyle    = window_style;
             args.windowName     = window_name;
-            args.format         = D3D12::ConvertToDXGIFormat(RenderResourceFormat::R16G16B16A16_FLOAT); // TODO Do this based on the display
+            args.format         = D3D12::ConvertToDXGIFormat(RenderResourceFormat::R8G8B8A8_UNORM); // TODO Do this based on the display
 
             return new D3D12::WindowD3D12(args);
         }

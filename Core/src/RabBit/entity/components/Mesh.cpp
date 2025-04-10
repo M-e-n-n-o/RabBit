@@ -45,7 +45,7 @@ namespace RB::Entity
         }
     }
 
-    Material::Material(const char* file_name)
+    Material::Material(const char* file_name, Graphics::TextureColorSpace color_space)
         : m_Texture(nullptr)
     {
         LoadedImage img;
@@ -53,7 +53,7 @@ namespace RB::Entity
 
         if (success)
         {
-            m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
+            m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false, color_space);
         }
     }
 }

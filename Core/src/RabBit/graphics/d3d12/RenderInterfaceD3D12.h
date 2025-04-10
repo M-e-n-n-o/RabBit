@@ -121,6 +121,7 @@ namespace RB::Graphics::D3D12
             D3D12_GPU_VIRTUAL_ADDRESS		cbvAddresses[16];
 
             DescriptorHandle				tex2DsrvHandles[SHADER_TEX2D_SLOTS];
+            bool                            tex2DSRGBs[SHADER_TEX2D_SLOTS];
         };
 
         RenderState                         m_RenderState;

@@ -89,8 +89,9 @@ namespace RB::Graphics::D3D12
     //								Texture2D
     // ---------------------------------------------------------------------------
 
-    Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access)
-        : m_Name(name)
+    Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space)
+        : Texture2D(color_space)
+        , m_Name(name)
         , m_Format(format)
         , m_Width(width)
         , m_Height(height)
@@ -133,8 +134,8 @@ namespace RB::Graphics::D3D12
         g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
     }
 
-    Texture2DD3D12::Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access)
-        : Texture2DD3D12(name, format, width, height, is_render_target, random_write_access)
+    Texture2DD3D12::Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space)
+        : Texture2DD3D12(name, format, width, height, is_render_target, random_write_access, color_space)
     {
         Streamable streamable = {};
         streamable.resource     = this;
@@ -143,8 +144,9 @@ namespace RB::Graphics::D3D12
         Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
     }
 
-    Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access)
-        : m_Name(name)
+    Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space)
+        : Texture2D(color_space)
+        , m_Name(name)
         , m_Resource((GpuResource*)internal_resource)
         , m_Format(format)
         , m_Width(width)

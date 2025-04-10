@@ -4,6 +4,7 @@ using namespace RB;
 using namespace RB::Events;
 using namespace RB::Entity;
 using namespace RB::Math;
+using namespace RB::Graphics;
 
 class TestLayer : public ApplicationLayer
 {
@@ -54,7 +55,7 @@ public:
 
         //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
         m_Mesh = new Mesh("Bunny.fbx");
-        m_Material = new Material("TheRock.png");
+        m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
 
