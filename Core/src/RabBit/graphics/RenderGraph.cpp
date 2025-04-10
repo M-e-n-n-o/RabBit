@@ -95,6 +95,9 @@ namespace RB::Graphics
 
             RB_PROFILE_GPU_SCOPED(render_interface, pass->GetName());
 
+            // Clear the render state before every pass
+            render_interface->InvalidateState(false);
+
             RenderPassInput input;
             input.viewContext           = view_context;
             input.renderInterface       = render_interface;

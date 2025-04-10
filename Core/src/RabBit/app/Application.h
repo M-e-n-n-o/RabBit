@@ -31,6 +31,8 @@ namespace RB
             uint32_t    windowHeight        = 720;
             float		forcedRenderAspect  = 0.0f;
             float		renderScale         = 1.0f;
+            float       gammaCorrection     = 2.2f;
+            float       brightness          = 1.0f;
             bool		semiTransparent     = false;
         };
 

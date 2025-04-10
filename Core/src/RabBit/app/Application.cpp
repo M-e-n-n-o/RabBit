@@ -98,6 +98,9 @@ namespace RB
             {
                 m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, RenderResourceFormat::R16G16B16A16_FLOAT, window.renderScale, window.forcedRenderAspect));
             }
+
+            (*(m_Windows.end()-1))->SetBrightness(window.brightness);
+            (*(m_Windows.end()-1))->SetGammaCorrection(window.gammaCorrection);
         }
 
         m_Scene = new Scene();

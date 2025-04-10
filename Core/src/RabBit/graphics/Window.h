@@ -58,8 +58,14 @@ namespace RB::Graphics
         uint32_t		        GetVirtualHeight()		const;
         void			        SetVirtualResolutionAndAspectRatio(float resolution_scale, float aspect);
 
+        void                    SetGammaCorrection(float gamma);
+        void                    SetBrightness(float brightness);
+        float                   GetGammaCorrection() const;
+        float                   GetBrighness() const;
+
         virtual bool			IsMinimized()			const = 0;
         virtual bool			IsValid()				const = 0;
+        virtual bool            IsSemiTransparent()     const = 0;
 
         bool			        InFocus()				const;
 
@@ -96,6 +102,9 @@ namespace RB::Graphics
         void CalculateVirtualSize();
 
         bool					m_InFocus;
+
+        float                   m_GammaCorrection;
+        float                   m_Brightness;
 
         bool					m_IsFullscreen;
         Math::Float4			m_OriginalRect;

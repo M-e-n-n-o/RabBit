@@ -246,6 +246,17 @@ namespace RB::Graphics::D3D12
 
         for (int i = 0; i < 8; ++i)
         {
+            HashCombine(seed, desc.BlendState.RenderTarget[i].BlendEnable);
+            HashCombine(seed, desc.BlendState.RenderTarget[i].LogicOpEnable);
+            HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].SrcBlend);
+            HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].DestBlend);
+            HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].BlendOp);
+            HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].SrcBlendAlpha);
+            HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].DestBlendAlpha);
+            HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].BlendOpAlpha);
+            HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].LogicOp);
+            HashCombine(seed, desc.BlendState.RenderTarget[i].RenderTargetWriteMask);
+
             HashCombine(seed, (UINT)desc.RTVFormats[i]);
         }
 

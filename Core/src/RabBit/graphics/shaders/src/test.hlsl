@@ -48,5 +48,10 @@ PO_SIMPLE PS_Simple(PI_SIMPLE input) : SV_TARGET
     output.color    = float4(color.rgb, 1.0f);
     output.normal   = float4(input.normal, 1.0f);
 
+    // Hardcode convert from sRGB to linear space (inverted gamma)
+    // TODO Add a checkbox to the texture if its in sRGB or linear space
+    float gamma = 2.2f;
+    output.color.rgb = pow(output.color.rgb, gamma);
+
     return output;
 }

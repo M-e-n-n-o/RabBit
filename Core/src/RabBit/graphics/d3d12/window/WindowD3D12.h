@@ -47,6 +47,7 @@ namespace RB::Graphics::D3D12
         RenderRect	 GetWindowRect()		const override;
         bool		 IsMinimized()			const override;
         bool		 IsValid()				const override;
+        bool         IsSemiTransparent()    const override;
 
         Display* GetParentDisplay() override;
 
@@ -54,7 +55,6 @@ namespace RB::Graphics::D3D12
 
         bool IsSameWindow(void* window_handle) const override;
         void* GetNativeWindowHandle() const override;
-
 
         RenderResourceFormat GetBackBufferFormat() override;
         uint32_t GetCurrentBackBufferIndex() override;
@@ -76,6 +76,7 @@ namespace RB::Graphics::D3D12
 
         bool					m_IsValid;
         bool					m_IsTearingSupported;
+        bool                    m_IsSemiTransparent;
 
         Graphics::Texture2D* m_BackBuffers[BACK_BUFFER_COUNT];
     };

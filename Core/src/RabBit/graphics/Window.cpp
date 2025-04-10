@@ -17,6 +17,8 @@ namespace RB::Graphics
         , m_VirtualBackBuffer(nullptr)
         , m_NewVirtualResScale(virtual_scale)
         , m_NewVirtualAspect(virtual_aspect)
+        , m_GammaCorrection(2.2f)
+        , m_Brightness(1.0f)
     {
     }
 
@@ -123,6 +125,26 @@ namespace RB::Graphics
 
         Math::Float4 window_rect = GetWindowRectangle();
         Resize(window_rect.x, window_rect.y, window_rect.z, window_rect.w);
+    }
+
+    void Window::SetGammaCorrection(float gamma)
+    {
+        m_GammaCorrection = gamma;
+    }
+
+    void Window::SetBrightness(float brightness)
+    {
+        m_Brightness = brightness;
+    }
+
+    float Window::GetGammaCorrection() const
+    {
+        return m_GammaCorrection;
+    }
+
+    float Window::GetBrighness() const
+    {
+        return m_Brightness;
     }
 
     void Window::ToggleFullscreen()

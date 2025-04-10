@@ -514,8 +514,6 @@ namespace RB::Graphics
                     context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
                 }
 
-                context->graphicsInterface->InvalidateState(false);
-
                 // Render the different passes
                 context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
             }
@@ -525,7 +523,6 @@ namespace RB::Graphics
         context->graphicsInterface->InvalidateState(false);
         context->graphicsInterface->SetVertexShader(VS_Present);
         context->graphicsInterface->SetPixelShader(PS_Present);
-        context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
         context->graphicsInterface->SetCullMode(CullMode::Back);
         context->graphicsInterface->SetDepthMode(DepthMode::PassAll, false, false);
         context->graphicsInterface->SetVertexBuffer(context->backBufferCopyVB);
@@ -579,16 +576,28 @@ namespace RB::Graphics
             RenderRect rect = window->GetVirtualWindowRect();
 
             PresentCB present_data = {};
-            present_data.currSize  = Math::Float2(window->GetWidth(), window->GetHeight());
-            present_data.texOffset = Math::Float2(rect.left, rect.top);
+            present_data.currSize           = Math::Float2(window->GetWidth(), window->GetHeight());
+            present_data.texOffset          = Math::Float2(rect.left, rect.top);
+            present_data.gammaValue         = window->GetGammaCorrection();
+            present_data.brightnessValue    = window->GetBrighness();
 
             context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
 
             context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
             context->graphicsInterface->SetRenderTarget(back_buffer);
 
-            // Clear the backbuffer
-            context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
+            if (window->IsSemiTransparent())
+            {
+                // Enable blending on a semi transparent window
+                context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
+
+                // Clear the backbuffer as we don't want to see the data of a previous frame
+                context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
+            }
+            else
+            {
+                context->graphicsInterface->SetBlendMode(BlendMode::None);
+            }
 
             // Backbuffer copy
             context->graphicsInterface->Draw();

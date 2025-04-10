@@ -33,10 +33,13 @@ namespace RB::Graphics::D3D12
 
         DWORD style = WS_OVERLAPPEDWINDOW;
         DWORD extended_style = NULL;
+        
+        m_IsSemiTransparent = false;
 
         if (args.windowStyle & kWindowStyle_SemiTransparent)
         {
             extended_style = WS_EX_NOREDIRECTIONBITMAP;
+            m_IsSemiTransparent = true;
         }
 
         uint32_t width = args.width;
@@ -150,6 +153,11 @@ namespace RB::Graphics::D3D12
     bool WindowD3D12::IsValid() const
     {
         return m_IsValid;
+    }
+
+    bool WindowD3D12::IsSemiTransparent() const
+    {
+        return m_IsSemiTransparent;
     }
 
     Display* WindowD3D12::GetParentDisplay()

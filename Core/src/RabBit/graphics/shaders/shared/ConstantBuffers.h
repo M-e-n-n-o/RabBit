@@ -11,4 +11,6 @@ struct PresentCB
 {
     float2 texOffset;
     float2 currSize;
+    float  brightnessValue;
+    float  gammaValue;
 };

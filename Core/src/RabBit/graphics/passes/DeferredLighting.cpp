@@ -55,7 +55,7 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        static_assert(false);
+        //static_assert(false);
         // TODO
         // - Implement a simple apply lighting pass
         // - Add this new pass to the render graph
