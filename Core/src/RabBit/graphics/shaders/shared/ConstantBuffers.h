@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RB_SHADER_CONSTANT_BUFFERS
+#define RB_SHADER_CONSTANT_BUFFERS
 
 #if !SHADER
 #include "RabBitCommon.h"
@@ -14,3 +15,5 @@ struct PresentCB
     float  brightnessValue;
     float  gammaValue;
 };
+
+#endif

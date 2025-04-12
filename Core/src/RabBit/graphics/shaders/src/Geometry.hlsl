@@ -19,7 +19,7 @@ struct PI_SIMPLE
     float2 uv       : TEXCOORD0;
 };
 
-struct PO_SIMPLE
+struct PO_GBufferOutput
 {
     float4 color    : SV_Target0;
     float4 normal   : SV_Target1;
@@ -39,9 +39,9 @@ PI_SIMPLE VS_Simple(VI_Simple input)
     return output;
 }
 
-PO_SIMPLE PS_Simple(PI_SIMPLE input) : SV_TARGET
+PO_GBufferOutput PS_Simple(PI_SIMPLE input)
 {
-    PO_SIMPLE output;
+    PO_GBufferOutput output;
 
     bool tex_is_srgb;
     Texture2D tex = FetchTex2D(1, tex_is_srgb);

@@ -70,6 +70,8 @@ namespace RB::Graphics
         // You should normally not have to manually transition resources, this will be done automatically
         virtual void TransitionResource(RenderResource* resource, ResourceState state) = 0;
         virtual void FlushResourceBarriers() = 0;
+        // Flushes all possible pending things, also resource barriers
+        virtual void FlushAllPending() = 0;
 
         virtual void SetVertexShader(uint32_t shader_index) = 0;
         virtual void SetPixelShader(uint32_t shader_index) = 0;

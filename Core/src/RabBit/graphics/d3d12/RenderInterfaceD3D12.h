@@ -43,6 +43,7 @@ namespace RB::Graphics::D3D12
 
         void TransitionResource(RenderResource* resource, ResourceState state) override;
         void FlushResourceBarriers() override;
+        void FlushAllPending() override;
 
         void SetRenderTarget(RenderTargetBundle* bundle) override;
         void SetRenderTarget(RenderResource* color_target) override;
@@ -81,6 +82,7 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
     private:
+        void HandlePendingClears();
         void InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type);
         void MarkResourceUsed(RenderResource* resource);
         void MarkResourceUsed(GpuResource* resource);
@@ -95,6 +97,13 @@ namespace RB::Graphics::D3D12
         bool								m_CopyOperationsOnly;
         DeviceQueue*                        m_Queue;
         GPtr<ID3D12GraphicsCommandList2>	m_CommandList;
+
+        struct PendingClear
+        {
+            bool                        renderTarget;
+            D3D12_CPU_DESCRIPTOR_HANDLE handle;
+            Math::Float4                color;
+        };
 
         struct RenderState
         {
@@ -122,6 +131,8 @@ namespace RB::Graphics::D3D12
 
             DescriptorHandle				tex2DsrvHandles[SHADER_TEX2D_SLOTS];
             bool                            tex2DSRGBs[SHADER_TEX2D_SLOTS];
+
+            List<PendingClear>              pendingClears;
         };
 
         RenderState                         m_RenderState;

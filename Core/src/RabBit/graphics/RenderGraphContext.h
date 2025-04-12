@@ -23,6 +23,7 @@ namespace RB::Graphics
         ~RenderGraphContext();
 
         RenderResource* GetResource(ResourceID id);
+        bool            RequiresClear(ResourceID id);
 
         void AddGraphSize(uint32_t graph_id, const RenderGraphSize& size);
         void DeleteSizes();
@@ -41,6 +42,7 @@ namespace RB::Graphics
     private:
         // All the resources used by all graphs
         List<RenderResource*>       m_Resources;
+        List<bool>                  m_Clears;
         // Points to the actual resources in the list above
         uint32_t*                   m_ResourcePointers;
         

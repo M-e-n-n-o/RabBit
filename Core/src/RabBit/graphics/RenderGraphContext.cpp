@@ -1,3 +1,4 @@
+#include "RenderGraphContext.h"
 #include "RabBitCommon.h"
 #include "RenderGraphContext.h"
 #include "RenderResource.h"
@@ -18,6 +19,17 @@ namespace RB::Graphics
         }
 
         return m_Resources[m_ResourcePointers[id]];
+    }
+
+    bool RenderGraphContext::RequiresClear(ResourceID id)
+    {
+        if (id < 0)
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Trying to grab an invalid RenderResource from the RenderGraphContext");
+            return nullptr;
+        }
+
+        return m_Clears[m_ResourcePointers[id]];
     }
 
     void RenderGraphContext::AddGraphSize(uint32_t graph_id, const RenderGraphSize& size)
@@ -150,6 +162,7 @@ namespace RB::Graphics
         memset(m_ResourcePointers, 0, size);
 
         m_Resources.reserve(aliased_descs.size());
+        m_Clears.reserve(aliased_descs.size());
 
         // Actually create the resources
         for (uint32_t i = 0; i < aliased_descs.size(); ++i)
@@ -164,6 +177,8 @@ namespace RB::Graphics
                                                     aliased_desc.desc.height, 
                                                     aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
                                                     aliased_desc.desc.HasFlag(kRTFlag_AllowRandomGpuWrites)));
+
+            m_Clears.push_back(aliased_desc.desc.HasFlag(kRTFlag_ClearBeforeGraph));
 
             // Make sure that the ResourceID's point to the correct resource in the m_Resources list
             uint32_t pointer_id = m_Resources.size() - 1;
@@ -184,6 +199,7 @@ namespace RB::Graphics
         }
 
         m_Resources.clear();
+        m_Clears.clear();
         SAFE_FREE(m_ResourcePointers);
     }
 

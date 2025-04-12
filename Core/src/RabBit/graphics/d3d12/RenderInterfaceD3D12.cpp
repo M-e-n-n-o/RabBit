@@ -69,6 +69,7 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::InvalidateState(bool rebind_descriptor_heap)
     {
+        m_RenderState.pendingClears.clear();
         m_RenderState = {};
 
         if (m_CopyOperationsOnly)
@@ -120,6 +121,12 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::FlushResourceBarriers()
     {
         g_ResourceStateManager->FlushPendingTransitions(m_CommandList.Get());
+    }
+
+    void RenderInterfaceD3D12::FlushAllPending()
+    {
+        HandlePendingClears();
+        FlushResourceBarriers();
     }
 
     void RenderInterfaceD3D12::SetRenderTarget(RenderResource* color_target)
@@ -312,22 +319,31 @@ namespace RB::Graphics::D3D12
 
         Texture* tex = ((Texture*)resource);
 
+        // Delay the clears so that they can get batched together just before a draw/dispatch
+
         if (tex->AllowedRenderTarget())
         {
             MarkResourceUsed(resource);
             TransitionResource(resource, ResourceState::RENDER_TARGET);
-            FlushResourceBarriers();
 
-            FLOAT clear_color[] = { color.r, color.g, color.b, color.a };
-            m_CommandList->ClearRenderTargetView(((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle(), clear_color, 0, nullptr);
+            PendingClear clear = {};
+            clear.renderTarget = true;
+            clear.handle       = ((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle();
+            clear.color        = color;
+
+            m_RenderState.pendingClears.push_back(clear);
         }
         else if (tex->AllowedDepthStencil())
         {
             MarkResourceUsed(resource);
             TransitionResource(resource, ResourceState::DEPTH_WRITE);
-            FlushResourceBarriers();
 
-            m_CommandList->ClearDepthStencilView(((D3D12::Texture2DD3D12*)resource)->GetDepthStencilTargetHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_DEPTH, color.r, color.g, 0, nullptr);
+            PendingClear clear = {};
+            clear.renderTarget = false;
+            clear.handle       = ((D3D12::Texture2DD3D12*)resource)->GetDepthStencilTargetHandle();
+            clear.color        = color;
+
+            m_RenderState.pendingClears.push_back(clear);
         }
         else
         {
@@ -708,6 +724,8 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::DrawInternal()
     {
+        HandlePendingClears();
+
         if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
         {
             SetGraphicsPipelineState();
@@ -730,6 +748,8 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::DispatchInternal()
     {
         // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
+
+        //HandlePendingClears();
     }
 
     void RenderInterfaceD3D12::ProfileMarkerBegin(uint64_t color, const char* name)
@@ -747,6 +767,31 @@ namespace RB::Graphics::D3D12
         uint32_t num_heaps;
         auto heaps = g_DescriptorManager->GetHeaps(num_heaps);
         m_CommandList->SetDescriptorHeaps(num_heaps, heaps.data());
+    }
+
+    void RenderInterfaceD3D12::HandlePendingClears()
+    {
+        if (m_RenderState.pendingClears.empty())
+        {
+            return;
+        }
+
+        FlushResourceBarriers();
+
+        for (uint32_t i = 0; i < m_RenderState.pendingClears.size(); ++i)
+        {
+            PendingClear clear = m_RenderState.pendingClears[i];
+
+            if (clear.renderTarget)
+            {
+                FLOAT clear_color[] = { clear.color.r, clear.color.g, clear.color.b, clear.color.a };
+                m_CommandList->ClearRenderTargetView(clear.handle, clear_color, 0, nullptr);
+            }
+            else
+            {
+                m_CommandList->ClearDepthStencilView(clear.handle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_DEPTH, clear.color.r, clear.color.g, 0, nullptr);
+            }
+        }
     }
 
     void RenderInterfaceD3D12::InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type)

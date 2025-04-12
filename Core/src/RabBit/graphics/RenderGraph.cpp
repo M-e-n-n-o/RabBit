@@ -48,6 +48,23 @@ namespace RB::Graphics
 
     void RenderGraph::RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context)
     {
+        // First clear the necessary resources
+        {
+            RB_PROFILE_GPU_SCOPED(render_interface, "Clear");
+
+            const List<ResourceID>& all_resources = graph_context->GetScheduledGraphResources(m_ID);
+            for (const ResourceID& id : all_resources)
+            {
+                if (graph_context->RequiresClear(id))
+                {
+                    render_interface->Clear(graph_context->GetResource(id));
+                }
+            }
+
+            render_interface->FlushAllPending();
+        }
+
+        // Then actually execute the graph
         for (int i = 0; i < m_RenderFlow.size(); ++i)
         {
             RenderPass*      pass  = m_UnorderedPasses[m_RenderFlow[i].passID];

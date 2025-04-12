@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RB_SHADER_COMMON
+#define RB_SHADER_COMMON
 
 #if !SHADER
 #include "RabBitCommon.h"
@@ -138,5 +139,7 @@ float4 TransformViewToClip(float3 view_pos)
 {
     return TransformPosition(view_pos, g_FC.viewToClipMat);
 }
+
+#endif
 
 #endif

@@ -507,12 +507,8 @@ namespace RB::Graphics
 
                 RenderResource* final_color_target = view_context.finalColorTarget;
 
-                // Clear the final target (TODO Create a GlobalPrepare pass to clear all necessary textures)
-                {
-                    RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Clear");
-
-                    context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
-                }
+                // Clear the final target
+                context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
 
                 // Render the different passes
                 context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
