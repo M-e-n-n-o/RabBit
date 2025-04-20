@@ -31,14 +31,14 @@ namespace RB::Graphics
 
     enum RenderTextureFlag : uint32_t
     {
-        kRTFlag_None                    = 0,
-        kRTFlag_CustomSized             = (1 << 0), // Are the width & height properties using custom sizes?
-        kRTFlag_UiSized                 = (1 << 1), // Are the width & height properties based on UI sizes?
-        kRTFlag_UpscaledSized           = (1 << 2),  // Are the width & height properties based after the upscale?
-        kRTFlag_AllowRenderTarget       = (1 << 3), // Will not be used as a RenderTarget?
-        kRTFlag_AllowRandomGpuWrites    = (1 << 4), // Is UAV allowed?
-        kRTFlag_DenyAliasing            = (1 << 5), // Makes sure this resource is not shared between passes (likely contains history data)
-        kRTFlag_ClearBeforeGraph        = (1 << 6)  // Clears the resource to 0 before it enters the first RenderPass
+        kRTFlag_None                        = 0,
+        kRTFlag_CustomSized                 = (1 << 0), // Are the width & height properties using custom sizes?
+        kRTFlag_UiSized                     = (1 << 1), // Are the width & height properties based on UI sizes?
+        kRTFlag_UpscaledSized               = (1 << 2),  // Are the width & height properties based after the upscale?
+        kRTFlag_AllowRenderTarget           = (1 << 3), // Will not be used as a RenderTarget?
+        kRTFlag_AllowRandomReadWrites       = (1 << 4), // Is UAV allowed?
+        kRTFlag_DenyAliasing                = (1 << 5), // Makes sure this resource is not shared between passes (likely contains history data)
+        kRTFlag_ClearBeforeGraph            = (1 << 6)  // Clears the resource to 0 before it enters the first RenderPass
     };
 
     struct RenderTextureDesc

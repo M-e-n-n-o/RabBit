@@ -62,9 +62,9 @@ namespace RB::Graphics::D3D12
     class Texture2DD3D12 : public Texture2D
     {
     public:
-        Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space);
-        Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space);
-        Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space);
+        Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space);
+        Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space);
+        Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space);
         ~Texture2DD3D12();
 
         const char* GetName() const override { return m_Name; }
@@ -75,7 +75,7 @@ namespace RB::Graphics::D3D12
 
         bool AllowedRenderTarget() const override { return m_IsRenderTarget; }
         bool AllowedDepthStencil() const override { return m_IsDepthStencil; }
-        bool AllowedRandomGpuWrites() const override { return m_AllowUAV; }
+        bool AllowedRandomReadWrites() const override { return m_AllowUAV; }
 
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }

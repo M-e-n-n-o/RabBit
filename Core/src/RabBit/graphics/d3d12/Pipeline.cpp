@@ -195,6 +195,13 @@ namespace RB::Graphics::D3D12
         return signature;
     }
 
+    GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(uint32_t cs_identifier)
+    {
+        static_assert(false);
+
+        return GPtr<ID3D12RootSignature>();
+    }
+
     uint64_t PipelineManager::GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash)
     {
         uint64_t seed = 0;

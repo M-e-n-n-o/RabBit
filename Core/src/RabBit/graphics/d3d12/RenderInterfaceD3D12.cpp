@@ -83,6 +83,7 @@ namespace RB::Graphics::D3D12
         }
 
         ClearDrawResources();
+        ClearDispatchResources();
     }
 
     Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
@@ -242,10 +243,20 @@ namespace RB::Graphics::D3D12
         }
     }
 
+    void RenderInterfaceD3D12::SetRandomReadWriteInput(RenderResource* resource, uint32_t slot)
+    {
+        static_assert(false);
+    }
+
     void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
     {
         m_RenderState.tex2DsrvHandles[slot] = -1;
         m_RenderState.tex2DSRGBs[slot] = false;
+    }
+
+    void RenderInterfaceD3D12::ClearRandomReadWriteInput(uint32_t slot)
+    {
+        static_assert(false);
     }
 
     void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
@@ -300,6 +311,13 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::SetPixelShader(uint32_t shader_index)
     {
         m_RenderState.psShader = shader_index;
+        m_RenderState.psoDirty = true;
+        m_RenderState.rootSignatureDirty = true;
+    }
+
+    void RenderInterfaceD3D12::SetComputeShader(uint32_t shader_index)
+    {
+        m_RenderState.csShader = shader_index;
         m_RenderState.psoDirty = true;
         m_RenderState.rootSignatureDirty = true;
     }
@@ -745,11 +763,22 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::DispatchInternal()
+    void RenderInterfaceD3D12::DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
+        HandlePendingClears();
+
+        if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
+        {
+            SetComputePipelineState();
+        }
+
+        BindDispatchResources();        
+
         // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
 
-        //HandlePendingClears();
+        FlushResourceBarriers();
+
+        m_CommandList->Dispatch(thread_groups_x, thread_groups_y, thread_groups_z);
     }
 
     void RenderInterfaceD3D12::ProfileMarkerBegin(uint64_t color, const char* name)
@@ -902,6 +931,16 @@ namespace RB::Graphics::D3D12
         }
     }
 
+    void RenderInterfaceD3D12::BindDispatchResources()
+    {
+        static_assert(false);
+    }
+
+    void RenderInterfaceD3D12::ClearDispatchResources()
+    {
+        static_assert(false);
+    }
+
     void RenderInterfaceD3D12::SetGraphicsPipelineState()
     {
         #define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
@@ -954,9 +993,42 @@ namespace RB::Graphics::D3D12
 
         GPtr<ID3D12PipelineState> pso = g_PipelineManager->GetGraphicsPipeline(pso_desc, m_RenderState.vsShader, m_RenderState.psShader);
 
-        // All bound resources are not valid anymore after this
         m_CommandList->SetPipelineState(pso.Get());
+        // All bound resources are not valid anymore after this
         m_CommandList->SetGraphicsRootSignature(m_RenderState.rootSignature.Get());
+
+        m_RenderState.psoDirty = false;
+    }
+    
+    void RenderInterfaceD3D12::SetComputePipelineState()
+    {
+        #define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
+
+        CHECK_SET(m_RenderState.csShader >= 0,                   "Cannot Dispatch, compute shader was not set yet")
+
+        #undef CHECK_SET
+
+        if (m_RenderState.rootSignatureDirty)
+        {
+            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.csShader);
+
+            m_RenderState.rootSignatureDirty = false;
+        }
+
+        CompiledShaderBlob* cs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.csShader);
+
+        D3D12_COMPUTE_PIPELINE_STATE_DESC pso_desc = {};
+        pso_desc.pRootSignature = m_RenderState.rootSignature.Get();
+        pso_desc.CS             = { cs_blob->shaderBlob, cs_blob->shaderBlobSize };
+        pso_desc.NodeMask       = 0;
+        //pso_desc.CachedPSO    = NULL;
+        pso_desc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+        GPtr<ID3D12PipelineState> pso = g_PipelineManager->GetComputePipeline(pso_desc, m_RenderState.csShader);
+
+        m_CommandList->SetPipelineState(pso.Get());
+        // All bound resources are not valid anymore after this
+        m_CommandList->SetComputeRootSignature(m_RenderState.rootSignature.Get());
 
         m_RenderState.psoDirty = false;
     }

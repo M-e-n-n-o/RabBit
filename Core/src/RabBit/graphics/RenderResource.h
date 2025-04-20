@@ -159,7 +159,7 @@ namespace RB::Graphics
         virtual ~Texture() = default;
 
         virtual bool AllowedRenderTarget() const = 0;
-        virtual bool AllowedRandomGpuWrites() const = 0;
+        virtual bool AllowedRandomReadWrites() const = 0;
         virtual bool AllowedDepthStencil() const = 0;
 
         TextureColorSpace GetColorSpace() const { return m_ColorSpace; }
@@ -182,9 +182,9 @@ namespace RB::Graphics
         virtual uint32_t GetHeight() const = 0;
         float	         GetAspectRatio() const;
 
-        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
-        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
-        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
+        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
+        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
+        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
 
     protected:
         Texture2D(TextureColorSpace color_space) : Texture(RenderResourceType::Texture2D, color_space) {}

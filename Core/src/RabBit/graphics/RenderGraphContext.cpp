@@ -176,7 +176,7 @@ namespace RB::Graphics
                                                     aliased_desc.desc.width, 
                                                     aliased_desc.desc.height, 
                                                     aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
-                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRandomGpuWrites)));
+                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
 
             m_Clears.push_back(aliased_desc.desc.HasFlag(kRTFlag_ClearBeforeGraph));
 

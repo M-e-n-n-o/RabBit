@@ -75,6 +75,7 @@ namespace RB::Graphics
 
         virtual void SetVertexShader(uint32_t shader_index) = 0;
         virtual void SetPixelShader(uint32_t shader_index) = 0;
+        virtual void SetComputeShader(uint32_t shader_index) = 0;
 
         virtual void SetIndexBuffer(RenderResource* index_resource) = 0;
         virtual void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot = 0) = 0;
@@ -86,7 +87,9 @@ namespace RB::Graphics
         virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
 
         virtual void SetShaderResourceInput(RenderResource* resource, uint32_t slot) = 0;
+        virtual void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) = 0;
         virtual void ClearShaderResourceInput(uint32_t slot) = 0;
+        virtual void ClearRandomReadWriteInput(uint32_t slot) = 0;
 
         virtual void SetViewport(const Viewport& viewport) = 0;
         virtual void SetViewports(const Viewport* viewports, uint32_t total_viewports) = 0;
@@ -103,7 +106,7 @@ namespace RB::Graphics
         virtual void CopyResource(RenderResource* src, RenderResource* dest) = 0;
 
         void Draw();
-        void Dispatch();
+        void Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z);
 
         virtual void ProfileMarkerBegin(uint64_t color, const char* name) = 0;
         virtual void ProfileMarkerEnd() = 0;
@@ -117,7 +120,7 @@ namespace RB::Graphics
 
         virtual Shared<GpuGuard> ExecuteInternal() = 0;
         virtual void DrawInternal() = 0;
-        virtual void DispatchInternal() = 0;
+        virtual void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) = 0;
 
         uint32_t m_TotalDraws = 0;
     };

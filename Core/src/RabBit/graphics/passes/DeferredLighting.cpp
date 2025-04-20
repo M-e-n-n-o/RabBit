@@ -57,7 +57,11 @@ namespace RB::Graphics
     {
         //static_assert(false);
         // TODO
-        // - Implement a simple apply lighting pass
+        // - Implement a simple compute apply lighting pass
         // - Add this new pass to the render graph
+
+        inputs.renderInterface->SetComputeShader();
+
+        inputs.renderInterface->Dispatch();
     }
 }

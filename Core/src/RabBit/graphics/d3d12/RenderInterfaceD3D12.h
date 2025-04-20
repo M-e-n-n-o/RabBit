@@ -49,12 +49,15 @@ namespace RB::Graphics::D3D12
         void SetRenderTarget(RenderResource* color_target) override;
 
         void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override;
+        void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) override;
         void ClearShaderResourceInput(uint32_t slot) override;
+        void ClearRandomReadWriteInput(uint32_t slot) override;
 
         void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) override;
 
         void SetVertexShader(uint32_t shader_index) override;
         void SetPixelShader(uint32_t shader_index) override;
+        void SetComputeShader(uint32_t shader_index) override;
 
         void Clear(RenderResource* resource, const Math::Float4& color) override;
 
@@ -74,7 +77,7 @@ namespace RB::Graphics::D3D12
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
         void DrawInternal() override;
-        void DispatchInternal() override;
+        void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) override;
 
         void ProfileMarkerBegin(uint64_t color, const char* name) override;
         void ProfileMarkerEnd() override;
@@ -90,8 +93,11 @@ namespace RB::Graphics::D3D12
         void BindDescriptorHeaps();
         void BindDrawResources();
         void ClearDrawResources();
+        void BindDispatchResources();
+        void ClearDispatchResources();
 
         void SetGraphicsPipelineState();
+        void SetComputePipelineState();
         void SetNewCommandList();
 
         bool								m_CopyOperationsOnly;
@@ -121,6 +127,7 @@ namespace RB::Graphics::D3D12
             DXGI_FORMAT						dsvFormat;
             int32_t							vsShader = -1;
             int32_t							psShader = -1;
+            int32_t                         csShader = -1;
             bool							blendingSet = false;
             D3D12_BLEND_DESC				blendDesc = {};
             bool							rasterizerSet = false;

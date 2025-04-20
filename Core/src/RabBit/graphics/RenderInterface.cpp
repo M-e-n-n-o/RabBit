@@ -28,10 +28,10 @@ namespace RB::Graphics
         }
     }
 
-    void RenderInterface::Dispatch()
+    void RenderInterface::Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
         m_TotalDraws++;
-        DispatchInternal();
+        DispatchInternal(thread_groups_x, thread_groups_y, thread_groups_z);
 
         if (NeedsIntermediateExecute())
         {
