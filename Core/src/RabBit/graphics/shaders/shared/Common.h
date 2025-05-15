@@ -29,16 +29,17 @@ typedef RB::Math::Float4x4	float4x4;
 // ---------------------------------------------------------------
 
 // Constant buffer slots
-#define kTexIndicesCB			0
-#define kFrameConstantsCB		1
-#define kInstanceCB				2
+#define kTexIndicesCB			    0
+#define kFrameConstantsCB		    1
+#define kInstanceCB				    2
 
 // Sampler slots
 #define kClampAnisoSamplerSlot		0
 #define kClampPointSamplerSlot		1
 
 // Texture spaces
-#define kTex2DTableSpace		0
+#define kTex2DTableSpace		    0
+#define kRwTex2DTableSpace          1
 
 
 // Global constant buffer structs
@@ -46,7 +47,7 @@ typedef RB::Math::Float4x4	float4x4;
 
 #define SHADER_TEX2D_SLOTS		8
 
-struct Tex2DInfo
+struct ShaderTexInfo
 {
     uint  tableID;
     uint  isSRGB;
@@ -55,7 +56,8 @@ struct Tex2DInfo
 
 struct TextureIndices
 {
-    Tex2DInfo tex2D[SHADER_TEX2D_SLOTS];
+    ShaderTexInfo tex2D[SHADER_TEX2D_SLOTS];
+    ShaderTexInfo rwTex2D[SHADER_TEX2D_SLOTS];
 };
 
 struct FrameConstants
@@ -92,14 +94,13 @@ cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
 // Global resource tables (bindless)
 // ---------------------------------------------------------------
 
-Texture2D Texture2DTable[] : TEXTURE_SPACE(kTex2DTableSpace);
-//TextureCube TextureCubeTable[] : registre(t0, kTexCubeTableSpace);
-//RWTexture2D RwTexture2DTable[] : register(t0, kRwTex2DTableSpace);
+Texture2D   Texture2DTable[]    : TEXTURE_SPACE(kTex2DTableSpace);
+RWTexture2D RwTexture2DTable[]  : TEXTURE_SPACE(kRwTex2DTableSpace);
 
-Texture2D FetchTex2D(in uint tex_id, out bool srgb_space)
+Texture2D FetchTex2D(in uint tex_id, out bool is_srgb_space)
 {
-    Tex2DInfo info = g_TextureIndices.tex2D[tex_id];
-    srgb_space = info.isSRGB;
+    ShaderTexInfo info = g_TextureIndices.tex2D[tex_id];
+    is_srgb_space = info.isSRGB;
     return Texture2DTable[info.tableID];
 }
 
@@ -107,6 +108,11 @@ Texture2D FetchTex2D(in uint tex_id)
 {
     bool srgb;
     return FetchTex2D(tex_id, srgb);
+}
+
+RWTexture2D FetchRwTex2D(in uint rw_tex_id)
+{
+    return RwTexture2DTable[g_TextureIndices.rwTex2D[tex_id].tableID];
 }
 
 

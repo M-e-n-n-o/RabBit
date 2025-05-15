@@ -138,6 +138,7 @@ namespace RB::Graphics::D3D12
 
             DescriptorHandle				tex2DsrvHandles[SHADER_TEX2D_SLOTS];
             bool                            tex2DSRGBs[SHADER_TEX2D_SLOTS];
+            DescriptorHandle				rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];
 
             List<PendingClear>              pendingClears;
         };

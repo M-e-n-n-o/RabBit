@@ -99,7 +99,7 @@ namespace RB::Graphics::D3D12
         return arr;
     }
 
-    D3D12_GPU_DESCRIPTOR_HANDLE DescriptorManager::GetTex2DStart() const
+    D3D12_GPU_DESCRIPTOR_HANDLE DescriptorManager::GetStartHandle() const
     {
         return m_BindlessSrvUavHeap->GetGpuStart(BINDLESS_TEX2D_START_OFFSET);
     }

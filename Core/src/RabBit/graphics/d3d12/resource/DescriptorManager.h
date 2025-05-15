@@ -44,7 +44,7 @@ namespace RB::Graphics::D3D12
 
         Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> GetHeaps(uint32_t& num_heaps);
 
-        D3D12_GPU_DESCRIPTOR_HANDLE GetTex2DStart() const;
+        D3D12_GPU_DESCRIPTOR_HANDLE GetStartHandle() const;
 
     private:
         DescriptorHeap* m_BindlessSrvUavHeap;

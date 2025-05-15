@@ -23,7 +23,7 @@ namespace RB::Graphics::D3D12
 
         List<D3D12_INPUT_ELEMENT_DESC> GetInputElementDesc(uint32_t vs_identifier);
 
-    private:
+    private:        
         uint64_t GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
         uint64_t GetPipelineHash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
 

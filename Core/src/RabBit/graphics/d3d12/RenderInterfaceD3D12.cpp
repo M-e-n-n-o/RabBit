@@ -222,7 +222,6 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::SetShaderResourceInput(RenderResource* resource, uint32_t slot)
     {
         TransitionResource(resource, ResourceState::PIXEL_SHADER_RESOURCE);
-        MarkResourceUsed(resource);
 
         switch (resource->GetType())
         {
@@ -245,7 +244,30 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetRandomReadWriteInput(RenderResource* resource, uint32_t slot)
     {
-        static_assert(false);
+        TransitionResource(resource, ResourceState::UNORDERED_ACCESS);
+
+        switch (resource->GetType())
+        {
+        case RenderResourceType::Texture2D:
+        {
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.rwTex2DsrvHandles), "UAV input slot out of range");
+
+            Texture2DD3D12* tex = (Texture2DD3D12*)resource;
+
+            if (!tex->AllowedRandomReadWrites())
+            {
+                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Resource cannot be set as random read/write input");
+                return;
+            }
+
+            m_RenderState.rwTex2DsrvHandles[slot] = tex->GetWriteHandle();
+        }
+        break;
+
+        default:
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a UAV input");
+            break;
+        }
     }
 
     void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
@@ -256,7 +278,8 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::ClearRandomReadWriteInput(uint32_t slot)
     {
-        static_assert(false);
+        // TODO Might be super handy to have some sort of validation every few frames to check if we accidentially wrote something to the error texture in debug mode
+        m_RenderState.rwTex2DsrvHandles[slot] = -1;
     }
 
     void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
@@ -339,9 +362,10 @@ namespace RB::Graphics::D3D12
 
         // Delay the clears so that they can get batched together just before a draw/dispatch
 
+        // TODO Add UAV clear if possible on the resource (then also auto place UAV barriers if needed)
+
         if (tex->AllowedRenderTarget())
         {
-            MarkResourceUsed(resource);
             TransitionResource(resource, ResourceState::RENDER_TARGET);
 
             PendingClear clear = {};
@@ -353,7 +377,6 @@ namespace RB::Graphics::D3D12
         }
         else if (tex->AllowedDepthStencil())
         {
-            MarkResourceUsed(resource);
             TransitionResource(resource, ResourceState::DEPTH_WRITE);
 
             PendingClear clear = {};
@@ -765,6 +788,8 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
+        // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
+
         HandlePendingClears();
 
         if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
@@ -773,8 +798,6 @@ namespace RB::Graphics::D3D12
         }
 
         BindDispatchResources();        
-
-        // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
 
         FlushResourceBarriers();
 
@@ -896,11 +919,29 @@ namespace RB::Graphics::D3D12
                 }
             }
 
+            // Set the RwTexture2D's
+            for (int i = 0; i < _countof(indices.rwTex2D); ++i)
+            {
+                uint32_t& index = indices.rwTex2D[i].tableID;
+                indices.rwTex2D[i].isSRGB = false;
+
+                if (m_RenderState.rwTex2DsrvHandles[i] >= 0)
+                {
+                    index  = (uint32_t)m_RenderState.rwTex2DsrvHandles[i];
+                }
+                else
+                {
+                    // Not really an error texture, TODO in debug mode:
+                    // Allocate a UAV texture the size of the screen and bind that here and do some validation if we wrote to here every few frames
+                    index  = 0;
+                }
+            }
+
             SetConstantShaderData(kTexIndicesCB, &indices, sizeof(TextureIndices)); // TODO Make the texture indices a root constant instead of a CBV
         }
 
         // Set the bindless table
-        m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_DescriptorManager->GetTex2DStart());
+        m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_DescriptorManager->GetStartHandle());
 
         // Bind the CBV's
         uint32_t root_index = 0;
@@ -938,7 +979,11 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::ClearDispatchResources()
     {
-        static_assert(false);
+        // Clear all UAV's
+        for (int i = 0; i < _countof(m_RenderState.rwTex2DsrvHandles); ++i)
+        {
+            ClearRandomReadWriteInput(i);
+        }
     }
 
     void RenderInterfaceD3D12::SetGraphicsPipelineState()
@@ -1004,7 +1049,7 @@ namespace RB::Graphics::D3D12
     {
         #define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
 
-        CHECK_SET(m_RenderState.csShader >= 0,                   "Cannot Dispatch, compute shader was not set yet")
+        CHECK_SET(m_RenderState.csShader >= 0,      "Cannot Dispatch, compute shader was not set yet")
 
         #undef CHECK_SET
 

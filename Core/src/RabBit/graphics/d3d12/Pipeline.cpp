@@ -93,13 +93,13 @@ namespace RB::Graphics::D3D12
 
             // Bindless SRV/UAV table
             {
-                CD3DX12_DESCRIPTOR_RANGE ranges[1];
+                CD3DX12_DESCRIPTOR_RANGE ranges[2];
 
                 // Texture2D SRV range
                 ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, BINDLESS_TEX2D_DESCRIPTORS, 0, kTex2DTableSpace, BINDLESS_TEX2D_START_OFFSET);
 
                 // Texture2D UAV range
-                //ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, BINDLESS_RWTEX2D_DESCRIPTORS, 0, kRwTex2DTableSpace, BINDLESS_RWTEX2D_START_OFFSET);
+                ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, BINDLESS_RWTEX2D_DESCRIPTORS, 0, kRwTex2DTableSpace, BINDLESS_RWTEX2D_START_OFFSET);
 
                 parameters[parameter_index].InitAsDescriptorTable(_countof(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
                 RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == BINDLESS_ROOT_PARAMETER_INDEX, "These should match!");
@@ -197,9 +197,81 @@ namespace RB::Graphics::D3D12
 
     GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(uint32_t cs_identifier)
     {
-        static_assert(false);
+        uint64_t hash = 0;
+        HashCombine(hash, cs_identifier);
 
-        return GPtr<ID3D12RootSignature>();
+        auto found = m_RootSignatures.find(hash);
+
+        if (found != m_RootSignatures.end())
+        {
+            return found->second;
+        }
+
+        uint64_t cbv_mask = g_ShaderSystem->GetShaderResourceMask(cs_identifier).cbvMask;
+
+        // Num parameters:
+        // - 1 descriptor table
+        // - All inline CBV's
+        uint32_t num_parameters = NumberOfSetBits(cbv_mask) + 1;
+
+        CD3DX12_ROOT_PARAMETER* parameters = (CD3DX12_ROOT_PARAMETER*)ALLOC_STACK(sizeof(CD3DX12_ROOT_PARAMETER) * num_parameters);
+
+        // Parameters
+        {
+            uint32_t parameter_index = 0;
+
+            // Bindless SRV/UAV table
+            {
+                CD3DX12_DESCRIPTOR_RANGE ranges[2];
+
+                // Texture2D SRV range
+                ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, BINDLESS_TEX2D_DESCRIPTORS, 0, kTex2DTableSpace, BINDLESS_TEX2D_START_OFFSET);
+
+                // Texture2D UAV range
+                ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, BINDLESS_RWTEX2D_DESCRIPTORS, 0, kRwTex2DTableSpace, BINDLESS_RWTEX2D_START_OFFSET);
+
+                parameters[parameter_index].InitAsDescriptorTable(_countof(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
+                RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == BINDLESS_ROOT_PARAMETER_INDEX, "These should match!");
+                parameter_index++;
+            }
+
+            // Inline CBV's
+            {
+                RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == CBV_ROOT_PARAMETER_INDEX_OFFSET, "These should match!");
+
+                DWORD index;
+                while (_BitScanForward(&index, cbv_mask) && index < (sizeof(cbv_mask) * 8))
+                {
+                    if ((cbv_mask & (1 << index)) > 0)
+                    {
+                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_SHADER_VISIBILITY_ALL);
+                    }
+
+                    // Flip the bit so it's not scanned again
+                    cbv_mask ^= (1 << index);
+
+                    parameter_index++;
+                }
+            }
+        }
+
+        D3D12_ROOT_SIGNATURE_DESC desc = {};
+        desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+        desc.NumParameters      = num_parameters;
+        desc.pParameters        = parameters;
+        desc.NumStaticSamplers  = 0;
+        desc.pStaticSamplers    = nullptr;
+
+        GPtr<ID3DBlob> root_signature_blob;
+        GPtr<ID3DBlob> error_blob;
+        RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &root_signature_blob, &error_blob), "Could not serialize root signature");
+
+        GPtr<ID3D12RootSignature> signature;
+        RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&signature)), "Could not create root signature");
+
+        m_RootSignatures.insert({ hash, signature });
+
+        return signature;
     }
 
     uint64_t PipelineManager::GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash)
