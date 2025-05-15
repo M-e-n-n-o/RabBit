@@ -91,10 +91,9 @@ namespace RB::Graphics::D3D12
         void MarkResourceUsed(GpuResource* resource);
 
         void BindDescriptorHeaps();
-        void BindDrawResources();
-        void ClearDrawResources();
-        void BindDispatchResources();
-        void ClearDispatchResources();
+        void BindResources(bool compute);
+        void ClearSrvResources();
+        void ClearUavResources();
 
         void SetGraphicsPipelineState();
         void SetComputePipelineState();

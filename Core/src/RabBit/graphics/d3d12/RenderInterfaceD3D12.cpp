@@ -82,8 +82,8 @@ namespace RB::Graphics::D3D12
             BindDescriptorHeaps();
         }
 
-        ClearDrawResources();
-        ClearDispatchResources();
+        ClearSrvResources();
+        ClearUavResources();
     }
 
     Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
@@ -766,15 +766,14 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::DrawInternal()
     {
         HandlePendingClears();
+        FlushResourceBarriers();
 
         if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
         {
             SetGraphicsPipelineState();
         }
 
-        BindDrawResources();
-
-        FlushResourceBarriers();
+        BindResources(false);
 
         if (m_RenderState.indexCountPerInstance > 0)
         {
@@ -789,17 +788,18 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
         // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
+        // Do this by storing when a resource was set as UAV on a dispatch and checking if, until the next dispatch with that resource as UAV, that resource got a barrier (so was bound as SRV for example)
+        static_assert(false);
 
         HandlePendingClears();
+        FlushResourceBarriers();
 
         if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
         {
             SetComputePipelineState();
         }
 
-        BindDispatchResources();        
-
-        FlushResourceBarriers();
+        BindResources(true);
 
         m_CommandList->Dispatch(thread_groups_x, thread_groups_y, thread_groups_z);
     }
@@ -892,11 +892,21 @@ namespace RB::Graphics::D3D12
         resource->MarkAsUsed(m_Queue);
     }
 
-    void RenderInterfaceD3D12::BindDrawResources()
+    void RenderInterfaceD3D12::BindResources(bool compute)
     {
+        bool bind_textures;
+        if (compute)
+        {
+            bind_textures = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << kTexIndicesCB)) > 0;
+        }
+        else
+        {
+            bind_textures = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kTexIndicesCB)) > 0 ||
+                             (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kTexIndicesCB)) > 0);
+        }
+
         // Set the bindless SRV/UAV slots (only if the shader is actually using any textures)
-        if ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kTexIndicesCB)) > 0 ||
-            (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kTexIndicesCB)) > 0)
+        if (bind_textures)
         {
             TextureIndices indices = {};
 
@@ -941,7 +951,7 @@ namespace RB::Graphics::D3D12
         }
 
         // Set the bindless table
-        m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_DescriptorManager->GetStartHandle());
+        m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_DescriptorManager->GetSrvUavStartHandle());
 
         // Bind the CBV's
         uint32_t root_index = 0;
@@ -955,31 +965,32 @@ namespace RB::Graphics::D3D12
 
 #if RB_CONFIG_DEBUG
             // Some extra debug checks
-            bool occupies_slot = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << i)) > 0 ||
-                (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << i)) > 0);
+            bool occupies_slot;
+            if (compute)
+            {
+                occupies_slot = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << i)) > 0;
+            }
+            else
+            {
+                occupies_slot = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << i)) > 0 ||
+                                 (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << i)) > 0);
+            }
 
             RB_ASSERT(LOGTAG_GRAPHICS, m_RenderState.cbvAddresses[i] > 0 == occupies_slot, "The bounded CBV slot does not match the shader's used CBV slots");
 #endif
         }
     }
 
-    void RenderInterfaceD3D12::ClearDrawResources()
+    void RenderInterfaceD3D12::ClearSrvResources()
     {
-        // Clear all SRV's
         for (int i = 0; i < _countof(m_RenderState.tex2DsrvHandles); ++i)
         {
             ClearShaderResourceInput(i);
         }
     }
 
-    void RenderInterfaceD3D12::BindDispatchResources()
+    void RenderInterfaceD3D12::ClearUavResources()
     {
-        static_assert(false);
-    }
-
-    void RenderInterfaceD3D12::ClearDispatchResources()
-    {
-        // Clear all UAV's
         for (int i = 0; i < _countof(m_RenderState.rwTex2DsrvHandles); ++i)
         {
             ClearRandomReadWriteInput(i);

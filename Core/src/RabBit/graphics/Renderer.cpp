@@ -598,7 +598,7 @@ namespace RB::Graphics
             // Backbuffer copy
             context->graphicsInterface->Draw();
 
-            // Prepare present
+            // Prepare for present
             context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);
             context->graphicsInterface->FlushResourceBarriers();
 

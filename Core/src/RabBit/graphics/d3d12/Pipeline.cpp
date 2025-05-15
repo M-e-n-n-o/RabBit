@@ -137,51 +137,14 @@ namespace RB::Graphics::D3D12
             }
         }
 
-        D3D12_STATIC_SAMPLER_DESC static_samplers[2];
-
-        // Static samplers
-        {
-            // TODO Set the filter (and max anisotropy) based on texture filter setting (maybe to do this we would need non static samplers)
-
-            // Clamp sampler
-            static_samplers[0] = {};
-            static_samplers[0].ShaderRegister   = kClampAnisoSamplerSlot;
-            static_samplers[0].RegisterSpace    = 0;
-            static_samplers[0].Filter           = D3D12_FILTER_ANISOTROPIC;
-            static_samplers[0].AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-            static_samplers[0].AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-            static_samplers[0].AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-            static_samplers[0].MipLODBias       = 0;
-            static_samplers[0].MaxAnisotropy    = 8;
-            static_samplers[0].ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-            static_samplers[0].BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-            static_samplers[0].MinLOD           = 0.0f;
-            static_samplers[0].MaxLOD           = D3D12_FLOAT32_MAX;
-            static_samplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-            // Black border sampler
-            static_samplers[1] = {};
-            static_samplers[1].ShaderRegister   = kClampPointSamplerSlot;
-            static_samplers[1].RegisterSpace    = 0;
-            static_samplers[1].Filter           = D3D12_FILTER_MIN_MAG_MIP_POINT;
-            static_samplers[1].AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-            static_samplers[1].AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-            static_samplers[1].AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-            static_samplers[1].MipLODBias       = 0;
-            static_samplers[1].MaxAnisotropy    = 1;
-            static_samplers[1].ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-            static_samplers[1].BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-            static_samplers[1].MinLOD           = 0.0f;
-            static_samplers[1].MaxLOD           = D3D12_FLOAT32_MAX;
-            static_samplers[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        }
+        List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions();
 
         D3D12_ROOT_SIGNATURE_DESC desc = {};
         desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
         desc.NumParameters      = num_parameters;
         desc.pParameters        = parameters;
-        desc.NumStaticSamplers  = _countof(static_samplers);
-        desc.pStaticSamplers    = static_samplers;
+        desc.NumStaticSamplers  = static_samplers.size();
+        desc.pStaticSamplers    = static_samplers.data();
 
         GPtr<ID3DBlob> root_signature_blob;
         GPtr<ID3DBlob> error_blob;
@@ -255,12 +218,14 @@ namespace RB::Graphics::D3D12
             }
         }
 
+        List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions();
+
         D3D12_ROOT_SIGNATURE_DESC desc = {};
         desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_NONE;
         desc.NumParameters      = num_parameters;
         desc.pParameters        = parameters;
-        desc.NumStaticSamplers  = 0;
-        desc.pStaticSamplers    = nullptr;
+        desc.NumStaticSamplers  = static_samplers.size();
+        desc.pStaticSamplers    = static_samplers.data();
 
         GPtr<ID3DBlob> root_signature_blob;
         GPtr<ID3DBlob> error_blob;
@@ -340,6 +305,49 @@ namespace RB::Graphics::D3D12
         }
 
         return seed;
+    }
+
+    List<D3D12_STATIC_SAMPLER_DESC> PipelineManager::GetSamplerDescriptions()
+    {
+        List<D3D12_STATIC_SAMPLER_DESC> static_samplers;
+
+        // TODO Set the filter (and max anisotropy) based on texture filter setting (maybe to do this we would need non static samplers)
+
+        // Clamp sampler
+        D3D12_STATIC_SAMPLER_DESC clamp = {};
+        clamp.ShaderRegister   = kClampAnisoSamplerSlot;
+        clamp.RegisterSpace    = 0;
+        clamp.Filter           = D3D12_FILTER_ANISOTROPIC;
+        clamp.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp.MipLODBias       = 0;
+        clamp.MaxAnisotropy    = 8;
+        clamp.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        clamp.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+        clamp.MinLOD           = 0.0f;
+        clamp.MaxLOD           = D3D12_FLOAT32_MAX;
+        clamp.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        static_samplers.push_back(clamp);
+
+        // Black border sampler
+        D3D12_STATIC_SAMPLER_DESC clamp_point = {};
+        clamp_point.ShaderRegister   = kClampPointSamplerSlot;
+        clamp_point.RegisterSpace    = 0;
+        clamp_point.Filter           = D3D12_FILTER_MIN_MAG_MIP_POINT;
+        clamp_point.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp_point.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp_point.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp_point.MipLODBias       = 0;
+        clamp_point.MaxAnisotropy    = 1;
+        clamp_point.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        clamp_point.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+        clamp_point.MinLOD           = 0.0f;
+        clamp_point.MaxLOD           = D3D12_FLOAT32_MAX;
+        clamp_point.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        static_samplers.push_back(clamp_point);
+
+        return static_samplers;
     }
 
     List<D3D12_INPUT_ELEMENT_DESC> PipelineManager::GetInputElementDesc(uint32_t vs_identifier)

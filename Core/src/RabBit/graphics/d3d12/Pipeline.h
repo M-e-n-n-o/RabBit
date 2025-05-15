@@ -27,6 +27,8 @@ namespace RB::Graphics::D3D12
         uint64_t GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
         uint64_t GetPipelineHash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
 
+        List<D3D12_STATIC_SAMPLER_DESC> GetSamplerDescriptions();
+
         UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_ComputePipelines;
         UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>		m_GraphicsPipelines;
 
