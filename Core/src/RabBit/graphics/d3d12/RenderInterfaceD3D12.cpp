@@ -656,6 +656,7 @@ namespace RB::Graphics::D3D12
         // TODO Create a big upload resource and keep it alive for a couple of frames so we don't have to create an upload resource for every upload 
         // if we do 10 uploads after eachother (so suballocate an upload resource in the full resource). If we create such a big upload resource, 
         // make sure that when doing texture uploads, the starting point of a allocation should be aligned by D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT!
+        // !!! REMOVE THE HACK IN ResourceManager.cpp WHEN THIS HAS BEEN IMPLEMENTED !!!
 
         RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
 
@@ -789,7 +790,6 @@ namespace RB::Graphics::D3D12
     {
         // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
         // Do this by storing when a resource was set as UAV on a dispatch and checking if, until the next dispatch with that resource as UAV, that resource got a barrier (so was bound as SRV for example)
-        static_assert(false);
 
         HandlePendingClears();
         FlushResourceBarriers();
@@ -949,9 +949,6 @@ namespace RB::Graphics::D3D12
 
             SetConstantShaderData(kTexIndicesCB, &indices, sizeof(TextureIndices)); // TODO Make the texture indices a root constant instead of a CBV
         }
-
-        // Set the bindless table
-        m_CommandList->SetGraphicsRootDescriptorTable(BINDLESS_ROOT_PARAMETER_INDEX, g_DescriptorManager->GetSrvUavStartHandle());
 
         // Bind the CBV's
         uint32_t root_index = 0;

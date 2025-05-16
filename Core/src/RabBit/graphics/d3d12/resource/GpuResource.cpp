@@ -38,6 +38,8 @@ namespace RB::Graphics::D3D12
             {
                 RB_LOG_ERROR(LOGTAG_GRAPHICS, "Resource failed to get valid");
             }
+
+            RB_ASSERT(LOGTAG_GRAPHICS, m_Resource != nullptr, "Resource somehow still not valid");
         }
 
         return m_Resource;

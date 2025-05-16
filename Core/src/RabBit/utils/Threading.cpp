@@ -156,6 +156,11 @@ namespace RB
 
             m_SharedContext->highPriorityInsertIndex++;
         }
+        else if (itr == high_prio_itr)
+        {
+            // Make sure nothing can get placed before this
+            m_SharedContext->highPriorityInsertIndex++;
+        }
 
         LeaveCriticalSection(&m_SharedContext->kickCS);
     }
@@ -180,34 +185,36 @@ namespace RB
     void WorkerThread::Sync(JobID job_id)
     {
         EnterCriticalSection(&m_SharedContext->kickCS);
-
+        
         uint64_t wait_for = m_SharedContext->startedJobsCount;
-
+        
         if (job_id != m_SharedContext->currentJob)
         {
             auto itr = FindJobBy(job_id);
-
+        
             if (itr == m_SharedContext->pendingJobs.end())
             {
                 // Job not found
                 LeaveCriticalSection(&m_SharedContext->kickCS);
                 return;
             }
-
+        
             wait_for += std::distance(m_SharedContext->pendingJobs.begin(), itr) + 1;
         }
-
+        
         LeaveCriticalSection(&m_SharedContext->kickCS);
-
+        
         // Wait until the task has been completed
         {
             EnterCriticalSection(&m_SharedContext->completedCS);
+        
+            // TODO This logic will break when syncing a job that has not been prioritized as other jobs can then jump before this one, fix!!!
 
             while (m_SharedContext->completedJobsCount < wait_for)
             {
                 SleepConditionVariableCS(&m_SharedContext->completedCV, &m_SharedContext->completedCS, INFINITE);
             }
-
+        
             LeaveCriticalSection(&m_SharedContext->completedCS);
         }
     }

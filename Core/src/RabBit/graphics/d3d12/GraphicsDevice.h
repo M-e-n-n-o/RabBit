@@ -31,6 +31,8 @@ namespace RB::Graphics::D3D12
 
         bool IsFormatSupported(DXGI_FORMAT format);
         bool IsFeatureSupported(DXGI_FEATURE feature);
+        bool IsFeatureSupported(D3D12_RESOURCE_BINDING_TIER binding_tier);
+        bool IsFeatureSupported(D3D_SHADER_MODEL shader_model);
 
         GPtr<ID3D12Device2> Get() const { return m_NativeDevice; }
         GPtr<IDXGIAdapter4> GetAdapter() const { return m_NativeAdapter; }

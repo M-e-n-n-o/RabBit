@@ -94,26 +94,12 @@ cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
 // Global resource tables (bindless)
 // ---------------------------------------------------------------
 
-Texture2D   Texture2DTable[]    : TEXTURE_SPACE(kTex2DTableSpace);
-RWTexture2D RwTexture2DTable[]  : TEXTURE_SPACE(kRwTex2DTableSpace);
+//Texture2D   Texture2DTable[]    : TEXTURE_SPACE(kTex2DTableSpace);
+//RWTexture2D RwTexture2DTable[]  : TEXTURE_SPACE(kRwTex2DTableSpace);
 
-Texture2D FetchTex2D(in uint tex_id, out bool is_srgb_space)
-{
-    ShaderTexInfo info = g_TextureIndices.tex2D[tex_id];
-    is_srgb_space = info.isSRGB;
-    return Texture2DTable[info.tableID];
-}
-
-Texture2D FetchTex2D(in uint tex_id)
-{
-    bool srgb;
-    return FetchTex2D(tex_id, srgb);
-}
-
-RWTexture2D FetchRwTex2D(in uint rw_tex_id)
-{
-    return RwTexture2DTable[g_TextureIndices.rwTex2D[tex_id].tableID];
-}
+#define IsTex2DSrgb(tex_id)     (g_TextureIndices.tex2D[(tex_id)].isSRGB)
+#define FetchTex2D(tex_id)      (ResourceDescriptorHeap[NonUniformResourceIndex(g_TextureIndices.tex2D[(tex_id)].tableID)])
+#define FetchRwTex2D(tex_id)    (ResourceDescriptorHeap[NonUniformResourceIndex(g_TextureIndices.rwTex2D[(tex_id)].tableID)])
 
 
 // Global samplers

@@ -6,9 +6,7 @@
 
 namespace RB::Graphics::D3D12
 {
-    // CBV's start at the second parameter in the root signature
-    #define CBV_ROOT_PARAMETER_INDEX_OFFSET		1
-    #define BINDLESS_ROOT_PARAMETER_INDEX		0
+    #define CBV_ROOT_PARAMETER_INDEX_OFFSET		0
 
     class PipelineManager
     {

@@ -11,7 +11,8 @@ namespace RB::Graphics::D3D12
 
     PipelineManager::PipelineManager()
     {
-
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, g_GraphicsDevice->IsFeatureSupported(D3D12_RESOURCE_BINDING_TIER_3) && g_GraphicsDevice->IsFeatureSupported(D3D_SHADER_MODEL_6_6),
+            "Resource binding tier 3 or shader model 6.6 is not supported on the device");
     }
 
     GPtr<ID3D12PipelineState> PipelineManager::GetComputePipeline(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint32_t cs_identifier)
@@ -81,30 +82,14 @@ namespace RB::Graphics::D3D12
         uint64_t combined_cbv_mask = vs_mask.cbvMask | ps_mask.cbvMask;
 
         // Num parameters:
-        // - 1 descriptor table
         // - All inline CBV's
-        uint32_t num_parameters = NumberOfSetBits(combined_cbv_mask) + 1;
+        uint32_t num_parameters = NumberOfSetBits(combined_cbv_mask);
 
-        CD3DX12_ROOT_PARAMETER* parameters = (CD3DX12_ROOT_PARAMETER*)ALLOC_STACK(sizeof(CD3DX12_ROOT_PARAMETER) * num_parameters);
+        CD3DX12_ROOT_PARAMETER1* parameters = (CD3DX12_ROOT_PARAMETER1*)ALLOC_STACK(sizeof(CD3DX12_ROOT_PARAMETER1) * num_parameters);
 
         // Parameters
         {
             uint32_t parameter_index = 0;
-
-            // Bindless SRV/UAV table
-            {
-                CD3DX12_DESCRIPTOR_RANGE ranges[2];
-
-                // Texture2D SRV range
-                ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, BINDLESS_TEX2D_DESCRIPTORS, 0, kTex2DTableSpace, BINDLESS_TEX2D_START_OFFSET);
-
-                // Texture2D UAV range
-                ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, BINDLESS_RWTEX2D_DESCRIPTORS, 0, kRwTex2DTableSpace, BINDLESS_RWTEX2D_START_OFFSET);
-
-                parameters[parameter_index].InitAsDescriptorTable(_countof(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
-                RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == BINDLESS_ROOT_PARAMETER_INDEX, "These should match!");
-                parameter_index++;
-            }
 
             // Inline CBV's
             {
@@ -116,17 +101,17 @@ namespace RB::Graphics::D3D12
                     if ((vs_mask.cbvMask & (1 << index)) > 0 && (ps_mask.cbvMask & (1 << index)) > 0)
                     {
                         // Visible in both stages
-                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_SHADER_VISIBILITY_ALL);
+                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL);
                     }
                     else if ((vs_mask.cbvMask & (1 << index)) > 0)
                     {
                         // Visible in vertex stage only
-                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
                     }
                     else
                     {
                         // Visible in pixel stage only
-                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
                     }
 
                     // Flip the bit so it's not scanned again
@@ -139,16 +124,20 @@ namespace RB::Graphics::D3D12
 
         List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions();
 
-        D3D12_ROOT_SIGNATURE_DESC desc = {};
-        desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+        D3D12_ROOT_SIGNATURE_DESC1 desc = {};
+        desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
         desc.NumParameters      = num_parameters;
         desc.pParameters        = parameters;
         desc.NumStaticSamplers  = static_samplers.size();
         desc.pStaticSamplers    = static_samplers.data();
 
+        D3D12_VERSIONED_ROOT_SIGNATURE_DESC versioned_desc = {};
+        versioned_desc.Version  = D3D_ROOT_SIGNATURE_VERSION_1_1;
+        versioned_desc.Desc_1_1 = desc;
+
         GPtr<ID3DBlob> root_signature_blob;
         GPtr<ID3DBlob> error_blob;
-        RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &root_signature_blob, &error_blob), "Could not serialize root signature");
+        RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeVersionedRootSignature(&versioned_desc, &root_signature_blob, &error_blob), "Could not serialize root signature");
 
         GPtr<ID3D12RootSignature> signature;
         RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&signature)), "Could not create root signature");
@@ -173,30 +162,14 @@ namespace RB::Graphics::D3D12
         uint64_t cbv_mask = g_ShaderSystem->GetShaderResourceMask(cs_identifier).cbvMask;
 
         // Num parameters:
-        // - 1 descriptor table
         // - All inline CBV's
-        uint32_t num_parameters = NumberOfSetBits(cbv_mask) + 1;
+        uint32_t num_parameters = NumberOfSetBits(cbv_mask);
 
         CD3DX12_ROOT_PARAMETER* parameters = (CD3DX12_ROOT_PARAMETER*)ALLOC_STACK(sizeof(CD3DX12_ROOT_PARAMETER) * num_parameters);
 
         // Parameters
         {
             uint32_t parameter_index = 0;
-
-            // Bindless SRV/UAV table
-            {
-                CD3DX12_DESCRIPTOR_RANGE ranges[2];
-
-                // Texture2D SRV range
-                ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, BINDLESS_TEX2D_DESCRIPTORS, 0, kTex2DTableSpace, BINDLESS_TEX2D_START_OFFSET);
-
-                // Texture2D UAV range
-                ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, BINDLESS_RWTEX2D_DESCRIPTORS, 0, kRwTex2DTableSpace, BINDLESS_RWTEX2D_START_OFFSET);
-
-                parameters[parameter_index].InitAsDescriptorTable(_countof(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
-                RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == BINDLESS_ROOT_PARAMETER_INDEX, "These should match!");
-                parameter_index++;
-            }
 
             // Inline CBV's
             {
@@ -221,7 +194,7 @@ namespace RB::Graphics::D3D12
         List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions();
 
         D3D12_ROOT_SIGNATURE_DESC desc = {};
-        desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+        desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
         desc.NumParameters      = num_parameters;
         desc.pParameters        = parameters;
         desc.NumStaticSamplers  = static_samplers.size();

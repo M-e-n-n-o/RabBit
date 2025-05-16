@@ -50,9 +50,9 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 			wchar_t* target;
 			switch (entry.stage)
 			{
-			case ShaderStage::kVertex:	target = L"vs_6_0"; break;
-			case ShaderStage::kPixel:	target = L"ps_6_0"; break;
-			case ShaderStage::kCompute:	target = L"cs_6_0"; break;
+			case ShaderStage::kVertex:	target = L"vs_6_6"; break;
+			case ShaderStage::kPixel:	target = L"ps_6_6"; break;
+			case ShaderStage::kCompute:	target = L"cs_6_6"; break;
 			default:
 				EXIT_ON_FAIL(false, "Could not detect the shader stage type in shader: " << file.c_str());
 				break;

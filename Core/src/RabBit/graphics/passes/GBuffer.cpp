@@ -40,8 +40,10 @@ namespace RB::Graphics
         return RenderPassConfig(
             {
                 // Dependencies
-                {},
-                0,
+                {
+                    RenderTextureInputDesc{"GBuffer Depth", true, 2}, // In-/output
+                },
+                1,
 
                 // Working textures
                 {},

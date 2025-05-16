@@ -94,6 +94,28 @@ namespace RB::Graphics::D3D12
         return supported == TRUE;
     }
 
+    bool GraphicsDevice::IsFeatureSupported(D3D12_RESOURCE_BINDING_TIER binding_tier)
+    {
+        D3D12_FEATURE_DATA_D3D12_OPTIONS feature_options = {};
+        if (SUCCEEDED(m_NativeDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &feature_options, sizeof(feature_options))))
+        {
+            return feature_options.ResourceBindingTier >= binding_tier;
+        }
+
+        return false;
+    }
+
+    bool GraphicsDevice::IsFeatureSupported(D3D_SHADER_MODEL shader_model)
+    {
+        D3D12_FEATURE_DATA_SHADER_MODEL shader_feature = { shader_model };
+        if (SUCCEEDED(m_NativeDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shader_feature, sizeof(shader_feature))))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     void GraphicsDevice::WaitUntilIdle()
     {
         if (m_CopyQueue)

@@ -1,4 +1,5 @@
 #include "../shared/Common.h"
+#include "GBuffer.h"
 
 cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
 {
@@ -19,10 +20,10 @@ struct PI_SIMPLE
     float2 uv       : TEXCOORD0;
 };
 
-struct PO_GBufferOutput
+struct PO_GBufferEncodedOutput
 {
-    float4 color    : SV_Target0;
-    float4 normal   : SV_Target1;
+    float4 gbuf0 : SV_Target0;
+    float4 gbuf1 : SV_Target1;
 };
 
 PI_SIMPLE VS_Simple(VI_Simple input)
@@ -39,24 +40,30 @@ PI_SIMPLE VS_Simple(VI_Simple input)
     return output;
 }
 
-PO_GBufferOutput PS_Simple(PI_SIMPLE input)
+PO_GBufferEncodedOutput PS_Simple(PI_SIMPLE input)
 {
-    PO_GBufferOutput output;
+    GBuffer gbuf;
 
-    bool tex_is_srgb;
-    Texture2D tex = FetchTex2D(1, tex_is_srgb);
+    Texture2D tex = FetchTex2D(1);
+    bool tex_is_srgb = IsTex2DSrgb(1);
 
     float4 color = tex.Sample(g_ClampAnisoSampler, input.uv);
 
-    output.color    = float4(color.rgb, 1.0f);
-    output.normal   = float4(input.normal, 1.0f);
+    gbuf.color    = float4(color.rgb, 1.0f);
+    gbuf.normal   = float4(input.normal, 1.0f);
 
     if (tex_is_srgb)
     {
         // Convert from sRGB to linear space (apply inverted gamma)
         const float gamma = 2.2f; // Hardcoded gamma value, TODO is this always correct?
-        output.color.rgb = pow(output.color.rgb, gamma);
+        gbuf.color.rgb = pow(gbuf.color.rgb, gamma);
     }
+
+    GBufferEncoded enc = EncodeGBuffer(gbuf);
+
+    PO_GBufferEncodedOutput output;
+    output.gbuf0 = enc.gbuf0;
+    output.gbuf1 = enc.gbuf1;
 
     return output;
 }

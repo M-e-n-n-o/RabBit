@@ -26,10 +26,11 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"GBuffer Color"},
-                    RenderTextureInputDesc{"GBuffer Normal"}
+                    RenderTextureInputDesc{"GBuffer Color", false, -1},
+                    RenderTextureInputDesc{"GBuffer Normal", false, -1},
+                    RenderTextureInputDesc{"GBuffer Depth", true, -1}
                 },
-                2,
+                3,
 
                 // Working textures
                 {},
@@ -61,7 +62,7 @@ namespace RB::Graphics
         // - Add this new pass to the render graph
 
         inputs.renderInterface->SetComputeShader();
-
+        
         inputs.renderInterface->Dispatch();
     }
 }
