@@ -26,7 +26,7 @@ struct PO_GBufferEncodedOutput
     float4 gbuf1 : SV_Target1;
 };
 
-PI_SIMPLE VS_Simple(VI_Simple input)
+PI_SIMPLE VS_Gbuffer(VI_Simple input)
 {
     float3 world_pos = TransformLocalToWorld(input.position, localToWorldMat);
     float3 view_pos  = TransformWorldToView(world_pos);
@@ -40,17 +40,20 @@ PI_SIMPLE VS_Simple(VI_Simple input)
     return output;
 }
 
-PO_GBufferEncodedOutput PS_Simple(PI_SIMPLE input)
+PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input)
 {
     GBuffer gbuf;
 
-    Texture2D tex = FetchTex2D(1);
-    bool tex_is_srgb = IsTex2DSrgb(1);
+    bool tex_is_srgb;
+    float4 color = FetchTex2D(1, tex_is_srgb).Sample(g_ClampAnisoSampler, input.uv);
 
-    float4 color = tex.Sample(g_ClampAnisoSampler, input.uv);
+    // Somehow input.position.z is always outputted as 0, maybe not enough precision?
+    float linear_depth = ((input.position.z / input.position.w) + 1.0f) * 0.5f;
+    float2 near_far = ExtractNearFar();
 
-    gbuf.color    = float4(color.rgb, 1.0f);
-    gbuf.normal   = float4(input.normal, 1.0f);
+    gbuf.color  = float4(color.rgb, 1.0f);
+    gbuf.normal = input.normal;
+    gbuf.depth  = LinearizeDepth(linear_depth, near_far.x, near_far.y);
 
     if (tex_is_srgb)
     {

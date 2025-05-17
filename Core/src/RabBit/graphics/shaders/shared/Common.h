@@ -37,10 +37,6 @@ typedef RB::Math::Float4x4	float4x4;
 #define kClampAnisoSamplerSlot		0
 #define kClampPointSamplerSlot		1
 
-// Texture spaces
-#define kTex2DTableSpace		    0
-#define kRwTex2DTableSpace          1
-
 
 // Global constant buffer structs
 // ---------------------------------------------------------------
@@ -79,7 +75,6 @@ struct FrameConstants
 // Global constant buffers
 // ---------------------------------------------------------------
 
-// TODO Maybe make this a Buffer (or ByteAddressBuffer)
 cbuffer TextureIndicesCB : CBUFFER_REG(kTexIndicesCB)
 {
     TextureIndices g_TextureIndices;
@@ -91,16 +86,23 @@ cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
 }
 
 
-// Global resource tables (bindless)
+// Global resource table
 // ---------------------------------------------------------------
 
-//Texture2D   Texture2DTable[]    : TEXTURE_SPACE(kTex2DTableSpace);
-//RWTexture2D RwTexture2DTable[]  : TEXTURE_SPACE(kRwTex2DTableSpace);
-
-#define IsTex2DSrgb(tex_id)     (g_TextureIndices.tex2D[(tex_id)].isSRGB)
-#define FetchTex2D(tex_id)      (ResourceDescriptorHeap[NonUniformResourceIndex(g_TextureIndices.tex2D[(tex_id)].tableID)])
 #define FetchRwTex2D(tex_id)    (ResourceDescriptorHeap[NonUniformResourceIndex(g_TextureIndices.rwTex2D[(tex_id)].tableID)])
 
+Texture2D FetchTex2D(in uint tex_id, out bool is_srgb_space)
+{
+    ShaderTexInfo info = g_TextureIndices.tex2D[tex_id];
+    is_srgb_space = info.isSRGB;
+    return ResourceDescriptorHeap[NonUniformResourceIndex(info.tableID)];
+}
+
+Texture2D FetchTex2D(in uint tex_id)
+{
+    bool srgb;
+    return FetchTex2D(tex_id, srgb);
+}
 
 // Global samplers
 // ---------------------------------------------------------------
@@ -130,6 +132,25 @@ float3 TransformWorldToView(float3 world_pos)
 float4 TransformViewToClip(float3 view_pos)
 {
     return TransformPosition(view_pos, g_FC.viewToClipMat);
+}
+
+float2 ExtractNearFar()
+{
+    float C = g_FC.viewToClipMat._33;
+    float D = g_FC.viewToClipMat._43;
+
+    float near = D / (C - 1.0);
+    float far = D / C;
+
+    if (near > far)
+        return float2(far, near); // Inverted depth
+    else
+        return float2(near, far);
+}
+
+float LinearizeDepth(float depth, float near, float far)
+{
+    return near * far / (far - depth * (far - near));
 }
 
 #endif

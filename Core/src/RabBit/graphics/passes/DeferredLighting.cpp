@@ -26,9 +26,9 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"GBuffer Color", false, -1},
+                    RenderTextureInputDesc{"GBuffer Color",  false, -1},
                     RenderTextureInputDesc{"GBuffer Normal", false, -1},
-                    RenderTextureInputDesc{"GBuffer Depth", true, -1}
+                    RenderTextureInputDesc{"Depth",          true,  -1}
                 },
                 3,
 
@@ -56,13 +56,14 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        //static_assert(false);
+        static_assert(false);
         // TODO
+        // - Add the world pos to the gbuffer
         // - Implement a simple compute apply lighting pass
         // - Add this new pass to the render graph
 
-        inputs.renderInterface->SetComputeShader();
-        
-        inputs.renderInterface->Dispatch();
+        //inputs.renderInterface->SetComputeShader();
+        //
+        //inputs.renderInterface->Dispatch();
     }
 }

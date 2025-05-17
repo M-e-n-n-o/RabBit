@@ -29,7 +29,7 @@ namespace RB
         m_SharedContext->completedJobsCount         = 0;
         m_SharedContext->counterStart               = 0;
 
-        // TODO Change the critical section logic to SRWLocks to improve performance if needed in the future
+        // Maybe change the critical section logic to SRWLocks to improve performance if needed in the future?
         InitializeConditionVariable(&m_SharedContext->kickCV);
         InitializeConditionVariable(&m_SharedContext->syncCV);
         InitializeConditionVariable(&m_SharedContext->completedCV);

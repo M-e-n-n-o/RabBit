@@ -41,7 +41,7 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"GBuffer Depth", true, 2}, // In-/output
+                    RenderTextureInputDesc{"Depth", true, 2}, // In-/output
                 },
                 1,
 
@@ -53,7 +53,7 @@ namespace RB::Graphics
                 {
                     RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
                     RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
-                    RenderTextureDesc{"GBuffer Depth",  RenderResourceFormat::D32_FLOAT,      kRTSize_Full, kRTSize_Full, kRTFlag_ClearBeforeGraph  },
+                    RenderTextureDesc{"Depth",          RenderResourceFormat::D32_FLOAT,      kRTSize_Full, kRTSize_Full, kRTFlag_ClearBeforeGraph  },
                 },
                 3,
 
@@ -113,8 +113,8 @@ namespace RB::Graphics
 
     void GBufferPass::Render(RenderPassInput& in)
     {
-        in.renderInterface->SetVertexShader(VS_Simple);
-        in.renderInterface->SetPixelShader(PS_Simple);
+        in.renderInterface->SetVertexShader(VS_Gbuffer);
+        in.renderInterface->SetPixelShader(PS_Gbuffer);
 
         in.renderInterface->SetBlendMode(BlendMode::None);
         in.renderInterface->SetCullMode(CullMode::Back);
