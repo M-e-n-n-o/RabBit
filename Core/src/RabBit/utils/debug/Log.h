@@ -24,12 +24,12 @@ namespace RB::Utils::Debug
 
     #ifdef RB_CORE_ACCESS
         #define RB_LOG(tag, ...)		{ RB::Utils::Debug::Logger::SetModeNormal();	RB::Utils::Debug::Logger::LogCore(tag, __VA_ARGS__); RB::Utils::Debug::Logger::LogCore(L"", ""); }	
-        #define RB_LOG_WARN(tag, ...)	{ RB::Utils::Debug::Logger::SetModeWarn();		RB::Utils::Debug::Logger::LogCore(tag, "[%s::%d] ", __FILE__, __LINE__); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogCore(L"", ""); }
-        #define RB_LOG_ERROR(tag, ...)	{ RB::Utils::Debug::Logger::SetModeError();		RB::Utils::Debug::Logger::LogCore(tag, "[%s::%d] ", __FILE__, __LINE__); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogCore(L"", ""); }
+        #define RB_LOG_WARN(tag, ...)	{ RB::Utils::Debug::Logger::SetModeWarn();		RB::Utils::Debug::Logger::LogCore(tag, "[%s::%d] ", RB_FUNCTION_STR, RB_LINE_STR); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogCore(L"", ""); }
+        #define RB_LOG_ERROR(tag, ...)	{ RB::Utils::Debug::Logger::SetModeError();		RB::Utils::Debug::Logger::LogCore(tag, "[%s::%d] ", RB_FUNCTION_STR, RB_LINE_STR); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogCore(L"", ""); }
     #else
         #define RB_LOG(...)				{ RB::Utils::Debug::Logger::SetModeNormal(); 	RB::Utils::Debug::Logger::LogApp(__VA_ARGS__); RB::Utils::Debug::Logger::LogApp(""); }	
-        #define RB_LOG_WARN(...)		{ RB::Utils::Debug::Logger::SetModeWarn();		RB::Utils::Debug::Logger::LogApp("[%s::%d] ", __FILE__, __LINE__); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogApp(""); }
-        #define RB_LOG_ERROR(...)		{ RB::Utils::Debug::Logger::SetModeError();		RB::Utils::Debug::Logger::LogApp("[%s::%d] ", __FILE__, __LINE__); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogApp(""); }
+        #define RB_LOG_WARN(...)		{ RB::Utils::Debug::Logger::SetModeWarn();		RB::Utils::Debug::Logger::LogApp("[%s::%d] ", RB_FUNCTION_STR, RB_LINE_STR); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogApp(""); }
+        #define RB_LOG_ERROR(...)		{ RB::Utils::Debug::Logger::SetModeError();		RB::Utils::Debug::Logger::LogApp("[%s::%d] ", RB_FUNCTION_STR, RB_LINE_STR); RB::Utils::Debug::Logger::LogCore(L"", __VA_ARGS__); RB::Utils::Debug::Logger::LogApp(""); }
     #endif
     
     #ifdef RB_CORE_ACCESS

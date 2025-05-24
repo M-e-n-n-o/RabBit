@@ -56,7 +56,7 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        static_assert(false);
+        //static_assert(false);
         // TODO
         // - Add the world pos to the gbuffer
         // - Implement a simple compute apply lighting pass
