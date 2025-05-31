@@ -6,10 +6,10 @@ using namespace RB::Events;
 using namespace RB::Entity;
 using namespace RB::Math;
 
-class App : public RB::Application
+class SampleApp : public RB::Application
 {
 public:
-    App(RB::AppInfo& info) : Application(info) {}
+    SampleApp(RB::AppInfo& info) : Application(info) {}
 
     void OnStart() override
     {
@@ -45,5 +45,5 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window2.renderScale         = 1.0f;
     app_info.windows.push_back(window2);
 
-    return new App(app_info);
+    return new SampleApp(app_info);
 }

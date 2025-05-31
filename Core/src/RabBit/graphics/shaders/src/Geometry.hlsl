@@ -47,13 +47,9 @@ PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input)
     bool tex_is_srgb;
     float4 color = FetchTex2D(1, tex_is_srgb).Sample(g_ClampAnisoSampler, input.uv);
 
-    // Somehow input.position.z is always outputted as 0, maybe not enough precision?
-    float linear_depth = ((input.position.z / input.position.w) + 1.0f) * 0.5f;
-    float2 near_far = ExtractNearFar();
-
     gbuf.color  = float4(color.rgb, 1.0f);
     gbuf.normal = input.normal;
-    gbuf.depth  = LinearizeDepth(linear_depth, near_far.x, near_far.y);
+    gbuf.depth = LinearizeDepth(input.position.z);
 
     if (tex_is_srgb)
     {

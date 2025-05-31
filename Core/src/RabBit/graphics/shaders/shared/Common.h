@@ -114,28 +114,7 @@ SamplerState g_ClampPointSampler : SAMPLER_REG(kClampPointSamplerSlot);
 // Global helper functions
 // ---------------------------------------------------------------
 
-float4 TransformPosition(float3 position, float4x4 transform)
-{
-    return (position.xxxx * transform[0]) + (position.yyyy * transform[1]) + (position.zzzz * transform[2]) + transform[3];
-}
-
-// ---------------------------
-float3 TransformLocalToWorld(float3 local_pos, float4x4 obj_to_world)
-{
-    return mul(obj_to_world, float4(local_pos, 1.0f)).xyz;
-}
-
-// ---------------------------
-float3 TransformWorldToView(float3 world_pos)
-{
-    return mul(g_FC.worldToViewMat, float4(world_pos, 1.0f)).xyz;
-}
-
-// ---------------------------
-float4 TransformViewToClip(float3 view_pos)
-{
-    return TransformPosition(view_pos, g_FC.viewToClipMat);
-}
+#include "../src/Transform.h"
 
 // ---------------------------
 uint PackUNorm(float input, uint shift, uint num_bits, float dither)
@@ -150,27 +129,6 @@ float UnpackUNorm(uint enc_input, uint shift, uint num_bits)
     uint mask = num_bits == 32 ? 0xFFFFFFFF : ((1U << num_bits) - 1);
     enc_input = (enc_input >> shift) & mask;
     return float(enc_input) / float(mask);
-}
-
-// ---------------------------
-float2 ExtractNearFar()
-{
-    float C = g_FC.viewToClipMat._33;
-    float D = g_FC.viewToClipMat._43;
-
-    float near = D / (C - 1.0);
-    float far = D / C;
-
-    if (near > far)
-        return float2(far, near); // Inverted depth
-    else
-        return float2(near, far);
-}
-
-// ---------------------------
-float LinearizeDepth(float depth, float near, float far)
-{
-    return near * far / (far - depth * (far - near));
 }
 
 #endif

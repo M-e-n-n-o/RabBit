@@ -11,7 +11,5 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
 
     GBuffer gbuf = SampleGBuffer(indices, screen_coord);
 
-    // THE DEPTH NEEDS TO BE FIXED IN THE GBuffer!!
-
-    //GetBlinnPhongDiffSpec();
+    GetBlinnPhongDiffSpec();
 }

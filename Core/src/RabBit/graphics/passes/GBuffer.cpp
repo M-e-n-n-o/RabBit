@@ -51,9 +51,9 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
-                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R8G8B8A8_UNORM, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
-                    RenderTextureDesc{"Depth",          RenderResourceFormat::D32_FLOAT,      kRTSize_Full, kRTSize_Full, kRTFlag_ClearBeforeGraph  },
+                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
+                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget },
+                    RenderTextureDesc{"Depth",          RenderResourceFormat::D32_FLOAT,          kRTSize_Full, kRTSize_Full, kRTFlag_ClearBeforeGraph  },
                 },
                 3,
 

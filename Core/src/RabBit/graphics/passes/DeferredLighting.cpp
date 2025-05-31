@@ -27,10 +27,9 @@ namespace RB::Graphics
                 // Dependencies
                 {
                     RenderTextureInputDesc{"GBuffer Color",  false, -1},
-                    RenderTextureInputDesc{"GBuffer Normal", false, -1},
-                    RenderTextureInputDesc{"Depth",          true,  -1}
+                    RenderTextureInputDesc{"GBuffer Normal", false, -1}
                 },
-                3,
+                2,
 
                 // Working textures
                 {},
