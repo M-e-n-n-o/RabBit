@@ -57,14 +57,6 @@ float3 TransformScreenUVsToView(float2 screen_uvs, float linear_depth)
 }
 
 // --------------------------------------------------------------
-float2 TransformWorldToScreenUVs(float3 world)
-{
-    float4 clip_pos = TransformPosition(world - GetCameraPos(), g_VP.m_CamWorldToClipMat);
-
-    return saturate((clip_pos.xy * rcp(clip_pos.w)) * float2(0.5f, -0.5f) + 0.5f);
-}
-
-// --------------------------------------------------------------
 float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth)
 {
     float3 vs_pos = TransformScreenUVsToView(screen_uvs, linear_depth);

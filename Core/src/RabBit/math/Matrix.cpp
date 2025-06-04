@@ -3,6 +3,10 @@
 
 namespace RB::Math
 {
+    // ---------------------------------------------------------------------------
+    //								    Float4x4
+    // ---------------------------------------------------------------------------
+
     Float4x4::Float4x4()
     {
         row0 = { 1, 0, 0, 0 };
@@ -23,7 +27,6 @@ namespace RB::Math
         out.row1 = (other.row0 * row1.x) + (other.row1 * row1.y) + (other.row2 * row1.z) + (other.row3 * row1.w);
         out.row2 = (other.row0 * row2.x) + (other.row1 * row2.y) + (other.row2 * row2.z) + (other.row3 * row2.w);
         out.row3 = (other.row0 * row3.x) + (other.row1 * row3.y) + (other.row2 * row3.z) + (other.row3 * row3.w);
-
         return out;
     }
 
@@ -124,5 +127,47 @@ namespace RB::Math
         a00 *= x;
         a11 *= y;
         a22 *= z;
+    }
+
+    float Float4x4::GetDeterminant() const
+    {
+        float det = 0.0f;
+        Float3x3 temp;
+        int sign = 1;
+
+        for (int f = 0; f < 4; f++) 
+        {
+            MatGetCofactor(*this, temp, 0, f);
+            det += sign * a[f] * temp.GetDeterminant();
+            sign = -sign;
+        }
+        return det;
+    }
+
+    // ---------------------------------------------------------------------------
+    //								    Float3x3
+    // ---------------------------------------------------------------------------
+
+    Float3x3::Float3x3()
+    {
+        row0 = { 1, 0, 0 };
+        row1 = { 0, 1, 0 };
+        row2 = { 0, 0, 1 };
+    }
+
+    Float3x3 Float3x3::operator*(const Float3x3& other)
+    {
+        Float3x3 out;
+        out.row0 = (other.row0 * row0.x) + (other.row1 * row0.y) + (other.row2 * row0.z);
+        out.row1 = (other.row0 * row1.x) + (other.row1 * row1.y) + (other.row2 * row1.z);
+        out.row2 = (other.row0 * row2.x) + (other.row1 * row2.y) + (other.row2 * row2.z);
+        return out;
+    }
+
+    float Float3x3::GetDeterminant() const
+    {
+        return   row0.x * (row1.y * row2.z - row1.z * row2.y)
+               - row0.y * (row1.x * row2.z - row1.z * row2.x)
+               + row0.z * (row1.x * row2.y - row1.y * row2.x);
     }
 }
