@@ -7,11 +7,12 @@ TEST(ThreadTest, SimpleWaitOnJob)
 {
     int result = 0;
     
-    struct Data
+    struct Data : JobData
     {
         int* var;
-    }
-    Data* data = new Data(&result);
+    };
+    Data* data = new Data();
+    data->var = &result;
     
     auto job_test = [](JobData* data)
     {
@@ -33,11 +34,12 @@ TEST(ThreadTest, SimpleWaitOnSpecificJob)
 {
     int result = 0;
     
-    struct Data
+    struct Data : JobData
     {
         int* var;
-    }
-    Data* data = new Data(&result);
+    };
+    Data* data = new Data();
+    data->var = &result;
     
     auto job_test = [](JobData* data)
     {
@@ -90,11 +92,12 @@ TEST(ThreadTest, SimpleCancelTest)
 {
     int result = 0;
     
-    struct Data
+    struct Data : JobData
     {
         int* var;
-    }
-    Data* data = new Data(&result);
+    };
+    Data* data = new Data();
+    data->var = &result;
     
     auto job_test = [](JobData* data)
     {
@@ -105,7 +108,7 @@ TEST(ThreadTest, SimpleCancelTest)
     };
     
     WorkerThread thread(L"test");
-    JodTypeID job_type = thread.AddJobType(job_test);
+    JobTypeID job_type = thread.AddJobType(job_test);
     JobID job1 = thread.ScheduleJob(job_type, data);
     JobID job2 = thread.ScheduleJob(job_type, data);
 
@@ -119,11 +122,12 @@ TEST(ThreadTest, SimpleCancelAllTest)
 {
     int result = 0;
     
-    struct Data
+    struct Data : JobData
     {
         int* var;
-    }
-    Data* data = new Data(&result);
+    };
+    Data* data = new Data();
+    data->var = &result;
     
     auto job_test = [](JobData* data)
     {
@@ -134,7 +138,7 @@ TEST(ThreadTest, SimpleCancelAllTest)
     };
     
     WorkerThread thread(L"test");
-    JodTypeID job_type = thread.AddJobType(job_test);
+    JobTypeID job_type = thread.AddJobType(job_test);
 
     for (int i = 0; i < 10; i++)
     {
@@ -142,7 +146,7 @@ TEST(ThreadTest, SimpleCancelAllTest)
     }
 
     Sleep(50);
-    thread.CancelAll(job2);
+    thread.CancelAll();
 
     ASSERT_EQ(result, 1);
 }
@@ -151,11 +155,12 @@ TEST(ThreadTest, SimpleJobOverwriteTest)
 {
     int result = 0;
 
-    struct Data
+    struct Data : JobData
     {
         int* var;
-    }
-    Data* data = new Data(&result);
+    };
+    Data* data = new Data();
+    data->var = &result;
 
     auto job_test = [](JobData* data)
     {
@@ -166,7 +171,7 @@ TEST(ThreadTest, SimpleJobOverwriteTest)
     };
     
     WorkerThread thread(L"test");
-    JodTypeID job_type = thread.AddJobType(job_test, true);
+    JobTypeID job_type = thread.AddJobType(job_test, true);
 
     for (int i = 0; i < 5; i++)
     {
@@ -184,11 +189,11 @@ TEST(ThreadTest, PrioritizationTest)
 {
     int result = 0;
 
-    struct Data
+    struct Data : JobData
     {
         int valueToAssign;
         int* var;
-    }
+    };
     Data* datas = new Data[7];
     datas[0].valueToAssign = 1;
     datas[0].var = &result;
@@ -220,11 +225,11 @@ TEST(ThreadTest, PrioritizationTest)
     };
 
     WorkerThread thread(L"test");
-    JodTypeID job_type = thread.AddJobType(job_test);
+    JobTypeID job_type = thread.AddJobType(job_test);
 
     for (int i = 0; i < 7; i++)
     {
-        JobID job = thread.ScheduleJob(job_type, datas[i]);
+        JobID job = thread.ScheduleJob(job_type, &datas[i]);
 
         if (i == 3 || i == 5)
         {
@@ -241,11 +246,11 @@ TEST(ThreadTest, PrioritizationSyncTest)
 
     ThreadedVariable<int> result = 0;
 
-    struct Data
+    struct Data : JobData
     {
         int valueToAssign;
         ThreadedVariable<int>* var;
-    }
+    };
     Data* datas = new Data[7];
     datas[0].valueToAssign = 1;
     datas[0].var = &result;
@@ -271,7 +276,7 @@ TEST(ThreadTest, PrioritizationSyncTest)
         int value = data.valueToAssign;
         int* result = data.var;
 
-        ASSERT_EQ(data.var.GetValue(), value - 1);
+        ASSERT_EQ(data->var->GetValue(), value - 1);
 
         data.var.SetValue(value);
     };
@@ -280,24 +285,25 @@ TEST(ThreadTest, PrioritizationSyncTest)
     WorkerThread thread2(L"test2");
     JobTypeID job_type = thread.AddJobType(job_test);
 
-    JobID job0 = thread.ScheduleJob(job_type, datas[0]);
-    JobID job1 = thread.ScheduleJob(job_type, datas[1]);
-    JobID job2 = thread.ScheduleJob(job_type, datas[2]);
-    JobID job3 = thread.ScheduleJob(job_type, datas[3]);
+    JobID job0 = thread.ScheduleJob(job_type, &datas[0]);
+    JobID job1 = thread.ScheduleJob(job_type, &datas[1]);
+    JobID job2 = thread.ScheduleJob(job_type, &datas[2]);
+    JobID job3 = thread.ScheduleJob(job_type, &datas[3]);
     thread.PrioritizeJob(job3);
-    JobID job4 = thread.ScheduleJob(job_type, datas[4]);
-    JobID job5 = thread.ScheduleJob(job_type, datas[5]);
-    JobID job6 = thread.ScheduleJob(job_type, datas[6]);
+    JobID job4 = thread.ScheduleJob(job_type, &datas[4]);
+    JobID job5 = thread.ScheduleJob(job_type, &datas[5]);
+    JobID job6 = thread.ScheduleJob(job_type, &datas[6]);
     
-    auto prio_job = [=](JobData* jd)
+    auto prio_job = [=](JobData* jd) mutable
     {
         Sleep(150);
         thread.PrioritizeJob(job5);
     };
+    JobTypeID job_type2 = thread2.AddJobType(prio_job);
 
     thread.Sync(job3);
     ASSERT_EQ(result.GetValue(), 2);
-    thread2.ScheduleJob(prio_job, nullptr);
+    thread2.ScheduleJob(job_type2, nullptr);
     thread.Sync(job2);
     ASSERT_EQ(result.GetValue(), 5);
     thread.Sync(job6);
@@ -308,11 +314,11 @@ TEST(ThreadTest, PrioritizationCancelTest)
 {
     int result = 0;
 
-    struct Data
+    struct Data : JobData
     {
         int valueToAssign;
         int* var;
-    }
+    };
     Data* datas = new Data[7];
     datas[0].valueToAssign = 1;
     datas[0].var = &result;
@@ -344,11 +350,11 @@ TEST(ThreadTest, PrioritizationCancelTest)
     };
 
     WorkerThread thread(L"test");
-    JodTypeID job_type = thread.AddJobType(job_test);
+    JobTypeID job_type = thread.AddJobType(job_test);
 
     for (int i = 0; i < 7; i++)
     {
-        JobID job = thread.ScheduleJob(job_type, datas[i]);
+        JobID job = thread.ScheduleJob(job_type, &datas[i]);
 
         if (i == 3 || i == 5)
         {
@@ -364,7 +370,7 @@ TEST(ThreadTest, PrioritizationCancelTest)
     thread.SyncAll();
 }
 
-TEST(ThreadTest, PrioritizationCancelSyncTest)
+TEST(ThreadTest, UltimatePrioritizationCancelSyncTest)
 {
     
 }
