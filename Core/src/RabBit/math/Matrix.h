@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Core.h"
+#include "Vector.h"
 
 namespace RB::Math
 {
+    struct Float3x3;
+
     struct Float4x4
     {
     public:
@@ -73,7 +76,10 @@ namespace RB::Math
         void Scale(float scale);
         void Scale(float x, float y, float z);
 
+        bool Invert();
         float GetDeterminant() const;
+        void GetCofactor(Float3x3& temp, int p, int q) const;
+        Float4x4 GetAdjugate() const;
     };
 
     struct Float3x3
@@ -124,56 +130,4 @@ namespace RB::Math
 
         float GetDeterminant() const;
     };
-
-    // Function to get the cofactor of element (p, q)
-    void MatGetCofactor(Float4x4 mat, Float3x3& temp, int p, int q) 
-    {
-        int i = 0, j = 0;
-        for (int row = 0; row < 4; row++) 
-        {
-            for (int col = 0; col < 4; col++) 
-            {
-                if (row != p && col != q) 
-                {
-                    temp.a[(i + 1) * j] = mat.a[(row + 1) * col];
-                    j++;
-                    if (j == 3) 
-                    {
-                        j = 0;
-                        i++;
-                    }
-                }
-            }
-        }
-    }
-
-    // Function to compute adjugate
-    void MatAdjugate(Float4x4 mat, Float4x4 adj) {
-        Float3x3 temp;
-        int sign;
-
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                getCofactor(mat, temp, i, j);
-                sign = ((i + j) % 2 == 0) ? 1 : -1;
-                adj[j][i] = sign * det3x3(temp); // Transpose!
-            }
-        }
-    }
-
-    // Function to invert the matrix
-    bool MatInvert(Float4x4 mat, Float4x4 inv) {
-        float det = MatDeterminant(mat);
-        if (det == 0) return false;
-
-        float adj[4][4];
-        adjugate(mat, adj);
-
-        // Divide adjugate by determinant
-        for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-                inv[i][j] = adj[i][j] / det;
-
-        return true;
-    }
 }

@@ -22,7 +22,7 @@ namespace RB
         m_SharedContext = new SharedContext();
         m_SharedContext->name                       = name;
         m_SharedContext->state                      = ThreadState::Idle;
-        m_SharedContext->currentJob                 = 0;
+        m_SharedContext->currentJob                 = UINT64_MAX;
         m_SharedContext->pendingJobs                = {};
         m_SharedContext->highPriorityInsertIndex    = 0;
         m_SharedContext->startedJobsCount           = 0;
@@ -316,7 +316,7 @@ namespace RB
                 // Reset the timer
                 context->counterStart = 0;
 
-                context->currentJob = 0;
+                context->currentJob = UINT64_MAX;
 
                 // Only start waiting if there are no more jobs pending
                 if (context->pendingJobs.empty())
@@ -383,7 +383,7 @@ namespace RB
             }
         }
 
-        RB_LOG(LOGTAG_MAIN, "Terminated worker thread: %s", context->name);
+        RB_LOG(LOGTAG_MAIN, "Terminated worker thread: %ws", context->name);
 
         context->state = WorkerThread::ThreadState::Terminated;
 

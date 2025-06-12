@@ -129,6 +129,26 @@ namespace RB::Math
         a22 *= z;
     }
 
+    bool Float4x4::Invert()
+    {
+        float det = GetDeterminant();
+        if (det == 0)
+            return false;
+
+        Float4x4 adj = GetAdjugate();
+
+        Float4x4 inverse;
+
+        // Divide adjugate by determinant
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                inverse.a[i * 4 + j] = adj.a[i * 4 + j] / det;
+
+        memcpy(a, inverse.a, sizeof(float) * 16);
+
+        return true;
+    }
+
     float Float4x4::GetDeterminant() const
     {
         float det = 0.0f;
@@ -137,11 +157,51 @@ namespace RB::Math
 
         for (int f = 0; f < 4; f++) 
         {
-            MatGetCofactor(*this, temp, 0, f);
+            GetCofactor(temp, 0, f);
             det += sign * a[f] * temp.GetDeterminant();
             sign = -sign;
         }
         return det;
+    }
+
+    void Float4x4::GetCofactor(Float3x3& temp, int p, int q) const
+    {
+        int i = 0, j = 0;
+        for (int row = 0; row < 4; row++)
+        {
+            for (int col = 0; col < 4; col++)
+            {
+                if (row != p && col != q)
+                {
+                    temp.a[i * 3 + j] = a[row * 4 + col];
+                    j++;
+                    if (j == 3)
+                    {
+                        j = 0;
+                        i++;
+                    }
+                }
+            }
+        }
+    }
+
+    Float4x4 Float4x4::GetAdjugate() const
+    {
+        Float4x4 adj;
+        Float3x3 temp;
+        int sign;
+
+        for (int i = 0; i < 4; i++) 
+        {
+            for (int j = 0; j < 4; j++) 
+            {
+                GetCofactor(temp, i, j);
+                sign = ((i + j) % 2 == 0) ? 1 : -1;
+                adj.a[j * 4 + i] = sign * temp.GetDeterminant(); // Transpose of cofactor
+            }
+        }
+
+        return adj;
     }
 
     // ---------------------------------------------------------------------------

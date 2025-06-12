@@ -18,8 +18,8 @@ TEST(ThreadTest, SimpleWaitOnJob)
     {
         Sleep(500);
 
-        int* var = (int*)data;
-        *var = 1;
+        Data* d = (Data*)data;
+        *d->var = 1;
     };
     
     WorkerThread thread(L"test");
@@ -45,8 +45,8 @@ TEST(ThreadTest, SimpleWaitOnSpecificJob)
     {
         Sleep(500);
 
-        int* var = (int*)data;
-        *var = 1;
+        Data* d = (Data*)data;
+        *d->var = 1;
     };
     
     WorkerThread thread(L"test");
@@ -98,19 +98,21 @@ TEST(ThreadTest, SimpleCancelTest)
     };
     Data* data = new Data();
     data->var = &result;
+    Data* data2 = new Data();
+    data2->var = &result;
     
     auto job_test = [](JobData* data)
     {
         Sleep(500);
 
-        int* var = (int*)data;
-        *var++;
+        Data* d = (Data*)data;
+        *(d->var) = *(d->var) + 1;
     };
     
     WorkerThread thread(L"test");
     JobTypeID job_type = thread.AddJobType(job_test);
     JobID job1 = thread.ScheduleJob(job_type, data);
-    JobID job2 = thread.ScheduleJob(job_type, data);
+    JobID job2 = thread.ScheduleJob(job_type, data2);
 
     thread.Cancel(job2);
     thread.Sync(job1);
@@ -126,15 +128,20 @@ TEST(ThreadTest, SimpleCancelAllTest)
     {
         int* var;
     };
-    Data* data = new Data();
-    data->var = &result;
+
+    Data** datas = (Data**)alloca(sizeof(Data*) * 10);
+    for (int i = 0; i < 10; i++)
+    {
+        datas[i] = new Data();
+        datas[i]->var = &result;
+    }
     
     auto job_test = [](JobData* data)
     {
         Sleep(500);
 
-        int* var = (int*)data;
-        *var++;
+        Data* d = (Data*)data;
+        *d->var = *d->var + 1;
     };
     
     WorkerThread thread(L"test");
@@ -142,7 +149,7 @@ TEST(ThreadTest, SimpleCancelAllTest)
 
     for (int i = 0; i < 10; i++)
     {
-        thread.ScheduleJob(job_type, data);
+        thread.ScheduleJob(job_type, datas[i]);
     }
 
     Sleep(50);
@@ -159,15 +166,19 @@ TEST(ThreadTest, SimpleJobOverwriteTest)
     {
         int* var;
     };
-    Data* data = new Data();
-    data->var = &result;
+    Data** datas = (Data**)alloca(sizeof(Data*) * 5);
+    for (int i = 0; i < 5; i++)
+    {
+        datas[i] = new Data();
+        datas[i]->var = &result;
+    }
 
     auto job_test = [](JobData* data)
     {
         Sleep(500);
 
-        int* var = (int*)data;
-        *var++;
+        Data* d = (Data*)data;
+        *d->var = *d->var + 1;
     };
     
     WorkerThread thread(L"test");
@@ -175,7 +186,7 @@ TEST(ThreadTest, SimpleJobOverwriteTest)
 
     for (int i = 0; i < 5; i++)
     {
-        thread.ScheduleJob(job_type, data);
+        thread.ScheduleJob(job_type, datas[i]);
     }
 
     thread.SyncAll();
@@ -194,21 +205,19 @@ TEST(ThreadTest, PrioritizationTest)
         int valueToAssign;
         int* var;
     };
-    Data* datas = new Data[7];
-    datas[0].valueToAssign = 1;
-    datas[0].var = &result;
-    datas[1].valueToAssign = 4;
-    datas[1].var = &result;
-    datas[2].valueToAssign = 5;
-    datas[2].var = &result;
-    datas[3].valueToAssign = 2;
-    datas[3].var = &result;
-    datas[4].valueToAssign = 6;
-    datas[4].var = &result;
-    datas[5].valueToAssign = 3;
-    datas[5].var = &result;
-    datas[6].valueToAssign = 7;
-    datas[6].var = &result;
+    Data** datas = (Data**)alloca(sizeof(Data*) * 7);
+    for (int i = 0; i < 7; i++)
+    {
+        datas[i] = new Data();
+        datas[i]->var = &result;
+    }
+    datas[0]->valueToAssign = 1;
+    datas[1]->valueToAssign = 4;
+    datas[2]->valueToAssign = 5;
+    datas[3]->valueToAssign = 2;
+    datas[4]->valueToAssign = 6;
+    datas[5]->valueToAssign = 3;
+    datas[6]->valueToAssign = 7;
 
     auto job_test = [](JobData* jd)
     {
@@ -216,10 +225,10 @@ TEST(ThreadTest, PrioritizationTest)
 
         Data* data = (Data*)jd;
         
-        int value = data.valueToAssign;
-        int* result = data.var;
+        int value = data->valueToAssign;
+        int* result = data->var;
 
-        ASSERT_EQ(result, value - 1);
+        ASSERT_EQ(*result, value - 1);
 
         *result = value;
     };
@@ -229,7 +238,7 @@ TEST(ThreadTest, PrioritizationTest)
 
     for (int i = 0; i < 7; i++)
     {
-        JobID job = thread.ScheduleJob(job_type, &datas[i]);
+        JobID job = thread.ScheduleJob(job_type, datas[i]);
 
         if (i == 3 || i == 5)
         {
@@ -251,21 +260,19 @@ TEST(ThreadTest, PrioritizationSyncTest)
         int valueToAssign;
         ThreadedVariable<int>* var;
     };
-    Data* datas = new Data[7];
-    datas[0].valueToAssign = 1;
-    datas[0].var = &result;
-    datas[1].valueToAssign = 3;
-    datas[1].var = &result;
-    datas[2].valueToAssign = 5;
-    datas[2].var = &result;
-    datas[3].valueToAssign = 2;
-    datas[3].var = &result;
-    datas[4].valueToAssign = 6;
-    datas[4].var = &result;
-    datas[5].valueToAssign = 4;
-    datas[5].var = &result;
-    datas[6].valueToAssign = 7;
-    datas[6].var = &result;
+    Data** datas = (Data**)alloca(sizeof(Data*) * 7);
+    for (int i = 0; i < 7; i++)
+    {
+        datas[i] = new Data();
+        datas[i]->var = &result;
+    }
+    datas[0]->valueToAssign = 1;
+    datas[1]->valueToAssign = 3;
+    datas[2]->valueToAssign = 5;
+    datas[3]->valueToAssign = 2;
+    datas[4]->valueToAssign = 6;
+    datas[5]->valueToAssign = 4;
+    datas[6]->valueToAssign = 7;
 
     auto job_test = [](JobData* jd)
     {
@@ -273,28 +280,28 @@ TEST(ThreadTest, PrioritizationSyncTest)
 
         Data* data = (Data*)jd;
         
-        int value = data.valueToAssign;
-        int* result = data.var;
+        int value = data->valueToAssign;
+        auto result = data->var;
 
         ASSERT_EQ(data->var->GetValue(), value - 1);
 
-        data.var.SetValue(value);
+        data->var->SetValue(value);
     };
 
     WorkerThread thread(L"test1");
     WorkerThread thread2(L"test2");
     JobTypeID job_type = thread.AddJobType(job_test);
 
-    JobID job0 = thread.ScheduleJob(job_type, &datas[0]);
-    JobID job1 = thread.ScheduleJob(job_type, &datas[1]);
-    JobID job2 = thread.ScheduleJob(job_type, &datas[2]);
-    JobID job3 = thread.ScheduleJob(job_type, &datas[3]);
+    JobID job0 = thread.ScheduleJob(job_type, datas[0]);
+    JobID job1 = thread.ScheduleJob(job_type, datas[1]);
+    JobID job2 = thread.ScheduleJob(job_type, datas[2]);
+    JobID job3 = thread.ScheduleJob(job_type, datas[3]);
     thread.PrioritizeJob(job3);
-    JobID job4 = thread.ScheduleJob(job_type, &datas[4]);
-    JobID job5 = thread.ScheduleJob(job_type, &datas[5]);
-    JobID job6 = thread.ScheduleJob(job_type, &datas[6]);
+    JobID job4 = thread.ScheduleJob(job_type, datas[4]);
+    JobID job5 = thread.ScheduleJob(job_type, datas[5]);
+    JobID job6 = thread.ScheduleJob(job_type, datas[6]);
     
-    auto prio_job = [=](JobData* jd) mutable
+    auto prio_job = [&thread, &job5](JobData* jd) mutable
     {
         Sleep(150);
         thread.PrioritizeJob(job5);
@@ -319,21 +326,19 @@ TEST(ThreadTest, PrioritizationCancelTest)
         int valueToAssign;
         int* var;
     };
-    Data* datas = new Data[7];
-    datas[0].valueToAssign = 1;
-    datas[0].var = &result;
-    datas[1].valueToAssign = 3;
-    datas[1].var = &result;
-    datas[2].valueToAssign = 11;
-    datas[2].var = &result;
-    datas[3].valueToAssign = 2;
-    datas[3].var = &result;
-    datas[4].valueToAssign = 4;
-    datas[4].var = &result;
-    datas[5].valueToAssign = 10;
-    datas[5].var = &result;
-    datas[6].valueToAssign = 5;
-    datas[6].var = &result;
+    Data** datas = (Data**)alloca(sizeof(Data*) * 7);
+    for (int i = 0; i < 7; i++)
+    {
+        datas[i] = new Data();
+        datas[i]->var = &result;
+    }
+    datas[0]->valueToAssign = 1;
+    datas[1]->valueToAssign = 3;
+    datas[2]->valueToAssign = 11;
+    datas[3]->valueToAssign = 2;
+    datas[4]->valueToAssign = 4;
+    datas[5]->valueToAssign = 10;
+    datas[6]->valueToAssign = 5;
 
     auto job_test = [](JobData* jd)
     {
@@ -341,10 +346,10 @@ TEST(ThreadTest, PrioritizationCancelTest)
 
         Data* data = (Data*)jd;
         
-        int value = data.valueToAssign;
-        int* result = data.var;
+        int value = data->valueToAssign;
+        int* result = data->var;
 
-        ASSERT_EQ(result, value - 1);
+        ASSERT_EQ(*result, value - 1);
 
         *result = value;
     };
@@ -354,7 +359,7 @@ TEST(ThreadTest, PrioritizationCancelTest)
 
     for (int i = 0; i < 7; i++)
     {
-        JobID job = thread.ScheduleJob(job_type, &datas[i]);
+        JobID job = thread.ScheduleJob(job_type, datas[i]);
 
         if (i == 3 || i == 5)
         {
