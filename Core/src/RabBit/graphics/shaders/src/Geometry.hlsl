@@ -1,4 +1,5 @@
 #include "../shared/Common.h"
+#include "Transform.h"
 #include "GBuffer.h"
 
 cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)

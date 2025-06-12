@@ -26,8 +26,8 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"GBuffer Color",  false, -1},
-                    RenderTextureInputDesc{"GBuffer Normal", false, -1}
+                    RenderTextureInputDesc{"GBuffer0", false, -1},
+                    RenderTextureInputDesc{"GBuffer1", false, -1}
                 },
                 2,
 
@@ -55,14 +55,19 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        //static_assert(false);
+        static_assert(false);
         // TODO
-        // - Add the world pos to the gbuffer
-        // - Implement a simple compute apply lighting pass
-        // - Add this new pass to the render graph
+        // - The transformations in the gbuffer & lighting shaders are still wrong, needs fixing!
 
-        //inputs.renderInterface->SetComputeShader();
-        //
-        //inputs.renderInterface->Dispatch();
+        inputs.viewContext->SetFrameConstants(inputs.renderInterface);
+
+        inputs.renderInterface->SetComputeShader(CS_ApplyLightingDeferred);
+        
+        inputs.renderInterface->SetShaderResourceInput(inputs.dependencyTextures[0], 0);
+        inputs.renderInterface->SetShaderResourceInput(inputs.dependencyTextures[1], 1);
+
+        inputs.renderInterface->SetRandomReadWriteInput(inputs.outputTextures[0], 0);
+
+        inputs.renderInterface->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);
     }
 }

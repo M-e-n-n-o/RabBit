@@ -17,6 +17,7 @@ namespace RB::Graphics
     {
         None,
         GBuffer,
+        DeferredLighting,
 
         Count
     };

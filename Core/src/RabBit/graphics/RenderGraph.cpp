@@ -165,7 +165,7 @@ namespace RB::Graphics
         }
 
         uint64_t processed_mask = 0;
-        RenderPassType pass_type = m_FinalPassType;
+        RenderPassType pass_type = RenderPassType::None;
 
         UnorderedMap<uint32_t, RenderPass*> passes;
         List<RenderGraph::FlowNode> render_flow;
@@ -173,7 +173,7 @@ namespace RB::Graphics
         // Process from back to front
         do
         {
-            pass_type = GetNextLeafPass(processed_mask, pass_type);
+            pass_type = GetNextLeafPass(processed_mask, m_FinalPassType);
 
             auto pass_ptr     = m_Passes.find(pass_type);
             auto settings_ptr = m_PassSettings.find(pass_type);
@@ -301,6 +301,7 @@ namespace RB::Graphics
                         if (linked_out_idx >= 0)
                         {
                             // This parameter is also an output
+
                             if (IsDepthFormat(config.outputTextures[linked_out_idx].format) != config.dependencies[to_res_idx].depthFormat)
                             {
                                 RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has resource %d that is an in- and output that have incompatible formats", (uint32_t)pass_type, to_res_idx);
@@ -345,7 +346,7 @@ namespace RB::Graphics
                             {
                                 if (node.passID == (uint32_t)from_pass_ptr->first)
                                 {
-                                    node.outputIDs[from_res_idx];
+                                    from_res = node.outputIDs[from_res_idx];
                                     break;
                                 }
                             }

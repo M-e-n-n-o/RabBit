@@ -97,19 +97,19 @@ public:
 
         if (IsKeyDown(KeyCode::W))
         {
-            m_Camera->position.z += 0.001f;
+            m_Camera->position.z += 0.01f;
         }
         if (IsKeyDown(KeyCode::A))
         {
-            m_Camera->position.x -= 0.001f;
+            m_Camera->position.x -= 0.01f;
         }
         if (IsKeyDown(KeyCode::S))
         {
-            m_Camera->position.z -= 0.001f;
+            m_Camera->position.z -= 0.01f;
         }
         if (IsKeyDown(KeyCode::D))
         {
-            m_Camera->position.x += 0.001f;
+            m_Camera->position.x += 0.01f;
         }
         if (IsKeyDown(KeyCode::LeftShift))
         {

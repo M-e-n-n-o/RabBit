@@ -3,6 +3,8 @@
 namespace RB::Math
 {
     #define kPI 3.14159265359
+    
+    #define ALIGN_8(x) Math::AlignUp((x), 8)
 
     template<typename T>
     inline T Abs(T value)

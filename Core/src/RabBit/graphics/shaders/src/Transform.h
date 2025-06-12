@@ -1,18 +1,18 @@
-#ifndef RB_SHADER_LIGHTING
-#define RB_SHADER_LIGHTING
+#ifndef RB_SHADER_TRANSFORM
+#define RB_SHADER_TRANSFORM
 
 #include "../shared/Common.h"
 
 // --------------------------------------------------------------
 float3 GetCameraDir()
 {
-    return g_VP.m_ViewToWorldMat[2].xyz;
+    return g_FC.viewToWorldMat[2].xyz;
 }
 
 // --------------------------------------------------------------
 float3 GetCameraPos()
 {
-    return g_VP.m_ViewToWorldMat[3].xyz;
+    return g_FC.viewToWorldMat[3].xyz;
 }
 
 // --------------------------------------------------------------
@@ -40,35 +40,28 @@ float4 TransformViewToClip(float3 view_pos)
 }
 
 // --------------------------------------------------------------
-float3 TransformScreenUVsToView(float2 screen_uvs, float linear_depth)
-{
-    // Scale and bias screen-space UVs into view-space coords
-    float2 view_xy = screen_uvs * g_VP.m_ScreenToViewA.xy + g_VP.m_ScreenToViewA.zw;
-
-    // Choose between attenuating XY by depth (projection) or not (orthographic)
-    float depth_atten = linear_depth * g_VP.m_ScreenToViewB.x + g_VP.m_ScreenToViewB.y;
-
-    // Combine into view-space position
-    float3 vs_pos;
-    vs_pos.z = linear_depth;
-    vs_pos.xy = view_xy * depth_atten;
-
-    return vs_pos;
-}
-
-// --------------------------------------------------------------
 float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth)
 {
-    float3 vs_pos = TransformScreenUVsToView(screen_uvs, linear_depth);
+    float2 ndc = screen_uvs * 2.0f - 1.0f;
 
-    // Transform it to a camera-relative world-space position
-    return mul(vs_pos, (float3x3)g_VP.m_ViewToWorldMat) + GetCameraPos();
+    float4 clip_pos = float4(ndc.x, ndc.y, 1.0f, 1.0f);
+
+    // Transform to view space
+    float4 view_dir = mul(clip_pos, g_FC.clipToViewMat);
+    view_dir.xyz /= view_dir.w;
+
+    float3 view_pos = normalize(view_dir.xyz) * linear_depth;
+
+    // Transform to world space
+    float4 world_pos = mul(float4(view_pos, 1.0f), g_FC.viewToWorldMat);
+
+    return world_pos.xyz;
 }
 
 // --------------------------------------------------------------
 float2 TransformPixelCoordsToScreenUVs(uint2 coords)
 {
-    return (float2(coords) + 0.5f) * g_VP.m_InvDimensions.xy;
+    return (float2(coords) + 0.5f) * g_FC.dimensions.zw;
 }
 
 // --------------------------------------------------------------

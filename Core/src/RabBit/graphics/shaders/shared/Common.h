@@ -10,6 +10,7 @@ typedef RB::Math::UInt2     uint2;
 typedef RB::Math::UInt4		uint4;
 typedef RB::Math::Float2	float2;
 typedef RB::Math::Float3	float3;
+typedef RB::Math::Float4    float4;
 typedef RB::Math::Float4x4	float4x4;
 
 #else
@@ -41,7 +42,7 @@ typedef RB::Math::Float4x4	float4x4;
 // Global constant buffer structs
 // ---------------------------------------------------------------
 
-#define SHADER_TEX2D_SLOTS		8
+#define SHADER_TEX2D_SLOTS          8
 
 struct ShaderTexInfo
 {
@@ -67,7 +68,11 @@ struct FrameConstants
     */
 
     float4x4 worldToViewMat;	// View matrix	(transposed)
+    float4x4 viewToWorldMat;    // Inverse view matrix
     float4x4 viewToClipMat;		// Projection matrix
+    float4x4 clipToViewMat;     // Inverse projection matrix
+
+    float4   dimensions;        // width, height, 1/width, 1/height
 };
 
 #if SHADER
@@ -109,27 +114,6 @@ Texture2D FetchTex2D(in uint tex_id)
 
 SamplerState g_ClampAnisoSampler : SAMPLER_REG(kClampAnisoSamplerSlot);
 SamplerState g_ClampPointSampler : SAMPLER_REG(kClampPointSamplerSlot);
-
-
-// Global helper functions
-// ---------------------------------------------------------------
-
-#include "../src/Transform.h"
-
-// ---------------------------
-uint PackUNorm(float input, uint shift, uint num_bits, float dither)
-{
-    uint mask = num_bits == 32 ? 0xFFFFFFFF : ((1U << num_bits) - 1);
-    return uint(saturate(input) * float(mask) + dither) << shift;
-}
-
-// ---------------------------
-float UnpackUNorm(uint enc_input, uint shift, uint num_bits)
-{
-    uint mask = num_bits == 32 ? 0xFFFFFFFF : ((1U << num_bits) - 1);
-    enc_input = (enc_input >> shift) & mask;
-    return float(enc_input) / float(mask);
-}
 
 #endif
 

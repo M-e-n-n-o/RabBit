@@ -956,7 +956,14 @@ namespace RB::Graphics::D3D12
         {
             if (m_RenderState.cbvAddresses[i] > 0)
             {
-                m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+                if (compute)
+                {
+                    m_CommandList->SetComputeRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+                }
+                else
+                {
+                    m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+                }
                 root_index++;
             }
 

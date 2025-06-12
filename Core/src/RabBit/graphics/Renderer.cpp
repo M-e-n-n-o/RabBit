@@ -21,6 +21,7 @@
 #include "entity/components/Transform.h"
 
 #include "passes/GBuffer.h"
+#include "passes/DeferredLighting.h"
 
 #include "d3d12/RendererD3D12.h"
 
@@ -321,9 +322,20 @@ namespace RB::Graphics
             m_RenderGraphs[i] = nullptr;
         }
 
+        // TODO Later it would probably be better to set this rendergraph from user code (or atleast be able to)
+
         m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
-            .AddPass<GBufferPass>(RenderPassType::GBuffer, RenderPassSettings{})
-            .SetFinalPass(RenderPassType::GBuffer, 0)
+            // Passes
+            .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
+            .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
+
+            // Connections           (from)     ->      (to)
+            .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
+                                     0u,                0u,
+                                     1u,                1u)
+
+            // Finalize
+            .SetFinalPass(RenderPassType::DeferredLighting, 0)
             .Build(kRenderGraphType_Normal, m_RenderGraphContext);
     }
 

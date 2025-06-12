@@ -54,4 +54,18 @@ GBuffer SampleGBuffer(GBufferTexIndices textures, uint2 screen_coord)
 	return DecodeGBuffer(enc);
 }
 
+// --------------------------------------------------------------
+uint PackUNorm(float input, uint shift, uint num_bits, float dither)
+{
+	uint mask = num_bits == 32 ? 0xFFFFFFFF : ((1U << num_bits) - 1);
+	return uint(saturate(input) * float(mask) + dither) << shift;
+}
+
+float UnpackUNorm(uint enc_input, uint shift, uint num_bits)
+{
+	uint mask = num_bits == 32 ? 0xFFFFFFFF : ((1U << num_bits) - 1);
+	enc_input = (enc_input >> shift) & mask;
+	return float(enc_input) / float(mask);
+}
+
 #endif
