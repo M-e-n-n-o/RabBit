@@ -11,6 +11,14 @@ namespace RB::Graphics::D3D12
         m_BindlessSrvUavHeap = new DescriptorHeap(L"Bindless SRV/UAV heap", true, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, BINDLESS_DESCRIPTOR_HEAP_SIZE);
         m_RenderTargetHeap   = new DescriptorHeap(L"RenderTarget heap", false, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, RENDERTARGET_DESCRIPTOR_HEAP_SIZE);
         m_DepthStencilHeap   = new DescriptorHeap(L"Depth Stencil heap", false, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DEPTHSTENCIL_DESCRIPTOR_HEAP_SIZE);
+
+        D3D12_UNORDERED_ACCESS_VIEW_DESC dummy_desc = {};
+        dummy_desc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+        dummy_desc.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
+        dummy_desc.Texture2D.MipSlice   = 0;
+        dummy_desc.Texture2D.PlaneSlice = 0;
+
+        m_DummyRwTex2DHandle = CreateDescriptor(nullptr, dummy_desc);
     }
 
     DescriptorManager::~DescriptorManager()

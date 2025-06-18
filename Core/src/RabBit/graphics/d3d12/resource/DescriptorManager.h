@@ -47,10 +47,14 @@ namespace RB::Graphics::D3D12
 
         D3D12_GPU_DESCRIPTOR_HANDLE GetSrvUavStartHandle() const;
 
+        DescriptorHandle GetDummyRwTex2DHandle() const { return m_DummyRwTex2DHandle; }
+
     private:
         DescriptorHeap* m_BindlessSrvUavHeap;
         DescriptorHeap* m_RenderTargetHeap;
         DescriptorHeap* m_DepthStencilHeap;
+
+        DescriptorHandle m_DummyRwTex2DHandle;
     };
 
     extern DescriptorManager* g_DescriptorManager;

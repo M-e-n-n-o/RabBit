@@ -941,9 +941,8 @@ namespace RB::Graphics::D3D12
                 }
                 else
                 {
-                    // Not really an error texture, TODO in debug mode:
-                    // Allocate a UAV texture the size of the screen and bind that here and do some validation if we wrote to here every few frames
-                    index  = 0;
+                    // Dummy
+                    index  = (uint32_t)g_DescriptorManager->GetDummyRwTex2DHandle();
                 }
             }
 
