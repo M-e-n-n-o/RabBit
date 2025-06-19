@@ -3,7 +3,7 @@
 #include "graphics/RenderInterface.h"
 #include "graphics/RenderResource.h"
 #include "graphics/shaders/shared/Common.h"
-#include "resource/DescriptorManager.h"
+#include "resource/Descriptor.h"
 
 #include <d3d12.h>
 
@@ -135,9 +135,9 @@ namespace RB::Graphics::D3D12
             D3D12_DEPTH_STENCIL_DESC		depthStencilDesc = {};
             D3D12_GPU_VIRTUAL_ADDRESS		cbvAddresses[16];
 
-            DescriptorHandle				tex2DsrvHandles[SHADER_TEX2D_SLOTS];
+            DescriptorIndex				    tex2DsrvHandles[SHADER_TEX2D_SLOTS];
             bool                            tex2DSRGBs[SHADER_TEX2D_SLOTS];
-            DescriptorHandle				rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];
+            DescriptorIndex				    rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];
 
             List<PendingClear>              pendingClears;
         };

@@ -5,7 +5,7 @@
 #include "resource/RenderResourceD3D12.h"
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
-#include "resource/DescriptorManager.h"
+#include "resource/Descriptor.h"
 #include "Pipeline.h"
 #include "ShaderSystem.h"
 #include "UtilsD3D12.h"
@@ -231,7 +231,7 @@ namespace RB::Graphics::D3D12
 
             Texture2DD3D12* tex = (Texture2DD3D12*)resource;
 
-            m_RenderState.tex2DsrvHandles[slot] = tex->GetReadHandle();
+            m_RenderState.tex2DsrvHandles[slot] = tex->GetSrvHandle();
             m_RenderState.tex2DSRGBs[slot] = tex->GetColorSpace() == TextureColorSpace::sRGB;
         }
         break;
@@ -260,7 +260,7 @@ namespace RB::Graphics::D3D12
                 return;
             }
 
-            m_RenderState.rwTex2DsrvHandles[slot] = tex->GetWriteHandle();
+            m_RenderState.rwTex2DsrvHandles[slot] = tex->GetUavHandle();
         }
         break;
 
@@ -272,14 +272,14 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
     {
-        m_RenderState.tex2DsrvHandles[slot] = -1;
+        m_RenderState.tex2DsrvHandles[slot] = DescriptorIndex{};
         m_RenderState.tex2DSRGBs[slot] = false;
     }
 
     void RenderInterfaceD3D12::ClearRandomReadWriteInput(uint32_t slot)
     {
         // TODO Might be super handy to have some sort of validation every few frames to check if we accidentially wrote something to the error texture in debug mode
-        m_RenderState.rwTex2DsrvHandles[slot] = -1;
+        m_RenderState.rwTex2DsrvHandles[slot] = DescriptorIndex{};
     }
 
     void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
@@ -363,6 +363,7 @@ namespace RB::Graphics::D3D12
         // Delay the clears so that they can get batched together just before a draw/dispatch
 
         // TODO Add UAV clear if possible on the resource (then also auto place UAV barriers if needed)
+        // (Will then also have to implement a non-shader visible SRV/UAV descriptor heap)
 
         if (tex->AllowedRenderTarget())
         {
@@ -916,15 +917,15 @@ namespace RB::Graphics::D3D12
                 uint32_t& index  = indices.tex2D[i].tableID;
                 uint32_t& isSRGB = indices.tex2D[i].isSRGB;
 
-                if (m_RenderState.tex2DsrvHandles[i] >= 0)
+                if (m_RenderState.tex2DsrvHandles[i].isValid())
                 {
-                    index  = (uint32_t)m_RenderState.tex2DsrvHandles[i];
+                    index  = (uint32_t)m_RenderState.tex2DsrvHandles[i].heapIndex;
                     isSRGB = m_RenderState.tex2DSRGBs[i];
                 }
                 else
                 {
                     // Error texture
-                    index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetReadHandle();
+                    index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetSrvHandle().heapIndex;
                     isSRGB = false;
                 }
             }
@@ -935,14 +936,14 @@ namespace RB::Graphics::D3D12
                 uint32_t& index = indices.rwTex2D[i].tableID;
                 indices.rwTex2D[i].isSRGB = false;
 
-                if (m_RenderState.rwTex2DsrvHandles[i] >= 0)
+                if (m_RenderState.rwTex2DsrvHandles[i].isValid())
                 {
-                    index  = (uint32_t)m_RenderState.rwTex2DsrvHandles[i];
+                    index  = (uint32_t)m_RenderState.rwTex2DsrvHandles[i].heapIndex;
                 }
                 else
                 {
                     // Dummy
-                    index  = (uint32_t)g_DescriptorManager->GetDummyRwTex2DHandle();
+                    index  = (uint32_t)g_DescriptorManager->GetDummyRwTex2DHandle().heapIndex;
                 }
             }
 

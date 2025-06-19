@@ -97,10 +97,10 @@ namespace RB::Graphics::D3D12
         , m_Height(height)
         , m_IsRenderTarget(is_render_target)
         , m_AllowUAV(random_read_write_access)
-        , m_ReadHandle(-1)
-        , m_WriteHandle(-1)
-        , m_RenderTargetHandle(-1)
-        , m_DepthStencilHandle(-1)
+        , m_ReadHandle({})
+        , m_WriteHandle({})
+        , m_RenderTargetHandle({})
+        , m_DepthStencilHandle({})
         , m_RenderTargetDescriptor({})
         , m_DepthStencilDescriptor({})
     {
@@ -153,10 +153,10 @@ namespace RB::Graphics::D3D12
         , m_Height(height)
         , m_IsRenderTarget(is_render_target)
         , m_AllowUAV(random_read_write_access)
-        , m_ReadHandle(-1)
-        , m_WriteHandle(-1)
-        , m_RenderTargetHandle(-1)
-        , m_DepthStencilHandle(-1)
+        , m_ReadHandle({})
+        , m_WriteHandle({})
+        , m_RenderTargetHandle({})
+        , m_DepthStencilHandle({})
         , m_RenderTargetDescriptor({})
         , m_DepthStencilDescriptor({})
     {
@@ -165,19 +165,19 @@ namespace RB::Graphics::D3D12
 
     Texture2DD3D12::~Texture2DD3D12()
     {
-        g_DescriptorManager->InvalidateDescriptor(m_ReadHandle, DescriptorHandleType::SRV);
-        g_DescriptorManager->InvalidateDescriptor(m_WriteHandle, DescriptorHandleType::UAV);
-        g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle, DescriptorHandleType::RTV);
-        g_DescriptorManager->InvalidateDescriptor(m_DepthStencilHandle, DescriptorHandleType::DSV);
+        g_DescriptorManager->InvalidateDescriptor(m_ReadHandle);
+        g_DescriptorManager->InvalidateDescriptor(m_WriteHandle);
+        g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle);
+        g_DescriptorManager->InvalidateDescriptor(m_DepthStencilHandle);
 
         SAFE_DELETE(m_Resource);
     }
 
     void Texture2DD3D12::SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle)
     {
-        if (m_RenderTargetHandle >= 0)
+        if (m_RenderTargetHandle.isValid())
         {
-            g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle, DescriptorHandleType::RTV);
+            g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle);
         }
 
         m_RenderTargetDescriptor = handle;
@@ -226,7 +226,8 @@ namespace RB::Graphics::D3D12
             desc.Texture2D.MipSlice     = 0;
             desc.Texture2D.PlaneSlice   = 0;
 
-            m_RenderTargetHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc, m_RenderTargetDescriptor);
+            m_RenderTargetHandle     = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+            m_RenderTargetDescriptor = g_DescriptorManager->GetCpuHandle(m_RenderTargetHandle);
         }
 
         if (m_IsDepthStencil)
@@ -239,7 +240,8 @@ namespace RB::Graphics::D3D12
             desc.Flags              = D3D12_DSV_FLAG_NONE;
             desc.Texture2D.MipSlice = 0;
 
-            m_DepthStencilHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc, m_DepthStencilDescriptor);
+            m_DepthStencilHandle     = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+            m_DepthStencilDescriptor = g_DescriptorManager->GetCpuHandle(m_DepthStencilHandle);
         }
     }
 }

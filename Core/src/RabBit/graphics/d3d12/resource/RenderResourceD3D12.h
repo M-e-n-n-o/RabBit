@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
-#include "DescriptorManager.h"
+#include "Descriptor.h"
 #include "graphics/RenderResource.h"
 
 // DirectX 12 specific headers.
@@ -80,8 +80,8 @@ namespace RB::Graphics::D3D12
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
 
-        DescriptorHandle GetReadHandle() const { return m_ReadHandle; }
-        DescriptorHandle GetWriteHandle() const { return m_WriteHandle; }
+        DescriptorIndex GetSrvHandle() const { return m_ReadHandle; }
+        DescriptorIndex GetUavHandle() const { return m_WriteHandle; }
 
         void SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle);
         D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetHandle() const { return m_RenderTargetDescriptor; }
@@ -100,11 +100,11 @@ namespace RB::Graphics::D3D12
         bool							m_IsDepthStencil;
         bool							m_AllowUAV;
 
-        DescriptorHandle				m_ReadHandle;
-        DescriptorHandle				m_WriteHandle;
-        DescriptorHandle				m_RenderTargetHandle;
+        DescriptorIndex				    m_ReadHandle;
+        DescriptorIndex				    m_WriteHandle;
+        DescriptorIndex				    m_RenderTargetHandle;
         D3D12_CPU_DESCRIPTOR_HANDLE		m_RenderTargetDescriptor;
-        DescriptorHandle				m_DepthStencilHandle;
+        DescriptorIndex				    m_DepthStencilHandle;
         D3D12_CPU_DESCRIPTOR_HANDLE		m_DepthStencilDescriptor;
     };
 }

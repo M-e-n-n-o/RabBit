@@ -3,7 +3,7 @@
 #include "GraphicsDevice.h"
 #include "resource/ResourceManager.h"
 #include "resource/ResourceStateManager.h"
-#include "resource/DescriptorManager.h"
+#include "resource/Descriptor.h"
 #include "ShaderSystem.h"
 #include "Pipeline.h"
 
@@ -32,12 +32,12 @@ namespace RB::Graphics::D3D12
 
     void RendererD3D12::OnFrameStart()
     {
-
     }
 
     void RendererD3D12::OnFrameEnd()
     {
         g_ResourceManager->UpdateBookkeeping();
+        g_DescriptorManager->CycleDescriptors();
     }
 
     void RendererD3D12::SyncWithGpu()
