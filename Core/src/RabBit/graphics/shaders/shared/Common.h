@@ -59,15 +59,7 @@ struct TextureIndices
 
 struct FrameConstants
 {
-    /*
-        When passing matrix data to HLSL, it stores
-        it in column major order. So make sure to
-        first transpose matrices before sending them
-        to the GPU as they are stored in row major
-        on the CPU.
-    */
-
-    float4x4 worldToViewMat;	// View matrix	(transposed)
+    float4x4 worldToViewMat;	// View matrix
     float4x4 viewToWorldMat;    // Inverse view matrix
     float4x4 viewToClipMat;		// Projection matrix
     float4x4 clipToViewMat;     // Inverse projection matrix

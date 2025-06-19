@@ -55,10 +55,6 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        static_assert(false);
-        // TODO
-        // - The transformations in the gbuffer & lighting shaders are still wrong, needs fixing!
-
         inputs.viewContext->SetFrameConstants(inputs.renderInterface);
 
         inputs.renderInterface->SetComputeShader(CS_ApplyLightingDeferred);

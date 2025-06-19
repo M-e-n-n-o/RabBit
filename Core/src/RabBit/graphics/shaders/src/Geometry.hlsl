@@ -32,10 +32,11 @@ PI_SIMPLE VS_Gbuffer(VI_Simple input)
     float3 world_pos = TransformLocalToWorld(input.position, localToWorldMat);
     float3 view_pos  = TransformWorldToView(world_pos);
     float4 clip_pos  = TransformViewToClip(view_pos);
-
+        
     PI_SIMPLE output;
     output.position = clip_pos;
-    output.normal   = input.normal;
+    output.normal   = mul((float3x3)localToWorldMat, input.normal);
+    output.normal   = normalize(output.normal);
     output.uv       = input.uv;
 
     return output;

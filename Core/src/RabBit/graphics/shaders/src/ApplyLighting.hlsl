@@ -14,6 +14,12 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
 
     GBuffer gbuf = SampleGBuffer(indices, uv);
 
+    if (gbuf.depth <= 0.0001f)
+    {
+        // Bail out, nothing to light up
+        return;
+    }
+
     Light light;
     light.worldPos = GetCameraPos();
     light.color    = float3(1, 0, 0);

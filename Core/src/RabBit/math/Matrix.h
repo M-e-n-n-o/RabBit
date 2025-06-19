@@ -30,7 +30,7 @@ namespace RB::Math
                 Float4 row3;
             };
 
-            struct // Row major
+            struct
             {
                 struct
                 {
@@ -61,6 +61,7 @@ namespace RB::Math
 
         Float4x4 operator*(const Float4x4& other);
 
+        // Note, all methods after calling this will not work anymore!
         void Transpose();
 
         Float3 GetPosition();
@@ -104,7 +105,7 @@ namespace RB::Math
                 Float3 row2;
             };
 
-            struct // Row major
+            struct
             {
                 struct
                 {

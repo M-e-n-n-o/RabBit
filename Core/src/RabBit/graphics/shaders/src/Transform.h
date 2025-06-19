@@ -36,7 +36,7 @@ float3 TransformWorldToView(float3 world_pos)
 // --------------------------------------------------------------
 float4 TransformViewToClip(float3 view_pos)
 {
-    return TransformPosition(view_pos, g_FC.viewToClipMat);
+    return mul(g_FC.viewToClipMat, float4(view_pos.xyz, 1.0f));
 }
 
 // --------------------------------------------------------------

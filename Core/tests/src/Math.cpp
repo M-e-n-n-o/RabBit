@@ -34,10 +34,28 @@ TEST(MathTest, Float4x4Inverse)
     Float4x4 original = m;
 
     bool result = m.Invert();
-    assert(result && "Matrix should be invertible");
+	ASSERT_TRUE(result);
 
     Float4x4 identity = original * m;
 	ASSERT_TRUE(IsApproximatelyIdentity(identity));
+}
+
+TEST(MathTest, Float4x4Transpose)
+{
+	Float4x4 m;
+    // Fill with known values
+    m.a00 = 1;  m.a01 = 2;  m.a02 = 3;  m.a03 = 4;
+    m.a10 = 5;  m.a11 = 6;  m.a12 = 7;  m.a13 = 8;
+    m.a20 = 9;  m.a21 = 10; m.a22 = 11; m.a23 = 12;
+    m.a30 = 13; m.a31 = 14; m.a32 = 15; m.a33 = 16;
+
+    m.Transpose();
+
+    // Check the result
+    ASSERT_TRUE(m.a00 == 1 && m.a01 == 5 && m.a02 == 9  && m.a03 == 13);
+    ASSERT_TRUE(m.a10 == 2 && m.a11 == 6 && m.a12 == 10 && m.a13 == 14);
+    ASSERT_TRUE(m.a20 == 3 && m.a21 == 7 && m.a22 == 11 && m.a23 == 15);
+    ASSERT_TRUE(m.a30 == 4 && m.a31 == 8 && m.a32 == 12 && m.a33 == 16);
 }
 
 TEST(MathTest, Float3AddFloat3)

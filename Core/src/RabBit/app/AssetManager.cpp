@@ -97,9 +97,6 @@ namespace RB
             opts.target_axes            = ufbx_axes_right_handed_y_up;
             opts.target_unit_meters     = 1.0f;
 
-            uint32_t opts_cleared_to_zero = opts._begin_zero | opts._end_zero;
-            ufbx_assert(opts_cleared_to_zero == 0);
-
             ufbx_error error;
             out_model->internalScene = ufbx_load_memory(data.data, data.size, &opts, &error);
 
