@@ -81,8 +81,8 @@ namespace RB
         virtual void OnStart() = 0;
         virtual void OnStop() = 0;
 
-        void UpdateInternal();
-        void UpdateApp();
+        void UpdateInternal(float delta_time);
+        void UpdateApp(float delta_time);
         void OnNewLayerPushed(ApplicationLayer* layer);
         bool OnEvent(Events::Event& event) override;
 

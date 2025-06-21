@@ -23,7 +23,7 @@ namespace RB
 		// Gets called when detached from the layerstack
 		virtual void OnDetach() {}
 		// Gets called every game loop before the rendering
-		virtual void OnUpdate() {}
+		virtual void OnUpdate(float delta_time) {}
 		// Gets called every time an event occurs in the application
 		// Returns wheter the event was processed by the layer
 		virtual bool OnEvent(const Events::Event& event) { return false; }

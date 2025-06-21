@@ -124,8 +124,21 @@ namespace RB
 
     void Application::Run()
     {
+        LARGE_INTEGER frequency;
+        if (!QueryPerformanceFrequency(&frequency))
+        {
+            RB_LOG_ERROR(LOGTAG_MAIN, "Could not retrieve value from QueryPerformanceFrequency");
+        }
+
+        LARGE_INTEGER prev_time, curr_time;
+        QueryPerformanceCounter(&prev_time);
+
         while (!m_ShouldStop)
         {
+            QueryPerformanceCounter(&curr_time);
+            float delta_time = static_cast<float>(curr_time.QuadPart - prev_time.QuadPart) / frequency.QuadPart;
+            prev_time = curr_time;
+
             // Poll inputs and update windows
             for (Graphics::Window* window : m_Windows)
             {
@@ -143,10 +156,10 @@ namespace RB
             ProcessEvents();
 
             // Firstly update the engine itself
-            UpdateInternal();
+            UpdateInternal(delta_time);
 
             // Secondly update the application
-            UpdateApp();
+            UpdateApp(delta_time);
 
             // Submit the scene as context for rendering the next frame
             m_Renderer->SubmitFrame(m_Scene);
@@ -180,19 +193,19 @@ namespace RB
         }
     }
 
-    void Application::UpdateInternal()
+    void Application::UpdateInternal(float delta_time)
     {
 
     }
 
-    void Application::UpdateApp()
+    void Application::UpdateApp(float delta_time)
     {
         // Update the application layers
         for (ApplicationLayer* layer : m_LayerStack)
         {
             if (layer->IsEnabled()) 
             { 
-                layer->OnUpdate(); 
+                layer->OnUpdate(delta_time); 
             }
         }
     }

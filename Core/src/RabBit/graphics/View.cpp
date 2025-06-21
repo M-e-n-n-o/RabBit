@@ -17,6 +17,8 @@ namespace RB::Graphics
             GPU as they are stored in row major on the CPU.
 
             Not really sure why, but the above only seems to be necessary for the viewToClip??
+
+            Something is still going wrong with the math, objects also are way too much into the distance
         */
 
         Float4x4 world_to_view = viewFrustum.GetWorldToViewMatrix();
