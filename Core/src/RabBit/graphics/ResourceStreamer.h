@@ -4,37 +4,37 @@
 
 namespace RB::Graphics
 {
-	class RenderInterface;
-	class RenderResource;
-	class GpuGuard;
+    class RenderInterface;
+    class RenderResource;
+    class GpuGuard;
 
-	struct Streamable
-	{
-		RenderResource* resource;
-		void*			uploadData;
-		uint64_t		uploadSize;
-	};
+    struct Streamable
+    {
+        RenderResource* resource;
+        void*           uploadData;
+        uint64_t		uploadSize;
+    };
 
-	class ResourceStreamer
-	{
-	public:
-		ResourceStreamer();
-		~ResourceStreamer();
+    class ResourceStreamer
+    {
+    public:
+        ResourceStreamer();
+        ~ResourceStreamer();
 
-		void ScheduleForStream(const Streamable& streamable);
+        void ScheduleForStream(const Streamable& streamable);
 
-		Shared<GpuGuard> Stream(RenderInterface* render_interface);
+        Shared<GpuGuard> Stream(RenderInterface* render_interface);
 
-	private:
-		void UpdateStreamedEntries();
+    private:
+        void UpdateStreamedEntries();
 
-		struct StreamedEntry
-		{
-			Shared<GpuGuard> guard;
-			List<Streamable> streamables;
-		};
+        struct StreamedEntry
+        {
+            Shared<GpuGuard> guard;
+            List<Streamable> streamables;
+        };
 
-		Queue<Streamable>	 m_Streamables;
-		List<StreamedEntry>	 m_StreamedEntries;
-	};
+        Queue<Streamable>	 m_Streamables;
+        List<StreamedEntry>	 m_StreamedEntries;
+    };
 }

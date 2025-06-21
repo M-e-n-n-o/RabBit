@@ -2,178 +2,198 @@
 
 namespace RB::Graphics
 {
-	enum class ResourceState 
-	{
-		COMMON								= 0,
-		VERTEX_AND_CONSTANT_BUFFER			= 1,
-		INDEX_BUFFER						= 2,
-		RENDER_TARGET						= 3,
-		UNORDERED_ACCESS					= 4,
-		DEPTH_WRITE							= 5,
-		DEPTH_READ							= 6,
-		NON_PIXEL_SHADER_RESOURCE			= 7,
-		PIXEL_SHADER_RESOURCE				= 8,
-		COPY_DEST							= 9,
-		COPY_SOURCE							= 10,
-		RAYTRACING_ACCELERATION_STRUCTURE	= 11,
-		READ								= 12,
-		ALL_SHADER_RESOURCE					= 13,
-		PRESENT								= 14,
-	};
+    enum class ResourceState
+    {
+        COMMON                              = 0,
+        VERTEX_AND_CONSTANT_BUFFER          = 1,
+        INDEX_BUFFER                        = 2,
+        RENDER_TARGET                       = 3,
+        UNORDERED_ACCESS                    = 4,
+        DEPTH_WRITE                         = 5,
+        DEPTH_READ                          = 6,
+        NON_PIXEL_SHADER_RESOURCE           = 7,
+        PIXEL_SHADER_RESOURCE               = 8,
+        COPY_DEST                           = 9,
+        COPY_SOURCE                         = 10,
+        RAYTRACING_ACCELERATION_STRUCTURE   = 11,
+        READ                                = 12,
+        ALL_SHADER_RESOURCE                 = 13,
+        PRESENT                             = 14,
+    };
 
-	enum class RenderResourceFormat
-	{
-		Unkown,
-		R32G32B32A32_TYPELESS,
-		R32G32B32A32_FLOAT,
-		R16G16B16A16_FLOAT,
-		R32G32_FLOAT,
-		R8_UINT,
-		R32_UINT,
-		R8G8B8A8_TYPELESS,
-		R8G8B8A8_UNORM,
-		R8G8B8A8_SRGB,
-		R11G11B10_FLOAT,
-		R16G16_FLOAT,
-		R16G16_UINT,
-		R16_FLOAT,
-		R16_UINT,
-		R16_UNORM,
-		R16_SNORM,
-		R8_UNORM,
-		R32_FLOAT
-	};
+    enum class RenderResourceFormat
+    {
+        Unkown,
 
-	uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
+        // Regular format
+        R32G32B32A32_TYPELESS,
+        R32G32B32A32_FLOAT,
+        R16G16B16A16_FLOAT,
+        R32G32_FLOAT,
+        R8_UINT,
+        R32_UINT,
+        R8G8B8A8_TYPELESS,
+        R8G8B8A8_UNORM,
+        R8G8B8A8_SRGB,
+        R11G11B10_FLOAT,
+        R16G16_FLOAT,
+        R16G16_UINT,
+        R16_FLOAT,
+        R16_UINT,
+        R16_UNORM,
+        R16_SNORM,
+        R8_UNORM,
+        R32_FLOAT,
 
-	enum class RenderResourceType : uint32_t
-	{
-		Unknown					= (0 << 0),
+        // Depth formats
+        D32_FLOAT,
+        D16_UNORM
+    };
 
-		// Primitive types
-		Buffer					= (1 << 0),
-		Texture					= (1 << 1),
+    uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
+    bool IsDepthFormat(const RenderResourceFormat& format);
 
-		kLastPrimitiveType		= Texture,
+    enum class RenderResourceType : uint32_t
+    {
+        Unknown             = (0 << 0),
 
-		// Implementation types
-		StructuredBuffer		= (1 << 2) | Buffer,
-		VertexBuffer			= (1 << 3) | Buffer,
-		IndexBuffer				= (1 << 4) | Buffer,
-		Texture2D				= (1 << 5) | Texture
-	};
+        // Primitive types
+        Buffer              = (1 << 0),
+        Texture             = (1 << 1),
 
-	class RenderResource
-	{
-	public:
-		virtual ~RenderResource() = default;
+        kLastPrimitiveType  = Texture,
 
-		virtual const char* GetName() const = 0;
+        // Implementation types
+        StructuredBuffer    = (1 << 2) | Buffer,
+        VertexBuffer        = (1 << 3) | Buffer,
+        IndexBuffer         = (1 << 4) | Buffer,
+        Texture2D           = (1 << 5) | Texture
+    };
 
-		virtual void* GetNativeResource() const = 0;
+    class RenderResource
+    {
+    public:
+        virtual ~RenderResource() = default;
 
-		virtual RenderResourceFormat GetFormat() const = 0;
+        virtual const char* GetName() const = 0;
 
-		bool IsStreaming() const { return m_IsStreaming; }
-		void SetIsStreaming(bool is_streaming) { m_IsStreaming = is_streaming; }
+        virtual void* GetNativeResource() const = 0;
 
-		RenderResourceType GetType() const { return m_Type; }
-		RenderResourceType GetPrimitiveType() const;
+        virtual RenderResourceFormat GetFormat() const = 0;
 
-	protected:
-		RenderResource(RenderResourceType type): m_Type(type), m_IsStreaming(false) {}
+        bool ReadyToRender() const { return m_IsStreaming; } // TODO Make this thread safe
+        void SetStreaming(bool is_streaming) { m_IsStreaming = is_streaming; } // TODO Make this thread safe
 
-		RenderResourceType	m_Type;
-		bool				m_IsStreaming;
-	};
+        RenderResourceType GetType() const { return m_Type; }
+        RenderResourceType GetPrimitiveType() const;
 
-	class Buffer : public RenderResource
-	{
-	public:
-		virtual ~Buffer() = default;
+    protected:
+        RenderResource(RenderResourceType type) : m_Type(type), m_IsStreaming(false) {}
 
-	protected:
-		Buffer(RenderResourceType type): RenderResource(type) {}
-	};
+        RenderResourceType	m_Type;
+        bool				m_IsStreaming;
+    };
 
-	class StructuredBuffer : public Buffer
-	{
+    class Buffer : public RenderResource
+    {
+    public:
+        virtual ~Buffer() = default;
 
-	};
+    protected:
+        Buffer(RenderResourceType type) : RenderResource(type) {}
+    };
 
-	enum class TopologyType
-	{
-		TriangleList,
-		TriangleStrip
-	};
+    class StructuredBuffer : public Buffer
+    {
 
-	class VertexBuffer : public Buffer
-	{
-	public:
-		virtual ~VertexBuffer() = default;
+    };
 
-		RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
+    enum class TopologyType
+    {
+        TriangleList,
+        TriangleStrip
+    };
 
-		virtual uint32_t GetVertexElementCount() const = 0;
-		virtual TopologyType GetTopologyType() const = 0;
+    class VertexBuffer : public Buffer
+    {
+    public:
+        virtual ~VertexBuffer() = default;
 
-		static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
+        RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
-	protected:
-		VertexBuffer(): Buffer(RenderResourceType::VertexBuffer) {}
-	};
+        virtual uint32_t GetVertexElementCount() const = 0;
+        virtual TopologyType GetTopologyType() const = 0;
 
-	class IndexBuffer : public Buffer
-	{
-	public:
-		virtual ~IndexBuffer() = default;
+        static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
 
-		RenderResourceFormat GetFormat() const override { return RenderResourceFormat::R16_UINT; }
+    protected:
+        VertexBuffer() : Buffer(RenderResourceType::VertexBuffer) {}
+    };
 
-		virtual uint64_t GetIndexCount() const = 0;
+    class IndexBuffer : public Buffer
+    {
+    public:
+        virtual ~IndexBuffer() = default;
 
-		static IndexBuffer* Create(const char* name, uint16_t* data, uint64_t data_size);
+        RenderResourceFormat GetFormat() const override { return RenderResourceFormat::R16_UINT; }
 
-	protected:
-		IndexBuffer(): Buffer(RenderResourceType::IndexBuffer) {}
-	};
+        virtual uint64_t GetIndexCount() const = 0;
 
-	#define MAX_TEXTURE_SUBRESOURCE_COUNT 8
+        static IndexBuffer* Create(const char* name, uint32_t* data, uint64_t data_size);
 
-	class Texture : public RenderResource
-	{
-	public:
-		virtual ~Texture() = default;
+    protected:
+        IndexBuffer() : Buffer(RenderResourceType::IndexBuffer) {}
+    };
 
-		virtual bool AllowedRenderTarget() const = 0;
-		virtual bool AllowedRandomGpuWrites() const = 0;
-		virtual bool AllowedDepthStencil() const = 0;
+    enum class TextureColorSpace
+    {
+        Linear,
+        sRGB
+    };
 
-	protected:
-		Texture(RenderResourceType type): RenderResource(type) {}
-	};
+    #define MAX_TEXTURE_SUBRESOURCE_COUNT 8
 
-	class Texture2D : public Texture
-	{
-	public:
-		virtual ~Texture2D() = default;
+    class Texture : public RenderResource
+    {
+    public:
+        virtual ~Texture() = default;
 
-		virtual uint32_t GetWidth() const = 0;
-		virtual uint32_t GetHeight() const = 0;
-				float	 GetAspectRatio() const;
+        virtual bool AllowedRenderTarget() const = 0;
+        virtual bool AllowedRandomReadWrites() const = 0;
+        virtual bool AllowedDepthStencil() const = 0;
 
-		static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
-		static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
-		static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool is_depth_stencil, bool random_write_access);
+        TextureColorSpace GetColorSpace() const { return m_ColorSpace; }
 
-	protected:
-		Texture2D(): Texture(RenderResourceType::Texture2D) {}
-	};
+    protected:
+        Texture(RenderResourceType type, TextureColorSpace color_space) 
+            : RenderResource(type) 
+            , m_ColorSpace(color_space)
+        {}
 
-	struct RenderTargetBundle
-	{
-		Texture2D* colorTargets[8];
-		uint32_t   colorTargetsCount;
-		Texture2D* depthStencilTarget;
-	};
+        TextureColorSpace m_ColorSpace;
+    };
+
+    class Texture2D : public Texture
+    {
+    public:
+        virtual ~Texture2D() = default;
+
+        virtual uint32_t GetWidth() const = 0;
+        virtual uint32_t GetHeight() const = 0;
+        float	         GetAspectRatio() const;
+
+        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
+        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
+        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
+
+    protected:
+        Texture2D(TextureColorSpace color_space) : Texture(RenderResourceType::Texture2D, color_space) {}
+    };
+
+    struct RenderTargetBundle
+    {
+        Texture2D* colorTargets[8];
+        uint32_t   colorTargetsCount;
+        Texture2D* depthStencilTarget;
+    };
 }

@@ -5,45 +5,45 @@
 
 namespace RB::Entity
 {
-	class Scene
-	{
-	public:
-		Scene();
-		~Scene();
+    class Scene
+    {
+    public:
+        Scene();
+        ~Scene();
 
-		GameObject* CreateGameObject();
-		void RemoveGameObject(GameObject* obj);
+        GameObject* CreateGameObject();
+        void RemoveGameObject(GameObject* obj);
 
-		void UpdateScene();
+        void UpdateScene();
 
-		List<GameObject*> GetGameObjects();
+        List<GameObject*> GetGameObjects();
 
-		template<class T>
-		const List<const ObjectComponent*> GetComponentsWithTypeOf() const;
+        template<class T>
+        const List<const ObjectComponent*> GetComponentsWithTypeOf() const;
 
-	private:
-		List<GameObject*>  m_GameObjects;
-		ComponentRegister* m_ComponentRegister;
-	};
+    private:
+        List<GameObject*>  m_GameObjects;
+        ComponentRegister* m_ComponentRegister;
+    };
 
-	template<class T>
-	inline const List<const ObjectComponent*> Scene::GetComponentsWithTypeOf() const
-	{
-		List<const ObjectComponent*> list;
+    template<class T>
+    inline const List<const ObjectComponent*> Scene::GetComponentsWithTypeOf() const
+    {
+        List<const ObjectComponent*> list;
 
-		ComponentID id = m_ComponentRegister->GetComponentID<T>();
+        ComponentID id = m_ComponentRegister->GetComponentID<T>();
 
-		if (id == -1)
-		{
-			//RB_LOG_WARN(LOGTAG_ENTITY, "Component of type %s is not registered yet", T::GetComponentTag());
-			return list;
-		}
+        if (id == -1)
+        {
+            //RB_LOG_WARN(LOGTAG_ENTITY, "Component of type %s is not registered yet", T::GetComponentTag());
+            return list;
+        }
 
-		for (const GameObject* obj : m_GameObjects)
-		{
-			obj->AppendComponentsWithTypeOf(id, list);
-		}
+        for (const GameObject* obj : m_GameObjects)
+        {
+            obj->AppendComponentsWithTypeOf(id, list);
+        }
 
-		return list;
-	}
+        return list;
+    }
 }

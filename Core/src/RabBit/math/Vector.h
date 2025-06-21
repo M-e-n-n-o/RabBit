@@ -4,258 +4,310 @@
 
 namespace RB::Math
 {
-	struct Int2
-	{
-	public:
-		union { int32_t x, r; };
-		union { int32_t y, g; };
-
-		Int2();
-		Int2(int32_t xy);
-		Int2(int32_t x, int32_t y);
-		~Int2() = default;
-
-		void Normalize();
-
-		float GetLength() const;
-
-		Int2 operator+(const Int2& other)  const;
-		Int2 operator+(const int32_t& other) const;
-
-		Int2 operator-(const Int2& other)  const;
-		Int2 operator-(const int32_t& other) const;
-
-		Int2 operator*(const Int2& other)  const;
-		Int2 operator*(const int32_t& other) const;
-
-		Int2 operator/(const Int2& other)  const;
-		Int2 operator/(const int32_t& other) const;
-
-		static Int2 Cross(const Int2& first, const Int2& second);
-
-		static float Dot(const Int2& first, const Int2& second);
-
-		// Returns the angle between the two vectors in radians
-		static float Angle(const Int2& first, const Int2& second);
-	};
-
-	struct Int4
-	{
-	public:
-		union
-		{
-			struct
-			{
-				int32_t arr[4];
-			};
+    struct Int2
+    {
+    public:
+        union { int32_t x, r; };
+        union { int32_t y, g; };
+
+        Int2();
+        Int2(int32_t xy);
+        Int2(int32_t x, int32_t y);
+        ~Int2() = default;
+
+        void Normalize();
+
+        float GetLength() const;
+
+        Int2 operator+(const Int2& other)  const;
+        Int2 operator+(const int32_t& other) const;
+
+        Int2 operator-(const Int2& other)  const;
+        Int2 operator-(const int32_t& other) const;
+
+        Int2 operator*(const Int2& other)  const;
+        Int2 operator*(const int32_t& other) const;
+
+        Int2 operator/(const Int2& other)  const;
+        Int2 operator/(const int32_t& other) const;
+
+        static Int2 Cross(const Int2& first, const Int2& second);
+
+        static float Dot(const Int2& first, const Int2& second);
+
+        // Returns the angle between the two vectors in radians
+        static float Angle(const Int2& first, const Int2& second);
+    };
+
+    struct Int4
+    {
+    public:
+        union
+        {
+            struct
+            {
+                int32_t arr[4];
+            };
 
-			struct
-			{
-				int32_t x;
-				int32_t y;
-				int32_t z;
-				int32_t w;
-			};
-
-			struct
-			{
-				int32_t r;
-				int32_t g;
-				int32_t b;
-				int32_t a;
-			};
-		};
-
-		Int4();
-		Int4(int32_t xyzw);
-		Int4(int32_t x, int32_t y, int32_t z, int32_t w);
-		~Int4() = default;
+            struct
+            {
+                int32_t x;
+                int32_t y;
+                int32_t z;
+                int32_t w;
+            };
+
+            struct
+            {
+                int32_t r;
+                int32_t g;
+                int32_t b;
+                int32_t a;
+            };
+        };
+
+        Int4();
+        Int4(int32_t xyzw);
+        Int4(int32_t x, int32_t y, int32_t z, int32_t w);
+        ~Int4() = default;
+
+        void Normalize();
+
+        float GetLength() const;
+
+        Int4 operator+(const Int4& other)  const;
+        Int4 operator+(const int32_t& other) const;
+
+        Int4 operator-(const Int4& other)  const;
+        Int4 operator-(const int32_t& other) const;
+
+        Int4 operator*(const Int4& other)  const;
+        Int4 operator*(const int32_t& other) const;
+
+        Int4 operator/(const Int4& other)  const;
+        Int4 operator/(const int32_t& other) const;
+
+        static Int4 Cross(const Int4& first, const Int4& second);
+
+        static int32_t Dot(const Int4& first, const Int4& second);
+
+        // Returns the angle between the two vectors in radians
+        static int32_t Angle(const Int4& first, const Int4& second);
+    };
+
+    struct UInt2
+    {
+    public:
+        union
+        {
+            struct
+            {
+                uint32_t arr[2];
+            };
 
-		void Normalize();
+            struct
+            {
+                uint32_t x;
+                uint32_t y;
+            };
 
-		float GetLength() const;
+            struct
+            {
+                uint32_t r;
+                uint32_t g;
+            };
+        };
 
-		Int4 operator+(const Int4& other)  const;
-		Int4 operator+(const int32_t& other) const;
+        UInt2();
+        UInt2(uint32_t xy);
+        UInt2(uint32_t x, uint32_t y);
+        ~UInt2() = default;
 
-		Int4 operator-(const Int4& other)  const;
-		Int4 operator-(const int32_t& other) const;
+        void Normalize();
 
-		Int4 operator*(const Int4& other)  const;
-		Int4 operator*(const int32_t& other) const;
+        float GetLength() const;
 
-		Int4 operator/(const Int4& other)  const;
-		Int4 operator/(const int32_t& other) const;
+        UInt2 operator+(const UInt2& other)  const;
+        UInt2 operator+(const uint32_t& other) const;
 
-		static Int4 Cross(const Int4& first, const Int4& second);
+        UInt2 operator-(const UInt2& other)  const;
+        UInt2 operator-(const uint32_t& other) const;
 
-		static int32_t Dot(const Int4& first, const Int4& second);
+        UInt2 operator*(const UInt2& other)  const;
+        UInt2 operator*(const uint32_t& other) const;
 
-		// Returns the angle between the two vectors in radians
-		static int32_t Angle(const Int4& first, const Int4& second);
-	};
+        UInt2 operator/(const UInt2& other)  const;
+        UInt2 operator/(const uint32_t& other) const;
 
-	struct UInt4
-	{
-	public:
-		union
-		{
-			struct
-			{
-				uint32_t arr[4];
-			};
+        static UInt2 Cross(const UInt2& first, const UInt2& second);
 
-			struct
-			{
-				uint32_t x;
-				uint32_t y;
-				uint32_t z;
-				uint32_t w;
-			};
+        static uint32_t Dot(const UInt2& first, const UInt2& second);
 
-			struct
-			{
-				uint32_t r;
-				uint32_t g;
-				uint32_t b;
-				uint32_t a;
-			};
-		};
+        // Returns the angle between the two vectors in radians
+        static uint32_t Angle(const UInt2& first, const UInt2& second);
+    };
 
-		UInt4();
-		UInt4(uint32_t xyzw);
-		UInt4(uint32_t x, uint32_t y, uint32_t z, uint32_t w);
-		~UInt4() = default;
+    struct UInt4
+    {
+    public:
+        union
+        {
+            struct
+            {
+                uint32_t arr[4];
+            };
 
-		void Normalize();
+            struct
+            {
+                uint32_t x;
+                uint32_t y;
+                uint32_t z;
+                uint32_t w;
+            };
 
-		float GetLength() const;
+            struct
+            {
+                uint32_t r;
+                uint32_t g;
+                uint32_t b;
+                uint32_t a;
+            };
+        };
 
-		UInt4 operator+(const UInt4& other)  const;
-		UInt4 operator+(const uint32_t& other) const;
+        UInt4();
+        UInt4(uint32_t xyzw);
+        UInt4(uint32_t x, uint32_t y, uint32_t z, uint32_t w);
+        ~UInt4() = default;
 
-		UInt4 operator-(const UInt4& other)  const;
-		UInt4 operator-(const uint32_t& other) const;
+        void Normalize();
 
-		UInt4 operator*(const UInt4& other)  const;
-		UInt4 operator*(const uint32_t& other) const;
+        float GetLength() const;
 
-		UInt4 operator/(const UInt4& other)  const;
-		UInt4 operator/(const uint32_t& other) const;
+        UInt4 operator+(const UInt4& other)  const;
+        UInt4 operator+(const uint32_t& other) const;
 
-		static UInt4 Cross(const UInt4& first, const UInt4& second);
+        UInt4 operator-(const UInt4& other)  const;
+        UInt4 operator-(const uint32_t& other) const;
 
-		static uint32_t Dot(const UInt4& first, const UInt4& second);
+        UInt4 operator*(const UInt4& other)  const;
+        UInt4 operator*(const uint32_t& other) const;
 
-		// Returns the angle between the two vectors in radians
-		static uint32_t Angle(const UInt4& first, const UInt4& second);
-	};
+        UInt4 operator/(const UInt4& other)  const;
+        UInt4 operator/(const uint32_t& other) const;
 
-	struct Float2
-	{
-	public:
-		union { float x, r; };
-		union { float y, g; };
+        static UInt4 Cross(const UInt4& first, const UInt4& second);
 
-		Float2();
-		Float2(float xy);
-		Float2(float x, float y);
-		~Float2() = default;
+        static uint32_t Dot(const UInt4& first, const UInt4& second);
 
-		void Normalize();
+        // Returns the angle between the two vectors in radians
+        static uint32_t Angle(const UInt4& first, const UInt4& second);
+    };
 
-		float GetLength() const;
+    struct Float2
+    {
+    public:
+        union { float x, r; };
+        union { float y, g; };
 
-		Float2 operator+(const Float2& other)  const;
-		Float2 operator+(const float& other) const;
+        Float2();
+        Float2(float xy);
+        Float2(float x, float y);
+        ~Float2() = default;
 
-		Float2 operator-(const Float2& other)  const;
-		Float2 operator-(const float& other) const;
+        void Normalize();
 
-		Float2 operator*(const Float2& other)  const;
-		Float2 operator*(const float& other) const;
+        float GetLength() const;
 
-		Float2 operator/(const Float2& other)  const;
-		Float2 operator/(const float& other) const;
+        Float2 operator+(const Float2& other)  const;
+        Float2 operator+(const float& other) const;
 
-		//static Float2 Cross(const Float2& first, const Float2& second);
+        Float2 operator-(const Float2& other)  const;
+        Float2 operator-(const float& other) const;
 
-		static float Dot(const Float2& first, const Float2& second);
+        Float2 operator*(const Float2& other)  const;
+        Float2 operator*(const float& other) const;
 
-		// Returns the angle between the two vectors in radians
-		static float Angle(const Float2& first, const Float2& second);
-	};
+        Float2 operator/(const Float2& other)  const;
+        Float2 operator/(const float& other) const;
 
-	struct Float3
-	{
-	public:
-		union { float x, r; };
-		union { float y, g; };
-		union { float z, b; };
+        //static Float2 Cross(const Float2& first, const Float2& second);
 
-		Float3();
-		Float3(float xyz);
-		Float3(float x, float y, float z);
-	    ~Float3() = default;
+        static float Dot(const Float2& first, const Float2& second);
 
-		void Normalize();
+        // Returns the angle between the two vectors in radians
+        static float Angle(const Float2& first, const Float2& second);
+    };
 
-		float GetLength() const;
+    struct Float3
+    {
+    public:
+        union { float x, r; };
+        union { float y, g; };
+        union { float z, b; };
 
-		Float3 operator+(const Float3& other)  const;
-		Float3 operator+(const float& other) const;
+        Float3();
+        Float3(float xyz);
+        Float3(float x, float y, float z);
+        ~Float3() = default;
 
-		Float3 operator-(const Float3& other)  const;
-		Float3 operator-(const float& other) const;
+        void Normalize();
 
-		Float3 operator*(const Float3& other)  const;
-		Float3 operator*(const float& other) const;
+        float GetLength() const;
 
-		Float3 operator/(const Float3& other)  const;
-		Float3 operator/(const float& other) const;
+        Float3 operator+(const Float3& other)  const;
+        Float3 operator+(const float& other) const;
 
-		static Float3 Cross(const Float3& first, const Float3& second);
+        Float3 operator-(const Float3& other)  const;
+        Float3 operator-(const float& other) const;
 
-		static float Dot(const Float3& first, const Float3& second);
+        Float3 operator*(const Float3& other)  const;
+        Float3 operator*(const float& other) const;
 
-		// Returns the angle between the two vectors in radians
-		static float Angle(const Float3& first, const Float3& second);
-	};
+        Float3 operator/(const Float3& other)  const;
+        Float3 operator/(const float& other) const;
 
-	struct Float4
-	{
-	public:
-		union { float x, r; };
-		union { float y, g; };
-		union { float z, b; };
-		union { float w, a; };
+        static Float3 Cross(const Float3& first, const Float3& second);
 
-		Float4();
-		Float4(float xyzw);
-		Float4(float x, float y, float z, float w);
-		~Float4() = default;
+        static float Dot(const Float3& first, const Float3& second);
 
-	//	void Normalize();
+        // Returns the angle between the two vectors in radians
+        static float Angle(const Float3& first, const Float3& second);
+    };
 
-	//	float GetLength() const;
+    struct Float4
+    {
+    public:
+        union { float x, r; };
+        union { float y, g; };
+        union { float z, b; };
+        union { float w, a; };
 
-		Float4 operator+(const Float4& other)  const;
-		Float4 operator+(const float& other) const;
+        Float4();
+        Float4(float xyzw);
+        Float4(float x, float y, float z, float w);
+        ~Float4() = default;
 
-	//	Float4 operator-(const Float4& other)  const;
-	//	Float4 operator-(const float& other) const;
+        //	void Normalize();
 
-		Float4 operator*(const Float4& other)  const;
-		Float4 operator*(const float& other) const;
+        //	float GetLength() const;
 
-	//	Float4 operator/(const Float4& other)  const;
-	//	Float4 operator/(const float& other) const;
+        Float4 operator+(const Float4& other)  const;
+        Float4 operator+(const float& other) const;
 
-	//	static Float4 Cross(const Float4& first, const Float4& second);
+        //	Float4 operator-(const Float4& other)  const;
+        //	Float4 operator-(const float& other) const;
 
-	//	static float Dot(const Float4& first, const Float4& second);
+        Float4 operator*(const Float4& other)  const;
+        Float4 operator*(const float& other) const;
 
-	//	// Returns the angle between the two vectors in radians
-	//	static float Angle(const Float4& first, const Float4& second);
-	};
+        //	Float4 operator/(const Float4& other)  const;
+        //	Float4 operator/(const float& other) const;
+
+        //	static Float4 Cross(const Float4& first, const Float4& second);
+
+        //	static float Dot(const Float4& first, const Float4& second);
+
+        //	// Returns the angle between the two vectors in radians
+        //	static float Angle(const Float4& first, const Float4& second);
+    };
 }

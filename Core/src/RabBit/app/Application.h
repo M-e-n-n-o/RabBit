@@ -1,95 +1,132 @@
 #pragma once
 
 #include "Core.h"
-#include "input/events/Event.h"
+#include "Settings.h"
+#include "ApplicationLayer.h"
+#include "events/Event.h"
 
 #include <cstdint>
 
 namespace RB
 {
-	namespace Graphics
-	{
-		class Window;
-		class Display;
-		class Renderer;
-	}
+    namespace Graphics
+    {
+        class Window;
+        class Display;
+        class Renderer;
+    }
 
-	namespace Entity
-	{
-		class Scene;
-	}
+    namespace Entity
+    {
+        class Scene;
+    }
 
-	struct AppInfo
-	{
-		struct Window
-		{
-			const char* windowName;
-			bool		fullscreen;
-			uint32_t    windowWidth;
-			uint32_t    windowHeight;
-			float		forcedRenderAspect;
-			float		renderScale;
-			bool		semiTransparent;
-		};
+    struct AppInfo
+    {
+        struct Window
+        {
+            const char* windowName          = "RabBit App";
+            bool		fullscreen          = false;
+            uint32_t    windowWidth         = 1280;
+            uint32_t    windowHeight        = 720;
+            float		forcedRenderAspect  = 0.0f;
+            float		renderScale         = 1.0f;
+            float       gammaCorrection     = 2.2f;
+            float       brightness          = 1.0f;
+            bool		semiTransparent     = false;
+        };
 
-		const char*		appName;
-		List<Window>	windows;
-	};
+        const char*		appName;
+        List<Window>	windows;
+    };
 
-	class Application : public Input::Events::EventListener
-	{
-	public:
-		Application(AppInfo& info);
-		virtual ~Application();
+    class Application : public Events::EventListener
+    {
+    public:
+        Application(AppInfo& info);
+        virtual ~Application();
 
-		bool Start(const char* launch_args);
-		void Run();
-		void Shutdown();
+        bool Start(const char* launch_args);
+        void Run();
+        void Shutdown();
 
-		List<Graphics::Display*> GetDisplays() const { return m_Displays; }
+        template<class Layer, typename... Args>
+        ApplicationLayer* PushLayer(Args... args);
 
-		Graphics::Window* GetPrimaryWindow() const;
-		Graphics::Window* GetWindow(uint32_t index) const;
-		Graphics::Window* FindWindow(void* window_handle) const;
-		int32_t			  FindWindowIndex(void* window_handle) const;
+        template<class Overlay, typename... Args>
+        ApplicationLayer* PushOverlay(Args... args);
 
-		Graphics::Renderer* GetRenderer() const { return m_Renderer; }
+        void PopLayer(ApplicationLayer* layer);
 
-		Entity::Scene* GetScene() const { return m_Scene; }
+        List<Graphics::Display*> GetDisplays() const { return m_Displays; }
 
-		uint64_t GetFrameIndex() const { return m_FrameIndex; }
+        Graphics::Window* GetPrimaryWindow() const;
+        Graphics::Window* GetWindow(uint32_t index) const;
+        Graphics::Window* FindWindow(void* window_handle) const;
+        int32_t			  FindWindowIndex(void* window_handle) const;
 
-		static Application* GetInstance() { return s_Instance; }
+        void ApplyNewGraphicsSettings(GraphicsSettings& settings);
+        GraphicsSettings GetGraphicsSettings() { return m_GraphicsSettings; }
+        const GraphicsSettings& GetGraphicsSettings() const { return m_GraphicsSettings; }
 
-	private:
-		virtual void OnStart() = 0;
-		virtual void OnUpdate() = 0;
-		virtual void OnStop() = 0;
+        Graphics::Renderer* GetRenderer() const { return m_Renderer; }
 
-		void UpdateInternal();
+        Entity::Scene* GetScene() const { return m_Scene; }
 
-		void OnEvent(Input::Events::Event& event) override;
+        uint64_t GetFrameIndex() const { return m_FrameIndex; }
 
-		const AppInfo				m_StartAppInfo;
+        static Application* GetInstance() { return s_Instance; }
 
-		bool						m_Initialized;
-		bool						m_ShouldStop;
+    private:
+        virtual void OnStart() = 0;
+        virtual void OnStop() = 0;
 
-		uint64_t					m_FrameIndex;
+        void UpdateInternal(float delta_time);
+        void UpdateApp(float delta_time);
+        void OnNewLayerPushed(ApplicationLayer* layer);
+        bool OnEvent(Events::Event& event) override;
 
-		List<Graphics::Display*>	m_Displays;
+        const AppInfo				m_StartAppInfo;
 
-		List<Graphics::Window*>		m_Windows;
-		int32_t						m_PrimaryWindowIndex;
-		bool						m_CheckWindows;
+        bool						m_Initialized;
+        bool						m_ShouldStop;
 
-		Graphics::Renderer*			m_Renderer;
+        uint64_t					m_FrameIndex;
 
-		Entity::Scene*				m_Scene;
+        List<Graphics::Display*>	m_Displays;
 
-		static Application*			s_Instance;
-	};
+        List<Graphics::Window*>		m_Windows;
+        int32_t						m_PrimaryWindowIndex;
+        bool						m_CheckWindows;
 
-	// To be defined in client
-	Application* CreateApplication(const char* launch_args);
+        GraphicsSettings            m_GraphicsSettings;
+        Graphics::Renderer*			m_Renderer;
+
+        Entity::Scene*				m_Scene;
+
+        LayerStack                  m_LayerStack;
+
+        static Application*			s_Instance;
+    };
+
+    template<class Layer, typename... Args>
+    inline ApplicationLayer* Application::PushLayer(Args... args)
+    {
+        ApplicationLayer* layer = new Layer(args...);
+        m_LayerStack.PushLayer(layer);
+        OnNewLayerPushed(layer);
+        return layer;
+    }
+
+    template<class Overlay, typename... Args>
+    inline ApplicationLayer* Application::PushOverlay(Args... args)
+    {
+        ApplicationLayer* overlay = new Overlay(args...);
+        m_LayerStack.PushOverlay(overlay);
+        OnNewLayerPushed(overlay);
+        return overlay;
+    }
+
+    // To be defined in client
+    Application* CreateApplication(const char* launch_args);
 }

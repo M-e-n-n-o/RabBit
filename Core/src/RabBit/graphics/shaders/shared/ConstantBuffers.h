@@ -1,18 +1,20 @@
-#if !SHADER
-#include "RabBitCommon.h"
+#ifndef RB_SHADER_CONSTANT_BUFFERS
+#define RB_SHADER_CONSTANT_BUFFERS
 
-typedef uint32_t			uint;
-
-typedef RB::Math::UInt4		uint4;
-typedef RB::Math::Float2	float2;
-typedef RB::Math::Float3	float3;
-typedef RB::Math::Float4	float4;
-typedef RB::Math::Float4x4	float4x4;
-#endif
-
+#include "Common.h"
 
 struct PresentCB
 {
-	float2 texOffset;
-	float2 currSize;
+    float2 texOffset;
+    float2 currSize;
+    float  brightnessValue;
+    float  gammaValue;
 };
+
+struct Light
+{
+    float3 worldPos;
+    float3 color;
+};
+
+#endif

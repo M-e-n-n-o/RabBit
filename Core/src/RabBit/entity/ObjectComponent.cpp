@@ -3,8 +3,9 @@
 
 namespace RB::Entity
 {
-	void ObjectComponent::OnAttachedToGameObject(GameObject* obj)
-	{
-		m_GameObject = obj;
-	}
+    void ObjectComponent::OnAttachedToGameObject(GameObject* obj)
+    {
+        m_GameObject = obj;
+        m_Enabled = true;
+    }
 }

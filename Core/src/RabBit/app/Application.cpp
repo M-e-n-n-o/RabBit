@@ -1,305 +1,411 @@
 #include "RabBitCommon.h"
 #include "Application.h"
+#include "AssetManager.h"
 
 #include "graphics/Window.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
-#include "graphics/AssetManager.h"
 
 #include "entity/Scene.h"
 
-#include "input/events/KeyEvent.h"
-#include "input/KeyCodes.h"
-#include "input/Input.h"
+#include "events/ApplicationEvent.h"
+#include "events/KeyEvent.h"
+#include "events/input/KeyCodes.h"
+#include "events/input/Input.h"
 
 using namespace RB::Graphics;
-using namespace RB::Input::Events;
-using namespace RB::Input;
+using namespace RB::Events;
 using namespace RB::Entity;
 
 namespace RB
 {
-	Application* Application::s_Instance = nullptr;
+    Application* Application::s_Instance = nullptr;
 
-	Application::Application(AppInfo& info)
-		: EventListener(kEventCat_All)
-		, m_StartAppInfo(info)
-		, m_Initialized(false)
-		, m_ShouldStop(false)
-		, m_FrameIndex(0)
-		, m_CheckWindows(false)
-		, m_PrimaryWindowIndex(0)
-	{
-		RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
-		s_Instance = this;
+    Application::Application(AppInfo& info)
+        : EventListener(kEventCat_All)
+        , m_StartAppInfo(info)
+        , m_Initialized(false)
+        , m_ShouldStop(false)
+        , m_FrameIndex(0)
+        , m_CheckWindows(false)
+        , m_PrimaryWindowIndex(0)
+    {
+        RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
+        s_Instance = this;
 
-		RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
-		RB_LOG_RELEASE(LOGTAG_MAIN, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
-	}
+        RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
+        RB_LOG_RELEASE(LOGTAG_MAIN, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
+    }
 
-	Application::~Application()
-	{
+    Application::~Application()
+    {
 
-	}
+    }
 
-	bool Application::Start(const char* launch_args)
-	{
-		RB_LOG(LOGTAG_MAIN, "");
-		RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
-		RB_LOG(LOGTAG_MAIN, "");
+    bool Application::Start(const char* launch_args)
+    {
+        RB_LOG(LOGTAG_MAIN, "");
+        RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
+        RB_LOG(LOGTAG_MAIN, "");
 
-		char asset_path[256];
-		if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
-		{
-			std::string s = offset;
+        char asset_path[256];
+        if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
+        {
+            std::string s = offset;
 
-			int start = s.find_first_of("\"") + 1;
-			s = s.substr(start);
-			int end = s.find_first_of("\"");
+            int start = s.find_first_of("\"") + 1;
+            s = s.substr(start);
+            int end = s.find_first_of("\"");
 
-			if (s[end-1] != '/' && s[end-1] != '\\')
-			{
-				s.insert(s.begin() + end, '/');
-				end++;
-			}
+            if (s[end-1] != '/' && s[end-1] != '\\')
+            {
+                s.insert(s.begin() + end, '/');
+                end++;
+            }
 
-			strcpy(asset_path, s.substr(0, end).c_str());
-		}
-		else
-		{
-			RB_ASSERT_ALWAYS_RELEASE(LOGTAG_MAIN, "Did not fill in the asset path! Use the \"-assetPath \"path\" launch argument to specify the path");
-			return false;
-		}
+            strcpy(asset_path, s.substr(0, end).c_str());
+        }
+        else
+        {
+            RB_ASSERT_ALWAYS_RELEASE(LOGTAG_MAIN, "Did not fill in the asset path! Use the \"-assetPath \"path\" launch argument to specify the path");
+            return false;
+        }
 
-		RB_LOG(LOGTAG_MAIN, "Asset path: \"%s\"", asset_path);
+        RB_LOG(LOGTAG_MAIN, "Asset path: \"%s\"", asset_path);
 
-		AssetManager::Init(asset_path);
+        AssetManager::Init(asset_path);
 
-		Renderer::SetAPI(RenderAPI::D3D12);
-		m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
-		m_Renderer->Init();
+        Renderer::SetAPI(RenderAPI::D3D12);
 
-		m_Displays = Display::CreateDisplays();
+        m_GraphicsSettings = {};
+        //m_GraphicsSettings.renderWidth = // What size to set here??
 
-		for (const AppInfo::Window& window : m_StartAppInfo.windows)
-		{
-			if (window.fullscreen)
-			{
-				m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
-			}
-			else
-			{
-				m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
-			}
-		}
+        m_GraphicsSettings.Print();
 
-		m_Scene = new Scene();
+        m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
+        m_Renderer->Init();
 
-		m_Initialized = true;
+        m_Displays = Display::CreateDisplays();
 
-		RB_LOG(LOGTAG_MAIN, "");
-		RB_LOG(LOGTAG_MAIN, "========== STARTUP COMPLETE =========");
-		RB_LOG(LOGTAG_MAIN, "");
+        for (const AppInfo::Window& window : m_StartAppInfo.windows)
+        {
+            if (window.fullscreen)
+            {
+                m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
+            }
+            else
+            {
+                m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, RenderResourceFormat::R8G8B8A8_UNORM, window.renderScale, window.forcedRenderAspect));
+            }
 
-		// Initialize app user
-		RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.appName);
-		OnStart();
+            (*(m_Windows.end()-1))->SetBrightness(window.brightness);
+            (*(m_Windows.end()-1))->SetGammaCorrection(window.gammaCorrection);
+        }
 
-		RB_LOG(LOGTAG_MAIN, "");
-		RB_LOG(LOGTAG_MAIN, "======== STARTING MAIN LOOP =========");
-		RB_LOG(LOGTAG_MAIN, "");
+        m_Scene = new Scene();
 
-		return true;
-	}
+        m_Initialized = true;
 
-	void Application::Run()
-	{
-		while (!m_ShouldStop)
-		{
-			// Poll inputs and update windows
-			for (Graphics::Window* window : m_Windows)
-			{
-				if (window->IsValid())
-				{
-					window->Update();
-				}
-				else
-				{
-					m_CheckWindows = true;
-				}
-			}
+        RB_LOG(LOGTAG_MAIN, "");
+        RB_LOG(LOGTAG_MAIN, "========== STARTUP COMPLETE =========");
+        RB_LOG(LOGTAG_MAIN, "");
 
-			// Process the new received events
-			ProcessEvents();
+        // Initialize app user
+        RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.appName);
+        OnStart();
 
-			// Firstly update the engine itself
-			UpdateInternal();
+        RB_LOG(LOGTAG_MAIN, "");
+        RB_LOG(LOGTAG_MAIN, "======== STARTING MAIN LOOP =========");
+        RB_LOG(LOGTAG_MAIN, "");
 
-			// Secondly update the application
-			OnUpdate();
+        return true;
+    }
 
-			// Submit the scene as context for rendering the next frame
-			m_Renderer->SubmitFrame(m_Scene);
+    void Application::Run()
+    {
+        LARGE_INTEGER frequency;
+        if (!QueryPerformanceFrequency(&frequency))
+        {
+            RB_LOG_ERROR(LOGTAG_MAIN, "Could not retrieve value from QueryPerformanceFrequency");
+        }
 
-			// Check if there are any windows that should be closed/removed
-			if (m_CheckWindows)
-			{
-				m_Renderer->SyncRenderer(true);
+        LARGE_INTEGER prev_time, curr_time;
+        QueryPerformanceCounter(&prev_time);
 
-				for (int i = 0; i < m_Windows.size(); i++)
-				{
-					if (!m_Windows[i]->IsValid())
-					{
-						delete m_Windows[i];
-						m_Windows.erase(m_Windows.begin() + i);
-						i--;
-					}
-				}
+        while (!m_ShouldStop)
+        {
+            QueryPerformanceCounter(&curr_time);
+            float delta_time = static_cast<float>(curr_time.QuadPart - prev_time.QuadPart) / frequency.QuadPart;
+            prev_time = curr_time;
 
-				if (m_Windows.size() == 0)
-				{
-					RB_LOG(LOGTAG_EVENT, "Last window has been closed, requesting to stop application");
-					m_ShouldStop = true;
-				}
+            // Poll inputs and update windows
+            for (Graphics::Window* window : m_Windows)
+            {
+                if (window->IsValid())
+                {
+                    window->Update();
+                }
+                else
+                {
+                    m_CheckWindows = true;
+                }
+            }
 
-				m_CheckWindows = false;
-			}
+            // Process the new received events
+            ProcessEvents();
 
-			// Update the frame index
-			++m_FrameIndex;
-		}
-	}
+            // Firstly update the engine itself
+            UpdateInternal(delta_time);
 
-	void Application::UpdateInternal()
-	{
+            // Secondly update the application
+            UpdateApp(delta_time);
 
-	}
+            // Submit the scene as context for rendering the next frame
+            m_Renderer->SubmitFrame(m_Scene);
 
-	void Application::Shutdown()
-	{
-		RB_LOG(LOGTAG_MAIN, "");
-		RB_LOG(LOGTAG_MAIN, "============= SHUTDOWN ==============");
-		RB_LOG(LOGTAG_MAIN, "");
+            // Check if there are any windows that should be closed/removed
+            if (m_CheckWindows)
+            {
+                m_Renderer->SyncRenderer(true);
 
-		// Shutdown app user
-		OnStop();
+                for (int i = 0; i < m_Windows.size(); i++)
+                {
+                    if (!m_Windows[i]->IsValid())
+                    {
+                        delete m_Windows[i];
+                        m_Windows.erase(m_Windows.begin() + i);
+                        i--;
+                    }
+                }
 
-		delete m_Scene;
+                if (m_Windows.size() == 0)
+                {
+                    RB_LOG(LOGTAG_EVENT, "Last window has been closed, requesting to stop application");
+                    m_ShouldStop = true;
+                }
 
-		for (int i = 0; i < m_Windows.size(); i++)
-		{
-			delete m_Windows[i];
-		}
-		m_Windows.clear();
+                m_CheckWindows = false;
+            }
 
-		for (int i = 0; i < m_Displays.size(); i++)
-		{
-			delete m_Displays[i];
-		}
-		m_Displays.clear();
+            // Update the frame index
+            ++m_FrameIndex;
+        }
+    }
 
-		m_Renderer->Shutdown();
-		delete m_Renderer;
+    void Application::UpdateInternal(float delta_time)
+    {
 
-		RB_LOG(LOGTAG_MAIN, "");
-		RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
-		RB_LOG(LOGTAG_MAIN, "");
-	}
+    }
 
-	Graphics::Window* Application::GetPrimaryWindow() const
-	{
-		if (m_PrimaryWindowIndex >= m_Windows.size() || m_PrimaryWindowIndex < 0)
-		{
-			RB_LOG_ERROR(LOGTAG_WINDOWING, "There is no primary window");
-			return nullptr;
-		}
+    void Application::UpdateApp(float delta_time)
+    {
+        // Update the application layers
+        for (ApplicationLayer* layer : m_LayerStack)
+        {
+            if (layer->IsEnabled()) 
+            { 
+                layer->OnUpdate(delta_time); 
+            }
+        }
+    }
 
-		return m_Windows[m_PrimaryWindowIndex];
-	}
+    void Application::Shutdown()
+    {
+        RB_LOG(LOGTAG_MAIN, "");
+        RB_LOG(LOGTAG_MAIN, "============= SHUTDOWN ==============");
+        RB_LOG(LOGTAG_MAIN, "");
 
-	Graphics::Window* Application::GetWindow(uint32_t index) const
-	{
-		RB_ASSERT_FATAL(LOGTAG_MAIN, index < m_Windows.size() && index >= 0, "Trying to get a window that does not exist");
+        for (ApplicationLayer* layer : m_LayerStack)
+        {
+            layer->OnDetach();
+            delete layer;
+        }
 
-		return m_Windows[index];
-	}
+        m_LayerStack.ClearStack();
 
-	Graphics::Window* Application::FindWindow(void* window_handle) const
-	{
-		for (Graphics::Window* window : m_Windows)
-		{
-			if (window->IsSameWindow(window_handle))
-			{
-				return window;
-			}
-		}
+        // Shutdown app user
+        OnStop();
 
-		RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+        delete m_Scene;
 
-		return nullptr;
-	}
+        for (int i = 0; i < m_Windows.size(); i++)
+        {
+            delete m_Windows[i];
+        }
+        m_Windows.clear();
 
-	int32_t Application::FindWindowIndex(void* window_handle) const
-	{
-		for (int i = 0; i < m_Windows.size(); ++i)
-		{
-			if (m_Windows[i]->IsSameWindow(window_handle))
-			{
-				return i;
-			}
-		}
+        for (int i = 0; i < m_Displays.size(); i++)
+        {
+            delete m_Displays[i];
+        }
+        m_Displays.clear();
 
-		RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+        m_Renderer->Shutdown();
+        delete m_Renderer;
 
-		return -1;
-	}
+        RB_LOG(LOGTAG_MAIN, "");
+        RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
+        RB_LOG(LOGTAG_MAIN, "");
+    }
 
-	void Application::OnEvent(Event& event)
-	{
-		if (!m_Initialized)
-		{
-			return;
-		}
+    void Application::OnNewLayerPushed(ApplicationLayer* layer)
+    {
+        RB_LOG(LOGTAG_MAIN, "Adding a new layer to the application: %s", layer->GetName());
+        layer->OnAttach();
+    }
 
-		// BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
+    void Application::PopLayer(ApplicationLayer* layer)
+    {
+        bool success = m_LayerStack.PopLayer(layer);
 
-		BindEvent<KeyPressedEvent>([this](KeyPressedEvent& e)
-		{
-			if (e.GetKeyCode() == KeyCode::F11 ||
-				(IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::Enter))
-			{
-				WindowFullscreenToggleEvent e(GetPrimaryWindow()->GetNativeWindowHandle());
-				g_EventManager->InsertEvent(e);
-			}
+        if (success)
+        {
+            RB_LOG(LOGTAG_MAIN, "Removed layer from the application: %s", layer->GetName());
+            layer->OnDetach();
+            delete layer;
+        }
+        else
+        {
+            RB_LOG_ERROR(LOGTAG_MAIN, "Could not find layer %s to remove from the application", layer->GetName());
+        }
+    }
 
-			if (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
-			{
-				RB_LOG(LOGTAG_EVENT, "Instant close requested, requesting to close all windows..");
+    Graphics::Window* Application::GetPrimaryWindow() const
+    {
+        if (m_PrimaryWindowIndex >= m_Windows.size() || m_PrimaryWindowIndex < 0)
+        {
+            RB_LOG_ERROR(LOGTAG_WINDOWING, "There is no primary window");
+            return nullptr;
+        }
 
-				for (int i = 0; i < m_Windows.size(); i++)
-				{
-					WindowCloseRequestEvent e(m_Windows[i]->GetNativeWindowHandle());
-					g_EventManager->InsertEvent(e);
-				}
-			}
+        return m_Windows[m_PrimaryWindowIndex];
+    }
 
-		}, event);
-		
-		BindEvent<WindowOnFocusEvent>([this](WindowOnFocusEvent& focus_event)
-		{
-			int32_t window_index = FindWindowIndex(focus_event.GetWindowHandle());
+    Graphics::Window* Application::GetWindow(uint32_t index) const
+    {
+        if (index >= m_Windows.size() || index < 0)
+        {
+            RB_LOG_WARN(LOGTAG_MAIN, "Trying to get a window that does not exist");
+            return nullptr;
+        }
 
-			if (window_index >= 0)
-			{
-				m_PrimaryWindowIndex = window_index;
-			}
+        return m_Windows[index];
+    }
 
-		}, event);
+    Graphics::Window* Application::FindWindow(void* window_handle) const
+    {
+        for (Graphics::Window* window : m_Windows)
+        {
+            if (window->IsSameWindow(window_handle))
+            {
+                return window;
+            }
+        }
 
-		BindEvent<WindowCloseRequestEvent>([this](WindowCloseRequestEvent& close_event)
-		{
-			m_CheckWindows = true;
-		}, event);
-	}
+        RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+
+        return nullptr;
+    }
+
+    int32_t Application::FindWindowIndex(void* window_handle) const
+    {
+        for (int i = 0; i < m_Windows.size(); ++i)
+        {
+            if (m_Windows[i]->IsSameWindow(window_handle))
+            {
+                return i;
+            }
+        }
+
+        RB_LOG_WARN(LOGTAG_MAIN, "Could not find the window associated to the window handle");
+
+        return -1;
+    }
+
+    void Application::ApplyNewGraphicsSettings(GraphicsSettings& settings)
+    {
+        settings.Validate();
+        settings.Print();
+
+        GraphicsSettingsChangedEvent e(settings, m_GraphicsSettings);
+        g_EventManager->InsertEvent(e);
+    }
+
+    bool Application::OnEvent(Event& event)
+    {
+        if (!m_Initialized)
+        {
+            return true;
+        }
+
+        // BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
+
+        bool passtrough_layers = true;
+
+        BindEvent<KeyPressedEvent>([&](KeyPressedEvent& e)
+        {
+            if (e.GetKeyCode() == KeyCode::F11 ||
+                (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::Enter))
+            {
+                passtrough_layers = false;
+
+                WindowFullscreenToggleEvent e(GetPrimaryWindow()->GetNativeWindowHandle());
+                g_EventManager->InsertEvent(e);
+            }
+
+            if (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
+            {
+                RB_LOG(LOGTAG_EVENT, "Instant close requested, requesting to close all windows..");
+                passtrough_layers = false;
+
+                for (int i = 0; i < m_Windows.size(); i++)
+                {
+                    WindowCloseRequestEvent e(m_Windows[i]->GetNativeWindowHandle());
+                    g_EventManager->InsertEvent(e);
+                }
+            }
+        }, event);
+        
+        BindEvent<WindowOnFocusEvent>([&](WindowOnFocusEvent& focus_event)
+        {
+            passtrough_layers = false;
+
+            int32_t window_index = FindWindowIndex(focus_event.GetWindowHandle());
+
+            if (window_index >= 0)
+            {
+                m_PrimaryWindowIndex = window_index;
+            }
+        }, event);
+
+        BindEvent<WindowCloseRequestEvent>([&](WindowCloseRequestEvent& close_event)
+        {
+            m_CheckWindows = true;
+        }, event);
+
+        
+        BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& settings_event)
+        {
+            m_GraphicsSettings = settings_event.GetNewSettings();
+        }, event);
+
+        if (passtrough_layers)
+        {
+            // Pass the event to the layers
+            for (ApplicationLayer* layer : m_LayerStack)
+            {
+                if (layer->IsEnabled())
+                {
+                    // If the event got handled by this layer, do not pass it to any layers after this one
+                    if (layer->OnEvent(event))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
 }

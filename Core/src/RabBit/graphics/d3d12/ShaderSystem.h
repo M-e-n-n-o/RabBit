@@ -12,36 +12,36 @@
 
 namespace RB::Graphics::D3D12
 {
-	struct ShaderResourceMask
-	{
-		uint64_t cbvMask;
-		uint64_t srvMask;
-		uint64_t uavMask;
-		uint64_t samplerMask;
-	};
+    struct ShaderResourceMask
+    {
+        uint64_t cbvMask;
+        uint64_t srvMask;
+        uint64_t uavMask;
+        uint64_t samplerMask;
+    };
 
-	struct CompiledShaderBlob
-	{
-		void*							shaderBlob;
-		uint64_t						shaderBlobSize;
-		GPtr<ID3D12ShaderReflection>	reflectionData;
-	};
+    struct CompiledShaderBlob
+    {
+        void*                           shaderBlob;
+        uint64_t						shaderBlobSize;
+        GPtr<ID3D12ShaderReflection>	reflectionData;
+    };
 
-	class ShaderSystem
-	{
-	public:
-		ShaderSystem();
-		~ShaderSystem();
+    class ShaderSystem
+    {
+    public:
+        ShaderSystem();
+        ~ShaderSystem();
 
-		CompiledShaderBlob* GetCompilerShader(uint32_t shader_identifier);
+        CompiledShaderBlob* GetCompilerShader(uint32_t shader_identifier);
 
-		const ShaderResourceMask& GetShaderResourceMask(uint32_t shader_identifier);
+        const ShaderResourceMask& GetShaderResourceMask(uint32_t shader_identifier);
 
-	private:
-		GPtr<IDxcUtils>		m_DxcUtils;
-		CompiledShaderBlob*	m_ShaderBlobs[SHADER_ENTRIES];
-		ShaderResourceMask	m_ShaderMasks[SHADER_ENTRIES];
-	};
+    private:
+        GPtr<IDxcUtils>		m_DxcUtils;
+        CompiledShaderBlob* m_ShaderBlobs[SHADER_ENTRIES];
+        ShaderResourceMask	m_ShaderMasks[SHADER_ENTRIES];
+    };
 
-	extern ShaderSystem* g_ShaderSystem;
+    extern ShaderSystem* g_ShaderSystem;
 }

@@ -8,18 +8,20 @@
 
 namespace RB::Graphics::D3D12
 {
-	static D3D_PRIMITIVE_TOPOLOGY ConvertToD3D12Topology(const TopologyType& type)
-	{
-		switch (type)
-		{
-		case TopologyType::TriangleList:    return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    static D3D_PRIMITIVE_TOPOLOGY ConvertToD3D12Topology(const TopologyType& type)
+    {
+        switch (type)
+        {
+        case TopologyType::TriangleList:    return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         case TopologyType::TriangleStrip:   return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 
-		default:
-			RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
-			break;
-		}
-	}
+        default:
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    }
 
     static D3D12_RESOURCE_STATES ConvertToD3D12ResourceState(const ResourceState& state)
     {
@@ -102,6 +104,10 @@ namespace RB::Graphics::D3D12
             return DXGI_FORMAT_R32_FLOAT;
         case(RenderResourceFormat::R8_UINT):
             return DXGI_FORMAT_R8_UINT;
+        case(RenderResourceFormat::D32_FLOAT):
+            return DXGI_FORMAT_D32_FLOAT;
+        case(RenderResourceFormat::D16_UNORM):
+            return DXGI_FORMAT_D16_UNORM;
         case(RenderResourceFormat::Unkown):
             return DXGI_FORMAT_UNKNOWN;
         default:
@@ -110,9 +116,9 @@ namespace RB::Graphics::D3D12
         }
     }
 
-	static RenderResourceFormat ConvertToEngineFormat(const DXGI_FORMAT& format)
-	{
-        switch (format) 
+    static RenderResourceFormat ConvertToEngineFormat(const DXGI_FORMAT& format)
+    {
+        switch (format)
         {
         case(DXGI_FORMAT_R32G32B32A32_TYPELESS):
             return RenderResourceFormat::R32G32B32A32_TYPELESS;
@@ -150,11 +156,15 @@ namespace RB::Graphics::D3D12
             return RenderResourceFormat::R8_UNORM;
         case(DXGI_FORMAT_R8_UINT):
             return RenderResourceFormat::R8_UINT;
+        case(DXGI_FORMAT_D32_FLOAT):
+            return RenderResourceFormat::D32_FLOAT;
+        case(DXGI_FORMAT_D16_UNORM):
+            return RenderResourceFormat::D16_UNORM;
         case(DXGI_FORMAT_UNKNOWN):
             return RenderResourceFormat::Unkown;
         default:
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
             return RenderResourceFormat::Unkown;
         }
-	}
+    }
 }

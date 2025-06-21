@@ -1,97 +1,110 @@
 #pragma once
 
 #include "Window.h"
-#include "input/events/Event.h"
+#include "events/Event.h"
 #include "utils/Threading.h"
+#include "app/Settings.h"
 
 namespace RB::Entity
 {
-	class Scene;
+    class Scene;
 }
 
 namespace RB::Graphics
 {
-	enum class RenderAPI
-	{
-		None,
-		D3D12
-	};
+    enum class RenderAPI
+    {
+        None,
+        D3D12
+    };
 
-	class RenderInterface;
-	class RenderPass;
-	class GpuGuard;
-	class ViewContext;
-	class ResourceStreamer;
-	class VertexBuffer;
+    class RenderInterface;
+    class GpuGuard;
+    class ViewContext;
+    class ResourceStreamer;
+    class VertexBuffer;
+    class RenderGraph;
+    class RenderGraphContext;
 
-	class Renderer : public Input::Events::EventListener
-	{
-	public:
-		virtual ~Renderer();
+    enum RenderGraphType
+    {
+        kRenderGraphType_Normal = 0,
 
-		static void SetAPI(RenderAPI api) { s_Api = api; }
-		inline static RenderAPI GetAPI() { return s_Api; }
+        kRenderGraphType_Count
+    };
 
-		// Submits current frame relevant information of the scene to the renderer
-		void SubmitFrame(const Entity::Scene* const scene);
+    class Renderer : public Events::EventListener
+    {
+    public:
+        virtual ~Renderer();
 
-		// Sync with the render thread (and optionally also wait until GPU is idle)
-		void SyncRenderer(bool gpu_sync = false);
+        static void SetAPI(RenderAPI api) { s_Api = api; }
+        inline static RenderAPI GetAPI() { return s_Api; }
 
-		ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
+        // Submits current frame relevant information of the scene to the renderer
+        void SubmitFrame(const Entity::Scene* const scene);
 
-		uint64_t GetRenderFrameIndex();
+        // Sync with the render thread (and optionally also wait until GPU is idle)
+        // Should only be called from the Main thread!
+        void SyncRenderer(bool gpu_sync = false);
 
-		void Init();
+        ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
 
-		// Also syncs with the render thread and GPU
-		void Shutdown();
+        uint64_t GetRenderFrameIndex();
 
-		static Renderer* Create(bool enable_validation_layer);
+        void Init();
 
-	protected:
-		Renderer(bool multi_threading_support);
+        // Also syncs with the render thread and GPU
+        void Shutdown();
 
-		virtual void OnFrameStart() = 0;
-		virtual void OnFrameEnd() = 0;
+        static Renderer* Create(bool enable_validation_layer);
 
-		virtual void SyncWithGpu() = 0;
+    protected:
+        Renderer(bool multi_threading_support);
 
-	private:
-		ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
+        virtual void OnFrameStart() = 0;
+        virtual void OnFrameEnd() = 0;
 
-		// Should only be called from the render thread!
-		void OnEvent(Input::Events::Event& event) override;
+        virtual void SyncWithGpu() = 0;
 
-		inline static RenderAPI s_Api = RenderAPI::None;
+    private:
+        ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
+        void CreateRenderGraphs(const GraphicsSettings& settings);
+        void UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count);
 
-		bool					m_IsShutdown;
-		WorkerThread*			m_RenderThread;
-		JobTypeID				m_RenderJobType;
+        // Should only be called from the render thread!
+        bool OnEvent(Events::Event& event) override;
 
-		RenderInterface*		m_GraphicsInterface; // Used by the render passes
-		RenderInterface*		m_CopyInterface;	 // Used for resource streaming 
-		RenderPass**			m_RenderPasses;
-		uint32_t				m_TotalPasses;
+        inline static RenderAPI s_Api = RenderAPI::None;
 
-		uint64_t				m_RenderFrameIndex;
-		CRITICAL_SECTION		m_RenderFrameIndexCS;
+        bool						m_IsShutdown;
+        WorkerThread*               m_RenderThread;
+        JobTypeID					m_RenderJobType;
 
-		VertexBuffer*			m_BackBufferCopyVB;
+        RenderInterface*            m_GraphicsInterface; // Used by the render graphs
+        RenderInterface*            m_CopyInterface;	 // Used for resource streaming 
+        RenderGraph*                m_RenderGraphs[kRenderGraphType_Count];
+        RenderGraphContext*         m_RenderGraphContext;
+        uint32_t                    m_CurrentValidRenderGraphSizes;
 
-		bool					m_MultiThreadingSupport;
+        ThreadedVariable<uint64_t>	m_RenderFrameIndex;
+        ThreadedVariable<uint32_t>	m_ForceSync;
 
-		ResourceStreamer*		m_ResourceStreamer;
+        VertexBuffer*               m_BackBufferCopyVB;
 
-	public:
-		struct BackBufferGuard
-		{
-			Shared<GpuGuard> guards[BACK_BUFFER_COUNT];
-		};
-	private:
+        bool						m_MultiThreadingSupport;
 
-		List<BackBufferGuard>	m_BackBufferAvailabilityGuards;
+        ResourceStreamer*           m_ResourceStreamer;
 
-		const uint32_t			m_RenderThreadTimeoutMs = 100;
-	};
+    public:
+        struct BackBufferGuard
+        {
+            Shared<GpuGuard> guards[BACK_BUFFER_COUNT];
+        };
+    private:
+
+        List<BackBufferGuard>		m_BackBufferAvailabilityGuards;
+
+        const uint32_t				m_RenderThreadTimeoutMs = 100;
+    };
 }

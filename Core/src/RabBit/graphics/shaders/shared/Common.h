@@ -1,12 +1,16 @@
+#ifndef RB_SHADER_COMMON
+#define RB_SHADER_COMMON
+
 #if !SHADER
-#pragma once
 #include "RabBitCommon.h"
 
 typedef uint32_t			uint;
 
+typedef RB::Math::UInt2     uint2;
 typedef RB::Math::UInt4		uint4;
 typedef RB::Math::Float2	float2;
 typedef RB::Math::Float3	float3;
+typedef RB::Math::Float4    float4;
 typedef RB::Math::Float4x4	float4x4;
 
 #else
@@ -26,42 +30,41 @@ typedef RB::Math::Float4x4	float4x4;
 // ---------------------------------------------------------------
 
 // Constant buffer slots
-#define kTexIndicesCB			0
-#define kFrameConstantsCB		1
-#define kInstanceCB				2
+#define kTexIndicesCB			    0
+#define kFrameConstantsCB		    1
+#define kInstanceCB				    2
 
 // Sampler slots
 #define kClampAnisoSamplerSlot		0
 #define kClampPointSamplerSlot		1
 
-// Texture spaces
-#define kTex2DTableSpace		0
-
 
 // Global constant buffer structs
 // ---------------------------------------------------------------
 
-#define SHAED_TEX2D_ARRAY_SIZE	2
-#define SHADER_TEX2D_SLOTS		(SHAED_TEX2D_ARRAY_SIZE * 4)
+#define SHADER_TEX2D_SLOTS          8
+
+struct ShaderTexInfo
+{
+    uint  tableID;
+    uint  isSRGB;
+    uint2 padding;
+};
 
 struct TextureIndices
 {
-	// Is in uint4 to avoid padding between elements in the array
-	uint4 tex2D[SHAED_TEX2D_ARRAY_SIZE];
+    ShaderTexInfo tex2D[SHADER_TEX2D_SLOTS];
+    ShaderTexInfo rwTex2D[SHADER_TEX2D_SLOTS];
 };
 
 struct FrameConstants
 {
-	/*
-		When passing matrix data to HLSL, it stores
-		it in column major order. So make sure to
-		first transpose matrices before sending them
-		to the GPU as they are stored in row major
-		on the CPU.
-	*/
+    float4x4 worldToViewMat;	// View matrix
+    float4x4 viewToWorldMat;    // Inverse view matrix
+    float4x4 viewToClipMat;		// Projection matrix
+    float4x4 clipToViewMat;     // Inverse projection matrix
 
-	float4x4 worldToViewMat;	// View matrix	(transposed)
-	float4x4 viewToClipMat;		// Projection matrix
+    float4   dimensions;        // width, height, 1/width, 1/height
 };
 
 #if SHADER
@@ -69,60 +72,41 @@ struct FrameConstants
 // Global constant buffers
 // ---------------------------------------------------------------
 
-// TODO Maybe make this a Buffer (or ByteAddressBuffer)
 cbuffer TextureIndicesCB : CBUFFER_REG(kTexIndicesCB)
 {
-	TextureIndices g_TextureIndices;
+    TextureIndices g_TextureIndices;
 }
 
 cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
 {
-	FrameConstants g_FC;
+    FrameConstants g_FC;
 }
 
 
-
-// Global resource tables (bindless)
+// Global resource table
 // ---------------------------------------------------------------
 
-Texture2D Texture2DTable[] : TEXTURE_SPACE(kTex2DTableSpace);
-//TextureCube TextureCubeTable[] : registre(t0, kTexCubeTableSpace);
-//RWTexture2D RwTexture2DTable[] : register(t0, kRwTex2DTableSpace);
+#define FetchRwTex2D(tex_id)    (ResourceDescriptorHeap[NonUniformResourceIndex(g_TextureIndices.rwTex2D[(tex_id)].tableID)])
 
-static const uint g_TextureIndicesTex2D[SHADER_TEX2D_SLOTS] = (uint[SHADER_TEX2D_SLOTS])(g_TextureIndices.tex2D);
+Texture2D FetchTex2D(in uint tex_id, out bool is_srgb_space)
+{
+    ShaderTexInfo info = g_TextureIndices.tex2D[tex_id];
+    is_srgb_space = info.isSRGB;
+    return ResourceDescriptorHeap[NonUniformResourceIndex(info.tableID)];
+}
 
-#define FETCH_TEX2D(index) (Texture2DTable[g_TextureIndicesTex2D[(index)]])
-
-
+Texture2D FetchTex2D(in uint tex_id)
+{
+    bool srgb;
+    return FetchTex2D(tex_id, srgb);
+}
 
 // Global samplers
 // ---------------------------------------------------------------
 
-SamplerState g_ClampAnisoSampler	: SAMPLER_REG(kClampAnisoSamplerSlot);
-SamplerState g_ClampPointSampler	: SAMPLER_REG(kClampPointSamplerSlot);
+SamplerState g_ClampAnisoSampler : SAMPLER_REG(kClampAnisoSamplerSlot);
+SamplerState g_ClampPointSampler : SAMPLER_REG(kClampPointSamplerSlot);
 
-
-// Global helper functions
-// ---------------------------------------------------------------
-
-float4 TransformPosition(float3 position, float4x4 transform)
-{
-	return (position.xxxx * transform[0]) + (position.yyyy * transform[1]) + (position.zzzz * transform[2]) + transform[3];
-}
-
-float3 TransformLocalToWorld(float3 local_pos, float4x4 obj_to_world)
-{
-	return mul(obj_to_world, float4(local_pos, 1.0f)).xyz;
-}
-
-float3 TransformWorldToView(float3 world_pos)
-{
-	return mul(g_FC.worldToViewMat, float4(world_pos, 1.0f)).xyz;
-}
-
-float4 TransformViewToClip(float3 view_pos)
-{
-	return TransformPosition(view_pos, g_FC.viewToClipMat);
-}
+#endif
 
 #endif

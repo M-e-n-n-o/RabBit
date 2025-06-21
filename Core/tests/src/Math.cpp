@@ -1,8 +1,62 @@
 #include <gtest/gtest.h>
+#include <RabBit/math/Matrix.h>
 #include <RabBit/math/Vector.h>
 
 using namespace RB::Math;
 using namespace testing;
+
+bool IsApproximatelyIdentity(const Float4x4& m, float epsilon = 1e-5f)
+{
+	for (int row = 0; row < 4; ++row)
+	{
+		for (int col = 0; col < 4; ++col)
+		{
+			float expected = (row == col) ? 1.0f : 0.0f;
+			float value = m.a[row * 4 + col];
+			if (std::fabs(value - expected) > epsilon)
+			{
+				//std::cout << "Mismatch at [" << row << "][" << col << "]: " << value << " != " << expected << "\n";
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+TEST(MathTest, Float4x4Inverse)
+{
+    Float4x4 m;
+    m.a[0]  = 4;  m.a[1]  = 7;  m.a[2]  = 2;  m.a[3]  = 0;
+    m.a[4]  = 3;  m.a[5]  = 6;  m.a[6]  = 1;  m.a[7]  = 0;
+    m.a[8]  = 2;  m.a[9]  = 5;  m.a[10] = 3;  m.a[11] = 0;
+    m.a[12] = 0;  m.a[13] = 0;  m.a[14] = 0;  m.a[15] = 1;
+
+    Float4x4 original = m;
+
+    bool result = m.Invert();
+	ASSERT_TRUE(result);
+
+    Float4x4 identity = original * m;
+	ASSERT_TRUE(IsApproximatelyIdentity(identity));
+}
+
+TEST(MathTest, Float4x4Transpose)
+{
+	Float4x4 m;
+    // Fill with known values
+    m.a00 = 1;  m.a01 = 2;  m.a02 = 3;  m.a03 = 4;
+    m.a10 = 5;  m.a11 = 6;  m.a12 = 7;  m.a13 = 8;
+    m.a20 = 9;  m.a21 = 10; m.a22 = 11; m.a23 = 12;
+    m.a30 = 13; m.a31 = 14; m.a32 = 15; m.a33 = 16;
+
+    m.Transpose();
+
+    // Check the result
+    ASSERT_TRUE(m.a00 == 1 && m.a01 == 5 && m.a02 == 9  && m.a03 == 13);
+    ASSERT_TRUE(m.a10 == 2 && m.a11 == 6 && m.a12 == 10 && m.a13 == 14);
+    ASSERT_TRUE(m.a20 == 3 && m.a21 == 7 && m.a22 == 11 && m.a23 == 15);
+    ASSERT_TRUE(m.a30 == 4 && m.a31 == 8 && m.a32 == 12 && m.a33 == 16);
+}
 
 TEST(MathTest, Float3AddFloat3)
 {
