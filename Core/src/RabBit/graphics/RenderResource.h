@@ -139,7 +139,7 @@ namespace RB::Graphics
 
         virtual uint64_t GetIndexCount() const = 0;
 
-        static IndexBuffer* Create(const char* name, uint32_t* data, uint64_t data_size);
+        static IndexBuffer* Create(const char* name, uint16_t* data, uint64_t elements);
 
     protected:
         IndexBuffer() : Buffer(RenderResourceType::IndexBuffer) {}

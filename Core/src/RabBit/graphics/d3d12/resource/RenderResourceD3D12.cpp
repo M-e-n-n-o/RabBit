@@ -52,19 +52,21 @@ namespace RB::Graphics::D3D12
     //								IndexBuffer
     // ---------------------------------------------------------------------------
 
-    IndexBufferD3D12::IndexBufferD3D12(const char* name, uint32_t* data, uint64_t data_size)
+    IndexBufferD3D12::IndexBufferD3D12(const char* name, uint16_t* data, uint64_t elements)
         : m_Name(name)
-        , m_Size(data_size)
+        , m_Elements(elements)
         , m_Data(data)
         , m_View{}
     {
+        uint64_t size = m_Elements * sizeof(uint16_t);
+
         m_Resource = new GpuResource();
-        g_ResourceManager->ScheduleCreateIndexResource(m_Resource, name, { data_size });
+        g_ResourceManager->ScheduleCreateIndexResource(m_Resource, name, { size });
 
         Streamable streamable = {};
         streamable.resource     = this;
         streamable.uploadData   = data;
-        streamable.uploadSize   = data_size;
+        streamable.uploadSize   = size;
         Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
     }
 
@@ -78,7 +80,7 @@ namespace RB::Graphics::D3D12
         if (m_View.SizeInBytes == 0)
         {
             m_View.BufferLocation = m_Resource->GetResource()->GetGPUVirtualAddress();
-            m_View.SizeInBytes    = m_Size;
+            m_View.SizeInBytes    = m_Elements * sizeof(uint16_t);
             m_View.Format         = ConvertToDXGIFormat(GetFormat());
         }
 

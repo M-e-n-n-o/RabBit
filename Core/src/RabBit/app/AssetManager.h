@@ -31,10 +31,8 @@ namespace RB
             Math::Float2 uv;
         };
 
-        Vertex*                 vertices;
-        uint32_t                verticesCount;
-        uint32_t*               indices;
-        uint32_t                indicesCount;
+        List<Vertex>            vertices;
+        List<uint16_t>          indices;
         void*                   internalScene;
 
         LoadedModel();

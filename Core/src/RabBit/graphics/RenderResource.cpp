@@ -103,12 +103,12 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    IndexBuffer* IndexBuffer::Create(const char* name, uint32_t* data, uint64_t data_size)
+    IndexBuffer* IndexBuffer::Create(const char* name, uint16_t* data, uint64_t elements)
     {
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
-            return new D3D12::IndexBufferD3D12(name, data, data_size);
+            return new D3D12::IndexBufferD3D12(name, data, elements);
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;

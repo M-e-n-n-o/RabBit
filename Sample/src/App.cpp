@@ -31,7 +31,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window1.windowWidth         = 1280;
     window1.windowHeight        = 720;
     window1.forcedRenderAspect  = 4.0f / 3.0f;
-    window1.semiTransparent     = true;
+    //window1.semiTransparent     = true;
     app_info.windows.push_back(window1);
 
     AppInfo::Window window2 = {};
@@ -43,7 +43,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window2.forcedRenderAspect  = 0.0f;
     window2.renderScale         = 1.0f;
     window2.renderScale         = 0.25f;
-    app_info.windows.push_back(window2);
+    //app_info.windows.push_back(window2);
 
     return new SampleApp(app_info);
 }

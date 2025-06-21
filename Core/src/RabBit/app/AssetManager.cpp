@@ -23,14 +23,10 @@ namespace RB
 
     LoadedModel::LoadedModel()
         : internalScene(nullptr)
-        , vertices(nullptr)
-        , indices(nullptr)
     {}
 
     LoadedModel::~LoadedModel()
     {
-        SAFE_DELETE(vertices);
-        SAFE_DELETE(indices);
         ufbx_free_scene((ufbx_scene*)internalScene);
     }
 
@@ -117,15 +113,17 @@ namespace RB
                     max_triangles = Math::Max(max_triangles, mesh_mat->num_triangles);
                 }
 
-                out_model->vertices = ALLOC_HEAPC(LoadedModel::Vertex, max_triangles * 3);
-                out_model->indices  = ALLOC_HEAPC(uint32_t, max_triangles * 3);
+                List<Math::Float3> vertices;
+                List<Math::Float3> normals;
+                List<Math::Float2> uvs;
 
                 size_t num_tri_indices = mesh->max_face_triangles * 3;
-                uint32_t* tri_indices = ALLOC_HEAPC(uint32_t, num_tri_indices);
+                List<uint32_t> tri_indices;
+                tri_indices.resize(num_tri_indices);
 
                 RB_ASSERT(LOGTAG_GRAPHICS, mesh->materials.count == 1, "We only support 1 material per FBX right now");
 
-                // Our shader supports only a single material per draw call so we need to split the mesh
+                // The GBuffer shader supports only a single material per draw call so we need to split the mesh
                 // into parts by material. `ufbx_mesh_material` contains a handy compact list of faces
                 // that use the material which we use here.
                 for (size_t pi = 0; pi < mesh->materials.count; pi++) 
@@ -141,7 +139,7 @@ namespace RB
                     for (size_t fi = 0; fi < mesh_mat->num_faces; fi++) 
                     {
                         ufbx_face face = mesh->faces.data[mesh_mat->face_indices.data[fi]];
-                        size_t num_tris = ufbx_triangulate_face(tri_indices, num_tri_indices, mesh, face);
+                        size_t num_tris = ufbx_triangulate_face(tri_indices.data(), num_tri_indices, mesh, face);
 
                         ufbx_vec2 default_uv = { 0 };
 
@@ -149,47 +147,76 @@ namespace RB
                         for (size_t vi = 0; vi < num_tris * 3; vi++) 
                         {
                             uint32_t ix = tri_indices[vi];
-                            LoadedModel::Vertex* vert = &out_model->vertices[num_indices];
+                            //LoadedModel::Vertex vert = {}; //&out_model->vertices[num_indices];
 
                             ufbx_vec3 pos    = ufbx_get_vertex_vec3(&mesh->vertex_position, ix);
                             ufbx_vec3 normal = ufbx_get_vertex_vec3(&mesh->vertex_normal, ix);
                             ufbx_vec2 uv     = mesh->vertex_uv.exists ? ufbx_get_vertex_vec2(&mesh->vertex_uv, ix) : default_uv;
 
-                            vert->position   = Math::Float3(pos.x, pos.y, pos.z);
-                            vert->normal     = Math::Float3(normal.x, normal.y, normal.z);
-                            vert->uv         = Math::Float2(uv.x, uv.y);
-                            vert->normal.Normalize();
+                            vertices.push_back(Math::Float3(pos.x, pos.y, pos.z));
+                            normals.push_back(Math::Float3(normal.x, normal.y, normal.z));
+                            uvs.push_back(Math::Float2(uv.x, uv.y));
 
                             num_indices++;
                         }
                     }
 
-                    // TODO Auto generation of the indices & compaction of the vertices is currently broken
+                    List<ufbx_vertex_stream> streams;
 
-                    //ufbx_vertex_stream stream;
-                    //stream.data         = &out_model->vertices;
-                    //stream.vertex_count = max_triangles * 3;
-                    //stream.vertex_size  = sizeof(LoadedModel::Vertex);
-                    //
-                    //// Optimize the flat vertex buffer into an indexed one. `ufbx_generate_indices()`
-                    //// compacts the vertex buffer and returns the number of used vertices.
-                    //ufbx_error error;
-                    //size_t num_vertices = ufbx_generate_indices(&stream, 1, out_model->indices, num_indices, NULL, &error);
-                    //if (error.type != UFBX_ERROR_NONE) 
-                    //{
-                    //    RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to generate index buffer for model \"%s\" with ufbx, error message: %s", final_path.c_str(), error.description.data);
-                    //    SAFE_FREE(tri_indices);
-                    //    return false;
-                    //}
-                    //
-                    //out_model->verticesCount = num_vertices;
-                    //out_model->indicesCount = num_indices;
+                    {
+                        ufbx_vertex_stream vertex_stream;
+                        vertex_stream.data         = vertices.data();
+                        vertex_stream.vertex_count = vertices.size();
+                        vertex_stream.vertex_size  = sizeof(Math::Float3);
 
-                    out_model->verticesCount = max_triangles * 3;
-                    out_model->indicesCount = 0;
+                        streams.push_back(vertex_stream);
+                    }
+
+                    {
+                        ufbx_vertex_stream normal_stream;
+                        normal_stream.data         = normals.data();
+                        normal_stream.vertex_count = normals.size();
+                        normal_stream.vertex_size  = sizeof(Math::Float3);
+
+                        streams.push_back(normal_stream);
+                    }
+
+                    {
+                        ufbx_vertex_stream uv_stream;
+                        uv_stream.data         = uvs.data();
+                        uv_stream.vertex_count = uvs.size();
+                        uv_stream.vertex_size  = sizeof(Math::Float2);
+
+                        streams.push_back(uv_stream);
+                    }
+
+                    List<uint32_t> indices;
+                    indices.resize(num_indices);
+
+                    // Optimize the flat vertex buffer into an indexed one. `ufbx_generate_indices()`
+                    // compacts the vertex buffer and returns the number of used vertices.
+                    ufbx_error error;
+                    size_t num_vertices = ufbx_generate_indices(streams.data(), streams.size(), indices.data(), num_indices, NULL, &error);
+                    if (error.type != UFBX_ERROR_NONE) 
+                    {
+                        RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to generate index buffer for model \"%s\" with ufbx, error message: %s", final_path.c_str(), error.description.data);
+                        return false;
+                    }
+
+                    out_model->indices.resize(num_indices);
+                    for (int i = 0; i < num_indices; i++)
+                    {
+                        out_model->indices[i] = indices[i];
+                    }
+
+                    out_model->vertices.resize(num_vertices);
+                    for (int i = 0; i < num_vertices; i++)
+                    {
+                        out_model->vertices[i].position = vertices[i];
+                        out_model->vertices[i].normal = normals[i];
+                        out_model->vertices[i].uv = uvs[i];
+                    }
                 }
-                
-                SAFE_FREE(tri_indices);
             }
 
             return true;
