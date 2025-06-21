@@ -26,11 +26,17 @@ namespace RB::Events
         kEventCat_All = (kEventCat_Window | kEventCat_Input | kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton | kEventCat_Application)
     };
 
-    #define DEFINE_CLASS_TYPE(classType, type, overwritable) static EventType GetStaticType() { return EventType::type; }\
-								                             virtual EventType GetEventType() const override { return GetStaticType(); }\
-								                             virtual const char* GetName() const override { return #type; }\
-								                             virtual Event* Clone() const override { return new classType(*this); }\
-								                             virtual bool IsOverwritable() const override { return overwritable; }
+    #define DEFINE_CLASS_TYPE_CUSTOM_OVERWRITE(classType, type) static EventType GetStaticType() { return EventType::type; }\
+								                                virtual EventType GetEventType() const override { return GetStaticType(); }\
+								                                virtual const char* GetName() const override { return #type; }\
+								                                virtual Event* Clone() const override { return new classType(*this); }
+
+    #define DEFINE_CLASS_TYPE(classType, type, overwritable)    static EventType GetStaticType() { return EventType::type; }\
+								                                virtual EventType GetEventType() const override { return GetStaticType(); }\
+								                                virtual const char* GetName() const override { return #type; }\
+								                                virtual Event* Clone() const override { return new classType(*this); }\
+                                                                virtual bool AllowOverwrite() const override { return overwritable; }\
+                                                                virtual bool IsOverwritable(const Event* e) const override { return overwritable; }
 
     #define RB_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
@@ -40,11 +46,12 @@ namespace RB::Events
         Event();
         virtual ~Event();
 
-        virtual EventType	GetEventType()		const = 0;
-        virtual const char* GetName()			const = 0;
-        virtual int			GetCategoryFlags()	const = 0;
-        virtual Event*      Clone()				const = 0;
-        virtual bool		IsOverwritable()	const = 0;
+        virtual EventType	GetEventType()		            const = 0;
+        virtual const char* GetName()			            const = 0;
+        virtual int			GetCategoryFlags()	            const = 0;
+        virtual Event*      Clone()				            const = 0;
+        virtual bool        AllowOverwrite()                const = 0;
+        virtual bool		IsOverwritable(const Event* e)	const = 0;
 
         bool IsInCategory(const EventCategory cat) const;
     };
@@ -53,7 +60,7 @@ namespace RB::Events
     {
     public:
         DEFINE_CLASS_TYPE(EmptyEvent, None, false)
-            int GetCategoryFlags() const override { return kEventCat_None; }
+        int GetCategoryFlags() const override { return kEventCat_None; }
     };
 
     template<class Type, typename Function>
@@ -96,7 +103,10 @@ namespace RB::Events
     class EventListener
     {
     public:
-        EventListener(int category);
+        // Enabling double queue's is better when processing an event on the
+        // listener that can take a very long time (maybe even block). 
+        // This way we won't block the main thread.
+        EventListener(int category, bool double_queue = false);
         virtual ~EventListener();
 
         bool ListensToCategory(const EventCategory cat) const
@@ -109,10 +119,14 @@ namespace RB::Events
     private:
         void AddEvent(const Event& e);
 
-        virtual void OnEvent(Event& event) = 0;
+        // Returns false when the event should be processed a next time
+        virtual bool OnEvent(Event& event) = 0;
 
         int		            m_ListenerCategory;
-        List<Event*>		m_QueuedEvents;
+        bool                m_DoubleQueue;
+        bool                m_QueueCycle;
+        List<Event*>		m_QueuedEvents0;
+        List<Event*>		m_QueuedEvents1;
         CRITICAL_SECTION	m_CS;
 
         friend class EventManager;

@@ -319,11 +319,11 @@ namespace RB
         g_EventManager->InsertEvent(e);
     }
 
-    void Application::OnEvent(Event& event)
+    bool Application::OnEvent(Event& event)
     {
         if (!m_Initialized)
         {
-            return;
+            return true;
         }
 
         // BindEvent<EventType>(RB_BIND_EVENT_FN(Class::Method), event);
@@ -392,5 +392,7 @@ namespace RB
                 }
             }
         }
+
+        return true;
     }
 }

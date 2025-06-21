@@ -25,7 +25,7 @@ namespace RB::Events
         const GraphicsSettings& GetNewSettings() const { return m_NewSettings; }
         const GraphicsSettings& GetOldSettings() const { return m_OldSettings; }
 
-        DEFINE_CLASS_TYPE(GraphicsSettingsChangedEvent, GraphicsSettingsChanged, true)
+        DEFINE_CLASS_TYPE(GraphicsSettingsChangedEvent, GraphicsSettingsChanged, false)
 
     private:
         GraphicsSettings m_NewSettings;

@@ -84,7 +84,7 @@ namespace RB
         void UpdateInternal();
         void UpdateApp();
         void OnNewLayerPushed(ApplicationLayer* layer);
-        void OnEvent(Events::Event& event) override;
+        bool OnEvent(Events::Event& event) override;
 
         const AppInfo				m_StartAppInfo;
 

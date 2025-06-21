@@ -74,12 +74,15 @@ namespace RB::Events
     //								EventListener
     // ----------------------------------------------------------------------------
 
-    EventListener::EventListener(int category)
+    EventListener::EventListener(int category, bool double_queue)
         : m_ListenerCategory(category)
+        , m_DoubleQueue(double_queue)
     {
         InitializeCriticalSection(&m_CS);
 
-        m_QueuedEvents.reserve(10);
+        m_QueuedEvents0.reserve(10);
+        if (m_DoubleQueue)
+            m_QueuedEvents1.reserve(10);
 
         g_EventManager->AddListener(this);
     }
@@ -92,38 +95,76 @@ namespace RB::Events
 
     void EventListener::ProcessEvents()
     {
-        EnterCriticalSection(&m_CS);
-
-        for (auto itr = m_QueuedEvents.begin(); itr < m_QueuedEvents.end();)
+        auto process_events = [this](List<Event*>& queue)
         {
-            Event* e = *itr;
+            for (auto itr = queue.begin(); itr < queue.end();)
+            {
+                Event* e = *itr;
 
-            OnEvent(*e);
+                bool handled = OnEvent(*e);
 
-            itr = m_QueuedEvents.erase(itr);
-            delete e;
+                if (handled)
+                {
+                    itr = queue.erase(itr);
+                    delete e;
+                }
+                else
+                {
+                    // Do it next time
+                    itr++;
+                }
+            }
+        };
+
+        if (m_DoubleQueue)
+        {
+            EnterCriticalSection(&m_CS);
+            m_QueueCycle = !m_QueueCycle;
+            List<Event*>& queue = m_QueueCycle ? m_QueuedEvents0 : m_QueuedEvents1;
+            LeaveCriticalSection(&m_CS);
+
+            process_events(queue);
         }
-
-        LeaveCriticalSection(&m_CS);
+        else
+        {
+            EnterCriticalSection(&m_CS);
+            process_events(m_QueuedEvents0);
+            LeaveCriticalSection(&m_CS);
+        }
     }
 
     void EventListener::AddEvent(const Event& e)
     {
-        EnterCriticalSection(&m_CS);
-
-        if (e.IsOverwritable())
+        auto add_event = [&e](List<Event*>& queue)
         {
-            auto itr = std::find_if(m_QueuedEvents.begin(), m_QueuedEvents.end(), [&e](Event* other) -> bool {
-                return e.GetEventType() == other->GetEventType();
+            if (e.AllowOverwrite())
+            {
+                auto itr = std::find_if(queue.begin(), queue.end(), [&e](Event* other) -> bool {
+                    return e.GetEventType() == other->GetEventType() && other->IsOverwritable(&e);
                 });
 
-            if (itr != m_QueuedEvents.end())
-            {
-                m_QueuedEvents.erase(itr);
+                if (itr != queue.end())
+                {
+                    queue.erase(itr);
+                }
             }
-        }
 
-        m_QueuedEvents.push_back(e.Clone());
-        LeaveCriticalSection(&m_CS);
+            queue.push_back(e.Clone());
+        };
+
+        if (m_DoubleQueue)
+        {
+            EnterCriticalSection(&m_CS);
+            List<Event*>& queue = m_QueueCycle ? m_QueuedEvents1 : m_QueuedEvents0;
+            LeaveCriticalSection(&m_CS);
+
+            add_event(queue);
+        }
+        else
+        {
+            EnterCriticalSection(&m_CS);
+            add_event(m_QueuedEvents0);
+            LeaveCriticalSection(&m_CS);
+        }
     }
 }

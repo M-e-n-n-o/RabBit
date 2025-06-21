@@ -43,7 +43,10 @@ namespace RB::Events
         uint32_t GetWidth() const { return m_Width; }
         uint32_t GetHeight() const { return m_Height; }
 
-        DEFINE_CLASS_TYPE(WindowResizeEvent, WindowResize, true)
+        DEFINE_CLASS_TYPE_CUSTOM_OVERWRITE(WindowResizeEvent, WindowResize)
+
+        virtual bool AllowOverwrite() const override { return true; }
+        virtual bool IsOverwritable(const Event* e) const override { return ((WindowEvent*)e)->GetWindowHandle() == GetWindowHandle(); }
 
     private:
         uint32_t m_Width;
@@ -88,6 +91,9 @@ namespace RB::Events
     public:
         WindowFullscreenToggleEvent(void* window_handle) : WindowEvent(window_handle) {}
 
-        DEFINE_CLASS_TYPE(WindowFullscreenToggleEvent, WindowFullscreenToggle, true)
+        DEFINE_CLASS_TYPE_CUSTOM_OVERWRITE(WindowFullscreenToggleEvent, WindowFullscreenToggle)
+
+        virtual bool AllowOverwrite() const override { return true; }
+        virtual bool IsOverwritable(const Event* e) const override { return ((WindowEvent*)e)->GetWindowHandle() == GetWindowHandle(); }
     };
 }

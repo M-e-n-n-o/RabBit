@@ -45,6 +45,7 @@ namespace RB::Graphics
         void SubmitFrame(const Entity::Scene* const scene);
 
         // Sync with the render thread (and optionally also wait until GPU is idle)
+        // Should only be called from the Main thread!
         void SyncRenderer(bool gpu_sync = false);
 
         ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
@@ -72,7 +73,7 @@ namespace RB::Graphics
         void UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count);
 
         // Should only be called from the render thread!
-        void OnEvent(Events::Event& event) override;
+        bool OnEvent(Events::Event& event) override;
 
         inline static RenderAPI s_Api = RenderAPI::None;
 

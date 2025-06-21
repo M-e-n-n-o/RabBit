@@ -99,7 +99,7 @@ namespace RB::Graphics::D3D12
     void WindowD3D12::Update()
     {
         MSG message = {};
-        if (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
+        while (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&message);
             DispatchMessage(&message);

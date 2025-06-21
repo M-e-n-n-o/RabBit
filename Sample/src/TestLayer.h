@@ -60,7 +60,7 @@ public:
         Scene* scene = Application::GetInstance()->GetScene();
 
         void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
-        //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
+        void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
 
         GameObject* object = scene->CreateGameObject();
         object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
@@ -76,10 +76,10 @@ public:
         Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
 
-        //m_Obj2 = scene->CreateGameObject();
-        //m_Obj2->AddComponent<Transform>();
-        //Camera* cam_comp2 = m_Obj2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, window_handle1);
-        //cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
+        m_Obj2 = scene->CreateGameObject();
+        m_Obj2->AddComponent<Transform>();
+        Camera* cam_comp2 = m_Obj2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, window_handle1);
+        cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
     }
 
     void OnUpdate() override

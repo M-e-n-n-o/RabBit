@@ -845,6 +845,8 @@ namespace RB::Graphics::D3D12
                 m_CommandList->ClearDepthStencilView(clear.handle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_DEPTH, clear.color.r, clear.color.g, 0, nullptr);
             }
         }
+
+        m_RenderState.pendingClears.clear();
     }
 
     void RenderInterfaceD3D12::InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type)

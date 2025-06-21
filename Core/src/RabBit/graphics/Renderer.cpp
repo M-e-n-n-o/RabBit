@@ -69,11 +69,12 @@ namespace RB::Graphics
     {
         kForceSyncState_None = 0,
         kForceSyncState_RenderSyncing,
-        kForceSyncState_MainSyncing
+        kForceSyncState_MainSyncing,
+        kForceSyncState_MainSyncingSafe, // Main is syncing from the known location (end of SubmitFrame)
     };
 
     Renderer::Renderer(bool multi_threading_support)
-        : EventListener(kEventCat_Window | kEventCat_Application)
+        : EventListener(kEventCat_Window | kEventCat_Application, true)
         , m_IsShutdown(true)
         , m_MultiThreadingSupport(multi_threading_support)
         , m_RenderFrameIndex(0)
@@ -223,13 +224,10 @@ namespace RB::Graphics
             if (m_RenderThread->IsStalling(m_RenderThreadTimeoutMs, stalling_job) || waiting_for_sync)
             {
                 // Notify that we are going to do the force sync (if forced)
-                m_ForceSync.SetValue(kForceSyncState_MainSyncing);
+                m_ForceSync.SetValue(kForceSyncState_MainSyncingSafe);
 
                 RB_LOG(LOGTAG_GRAPHICS, "Detected stall in render thread, syncing...");
                 SyncRenderer(false);
-
-                // Notify that we are done syncing
-                m_ForceSync.SetValue(kForceSyncState_None);
             }
         }
     }
@@ -285,12 +283,21 @@ namespace RB::Graphics
             Texture2D* render_texture = camera->GetRenderTexture();
             if (render_texture == nullptr)
             {
+                Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
+
+                if (virtual_back_buffer == nullptr)
+                {
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Virutal back buffer of window invalid, skipping...");
+                    out_context_count--;
+                    continue;
+                }
+
                 // Set window virtual backbuffer as finalColorTarget
                 contexts[context_index].isOffscreenContext  = false;
                 contexts[context_index].windowIndex         = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
-                contexts[context_index].finalColorTarget    = window->GetVirtualBackBuffer();
-                contexts[context_index].viewport.width      = window->GetVirtualBackBuffer()->GetWidth();
-                contexts[context_index].viewport.height     = window->GetVirtualBackBuffer()->GetHeight();
+                contexts[context_index].finalColorTarget    = virtual_back_buffer;
+                contexts[context_index].viewport.width      = virtual_back_buffer->GetWidth();
+                contexts[context_index].viewport.height     = virtual_back_buffer->GetHeight();
             }
             else
             {
@@ -378,6 +385,12 @@ namespace RB::Graphics
             if (!m_RenderThread->IsCurrentThread())
             {
                 uint32_t sync_value = m_ForceSync.GetValue();
+                    
+                if (sync_value < kForceSyncState_MainSyncing)
+                {
+                    // Just a regular sync
+                    m_ForceSync.SetValue(kForceSyncState_MainSyncing);
+                }
 
                 // Make sure the render thread is not waiting as well
                 if (sync_value != kForceSyncState_RenderSyncing)
@@ -391,6 +404,9 @@ namespace RB::Graphics
         {
             SyncWithGpu();
         }
+
+        // Notify that we are done syncing
+        m_ForceSync.SetValue(kForceSyncState_None);
     }
 
     uint64_t Renderer::GetRenderFrameIndex()
@@ -398,24 +414,36 @@ namespace RB::Graphics
         return m_RenderFrameIndex.GetValue();
     }
 
-    void Renderer::OnEvent(Event& event)
+    bool Renderer::OnEvent(Event& event)
     {
-        auto sync = [this]() -> void
+        auto sync = [this]() -> bool
         {
-            uint32_t is_main_waiting = m_ForceSync.GetValue() == kForceSyncState_MainSyncing;
-
-            if (!is_main_waiting)
+            if (!m_MultiThreadingSupport)
             {
-                // Force the main thread to sync with the render thread (wait until the main thread has set the value to kForceSyncState_MainSyncing)
+                return true;
+            }
+
+            if (m_ForceSync.GetValue() == kForceSyncState_MainSyncing)
+            {
+                // Main is waiting from an unknown location which could cause a deadlock if we would sync now.
+                // We should do the sync & event the next time.
+                return false;
+            }
+
+            if (m_ForceSync.GetValue() != kForceSyncState_MainSyncingSafe)
+            {
+                // Force the main thread to sync with the render thread (wait until the main thread has set the value to kForceSyncState_MainSyncingSafe)
                 m_ForceSync.SetValue(kForceSyncState_RenderSyncing);
                 m_ForceSync.WaitUntilConditionMet([](const uint32_t& new_value) -> bool
                     {
-                        return new_value == kForceSyncState_MainSyncing;
+                        return new_value == kForceSyncState_MainSyncingSafe;
                     });
             }
 
             // Need to cancel all next jobs for the render thread as these will not be valid
             m_RenderThread->CancelAll();
+
+            return true;
         };
 
         if (event.IsInCategory(kEventCat_Window))
@@ -430,15 +458,29 @@ namespace RB::Graphics
                 {
                 case EventType::WindowResize:
                 {
-                    sync();
+                    bool success = sync();
+                    if (!success)
+                    {
+                        return false;
+                    }
 
                     // Recreate the render resources with the new sizes before rendering the next frame
                     m_CurrentValidRenderGraphSizes = 0;
                 }
                 break;
 
-                case EventType::WindowCreated:
                 case EventType::WindowCloseRequest:
+                {
+                    // Make sure that the next render jobs are canceled
+                    bool success = sync();
+                    if (!success)
+                    {
+                        return false;
+                    }
+                }
+                break;
+
+                case EventType::WindowCreated:
                 case EventType::WindowClose:
                 case EventType::WindowFocus:
                 case EventType::WindowLostFocus:
@@ -461,10 +503,14 @@ namespace RB::Graphics
                 if (!settings.RequiresNewResources(app_event.GetOldSettings()))
                 {
                     // We don't have to recreate the render resources on this setting change
-                    return;
+                    return true;
                 }
 
-                sync();
+                bool success = sync();
+                if (!success)
+                {
+                    return false;
+                }
 
                 for (int i = 0; i < kRenderGraphType_Count; ++i)
                 {
@@ -479,6 +525,8 @@ namespace RB::Graphics
                 m_CurrentValidRenderGraphSizes = 0;
             }, event);
         }
+
+        return true;
     }
 
     Renderer* Renderer::Create(bool enable_validation_layer)
@@ -518,6 +566,12 @@ namespace RB::Graphics
                 RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "ViewContext");
 
                 RenderResource* final_color_target = view_context.finalColorTarget;
+
+                if (final_color_target == nullptr)
+                {
+                    RB_LOG_ERROR(LOGTAG_GRAPHICS, "Final color target of ViewContext %d is not valid anymore", view_context_index);
+                    continue;
+                }
 
                 // Clear the final target
                 context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
