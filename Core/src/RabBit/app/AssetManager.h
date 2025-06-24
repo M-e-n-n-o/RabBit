@@ -22,21 +22,26 @@ namespace RB
         ~LoadedImage();
     };
 
-    struct LoadedModel
+    struct LoadedMesh
     {
         struct Vertex
         {
-            Math::Float3 position;
-            Math::Float3 normal;
-            Math::Float2 uv;
+            Math::Float3    position;
+            Math::Float3    normal;
+            Math::Float2    uv;
         };
 
-        List<Vertex>            vertices;
-        List<uint16_t>          indices;
-        void*                   internalScene;
+        struct Submodel
+        {
+            List<Vertex>    vertices;
+            List<uint16_t>  indices;
+        };
 
-        LoadedModel();
-        ~LoadedModel();
+        List<Submodel>      models;
+        void*               internalScene;
+
+        LoadedMesh();
+        ~LoadedMesh();
     };
 
     namespace AssetManager
@@ -45,6 +50,6 @@ namespace RB
 
         bool LoadImage8Bit(const char* path, LoadedImage* out_image, uint32_t force_channels = 0);
 
-        bool LoadModel(const char* path, LoadedModel* out_model);
+        bool LoadMesh(const char* path, LoadedMesh* out_mesh);
     }
 }

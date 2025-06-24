@@ -12,6 +12,8 @@
 #include "graphics/shaders/shared/Common.h"
 #include "graphics/codeGen/ShaderDefines.h"
 
+using namespace RB::Entity;
+
 namespace RB::Graphics
 {
     struct GBufferEntry : public RenderPassEntry
@@ -24,12 +26,10 @@ namespace RB::Graphics
             Math::Float4x4	modelMatrix;
         };
 
-        ModelEntry*         entries;
-        uint32_t            totalEntries;
+        List<ModelEntry>    entries;
 
         ~GBufferEntry()
         {
-            SAFE_FREE(entries);
         }
     };
 
@@ -62,51 +62,59 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
+    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene)
     {
-        auto mesh_renderers = scene->GetComponentsWithTypeOf<Entity::MeshRenderer>();
+        auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
 
-        GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*)ALLOC_HEAP(sizeof(GBufferEntry::ModelEntry) * mesh_renderers.size());
+        List<GBufferEntry::ModelEntry> entries;
+        entries.reserve(mesh_renderers.size());
 
         uint32_t total_entries = 0;
 
         for (int i = 0; i < mesh_renderers.size(); ++i)
         {
-            const Entity::MeshRenderer* mesh_renderer = (const Entity::MeshRenderer*)mesh_renderers[i];
-            const Entity::Mesh* mesh = mesh_renderer->GetMesh();
-            const Entity::Material* mat = mesh_renderer->GetMaterial();
+            const MeshRenderer* mesh_renderer = (const MeshRenderer*)mesh_renderers[i];
+            const Mesh* mesh = mesh_renderer->GetMesh();
+            const Material* mat = mesh_renderer->GetMaterial();
 
-            if (mesh->GetVertexBuffer()->ReadyToRender() || mat->GetTexture()->ReadyToRender())
+            auto vertex_pairs = mesh->GetVertexPairs();
+
+            for (int vp_idx = 0; vp_idx < vertex_pairs.size(); vp_idx++)
             {
-                continue;
+                const Mesh::VertexPair& vp = vertex_pairs[vp_idx];
+
+                if (!vp.vertexBuffer->ReadyToRender() || 
+                    (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()) ||
+                    !mat->GetTexture()->ReadyToRender())
+                {
+                    continue;
+                }
+
+                const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+
+                if (transform == nullptr)
+                {
+                    continue;
+                }
+
+                GBufferEntry::ModelEntry entry = {};
+                entry.vb            = vp.vertexBuffer;
+                entry.ib            = vp.indexBuffer;
+                entry.texture       = mat->GetTexture();
+                entry.modelMatrix   = transform->GetLocalToWorldMatrix();
+
+                entries.push_back(entry);
+                total_entries++;
             }
-
-            const Entity::Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Entity::Transform>();
-
-            if (transform == nullptr)
-            {
-                continue;
-            }
-
-            GBufferEntry::ModelEntry entry = {};
-            entry.vb            = mesh->GetVertexBuffer();
-            entry.ib            = mesh->GetIndexBuffer();
-            entry.texture       = mat->GetTexture();
-            entry.modelMatrix   = transform->GetLocalToWorldMatrix();
-
-            entries[total_entries] = entry;
-            total_entries++;
         }
 
         if (total_entries == 0)
         {
-            SAFE_FREE(entries);
             return nullptr;
         }
 
         GBufferEntry* entry = new GBufferEntry();
         entry->entries      = entries;
-        entry->totalEntries = total_entries;
 
         return entry;
     }
@@ -133,7 +141,7 @@ namespace RB::Graphics
         // Set the frame constants
         in.viewContext->SetFrameConstants(in.renderInterface);
 
-        for (int i = 0; i < entry->totalEntries; ++i)
+        for (int i = 0; i < entry->entries.size(); ++i)
         {
             GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 

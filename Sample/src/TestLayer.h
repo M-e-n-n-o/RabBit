@@ -54,7 +54,7 @@ public:
         //};
 
         //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        m_Mesh = new Mesh("Bunny.fbx"); //"Sponza/source/Sponza.fbx");
+        m_Mesh = new Mesh("Sponza/source/Sponza.fbx");
         m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();

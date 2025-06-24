@@ -8,29 +8,31 @@ namespace RB::Entity
     class Mesh
     {
     public:
+        struct VertexPair
+        {
+            Graphics::VertexBuffer* vertexBuffer = nullptr;
+            Graphics::IndexBuffer*  indexBuffer = nullptr;
+        };
 
         Mesh(const char* file_name);
         Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count);
 
         ~Mesh()
         {
-            delete m_VertexBuffer;
-            delete m_IndexBuffer;
+            for (int i = 0; i < m_VertexPairs.size(); i++)
+            {
+                SAFE_DELETE(m_VertexPairs[i].vertexBuffer);
+                SAFE_DELETE(m_VertexPairs[i].indexBuffer);
+            }
         }
 
-        Graphics::VertexBuffer* GetVertexBuffer() const
+        const List<VertexPair>& GetVertexPairs() const
         {
-            return m_VertexBuffer;
-        }
-
-        Graphics::IndexBuffer* GetIndexBuffer() const
-        {
-            return m_IndexBuffer;
+            return m_VertexPairs;
         }
 
     private:
-        Graphics::VertexBuffer* m_VertexBuffer;
-        Graphics::IndexBuffer* m_IndexBuffer;
+        List<VertexPair> m_VertexPairs;
     };
 
     class Material
