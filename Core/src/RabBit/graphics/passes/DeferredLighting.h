@@ -15,7 +15,7 @@ namespace RB::Graphics
 
         RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
 
-        RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene) override;
+        RenderPassEntry* SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene) override;
 
         void Render(RenderPassInput& inputs) override;
     };

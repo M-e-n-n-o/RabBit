@@ -46,7 +46,7 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
+    RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene)
     {
         // Just create an empty entry
         DeferredLightingEntry* entry = new DeferredLightingEntry();
@@ -55,15 +55,15 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        inputs.viewContext->SetFrameConstants(inputs.renderInterface);
+        inputs.viewContext->SetFrameConstants(inputs.ri);
 
-        inputs.renderInterface->SetComputeShader(CS_ApplyLightingDeferred);
+        inputs.ri->SetComputeShader(CS_ApplyLightingDeferred);
         
-        inputs.renderInterface->SetShaderResourceInput(inputs.dependencyTextures[0], 0);
-        inputs.renderInterface->SetShaderResourceInput(inputs.dependencyTextures[1], 1);
+        inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[0], 0);
+        inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[1], 1);
 
-        inputs.renderInterface->SetRandomReadWriteInput(inputs.outputTextures[0], 0);
+        inputs.ri->SetRandomReadWriteInput(inputs.outputTextures[0], 0);
 
-        inputs.renderInterface->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);
+        inputs.ri->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);
     }
 }

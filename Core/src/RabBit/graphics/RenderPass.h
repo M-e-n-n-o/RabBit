@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderResource.h"
+#include "app/FrameAllocator.h"
 
 namespace RB::Entity
 {
@@ -113,7 +114,8 @@ namespace RB::Graphics
     struct RenderPassInput
     {
         ViewContext*     viewContext;
-        RenderInterface* renderInterface;
+        FrameAllocator*  frameAllocator;
+        RenderInterface* ri;
         RenderPassEntry* entryContext;
         RenderResource** dependencyTextures;
         RenderResource** workingTextures;
@@ -134,7 +136,7 @@ namespace RB::Graphics
         // It can also do some preprocessing before the actual Render() call to, for example, determine which RenderEntries 
         // this pass needs, so the RenderThread does not need to do this. But it can maybe also determine if the pass needs 
         // to run at all even.
-        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene) = 0;
+        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene) = 0;
 
         // Executed on the render thread
         // Runs for every ViewContext

@@ -21,4 +21,7 @@ namespace RB
 
     template<class T>
     using Queue = std::queue<T>;
+
+    template<class T>
+    using Deque = std::deque<T>;
 }

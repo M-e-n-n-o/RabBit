@@ -26,7 +26,8 @@ namespace RB::Graphics
             Math::Float4x4	modelMatrix;
         };
 
-        List<ModelEntry>    entries;
+        ModelEntry*         entries;
+        uint32_t            entryCount;
 
         ~GBufferEntry()
         {
@@ -62,12 +63,11 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene)
+    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Scene* const scene)
     {
         auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
 
-        List<GBufferEntry::ModelEntry> entries;
-        entries.reserve(mesh_renderers.size());
+        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderers.size());
 
         uint32_t total_entries = 0;
 
@@ -103,7 +103,7 @@ namespace RB::Graphics
                 entry.texture       = mat->GetTexture();
                 entry.modelMatrix   = transform->GetLocalToWorldMatrix();
 
-                entries.push_back(entry);
+                entries[total_entries] = entry;
                 total_entries++;
             }
         }
@@ -115,18 +115,19 @@ namespace RB::Graphics
 
         GBufferEntry* entry = new GBufferEntry();
         entry->entries      = entries;
+        entry->entryCount   = total_entries;
 
         return entry;
     }
 
     void GBufferPass::Render(RenderPassInput& in)
     {
-        in.renderInterface->SetVertexShader(VS_Gbuffer);
-        in.renderInterface->SetPixelShader(PS_Gbuffer);
+        in.ri->SetVertexShader(VS_Gbuffer);
+        in.ri->SetPixelShader(PS_Gbuffer);
 
-        in.renderInterface->SetBlendMode(BlendMode::None);
-        in.renderInterface->SetCullMode(CullMode::Back);
-        in.renderInterface->SetDepthMode(DepthMode::PassCloser, true, in.viewContext->viewFrustum.IsReversedDepth());
+        in.ri->SetBlendMode(BlendMode::None);
+        in.ri->SetCullMode(CullMode::Back);
+        in.ri->SetDepthMode(DepthMode::PassCloser, true, in.viewContext->viewFrustum.IsReversedDepth());
 
         RenderTargetBundle bundle = {};
         bundle.colorTargetsCount  = 2;
@@ -134,29 +135,29 @@ namespace RB::Graphics
         bundle.colorTargets[1]    = (Texture2D*)in.outputTextures[1];
         bundle.depthStencilTarget = (Texture2D*)in.outputTextures[2];
 
-        in.renderInterface->SetRenderTarget(&bundle);
+        in.ri->SetRenderTarget(&bundle);
 
         GBufferEntry* entry = (GBufferEntry*)in.entryContext;
 
         // Set the frame constants
-        in.viewContext->SetFrameConstants(in.renderInterface);
+        in.viewContext->SetFrameConstants(in.ri);
 
-        for (int i = 0; i < entry->entries.size(); ++i)
+        for (int i = 0; i < entry->entryCount; ++i)
         {
             GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 
-            in.renderInterface->SetVertexBuffer(model_entry.vb);
+            in.ri->SetVertexBuffer(model_entry.vb);
 
             if (model_entry.ib)
             {
-                in.renderInterface->SetIndexBuffer(model_entry.ib);
+                in.ri->SetIndexBuffer(model_entry.ib);
             }
 
-            in.renderInterface->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+            in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-            in.renderInterface->SetShaderResourceInput(model_entry.texture, 1);
+            in.ri->SetShaderResourceInput(model_entry.texture, 1);
 
-            in.renderInterface->Draw();
+            in.ri->Draw();
         }
     }
 }

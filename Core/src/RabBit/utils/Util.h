@@ -7,6 +7,7 @@ namespace RB
     #define kKB(x) (x * 1024)
     #define kMB(x) (x * 1024 * 1024)
     
+    #define k32KB   kKB(32)
     #define k64KB   kKB(64)
     #define k1MB    kMB(1)
     #define k2MB    kMB(2)

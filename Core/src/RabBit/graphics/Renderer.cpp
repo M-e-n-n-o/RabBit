@@ -13,6 +13,7 @@
 #include "shaders/shared/ConstantBuffers.h"
 
 #include "app/Application.h"
+#include "app/FrameAllocator.h"
 #include "events/WindowEvent.h"
 #include "events/ApplicationEvent.h"
 
@@ -48,6 +49,8 @@ namespace RB::Graphics
         ThreadedVariable<uint64_t>*         renderFrameIndex;
 
         VertexBuffer*                       backBufferCopyVB;
+
+        FrameAllocator*                     frameAllocator;
 
         std::function<void()>				OnRenderFrameStart;
         std::function<void()>				OnRenderFrameEnd;
@@ -86,6 +89,8 @@ namespace RB::Graphics
     void Renderer::Init()
     {
         m_IsShutdown = false;
+
+        m_RenderAllocator = new FrameAllocator("Rendering", 2, k1MB);
 
         m_ResourceStreamer = new ResourceStreamer();
 
@@ -157,6 +162,8 @@ namespace RB::Graphics
 
         delete m_GraphicsInterface;
         delete m_CopyInterface;
+
+        delete m_RenderAllocator;
     }
 
     void Renderer::SubmitFrame(const Entity::Scene* const scene)
@@ -168,11 +175,13 @@ namespace RB::Graphics
 
             UpdateRenderGraphSizes(view_contexts, total_view_contexts);
 
+            // TODO: Start making better use of the m_RenderAllocator in the Renderer and RenderGraph itself!
+
             // Gather the entries from all render passes for every view context
             RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
             for (int i = 0; i < total_view_contexts; ++i)
             {
-                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], scene);
+                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], m_RenderAllocator, scene);
             }
 
             RenderContext* context                  = new RenderContext();
@@ -185,6 +194,7 @@ namespace RB::Graphics
             context->graphicsInterface              = m_GraphicsInterface;
             context->renderFrameIndex               = &m_RenderFrameIndex;
             context->backBufferCopyVB               = m_BackBufferCopyVB;
+            context->frameAllocator                 = m_RenderAllocator;
             context->OnRenderFrameStart             = std::bind(&Renderer::OnFrameStart, this);
             context->OnRenderFrameEnd               = std::bind(&Renderer::OnFrameEnd, this);
             context->SyncWithGpu                    = std::bind(&Renderer::SyncWithGpu, this);
@@ -549,6 +559,7 @@ namespace RB::Graphics
 
         uint64_t frame_index = context->renderFrameIndex->GetValue();
 
+        context->frameAllocator->Cycle();
         context->OnRenderFrameStart();
 
         {
@@ -577,7 +588,7 @@ namespace RB::Graphics
                 context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
 
                 // Render the different passes
-                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
+                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->frameAllocator, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
             }
         }
 

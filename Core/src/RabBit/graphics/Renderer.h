@@ -4,6 +4,7 @@
 #include "events/Event.h"
 #include "utils/Threading.h"
 #include "app/Settings.h"
+#include "app/FrameAllocator.h"
 
 namespace RB::Entity
 {
@@ -95,6 +96,8 @@ namespace RB::Graphics
         bool						m_MultiThreadingSupport;
 
         ResourceStreamer*           m_ResourceStreamer;
+
+        FrameAllocator*             m_RenderAllocator;
 
     public:
         struct BackBufferGuard

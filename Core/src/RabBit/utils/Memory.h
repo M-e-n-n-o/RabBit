@@ -22,6 +22,8 @@ namespace RB
 {
     #define ALLOC_STACK(size)		    alloca((size))
     #define ALLOC_STACKC(type, count)   (type*)alloca(sizeof(type) * (count))
+
+    // Try to use the FrameAllocator when allocating & freeing memory from the heap every frame!
     #define ALLOC_HEAP(size)		    malloc((size))
     #define ALLOC_HEAPC(type, count)	(type*)malloc(sizeof(type) * (count))
     
