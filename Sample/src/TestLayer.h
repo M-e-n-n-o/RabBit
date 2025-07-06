@@ -54,7 +54,8 @@ public:
         //};
 
         //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        m_Mesh = new Mesh("Sponza/source/Sponza.fbx");
+        //m_Mesh = new Mesh("Sponza/source/Sponza.fbx");
+        m_Mesh = new Mesh("Bunny.fbx");
         m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
@@ -65,15 +66,15 @@ public:
         GameObject* object = scene->CreateGameObject();
         object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
         Transform* t = object->AddComponent<Transform>();
-        t->position = Float3(0.0f, 0.0f, 50000.0f);
-        t->rotation = Float3(0.0f, 0.0f, 0.0f);
+        t->position = Float3(0.0f, 0.0f, 600.0f);
+        t->rotation = Float3(0.0f, 180.0f, 0.0f);
         t->scale = Float3(1.0f);
 
         m_Transform = t;
 
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
-        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, window_handle0);
+        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 60.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
 
         //m_Obj2 = scene->CreateGameObject();
@@ -95,19 +96,19 @@ public:
 
         if (IsKeyDown(KeyCode::W))
         {
-            m_Camera->position.z += 2500.0f * delta;
+            m_Camera->position.z += 250.0f * delta;
         }
         if (IsKeyDown(KeyCode::A))
         {
-            m_Camera->position.x -= 25.0f * delta;
+            m_Camera->position.x -= 250.0f * delta;
         }
         if (IsKeyDown(KeyCode::S))
         {
-            m_Camera->position.z -= 2500.0f * delta;
+            m_Camera->position.z -= 250.0f * delta;
         }
         if (IsKeyDown(KeyCode::D))
         {
-            m_Camera->position.x += 25.0f * delta;
+            m_Camera->position.x += 250.0f * delta;
         }
         if (IsKeyDown(KeyCode::LeftShift))
         {
