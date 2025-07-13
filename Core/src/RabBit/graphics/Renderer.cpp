@@ -657,7 +657,7 @@ namespace RB::Graphics
             context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
 
             context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
-            context->graphicsInterface->SetRenderTarget(back_buffer);
+            context->graphicsInterface->PushRenderTarget(back_buffer, 0);
 
             if (window->IsSemiTransparent())
             {

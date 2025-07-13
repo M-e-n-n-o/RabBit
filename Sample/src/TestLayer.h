@@ -85,39 +85,79 @@ public:
 
     void OnUpdate(float delta) override
     {
-        if (IsMouseKeyDown(MouseCode::ButtonLeft))
+        if (IsKeyDown(KeyCode::Q))
         {
             m_Transform->rotation.y += 25.0f * delta;
         }
-        if (IsMouseKeyDown(MouseCode::ButtonRight))
+        if (IsKeyDown(KeyCode::E))
         {
             m_Transform->rotation.x += 25.0f * delta;
         }
 
+        Float3 movement(0);
+
         if (IsKeyDown(KeyCode::W))
         {
-            m_Camera->position.z += 250.0f * delta;
-        }
-        if (IsKeyDown(KeyCode::A))
-        {
-            m_Camera->position.x -= 250.0f * delta;
+            movement.z += 250.0f;
         }
         if (IsKeyDown(KeyCode::S))
         {
-            m_Camera->position.z -= 250.0f * delta;
+            movement.z -= 250.0f;
         }
         if (IsKeyDown(KeyCode::D))
         {
-            m_Camera->position.x += 250.0f * delta;
+            movement.x += 250.0f;
         }
-        if (IsKeyDown(KeyCode::LeftShift))
+        if (IsKeyDown(KeyCode::A))
         {
-            m_Camera->rotation.x += 1.0f * delta;
+            movement.x -= 250.0f;
         }
         if (IsKeyDown(KeyCode::Space))
         {
-            m_Camera->rotation.x -= 1.0f * delta;
+            movement.y += 250.0f;
         }
+        if (IsKeyDown(KeyCode::LeftShift))
+        {
+            movement.y -= 250.0f;
+        }
+        
+        static Float2 last_pos = GetMousePos();
+        Float2 new_pos = GetMousePos();
+
+        if (IsMouseKeyDown(MouseCode::ButtonRight))
+        {
+            Float2 vel = (new_pos - last_pos) * 0.2f;
+            m_Camera->rotation.x -= vel.y;
+            m_Camera->rotation.y -= vel.x;
+        }
+
+        last_pos = new_pos;
+
+  //      float dx = movement.z * Cos(DegreesToRadians(m_Camera->rotation.y + 90.0f));
+		//float dz = movement.z * Sin(DegreesToRadians(m_Camera->rotation.y + 90.0f));
+		//dx += movement.x * Cos(DegreesToRadians(m_Camera->rotation.y));
+		//dz += movement.x * Sin(DegreesToRadians(m_Camera->rotation.y));
+  //      
+		//m_Camera->position.x += (dx * delta);
+		//m_Camera->position.z += (dz * delta);
+		//m_Camera->position.y += (movement.y * delta);
+
+        float yawRad = DegreesToRadians(m_Camera->rotation.y);
+
+        // Direction vectors
+        float forwardX = Sin(yawRad);
+        float forwardZ = Cos(yawRad);
+        float rightX = Cos(yawRad);
+        float rightZ = -Sin(yawRad);
+
+        // Blend directions
+        float dx = movement.z * forwardX + movement.x * rightX;
+        float dz = movement.z * forwardZ + movement.x * rightZ;
+
+        // Apply movement
+        m_Camera->position.x += dx * delta;
+        m_Camera->position.z += dz * delta;
+        m_Camera->position.y += movement.y * delta;
     }
 
     bool OnEvent(const Event& event) override

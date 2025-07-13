@@ -84,6 +84,7 @@ namespace RB::Graphics::D3D12
 
         ClearSrvResources();
         ClearUavResources();
+        ClearRenderTargets();
     }
 
     Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
@@ -130,93 +131,112 @@ namespace RB::Graphics::D3D12
         FlushResourceBarriers();
     }
 
-    void RenderInterfaceD3D12::SetRenderTarget(RenderResource* color_target)
+    void RenderInterfaceD3D12::PushRenderTarget(RenderResource* color_target, uint32_t index)
     {
-        RenderTargetBundle bundle = {};
-        bundle.colorTargetsCount    = 1;
-        bundle.colorTargets[0]      = (Texture2D*)color_target;
-        bundle.depthStencilTarget   = nullptr;
+        Texture2DD3D12* tex = (Texture2DD3D12*)color_target;
+        if (!tex->AllowedRenderTarget())
+        {
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a render target");
+            return;
+        }
 
-        SetRenderTarget(&bundle);
+        if (m_RenderState.width != tex->GetWidth() || m_RenderState.height != tex->GetHeight())
+        {
+            if (m_RenderState.width != 0 && m_RenderState.height != 0)
+            {
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work for debugging though");
+            }
+
+            m_RenderState.width = tex->GetWidth();
+            m_RenderState.height = tex->GetHeight();
+        }
+
+        // This also waits until the resource has been created
+        TransitionResource(tex, ResourceState::RENDER_TARGET);
+
+        m_RenderState.rtvHandles[index].push(tex->GetRenderTargetHandle());
+        m_RenderState.rtvFormats[index].push(ConvertToDXGIFormat(tex->GetFormat()));
+
+        m_RenderState.numRenderTargets = Math::Max(m_RenderState.numRenderTargets, index + 1);
+
+        m_RenderState.renderTargetDirty = true;
+        m_RenderState.psoDirty = true;
     }
 
-    void RenderInterfaceD3D12::SetRenderTarget(RenderTargetBundle* bundle)
+    void RenderInterfaceD3D12::PopRenderTarget(uint32_t index)
     {
-        uint32_t width = ((Texture2DD3D12*)bundle->colorTargets[0])->GetWidth();
-        uint32_t height = ((Texture2DD3D12*)bundle->colorTargets[0])->GetHeight();
-
-        D3D12_CPU_DESCRIPTOR_HANDLE color_handles[8];
-
-        for (int i = 0; i < _countof(bundle->colorTargets); ++i)
+        if (m_RenderState.rtvHandles[index].size() == 0)
         {
-            if (i < bundle->colorTargetsCount)
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "No rendertarget to pop at index %d", index);
+            return;
+        }
+
+        m_RenderState.rtvHandles[index].pop();
+        m_RenderState.rtvFormats[index].pop();
+
+        if (index + 1 >= m_RenderState.numRenderTargets && m_RenderState.rtvHandles[index].size() == 0)
+        {
+            // If there are not RTV's left at this index, lower the number of bound rendertargets
+            m_RenderState.numRenderTargets = index;
+        }
+
+        m_RenderState.renderTargetDirty = true;
+        m_RenderState.psoDirty = true;
+    }
+
+    void RenderInterfaceD3D12::SetDepthStencil(RenderResource* ds_target)
+    {
+        if (ds_target->GetType() != RenderResourceType::Texture2D)
+        {
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Depth Stencil should be a Texture2D");
+            return;
+        }
+
+        Texture2D* depth_stencil = (Texture2D*)ds_target;
+        if (depth_stencil->AllowedDepthStencil())
+        {
+            if (m_RenderState.width != depth_stencil->GetWidth() || m_RenderState.height != depth_stencil->GetHeight())
             {
-                Texture2DD3D12* tex = (Texture2DD3D12*)bundle->colorTargets[i];
-
-                if (!tex->AllowedRenderTarget())
-                {
-                    RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a render target");
-                    continue;
-                }
-
-                // This also waits until the resource has been created
-                MarkResourceUsed(tex);
-
-                color_handles[i] = tex->GetRenderTargetHandle();
-
-                if (width != tex->GetWidth() || height != tex->GetHeight())
+                if (m_RenderState.width != 0 && m_RenderState.height != 0)
                 {
                     RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work for debugging though");
-                    width = Math::Max(width, tex->GetWidth());
-                    height = Math::Max(height, tex->GetHeight());
                 }
 
-
-                TransitionResource(tex, ResourceState::RENDER_TARGET);
-
-                m_RenderState.rtvFormats[i] = ConvertToDXGIFormat(tex->GetFormat());
+                m_RenderState.width = depth_stencil->GetWidth();
+                m_RenderState.height = depth_stencil->GetHeight();
             }
-            else
-            {
-                m_RenderState.rtvFormats[i] = DXGI_FORMAT_UNKNOWN;
-            }
+
+            // This also waits until the resource has been created
+            TransitionResource(depth_stencil, ResourceState::DEPTH_WRITE);
+
+            m_RenderState.dsvHandle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
+            m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
+
+            m_RenderState.renderTargetDirty = true;
+            m_RenderState.psoDirty = true;
         }
-
-        D3D12_CPU_DESCRIPTOR_HANDLE* depth_handle = nullptr;
-
-        Texture2D* depth_stencil = bundle->depthStencilTarget;
-        if (depth_stencil)
+        else
         {
-            if (depth_stencil->AllowedDepthStencil())
-            {
-                // This also waits until the resource has been created
-                MarkResourceUsed(depth_stencil);
-
-                depth_handle = &((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
-
-                TransitionResource(depth_stencil, ResourceState::DEPTH_WRITE);
-
-                m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
-            }
-            else
-            {
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a depth stencil target");
-            }
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a depth stencil target");
         }
+    }
 
-        m_CommandList->OMSetRenderTargets(bundle->colorTargetsCount, color_handles, false, depth_handle);
-
-        m_RenderState.numRenderTargets = bundle->colorTargetsCount;
-
-        // Also set the viewport
-        Viewport vp;
-        vp.left   = 0;
-        vp.top    = 0;
-        vp.width  = width;
-        vp.height = height;
-        SetViewport(vp);
+    void RenderInterfaceD3D12::ClearRenderTargets()
+    {
+        for (int i = 0; i < _countof(m_RenderState.rtvFormats); i++)
+        {
+            m_RenderState.rtvFormats[i] = Stack<DXGI_FORMAT>();
+            m_RenderState.rtvHandles[i] = Stack<D3D12_CPU_DESCRIPTOR_HANDLE>();
+        }
 
         m_RenderState.psoDirty = true;
+        m_RenderState.numRenderTargets = 0;
+        m_RenderState.renderTargetDirty = true;
+        m_RenderState.viewportSet = false;
+        m_RenderState.scissorSet = false;
+        m_RenderState.width = 0;
+        m_RenderState.height = 0;
+        m_RenderState.dsvFormat = DXGI_FORMAT_UNKNOWN;
     }
 
     void RenderInterfaceD3D12::SetShaderResourceInput(RenderResource* resource, uint32_t slot)
@@ -363,7 +383,7 @@ namespace RB::Graphics::D3D12
         // Delay the clears so that they can get batched together just before a draw/dispatch
 
         // TODO Add UAV clear if possible on the resource (then also auto place UAV barriers if needed)
-        // (Will then also have to implement a non-shader visible SRV/UAV descriptor heap)
+        // (Will then also have to implement a non-shader visible SRV/UAV descriptor heap, or just do a clear in a compute shader?)
 
         if (tex->AllowedRenderTarget())
         {
@@ -770,6 +790,11 @@ namespace RB::Graphics::D3D12
         HandlePendingClears();
         FlushResourceBarriers();
 
+        if (m_RenderState.renderTargetDirty)
+        {
+            SetRenderTargets();
+        }
+
         if (m_RenderState.psoDirty || m_RenderState.rootSignatureDirty)
         {
             SetGraphicsPipelineState();
@@ -893,6 +918,35 @@ namespace RB::Graphics::D3D12
         resource->GetResource();
 
         resource->MarkAsUsed(m_Queue);
+    }
+
+    void RenderInterfaceD3D12::SetRenderTargets()
+    {
+        m_RenderState.renderTargetDirty = false;
+
+        D3D12_CPU_DESCRIPTOR_HANDLE handles[8];
+        for (int i = 0; i < m_RenderState.numRenderTargets; i++)
+        {
+            handles[i] = m_RenderState.rtvHandles[i].top();
+        }
+
+        D3D12_CPU_DESCRIPTOR_HANDLE* dsv_handle = nullptr;
+        if (m_RenderState.dsvFormat != DXGI_FORMAT_UNKNOWN)
+        {
+            dsv_handle = &m_RenderState.dsvHandle;
+        }
+
+        m_CommandList->OMSetRenderTargets(m_RenderState.numRenderTargets, handles, false, dsv_handle);
+
+        if (!m_RenderState.viewportSet || !m_RenderState.scissorSet)
+        {
+            Viewport vp;
+            vp.left     = 0;
+            vp.top      = 0;
+            vp.width    = m_RenderState.width;
+            vp.height   = m_RenderState.height;
+            SetViewport(vp);
+        }
     }
 
     void RenderInterfaceD3D12::BindResources(bool compute)
@@ -1030,6 +1084,15 @@ namespace RB::Graphics::D3D12
         CompiledShaderBlob* vs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.vsShader);
         CompiledShaderBlob* ps_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.psShader);
 
+        DXGI_FORMAT formats[8];
+        for (int i = 0; i < 8; i++)
+        {
+            if (i < m_RenderState.numRenderTargets)
+                formats[i] = m_RenderState.rtvFormats[i].top();
+            else
+                formats[i] = DXGI_FORMAT_UNKNOWN;
+        }
+
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
         pso_desc.pRootSignature         = m_RenderState.rootSignature.Get();
         pso_desc.VS                     = { vs_blob->shaderBlob, vs_blob->shaderBlobSize };
@@ -1046,7 +1109,7 @@ namespace RB::Graphics::D3D12
         //pso_desc.IBStripCutValue		= ;
         pso_desc.PrimitiveTopologyType  = m_RenderState.vertexBufferType;
         pso_desc.NumRenderTargets       = m_RenderState.numRenderTargets;
-        /*pso_desc.RTVFormats */		  memcpy(pso_desc.RTVFormats, m_RenderState.rtvFormats, sizeof(DXGI_FORMAT) * 8);
+        /*pso_desc.RTVFormats */		  memcpy(pso_desc.RTVFormats, formats, sizeof(DXGI_FORMAT) * 8);
         pso_desc.DSVFormat              = m_RenderState.dsvFormat;
         pso_desc.SampleDesc             = { 1, 0 };
         pso_desc.NodeMask               = 0;

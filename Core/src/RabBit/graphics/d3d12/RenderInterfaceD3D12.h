@@ -45,8 +45,10 @@ namespace RB::Graphics::D3D12
         void FlushResourceBarriers() override;
         void FlushAllPending() override;
 
-        void SetRenderTarget(RenderTargetBundle* bundle) override;
-        void SetRenderTarget(RenderResource* color_target) override;
+        void PushRenderTarget(RenderResource* color_target, uint32_t index = 0) override;
+        void PopRenderTarget(uint32_t index = 0) override;
+        void SetDepthStencil(RenderResource* ds_target) override;
+        void ClearRenderTargets() override;
 
         void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override;
         void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) override;
@@ -90,6 +92,8 @@ namespace RB::Graphics::D3D12
         void MarkResourceUsed(RenderResource* resource);
         void MarkResourceUsed(GpuResource* resource);
 
+        void SetRenderTargets();
+
         void BindDescriptorHeaps();
         void BindResources(bool compute);
         void ClearSrvResources();
@@ -112,37 +116,42 @@ namespace RB::Graphics::D3D12
 
         struct RenderState
         {
-            bool							psoDirty = true;
-            bool							rootSignatureDirty = true;
+            bool							    psoDirty = true;
+            bool							    rootSignatureDirty = true;
 
-            GPtr<ID3D12RootSignature>		rootSignature = nullptr;
-            D3D12_PRIMITIVE_TOPOLOGY_TYPE	vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
-            uint32_t						vertexCountPerInstance = 0;
-            uint32_t						indexCountPerInstance = 0;
-            bool							scissorSet = false;
-            bool							viewportSet = false;
-            uint32_t						numRenderTargets = 0;
-            DXGI_FORMAT						rtvFormats[8];
-            DXGI_FORMAT						dsvFormat;
-            int32_t							vsShader = -1;
-            int32_t							psShader = -1;
-            int32_t                         csShader = -1;
-            bool							blendingSet = false;
-            D3D12_BLEND_DESC				blendDesc = {};
-            bool							rasterizerSet = false;
-            D3D12_RASTERIZER_DESC			rasterizerDesc = {};
-            bool							depthStencilSet = false;
-            D3D12_DEPTH_STENCIL_DESC		depthStencilDesc = {};
-            D3D12_GPU_VIRTUAL_ADDRESS		cbvAddresses[16];
+            GPtr<ID3D12RootSignature>		    rootSignature = nullptr;
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE	    vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+            uint32_t						    vertexCountPerInstance = 0;
+            uint32_t						    indexCountPerInstance = 0;
+            bool							    scissorSet = false;
+            bool							    viewportSet = false;
+            uint32_t                            width = 0;
+            uint32_t                            height = 0;
+            Stack<D3D12_CPU_DESCRIPTOR_HANDLE>  rtvHandles[8];
+            Stack<DXGI_FORMAT>                  rtvFormats[8];
+            D3D12_CPU_DESCRIPTOR_HANDLE	        dsvHandle;
+            DXGI_FORMAT                         dsvFormat = DXGI_FORMAT_UNKNOWN;
+            uint32_t						    numRenderTargets = 0;
+            bool                                renderTargetDirty = true;
+            int32_t							    vsShader = -1;
+            int32_t							    psShader = -1;
+            int32_t                             csShader = -1;
+            bool							    blendingSet = false;
+            D3D12_BLEND_DESC				    blendDesc = {};
+            bool							    rasterizerSet = false;
+            D3D12_RASTERIZER_DESC			    rasterizerDesc = {};
+            bool							    depthStencilSet = false;
+            D3D12_DEPTH_STENCIL_DESC		    depthStencilDesc = {};
+            D3D12_GPU_VIRTUAL_ADDRESS		    cbvAddresses[16];
 
-            DescriptorIndex				    tex2DsrvHandles[SHADER_TEX2D_SLOTS];
-            bool                            tex2DSRGBs[SHADER_TEX2D_SLOTS];
-            DescriptorIndex				    rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];
+            DescriptorIndex				        tex2DsrvHandles[SHADER_TEX2D_SLOTS];
+            bool                                tex2DSRGBs[SHADER_TEX2D_SLOTS];
+            DescriptorIndex				        rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];
 
-            List<PendingClear>              pendingClears;
+            List<PendingClear>                  pendingClears;
         };
 
-        RenderState                         m_RenderState;
+        RenderState                             m_RenderState;
 
         struct UploadAllocatorPair
         {

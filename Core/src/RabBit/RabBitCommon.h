@@ -22,6 +22,7 @@
 #include <queue>
 #include <deque>
 #include <array>
+#include <stack>
 #include <unordered_map>
 #include <functional>
 

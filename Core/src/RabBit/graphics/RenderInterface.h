@@ -81,8 +81,10 @@ namespace RB::Graphics
         virtual void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot = 0) = 0;
         virtual void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot = 0) = 0;
 
-        virtual void SetRenderTarget(RenderTargetBundle* bundle) = 0;
-        virtual void SetRenderTarget(RenderResource* color_target) = 0;
+        virtual void PushRenderTarget(RenderResource* color_target, uint32_t index = 0) = 0;
+        virtual void PopRenderTarget(uint32_t index = 0) = 0;
+        virtual void SetDepthStencil(RenderResource* ds_target) = 0;
+        virtual void ClearRenderTargets() = 0;
 
         virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
 

@@ -129,13 +129,9 @@ namespace RB::Graphics
         in.ri->SetCullMode(CullMode::Back);
         in.ri->SetDepthMode(DepthMode::PassCloser, true, in.viewContext->viewFrustum.IsReversedDepth());
 
-        RenderTargetBundle bundle = {};
-        bundle.colorTargetsCount  = 2;
-        bundle.colorTargets[0]    = (Texture2D*)in.outputTextures[0];
-        bundle.colorTargets[1]    = (Texture2D*)in.outputTextures[1];
-        bundle.depthStencilTarget = (Texture2D*)in.outputTextures[2];
-
-        in.ri->SetRenderTarget(&bundle);
+        in.ri->PushRenderTarget(in.outputTextures[0], 0);
+        in.ri->PushRenderTarget(in.outputTextures[1], 1);
+        in.ri->SetDepthStencil(in.outputTextures[2]);
 
         GBufferEntry* entry = (GBufferEntry*)in.entryContext;
 

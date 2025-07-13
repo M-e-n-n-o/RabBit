@@ -24,4 +24,7 @@ namespace RB
 
     template<class T>
     using Deque = std::deque<T>;
+
+    template<class T>
+    using Stack = std::stack<T>;
 }
