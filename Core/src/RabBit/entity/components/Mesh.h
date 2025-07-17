@@ -19,20 +19,17 @@ namespace RB::Entity
 
         ~Mesh()
         {
-            for (int i = 0; i < m_VertexPairs.size(); i++)
-            {
-                SAFE_DELETE(m_VertexPairs[i].vertexBuffer);
-                SAFE_DELETE(m_VertexPairs[i].indexBuffer);
-            }
+            SAFE_DELETE(m_VertexPair.vertexBuffer);
+            SAFE_DELETE(m_VertexPair.indexBuffer);
         }
 
-        const List<VertexPair>& GetVertexPairs() const
+        const VertexPair& GetVertexPair() const
         {
-            return m_VertexPairs;
+            return m_VertexPair;
         }
 
     private:
-        List<VertexPair> m_VertexPairs;
+        VertexPair m_VertexPair;
     };
 
     class Material

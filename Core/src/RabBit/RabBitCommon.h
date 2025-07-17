@@ -24,6 +24,7 @@
 #include <array>
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
 #include <functional>
 
 #include "Core.h"

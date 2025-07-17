@@ -118,6 +118,8 @@ namespace RB
                 return false;
             }
 
+            RB_LOG(LOGTAG_MAIN, "Model loaded from memory");
+
             ufbx_scene* scene = (ufbx_scene*)out_mesh->internalScene;
 
             // TODO Convert materials

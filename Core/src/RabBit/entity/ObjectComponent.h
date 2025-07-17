@@ -10,6 +10,7 @@ namespace RB::Entity
     class ObjectComponent
     {
     public:
+        ObjectComponent();
         virtual ~ObjectComponent() = default;
 
         virtual void Update() {}

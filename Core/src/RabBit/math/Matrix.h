@@ -70,10 +70,10 @@ namespace RB::Math
         void RotateAroundY(float yrad);
         void RotateAroundZ(float zrad);
 
-        void SetPosition(const Float3 pos);
+        void SetPosition(const Float3& pos);
         void SetPosition(float x, float y, float z);
 
-        void Scale(const Float3 scale);
+        void Scale(const Float3& scale);
         void Scale(float scale);
         void Scale(float x, float y, float z);
 

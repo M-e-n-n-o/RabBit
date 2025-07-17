@@ -15,21 +15,23 @@ namespace RB::Entity
             , scale(1.0f)
         {}
 
+        // Local transform variables
         Math::Float3 position;
         Math::Float3 rotation;
         Math::Float3 scale;
 
-        // Transformation matrix
-        Math::Float4x4 GetLocalToWorldMatrix() const
-        {
-            Math::Float4x4 m;
-            m.RotateAroundX(Math::DegreesToRadians(rotation.x));
-            m.RotateAroundY(Math::DegreesToRadians(rotation.y));
-            m.RotateAroundZ(Math::DegreesToRadians(rotation.z));
-            m.SetPosition(position);
-            m.Scale(scale);
+        // Real transforms, based on Parent transforms
+        Math::Float3 GetWorldPosition() const;
+        Math::Float3 GetWorldRotation() const;
+        Math::Float3 GetWorldScale() const;
 
-            return m;
-        }
+        // Transformation matrix
+        Math::Float4x4 GetLocalToWorldMatrix() const;
     };
+
+    static const Transform* GetDefaultTransform()
+    {
+        static Transform t = Transform();
+        return &t;
+    }
 }

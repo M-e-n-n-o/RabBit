@@ -4,6 +4,9 @@ project(RabBitSolution)
 set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 
+# Used for VS extensions
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Link global libraries
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     link_libraries(

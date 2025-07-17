@@ -46,3 +46,6 @@ Core/**/codeGen/
 !Core/external/**/*.dll
 !Core/external/**/*.exe
 !Core/external/**/out
+
+# VS extensions
+StructLayoutSettings.json

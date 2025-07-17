@@ -259,11 +259,9 @@ namespace RB::Graphics
             const Entity::Camera* camera = (const Entity::Camera*)camera_components[i];
             const Entity::Transform* transform = camera->GetGameObject()->GetComponent<Entity::Transform>();
 
-            if (transform == nullptr)
+            if (!camera->GetGameObject()->HasComponent<Entity::Transform>())
             {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object does not have a transform, skipping...");
-                out_context_count--;
-                continue;
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object uses the default transform");
             }
 
             Window* window = Application::GetInstance()->FindWindow(camera->GetTargetWindowHandle());

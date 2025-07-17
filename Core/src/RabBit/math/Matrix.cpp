@@ -99,7 +99,7 @@ namespace RB::Math
         return Float3(a30, a31, a32);
     }
 
-    void Float4x4::SetPosition(const Float3 pos)
+    void Float4x4::SetPosition(const Float3& pos)
     {
         SetPosition(pos.x, pos.y, pos.z);
     }
@@ -112,7 +112,7 @@ namespace RB::Math
         a33 = 1;
     }
 
-    void Float4x4::Scale(const Float3 scale)
+    void Float4x4::Scale(const Float3& scale)
     {
         Scale(scale.x, scale.y, scale.z);
     }

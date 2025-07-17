@@ -6,6 +6,7 @@ namespace RB::Entity
 {
     GameObject::GameObject(ComponentRegister* reg)
         : m_Register(reg)
+        , m_Parent(nullptr)
     {
     }
 
@@ -40,5 +41,37 @@ namespace RB::Entity
         }
 
         list.insert(list.end(), itr->second.begin(), itr->second.end());
+    }
+
+    void GameObject::SetParent(GameObject* obj)
+    {
+        if (obj == nullptr)
+        {
+            if (m_Parent != nullptr)
+            {
+                m_Parent->OnChildDetached(this);
+            }
+        }
+        else
+        {
+            m_Parent->OnNewChildAttached(this);
+        }
+
+        m_Parent = obj;
+    }
+
+    GameObject* GameObject::GetParent()
+    {
+        return m_Parent;
+    }
+
+    void GameObject::OnNewChildAttached(GameObject* obj)
+    {
+        m_Children.insert(obj);
+    }
+
+    void GameObject::OnChildDetached(GameObject* obj)
+    {
+        m_Children.erase(obj);
     }
 }

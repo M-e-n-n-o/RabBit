@@ -14,46 +14,41 @@ namespace RB::Entity
             return;
         }
 
-        for (int i = 0; i < mesh.models.size(); i++)
+        if (mesh.models.size() > 1)
         {
-            LoadedMesh::Submodel submodel = mesh.models[i];
+            RB_LOG_ERROR(LOGTAG_ENTITY, "A Mesh can not have multiple models, load this model differently!");
+            return;
+        }
 
-            VertexPair pair = {};
+        LoadedMesh::Submodel submodel = mesh.models[0];
 
-            char vertex_name[100];
-            sprintf(vertex_name, "%s vertices %d", file_name, i);
+        char vertex_name[100];
+        sprintf(vertex_name, "%s vertices", file_name);
 
-            uint32_t vertex_size = sizeof(LoadedMesh::Vertex);
+        uint32_t vertex_size = sizeof(LoadedMesh::Vertex);
 
-            pair.vertexBuffer = Graphics::VertexBuffer::Create(vertex_name, RB::Graphics::TopologyType::TriangleList, submodel.vertices.data(), vertex_size, vertex_size * submodel.vertices.size());
+        m_VertexPair.vertexBuffer = Graphics::VertexBuffer::Create(vertex_name, RB::Graphics::TopologyType::TriangleList, submodel.vertices.data(), vertex_size, vertex_size * submodel.vertices.size());
 
-            if (submodel.indices.data() > 0)
-            {
-                char index_name[100];
-                sprintf(index_name, "%s indices %d", file_name, i);
+        if (submodel.indices.data() > 0)
+        {
+            char index_name[100];
+            sprintf(index_name, "%s indices", file_name);
 
-                pair.indexBuffer = Graphics::IndexBuffer::Create(index_name, submodel.indices.data(), submodel.indices.size());
-            }
-
-            m_VertexPairs.push_back(pair);
+            m_VertexPair.indexBuffer = Graphics::IndexBuffer::Create(index_name, submodel.indices.data(), submodel.indices.size());
         }
     }
 
     Mesh::Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count)
     {
-        VertexPair pair = {};
-
-        pair.vertexBuffer = Graphics::VertexBuffer::Create(name, RB::Graphics::TopologyType::TriangleList, vertex_data, elements_per_vertex * sizeof(float), vertex_data_count * sizeof(float));
+        m_VertexPair.vertexBuffer = Graphics::VertexBuffer::Create(name, RB::Graphics::TopologyType::TriangleList, vertex_data, elements_per_vertex * sizeof(float), vertex_data_count * sizeof(float));
 
         if (index_data_count > 0)
         {
             std::string index_name = name;
             index_name += " index";
 
-            pair.indexBuffer = Graphics::IndexBuffer::Create(index_name.c_str(), index_data, index_data_count);
+            m_VertexPair.indexBuffer = Graphics::IndexBuffer::Create(index_name.c_str(), index_data, index_data_count);
         }
-
-        m_VertexPairs.push_back(pair);
     }
 
     Material::Material(const char* file_name, Graphics::TextureColorSpace color_space)

@@ -27,4 +27,7 @@ namespace RB
 
     template<class T>
     using Stack = std::stack<T>;
+
+    template<class T>
+    using UnorderedSet = std::unordered_set<T>;
 }

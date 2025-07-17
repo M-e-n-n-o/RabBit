@@ -73,39 +73,28 @@ namespace RB::Graphics
 
         for (int i = 0; i < mesh_renderers.size(); ++i)
         {
-            const MeshRenderer* mesh_renderer = (const MeshRenderer*)mesh_renderers[i];
-            const Mesh* mesh = mesh_renderer->GetMesh();
-            const Material* mat = mesh_renderer->GetMaterial();
+            const MeshRenderer*     mesh_renderer   = (const MeshRenderer*)mesh_renderers[i];
+            const Mesh*             mesh            = mesh_renderer->GetMesh();
+            const Material*         mat             = mesh_renderer->GetMaterial();
+            const Mesh::VertexPair& vp              = mesh->GetVertexPair();
 
-            auto vertex_pairs = mesh->GetVertexPairs();
-
-            for (int vp_idx = 0; vp_idx < vertex_pairs.size(); vp_idx++)
+            if (!vp.vertexBuffer->ReadyToRender() || 
+                (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()) ||
+                !mat->GetTexture()->ReadyToRender())
             {
-                const Mesh::VertexPair& vp = vertex_pairs[vp_idx];
-
-                if (!vp.vertexBuffer->ReadyToRender() || 
-                    (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()) ||
-                    !mat->GetTexture()->ReadyToRender())
-                {
-                    continue;
-                }
-
-                const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
-
-                if (transform == nullptr)
-                {
-                    continue;
-                }
-
-                GBufferEntry::ModelEntry entry = {};
-                entry.vb            = vp.vertexBuffer;
-                entry.ib            = vp.indexBuffer;
-                entry.texture       = mat->GetTexture();
-                entry.modelMatrix   = transform->GetLocalToWorldMatrix();
-
-                entries[total_entries] = entry;
-                total_entries++;
+                continue;
             }
+
+            const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+
+            GBufferEntry::ModelEntry entry = {};
+            entry.vb            = vp.vertexBuffer;
+            entry.ib            = vp.indexBuffer;
+            entry.texture       = mat->GetTexture();
+            entry.modelMatrix   = transform->GetLocalToWorldMatrix();
+
+            entries[total_entries] = entry;
+            total_entries++;
         }
 
         if (total_entries == 0)
