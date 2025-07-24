@@ -3,8 +3,29 @@ cmake_minimum_required(VERSION 3.16.3)
 project(RabBitEngine VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 17)
 
+# Platform detection
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    add_compile_definitions(
+        RB_PLATFORM_WINDOWS
+
+        # This does not directly choose the graphics API, but is used to compile the API specific code
+        RB_GRAPHICS_API_D3D12
+    )
+else()
+    message(FATAL_ERROR "Unsupported platform!")
+    add_compile_definitions((RB_PLATFORM_UNKNOWN))
+endif()
+
 #options
 option(RABBIT_BUILD_TESTS "Build tests" ON)
+
+# Set RabBit configuration definitions
+add_compile_definitions(
+    $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>
+    $<$<CONFIG:Release>:RB_CONFIG_OPTIMIZED>
+    $<$<CONFIG:RelWithDebInfo>:RB_CONFIG_OPTIMIZED>
+    $<$<CONFIG:MinSizeRel>:RB_CONFIG_DIST>
+)
 
 file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
@@ -33,57 +54,68 @@ target_precompile_headers(RabBit PRIVATE "src/RabBit/RabBitCommon.h")
 
 target_include_directories(RabBit PUBLIC
     "src"
-    "src/RabBit"
+    "src/rabbit"
     "external"
-
-    # D3D12
-    "external/D3D12/include"
-
-    # WinPixEventRuntime
-    "external/WinPixEventRuntime/Include/WinPixEventRuntime"
-
-    # DXC
-    "external/DXC/inc"
-
-    # STB
-    "external/stb"
-
-    # UFBX
-    "external/ufbx"
 )
 
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
-# Library paths
-set(ENV{D3D_PATH} "${EXTERNAL_PATH}/D3D12")
-set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
-set(ENV{DXC_PATH} "${EXTERNAL_PATH}/DXC")
 
-target_link_libraries(RabBit
-    # D3D12
-    d3d12.lib
-    dxgi.lib
-    dxguid.lib
+# Windows specific includes and libraries
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    target_include_directories(RabBit PUBLIC
+        # D3D12
+        "external/D3D12/include"
+        
+        # WinPixEventRuntime
+        "external/WinPixEventRuntime/Include/WinPixEventRuntime"
+        
+        # DXC
+        "external/DXC/inc"
+        
+        # STB
+        "external/stb"
+        
+        # UFBX
+        "external/ufbx"
+    )
 
-    # D3D11 (D3D11On12)
-    d3d11.lib
-    dcomp.lib
+    # Library paths
+    set(ENV{D3D_PATH} "${EXTERNAL_PATH}/D3D12")
+    set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
+    set(ENV{DXC_PATH} "${EXTERNAL_PATH}/DXC")
+    
+    target_link_libraries(RabBit
+        # D3D12
+        d3d12.lib
+        dxgi.lib
+        dxguid.lib
+    
+        # D3D11 (D3D11On12)
+        d3d11.lib
+        dcomp.lib
+    
+        # WinPixEventRuntime
+        "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
+    
+        # DXC 
+        "$ENV{DXC_PATH}/lib/x64/dxcompiler.lib"
+    )
+    
+    # Add D3D12 shader compiler
+    add_subdirectory(shaderCompiler/d3d12)
+endif()
 
-    # WinPixEventRuntime
-    "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
-
-    # DXC 
-    "$ENV{DXC_PATH}/lib/x64/dxcompiler.lib"
-)
 
 # Copy libraries next to the final executable (should be called app side)
-function(copyExternalLibraries)
-
+function(RabBitCopyLibs)
     # Create a lit of files to copy to the executable
-    list (APPEND DLLS_TO_COPY
-        "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
-        "$ENV{DXC_PATH}/bin/x64/dxcompiler.dll"
-    )
+    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+        list (APPEND DLLS_TO_COPY
+            "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
+            "$ENV{DXC_PATH}/bin/x64/dxcompiler.dll"
+        )
+    endif()
 
     foreach (file_i ${DLLS_TO_COPY})
         add_custom_command(TARGET ${APP_NAME} POST_BUILD
@@ -103,8 +135,6 @@ function(copyExternalLibraries)
         "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/d3d12SDKLayers.dll")
 endfunction()
 
-# Add shader compiler
-add_subdirectory(shaderCompiler/d3d12)
 
 # Add tests
 if(RABBIT_BUILD_TESTS)

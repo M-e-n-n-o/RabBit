@@ -3,8 +3,10 @@
 #include "events/WindowEvent.h"
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
-#include "graphics/d3d12/window/WindowD3D12.h"
-#include "graphics/d3d12/UtilsD3D12.h"
+
+#if RB_PLATFORM_WINDOWS
+#include "platform/windowing/windows/WindowWin.h"
+#endif
 
 using namespace RB::Events;
 
@@ -291,57 +293,45 @@ namespace RB::Graphics
 
     Window* Window::Create(const char* window_name, Display* display, uint32_t window_style, float virtual_scale, float virtual_aspect)
     {
-        switch (Renderer::GetAPI())
-        {
-        case RenderAPI::D3D12:
-        {
-            D3D12::WindowArgs args = {};
-            args.className      = L"RabBit WindowClass";
-            args.instance       = GetModuleHandle(nullptr);
-            args.fullscreen     = true;
-            args.width          = display->GetResolution().x;
-            args.height         = display->GetResolution().y;
-            args.virtualScale   = virtual_scale;
-            args.virtualAspect  = virtual_aspect;
-            args.windowStyle    = window_style;
-            args.windowName     = window_name;
-            args.format         = D3D12::ConvertToDXGIFormat(RenderResourceFormat::R8G8B8A8_UNORM); // TODO Do this based on the display
+#if RB_PLATFORM_WINDOWS
+        Windows::WindowArgs args = {};
+        args.className      = L"RabBit WindowClass";
+        args.instance       = GetModuleHandle(nullptr);
+        args.fullscreen     = true;
+        args.width          = display->GetResolution().x;
+        args.height         = display->GetResolution().y;
+        args.virtualScale   = virtual_scale;
+        args.virtualAspect  = virtual_aspect;
+        args.windowStyle    = window_style;
+        args.windowName     = window_name;
+        args.format         = RenderResourceFormat::R8G8B8A8_UNORM; // TODO Do this based on the display
 
-            return new D3D12::WindowD3D12(args);
-        }
-        default:
-            RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the set graphics API");
-            break;
-        }
-
+        return new Windows::WindowWin(args);
+#else
+        RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the platform");
         return nullptr;
+#endif
     }
 
     Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, RenderResourceFormat window_format, float virtual_scale, float virtual_aspect)
     {
-        switch (Renderer::GetAPI())
-        {
-        case RenderAPI::D3D12:
-        {
-            D3D12::WindowArgs args = {};
-            args.className      = L"RabBit WindowClass";
-            args.instance       = GetModuleHandle(nullptr);
-            args.fullscreen     = false;
-            args.width          = window_width;
-            args.height         = window_height;
-            args.virtualScale   = virtual_scale;
-            args.virtualAspect  = virtual_aspect;
-            args.windowStyle    = window_style;
-            args.windowName     = window_name;
-            args.format         = D3D12::ConvertToDXGIFormat(window_format);
+#if RB_PLATFORM_WINDOWS
+        Windows::WindowArgs args = {};
+        args.className      = L"RabBit WindowClass";
+        args.instance       = GetModuleHandle(nullptr);
+        args.fullscreen     = false;
+        args.width          = window_width;
+        args.height         = window_height;
+        args.virtualScale   = virtual_scale;
+        args.virtualAspect  = virtual_aspect;
+        args.windowStyle    = window_style;
+        args.windowName     = window_name;
+        args.format         = window_format;
 
-            return new D3D12::WindowD3D12(args);
-        }
-        default:
-            RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the set graphics API");
-            break;
-        }
-
+        return new Windows::WindowWin(args);
+#else
+        RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the platform");
         return nullptr;
+#endif
     }
 }

@@ -1,7 +1,10 @@
 #include "RabBitCommon.h"
 #include "Display.h"
 #include "graphics/Renderer.h"
-#include "graphics/d3d12/window/DisplayD3D12.h"
+
+#if RB_PLATFORM_WINDOWS
+#include "platform/windowing/windows/DisplayWin.h"
+#endif
 
 namespace RB::Graphics
 {
@@ -15,16 +18,12 @@ namespace RB::Graphics
 
     List<Display*> Display::CreateDisplays()
     {
+#if RB_PLATFORM_WINDOWS
+        List<Display*> displays = Windows::CreateDisplays();
+#else
+        RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the display class for the windowing platform");
         List<Display*> displays;
-
-        switch (Renderer::GetAPI())
-        {
-        case RenderAPI::D3D12: displays = D3D12::CreateDisplays(); break;
-
-        default:
-            RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the display class for the set graphics API");
-            break;
-        }
+#endif
 
         RB_LOG(LOGTAG_WINDOWING, "-------- MONITOR INFORMATION --------");
         RB_LOG(LOGTAG_WINDOWING, "Found the following displays:");

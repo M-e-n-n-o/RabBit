@@ -142,7 +142,7 @@ namespace RB
                 }
             }
 
-            static_assert(false);
+            //static_assert(false);
             // TODO 
             // - With indices generating the data is sometimes still wrong
             // - Every submodel probably also needs its own transform

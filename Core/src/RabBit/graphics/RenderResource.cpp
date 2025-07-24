@@ -1,7 +1,10 @@
 #include "RabBitCommon.h"
 #include "RenderResource.h"
 #include "Renderer.h"
-#include "d3d12/resource/RenderResourceD3D12.h"
+
+#if RB_GRAPHICS_API_D3D12
+#include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
+#endif
 
 namespace RB::Graphics
 {
@@ -94,7 +97,9 @@ namespace RB::Graphics
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
+#if RB_GRAPHICS_API_D3D12
             return new D3D12::VertexBufferD3D12(name, type, data, vertex_size, data_size);
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -108,7 +113,9 @@ namespace RB::Graphics
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
+#if RB_GRAPHICS_API_D3D12
             return new D3D12::IndexBufferD3D12(name, data, elements);
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -122,7 +129,9 @@ namespace RB::Graphics
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
+#if RB_GRAPHICS_API_D3D12
             return new D3D12::Texture2DD3D12(name, format, width, height, is_render_target, random_read_write_access, color_space);
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -136,7 +145,9 @@ namespace RB::Graphics
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
+#if RB_GRAPHICS_API_D3D12
             return new D3D12::Texture2DD3D12(name, data, data_size, format, width, height, is_render_target, random_read_write_access, color_space);
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -150,7 +161,9 @@ namespace RB::Graphics
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
+#if RB_GRAPHICS_API_D3D12
             return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height, is_render_target, random_read_write_access, color_space);
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
