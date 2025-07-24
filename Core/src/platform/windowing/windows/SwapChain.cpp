@@ -1,3 +1,5 @@
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "SwapChain.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
@@ -162,3 +164,4 @@ namespace RB::Graphics::Windows
         RB_ASSERT_FATAL_RELEASE_D3D(m_CompositionTarget->SetRoot(visual.Get()), "Could not set the visual as the composition target");
     }
 }
+#endif

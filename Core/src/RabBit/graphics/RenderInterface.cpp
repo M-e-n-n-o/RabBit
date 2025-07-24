@@ -2,7 +2,9 @@
 #include "Renderer.h"
 #include "RenderInterface.h"
 
+#if RB_GRAPHICS_API_D3D12
 #include "platform/graphics/d3d12/RenderInterfaceD3D12.h"
+#endif
 
 namespace RB::Graphics
 {
@@ -54,7 +56,9 @@ namespace RB::Graphics
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
+#if RB_GRAPHICS_API_D3D12
             return new D3D12::RenderInterfaceD3D12(allow_only_copy_operations);
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the render interface for the set graphics API");
             break;

@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "ResourceStateManager.h"
 #include "GpuResource.h"
@@ -55,3 +57,4 @@ namespace RB::Graphics::D3D12
         m_PendingBarriers.clear();
     }
 }
+#endif

@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "Descriptor.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
@@ -284,3 +286,4 @@ namespace RB::Graphics::D3D12
         return D3D12_GPU_DESCRIPTOR_HANDLE{ m_GpuStart.ptr + offset * m_IncrementSize };
     }
 }
+#endif

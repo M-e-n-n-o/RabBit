@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "DeviceQueue.h"
 #include "GraphicsDevice.h"
@@ -182,3 +184,4 @@ namespace RB::Graphics::D3D12
         m_CommandQueue->Wait(fence.Get(), fence_value);
     }
 }
+#endif

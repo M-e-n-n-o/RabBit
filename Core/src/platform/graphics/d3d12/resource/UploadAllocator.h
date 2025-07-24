@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #pragma once
 
 #include <d3d12.h>
@@ -62,3 +64,4 @@ namespace RB::Graphics::D3D12
         int32_t				m_LastHighestPage;
     };
 }
+#endif

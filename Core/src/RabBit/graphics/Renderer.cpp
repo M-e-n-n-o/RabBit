@@ -24,7 +24,9 @@
 #include "passes/GBuffer.h"
 #include "passes/DeferredLighting.h"
 
+#if RB_GRAPHICS_API_D3D12
 #include "platform/graphics/d3d12/RendererD3D12.h"
+#endif
 
 using namespace RB::Math;
 using namespace RB::Events;
@@ -542,7 +544,9 @@ namespace RB::Graphics
         switch (Renderer::GetAPI())
         {
         case RenderAPI::D3D12:
+#if RB_GRAPHICS_API_D3D12
             return new D3D12::RendererD3D12(enable_validation_layer);
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the Renderer for the set graphics API");
             break;

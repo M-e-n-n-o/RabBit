@@ -1,3 +1,5 @@
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "DisplayWin.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
@@ -74,3 +76,4 @@ namespace RB::Graphics::Windows
         return displays;
     }
 }
+#endif

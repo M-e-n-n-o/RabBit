@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #pragma once
 #include "RabBitCommon.h"
 #include "graphics/Renderer.h"
@@ -20,3 +22,4 @@ namespace RB::Graphics::D3D12
         void SyncWithGpu() override;
     };
 }
+#endif

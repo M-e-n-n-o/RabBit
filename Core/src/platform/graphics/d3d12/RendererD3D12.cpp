@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "RendererD3D12.h"
 #include "GraphicsDevice.h"
@@ -46,3 +48,4 @@ namespace RB::Graphics::D3D12
         g_ResourceManager->UpdateBookkeeping();
     }
 }
+#endif

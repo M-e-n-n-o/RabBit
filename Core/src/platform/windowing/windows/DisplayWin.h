@@ -1,3 +1,5 @@
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+
 #pragma once
 #include "graphics/Display.h"
 
@@ -40,3 +42,4 @@ namespace RB::Graphics::Windows
 
     List<Display*> CreateDisplays();
 }
+#endif

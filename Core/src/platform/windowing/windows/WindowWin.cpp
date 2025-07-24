@@ -1,3 +1,5 @@
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "WindowWin.h"
 #include "SwapChain.h"
@@ -390,3 +392,4 @@ namespace RB::Graphics::Windows
         return 0;
     }
 }
+#endif

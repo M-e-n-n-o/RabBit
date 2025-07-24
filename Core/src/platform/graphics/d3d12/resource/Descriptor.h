@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #pragma once
 
 #include <d3d12.h>
@@ -105,6 +107,5 @@ namespace RB::Graphics::D3D12
         uint32_t                    m_TransientBase;
         uint32_t                    m_CycleIndex;
     };
-
-
 }
+#endif

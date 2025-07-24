@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "UploadAllocator.h"
 #include "ResourceManager.h"
@@ -151,3 +153,4 @@ namespace RB::Graphics::D3D12
         return m_Pages.size() - 1;
     }
 }
+#endif

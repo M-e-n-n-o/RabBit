@@ -1,3 +1,5 @@
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+
 #pragma once
 
 #include "RabBitCommon.h"
@@ -79,3 +81,4 @@ namespace RB::Graphics::Windows
         Graphics::Texture2D* m_BackBuffers[BACK_BUFFER_COUNT];
     };
 }
+#endif

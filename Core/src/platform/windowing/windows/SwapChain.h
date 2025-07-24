@@ -1,3 +1,5 @@
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+
 #pragma once
 
 #include "RabBitCommon.h"
@@ -57,3 +59,4 @@ namespace RB::Graphics::Windows
         DXGI_FORMAT					m_BackBufferFormat;
     };
 }
+#endif

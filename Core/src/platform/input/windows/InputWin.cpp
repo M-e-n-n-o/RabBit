@@ -1,3 +1,5 @@
+#if RB_PLATFORM_WINDOWS
+
 #include "RabBitCommon.h"
 #include "events/input/Input.h"
 
@@ -32,3 +34,4 @@ namespace RB::Events
         return Math::Float2(point.x, point.y);
     }
 }
+#endif

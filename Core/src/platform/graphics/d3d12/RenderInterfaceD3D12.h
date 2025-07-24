@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #pragma once
 
 #include "graphics/RenderInterface.h"
@@ -164,3 +166,4 @@ namespace RB::Graphics::D3D12
         UploadAllocator*                    m_CurrentCBVAllocator;
     };
 }
+#endif

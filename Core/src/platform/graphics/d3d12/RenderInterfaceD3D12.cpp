@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "RenderInterfaceD3D12.h"
 #include "DeviceQueue.h"
@@ -1158,3 +1160,4 @@ namespace RB::Graphics::D3D12
         m_RenderState.psoDirty = false;
     }
 }
+#endif

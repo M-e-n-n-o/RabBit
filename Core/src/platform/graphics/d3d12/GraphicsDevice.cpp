@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "GraphicsDevice.h"
 #include "DeviceQueue.h"
@@ -301,3 +303,4 @@ namespace RB::Graphics::D3D12
         return m_11On12Device;
     }
 }
+#endif

@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "RabBitCommon.h"
 #include "Pipeline.h"
 #include "ShaderSystem.h"
@@ -477,3 +479,4 @@ namespace RB::Graphics::D3D12
         return elements;
     }
 }
+#endif

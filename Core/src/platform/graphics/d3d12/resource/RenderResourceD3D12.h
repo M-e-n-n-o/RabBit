@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #pragma once
 
 #include "RabBitCommon.h"
@@ -108,3 +110,4 @@ namespace RB::Graphics::D3D12
         D3D12_CPU_DESCRIPTOR_HANDLE		m_DepthStencilDescriptor;
     };
 }
+#endif

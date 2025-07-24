@@ -1,3 +1,5 @@
+#if RB_GRAPHICS_API_D3D12
+
 #include "ResourceManager.h"
 #include "RabBitCommon.h"
 #include "../GraphicsDevice.h"
@@ -334,3 +336,4 @@ namespace RB::Graphics::D3D12
         }
     }
 }
+#endif
