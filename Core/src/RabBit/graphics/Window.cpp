@@ -3,8 +3,7 @@
 #include "events/WindowEvent.h"
 #include "graphics/Renderer.h"
 #include "graphics/Display.h"
-#include "graphics/d3d12/window/WindowD3D12.h"
-#include "graphics/d3d12/UtilsD3D12.h"
+#include "platform/windowing/windows/WindowWin.h"
 
 using namespace RB::Events;
 
@@ -295,7 +294,7 @@ namespace RB::Graphics
         {
         case RenderAPI::D3D12:
         {
-            D3D12::WindowArgs args = {};
+            Windows::WindowArgs args = {};
             args.className      = L"RabBit WindowClass";
             args.instance       = GetModuleHandle(nullptr);
             args.fullscreen     = true;
@@ -305,9 +304,9 @@ namespace RB::Graphics
             args.virtualAspect  = virtual_aspect;
             args.windowStyle    = window_style;
             args.windowName     = window_name;
-            args.format         = D3D12::ConvertToDXGIFormat(RenderResourceFormat::R8G8B8A8_UNORM); // TODO Do this based on the display
+            args.format         = RenderResourceFormat::R8G8B8A8_UNORM; // TODO Do this based on the display
 
-            return new D3D12::WindowD3D12(args);
+            return new Windows::WindowWin(args);
         }
         default:
             RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the set graphics API");
@@ -323,7 +322,7 @@ namespace RB::Graphics
         {
         case RenderAPI::D3D12:
         {
-            D3D12::WindowArgs args = {};
+            Windows::WindowArgs args = {};
             args.className      = L"RabBit WindowClass";
             args.instance       = GetModuleHandle(nullptr);
             args.fullscreen     = false;
@@ -333,9 +332,9 @@ namespace RB::Graphics
             args.virtualAspect  = virtual_aspect;
             args.windowStyle    = window_style;
             args.windowName     = window_name;
-            args.format         = D3D12::ConvertToDXGIFormat(window_format);
+            args.format         = window_format;
 
-            return new D3D12::WindowD3D12(args);
+            return new Windows::WindowWin(args);
         }
         default:
             RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the set graphics API");

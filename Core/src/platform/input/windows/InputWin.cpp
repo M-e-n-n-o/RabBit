@@ -1,5 +1,5 @@
 #include "RabBitCommon.h"
-#include "Input.h"
+#include "events/input/Input.h"
 
 #include <winuser.h>
 

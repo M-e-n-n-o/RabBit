@@ -2,7 +2,7 @@
 
 #include "RabBitCommon.h"
 #include "GpuResource.h"
-#include "graphics/d3d12/DeviceQueue.h"
+#include "platform/graphics/d3d12/DeviceQueue.h"
 #include "graphics/RenderInterface.h"
 #include "utils/Threading.h"
 

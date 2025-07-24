@@ -52,22 +52,22 @@
 
 
 // --Entry point--------------------
-#include "RabBit/EntryPoint.h"
+#include "rabbit/EntryPoint.h"
 // ---------------------------------
 
-#include "RabBit/utils/debug/Log.h"
-#include "RabBit/utils/debug/Assert.h"
+#include "rabbit/utils/debug/Log.h"
+#include "rabbit/utils/debug/Assert.h"
 
-#include "RabBit/app/Application.h"
+#include "rabbit/app/Application.h"
 
-#include "RabBit/entity/Scene.h"
-#include "RabBit/entity/GameObject.h"
-#include "RabBit/entity/components/Mesh.h"
-#include "RabBit/entity/components/Camera.h"
-#include "RabBit/entity/components/Transform.h"
+#include "rabbit/entity/Scene.h"
+#include "rabbit/entity/GameObject.h"
+#include "rabbit/entity/components/Mesh.h"
+#include "rabbit/entity/components/Camera.h"
+#include "rabbit/entity/components/Transform.h"
 
-#include "RabBit/events/input/Input.h"
-#include "RabBit/events/input/KeyCodes.h"
-#include "RabBit/events/input/MouseCodes.h"
+#include "rabbit/events/input/Input.h"
+#include "rabbit/events/input/KeyCodes.h"
+#include "rabbit/events/input/MouseCodes.h"
 
-#include "RabBit/math/Vector.h"
+#include "rabbit/math/Vector.h"

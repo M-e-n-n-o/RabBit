@@ -11,31 +11,29 @@
 #undef CreateWindow
 #endif
 
-#include <d3d12.h>
-
-namespace RB::Graphics::D3D12
+namespace RB::Graphics::Windows
 {
     class SwapChain;
 
     struct WindowArgs
     {
-        HINSTANCE		instance;
-        wchar_t*        className;
-        const char*     windowName;
-        bool			fullscreen;
-        uint32_t		width;
-        uint32_t		height;
-        float			virtualScale;
-        float			virtualAspect;
-        uint32_t		windowStyle;
-        DXGI_FORMAT     format;
+        HINSTANCE	            instance;
+        wchar_t*                className;
+        const char*             windowName;
+        bool		            fullscreen;
+        uint32_t	            width;
+        uint32_t	            height;
+        float		            virtualScale;
+        float		            virtualAspect;
+        uint32_t	            windowStyle;
+        RenderResourceFormat    format;
     };
 
-    class WindowD3D12 : public Window
+    class WindowWin : public Window
     {
     public:
-        WindowD3D12(const WindowArgs args);
-        ~WindowD3D12();
+        WindowWin(const WindowArgs args);
+        ~WindowWin();
 
         void Update() override;
 

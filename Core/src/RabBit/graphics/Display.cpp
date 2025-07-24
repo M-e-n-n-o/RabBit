@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "Display.h"
 #include "graphics/Renderer.h"
-#include "graphics/d3d12/window/DisplayD3D12.h"
+#include "platform/windowing/windows/DisplayWin.h"
 
 namespace RB::Graphics
 {
@@ -19,7 +19,7 @@ namespace RB::Graphics
 
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12: displays = D3D12::CreateDisplays(); break;
+        case RenderAPI::D3D12: displays = Windows::CreateDisplays(); break;
 
         default:
             RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the display class for the set graphics API");

@@ -1,6 +1,6 @@
 #include "RabBitCommon.h"
 #include "Descriptor.h"
-#include "graphics/d3d12/GraphicsDevice.h"
+#include "platform/graphics/d3d12/GraphicsDevice.h"
 
 namespace RB::Graphics::D3D12
 {

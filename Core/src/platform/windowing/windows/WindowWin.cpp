@@ -1,28 +1,30 @@
-#include "WindowD3D12.h"
 #include "RabBitCommon.h"
-#include "WindowD3D12.h"
+#include "WindowWin.h"
 #include "SwapChain.h"
 #include "app/Application.h"
 #include "graphics/Display.h"
 #include "graphics/Renderer.h"
-#include "graphics/d3d12/GraphicsDevice.h"
-#include "graphics/d3d12/DeviceQueue.h"
-#include "graphics/d3d12/UtilsD3D12.h"
-#include "graphics/d3d12/resource/GpuResource.h"
-#include "graphics/d3d12/resource/RenderResourceD3D12.h"
+#include "platform/graphics/d3d12/GraphicsDevice.h"
+#include "platform/graphics/d3d12/DeviceQueue.h"
+#include "platform/graphics/d3d12/UtilsD3D12.h"
+#include "platform/graphics/d3d12/resource/GpuResource.h"
+#include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
 
 #include "events/WindowEvent.h"
 #include "events/MouseEvent.h"
 #include "events/KeyEvent.h"
 
-using namespace RB::Events;
+#include <d3d12.h>
 
-namespace RB::Graphics::D3D12
+using namespace RB::Events;
+using namespace RB::Graphics::D3D12;
+
+namespace RB::Graphics::Windows
 {
     // Window callback function
     LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-    WindowD3D12::WindowD3D12(const WindowArgs args)
+    WindowWin::WindowWin(const WindowArgs args)
         : Window(false, args.virtualScale, args.virtualAspect)
         , m_WindowHandle(nullptr)
         , m_IsValid(true)
@@ -66,7 +68,7 @@ namespace RB::Graphics::D3D12
                 width, height,
                 m_IsTearingSupported,
                 BACK_BUFFER_COUNT,
-                args.format,
+                ConvertToDXGIFormat(args.format),
                 (bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
             );
 
@@ -84,7 +86,7 @@ namespace RB::Graphics::D3D12
         ::ShowWindow(m_WindowHandle, SW_SHOW);
     }
 
-    WindowD3D12::~WindowD3D12()
+    WindowWin::~WindowWin()
     {
         if (m_IsValid)
         {
@@ -96,7 +98,7 @@ namespace RB::Graphics::D3D12
         ::DestroyWindow(m_WindowHandle);
     }
 
-    void WindowD3D12::Update()
+    void WindowWin::Update()
     {
         MSG message = {};
         while (PeekMessage(&message, m_WindowHandle, 0, 0, PM_REMOVE))
@@ -106,7 +108,7 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void WindowD3D12::Present(const VsyncMode& mode)
+    void WindowWin::Present(const VsyncMode& mode)
     {
         bool vsync_enabled = mode != VsyncMode::Off;
         UINT sync_interval = (UINT)mode;
@@ -115,7 +117,7 @@ namespace RB::Graphics::D3D12
         m_SwapChain->Present(sync_interval, present_flags);
     }
 
-    Math::Float4 WindowD3D12::GetWindowRectangle() const
+    Math::Float4 WindowWin::GetWindowRectangle() const
     {
         RECT window_rect;
         ::GetWindowRect(m_WindowHandle, &window_rect);
@@ -123,17 +125,17 @@ namespace RB::Graphics::D3D12
         return Math::Float4(window_rect.right - window_rect.left, window_rect.bottom - window_rect.top, window_rect.left, window_rect.top);
     }
 
-    uint32_t WindowD3D12::GetWidth() const
+    uint32_t WindowWin::GetWidth() const
     {
         return m_SwapChain->GetWidth();
     }
 
-    uint32_t WindowD3D12::GetHeight() const
+    uint32_t WindowWin::GetHeight() const
     {
         return m_SwapChain->GetHeight();
     }
 
-    RenderRect WindowD3D12::GetWindowRect() const
+    RenderRect WindowWin::GetWindowRect() const
     {
         RenderRect rect = {};
         rect.width  = GetWidth();
@@ -145,22 +147,22 @@ namespace RB::Graphics::D3D12
         return rect;
     }
 
-    bool WindowD3D12::IsMinimized() const
+    bool WindowWin::IsMinimized() const
     {
         return m_SwapChain->GetWidth() == 0 && m_SwapChain->GetHeight() == 0;
     }
 
-    bool WindowD3D12::IsValid() const
+    bool WindowWin::IsValid() const
     {
         return m_IsValid;
     }
 
-    bool WindowD3D12::IsSemiTransparent() const
+    bool WindowWin::IsSemiTransparent() const
     {
         return m_IsSemiTransparent;
     }
 
-    Display* WindowD3D12::GetParentDisplay()
+    Display* WindowWin::GetParentDisplay()
     {
         List<Display*> displays = Application::GetInstance()->GetDisplays();
 
@@ -179,7 +181,7 @@ namespace RB::Graphics::D3D12
         return nullptr;
     }
 
-    void WindowD3D12::SetBorderless(bool borderless)
+    void WindowWin::SetBorderless(bool borderless)
     {
         if (borderless)
         {
@@ -191,32 +193,32 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    bool WindowD3D12::IsSameWindow(void* window_handle) const
+    bool WindowWin::IsSameWindow(void* window_handle) const
     {
         return window_handle == m_WindowHandle;
     }
 
-    void* WindowD3D12::GetNativeWindowHandle() const
+    void* WindowWin::GetNativeWindowHandle() const
     {
         return m_WindowHandle;
     }
 
-    void WindowD3D12::ResizeWindow(uint32_t width, uint32_t height, int32_t x, int32_t y)
+    void WindowWin::ResizeWindow(uint32_t width, uint32_t height, int32_t x, int32_t y)
     {
         SetWindowPos(m_WindowHandle, HWND_TOP, x, y, width, height, SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED);
     }
 
-    RenderResourceFormat WindowD3D12::GetBackBufferFormat()
+    RenderResourceFormat WindowWin::GetBackBufferFormat()
     {
         return ConvertToEngineFormat(m_SwapChain->GetBackBufferFormat());
     }
 
-    uint32_t WindowD3D12::GetCurrentBackBufferIndex()
+    uint32_t WindowWin::GetCurrentBackBufferIndex()
     {
         return m_SwapChain->GetCurrentBackBufferIndex();
     }
 
-    Graphics::Texture2D* WindowD3D12::GetCurrentBackBuffer()
+    Graphics::Texture2D* WindowWin::GetCurrentBackBuffer()
     {
         if (!m_IsValid)
         {
@@ -238,7 +240,7 @@ namespace RB::Graphics::D3D12
         return m_BackBuffers[index];
     }
 
-    void WindowD3D12::ResizeBackBuffers(uint32_t width, uint32_t height)
+    void WindowWin::ResizeBackBuffers(uint32_t width, uint32_t height)
     {
         if (m_SwapChain->GetWidth() == width && m_SwapChain->GetHeight() == height)
         {
@@ -259,7 +261,7 @@ namespace RB::Graphics::D3D12
         m_SwapChain->Resize(width, height);
     }
 
-    void WindowD3D12::DestroyWindow()
+    void WindowWin::DestroyWindow()
     {
         // The actual window gets destroyed when deleting the Window object, this should be done by the main thread
 
@@ -277,7 +279,7 @@ namespace RB::Graphics::D3D12
         delete m_SwapChain;
     }
 
-    void WindowD3D12::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
+    void WindowWin::RegisterWindowCLass(HINSTANCE instance, const wchar_t* class_name)
     {
         WNDCLASSEXW window_class = {};
 
@@ -298,7 +300,7 @@ namespace RB::Graphics::D3D12
         RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, SUCCEEDED(result), "Failed to register window");
     }
 
-    void WindowD3D12::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style)
+    void WindowWin::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style)
     {
         int screen_width = ::GetSystemMetrics(SM_CXSCREEN);
         int screen_height = ::GetSystemMetrics(SM_CYSCREEN);

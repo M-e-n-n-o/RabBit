@@ -33,7 +33,7 @@ target_precompile_headers(RabBit PRIVATE "src/RabBit/RabBitCommon.h")
 
 target_include_directories(RabBit PUBLIC
     "src"
-    "src/RabBit"
+    "src/rabbit"
     "external"
 
     # D3D12

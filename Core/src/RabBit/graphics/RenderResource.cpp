@@ -1,7 +1,7 @@
 #include "RabBitCommon.h"
 #include "RenderResource.h"
 #include "Renderer.h"
-#include "d3d12/resource/RenderResourceD3D12.h"
+#include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
 
 namespace RB::Graphics
 {

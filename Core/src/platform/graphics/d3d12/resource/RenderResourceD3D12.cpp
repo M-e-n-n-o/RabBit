@@ -1,11 +1,11 @@
 #include "RabBitCommon.h"
 #include "RenderResourceD3D12.h"
 #include "ResourceManager.h"
-#include "graphics/d3d12/UtilsD3D12.h"
-#include "graphics/d3d12/GraphicsDevice.h"
 #include "app/Application.h"
 #include "graphics/Renderer.h"
 #include "graphics/ResourceStreamer.h"
+#include "platform/graphics/d3d12/UtilsD3D12.h"
+#include "platform/graphics/d3d12/GraphicsDevice.h"
 
 namespace RB::Graphics::D3D12
 {

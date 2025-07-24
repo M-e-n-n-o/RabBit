@@ -2,7 +2,7 @@
 #include "Renderer.h"
 #include "RenderInterface.h"
 
-#include "d3d12/RenderInterfaceD3D12.h"
+#include "platform/graphics/d3d12/RenderInterfaceD3D12.h"
 
 namespace RB::Graphics
 {

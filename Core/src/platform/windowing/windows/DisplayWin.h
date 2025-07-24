@@ -4,12 +4,12 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-namespace RB::Graphics::D3D12
+namespace RB::Graphics::Windows
 {
-    class DisplayD3D12 : public Display
+    class DisplayWin : public Display
     {
     public:
-        DisplayD3D12(GPtr<IDXGIOutput> output, uint32_t output_index);
+        DisplayWin(GPtr<IDXGIOutput> output, uint32_t output_index);
 
         const char* GetName() override { return m_Name; }
 

@@ -12,7 +12,7 @@
 // Direct Composition, for transparency support
 #include <dcomp.h>
 
-namespace RB::Graphics::D3D12
+namespace RB::Graphics::Windows
 {
     class SwapChain
     {

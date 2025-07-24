@@ -1,12 +1,14 @@
 #include "RabBitCommon.h"
-#include "DisplayD3D12.h"
-#include "graphics/d3d12/GraphicsDevice.h"
+#include "DisplayWin.h"
+#include "platform/graphics/d3d12/GraphicsDevice.h"
 
 #include <strsafe.h>
 
-namespace RB::Graphics::D3D12
+using namespace RB::Graphics::D3D12;
+
+namespace RB::Graphics::Windows
 {
-    DisplayD3D12::DisplayD3D12(GPtr<IDXGIOutput> output, uint32_t output_index)
+    DisplayWin::DisplayWin(GPtr<IDXGIOutput> output, uint32_t output_index)
     {
         // To get all possible fullscreen resolutions, formats and refresh rate see:
         // https://learn.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgioutput1-getdisplaymodelist1
@@ -65,7 +67,7 @@ namespace RB::Graphics::D3D12
         GPtr<IDXGIOutput> output;
         for (uint32_t output_index = 0; g_GraphicsDevice->GetAdapter()->EnumOutputs(output_index, &output) != DXGI_ERROR_NOT_FOUND; output_index++)
         {
-            Display* display = new DisplayD3D12(output, output_index);
+            Display* display = new DisplayWin(output, output_index);
             displays.push_back(display);
         }
 

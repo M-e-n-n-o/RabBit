@@ -24,7 +24,7 @@
 #include "passes/GBuffer.h"
 #include "passes/DeferredLighting.h"
 
-#include "d3d12/RendererD3D12.h"
+#include "platform/graphics/d3d12/RendererD3D12.h"
 
 using namespace RB::Math;
 using namespace RB::Events;
