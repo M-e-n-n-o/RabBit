@@ -11,6 +11,10 @@ using namespace RB::Events;
 
 namespace RB::Graphics::LinuxES
 {
-    
+    WindowLinuxES::WindowLinuxES(const WindowArgs args)
+        : Window(true, 1.0f, 0.0f)
+    {
+
+    }
 }
 #endif

@@ -56,9 +56,10 @@ namespace RB::Graphics::LinuxES
         void ResizeBackBuffers(uint32_t width, uint32_t height) override;
         void DestroyWindow() override;
 
-        bool					m_IsValid;
-        bool					m_IsTearingSupported;
-        bool                    m_IsSemiTransparent;
+        uint32_t                m_Width;
+        uint32_t                m_Height;
+        RenderResourceFormat    m_Format;
+        bool		            m_IsValid;
     };
 }
 #endif
