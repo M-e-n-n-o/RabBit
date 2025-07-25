@@ -256,12 +256,11 @@ namespace RB
         // Wait until the task has been completed
         {
             std::unique_lock<Mutex> lock(m_SharedContext->completedMutex);
-        
-            // TODO This logic will break when syncing a job that has not been prioritized as other jobs can then jump before this one, fix!!!
-            while (m_SharedContext->completedJobsCount < wait_for)
-            {
-                m_SharedContext->completedCV.wait(lock);
-            }
+
+            m_SharedContext->completedCV.wait(lock, [&] {
+                // TODO This logic will break when syncing a job that has not been prioritized as other jobs can then jump before this one, fix!!!
+                return m_SharedContext->completedJobsCount >= wait_for;
+            });
         }
     }
 
@@ -270,10 +269,9 @@ namespace RB
         // Wait until thread completely idle
         std::unique_lock<Mutex> lock(m_SharedContext->syncMutex);
 
-        while (m_SharedContext->state != ThreadState::Idle)
-        {
-            m_SharedContext->syncCV.wait(lock);
-        }
+        m_SharedContext->syncCV.wait(lock, [&] {
+            return m_SharedContext->state == ThreadState::Idle;
+        });
     }
 
     bool WorkerThread::IsStalling(uint32_t stall_threshold_ms, JobID& out_id)

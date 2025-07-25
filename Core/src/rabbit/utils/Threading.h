@@ -9,31 +9,13 @@
 namespace RB
 {
     // ---------------------------------------------------------------------------
-    //							  Wrappers/Helpers
+    //								    Mutex
     // ---------------------------------------------------------------------------
 
-    // TODO Maybe change the critical section logic (on Windows) to SRWLocks to improve performance if needed in the future?
     using Mutex             = std::mutex;
     using ConditionVariable = std::condition_variable;
 
-    struct AutoLock
-    {
-        AutoLock(Mutex& mutex)
-            : m_Mutex(mutex)
-        {
-            m_Mutex.lock();
-        }
-
-        ~AutoLock()
-        {
-            m_Mutex.unlock();
-        }
-
-    private:
-        Mutex& m_Mutex;
-    };
-
-    #define RB_MUTEX_AUTO_LOCK(m) AutoLock auto_locking_and_unlocking_mutex(m)
+    #define RB_MUTEX_AUTO_LOCK(m) std::lock_guard<Mutex> auto_locking_and_unlocking_mutex(m)
 
     // ---------------------------------------------------------------------------
     //								WorkerThread

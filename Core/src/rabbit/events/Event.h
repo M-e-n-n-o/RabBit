@@ -104,8 +104,8 @@ namespace RB::Events
     {
     public:
         // Enabling double queue's is better when processing an event on the
-        // listener that can take a very long time (maybe even block). 
-        // This way we won't block the main thread.
+        // listener that can take a very long time (maybe even block). This way 
+        // we won't block the main thread when its trying to add a new event.
         EventListener(int category, bool double_queue = false);
         virtual ~EventListener();
 
@@ -114,6 +114,7 @@ namespace RB::Events
             return (m_ListenerCategory & cat) > 0;
         }
 
+    protected:
         void ProcessEvents();
 
     private:
@@ -128,6 +129,8 @@ namespace RB::Events
         List<Event*>		m_QueuedEvents0;
         List<Event*>		m_QueuedEvents1;
         Mutex               m_Mutex;
+
+        static thread_local UnorderedMap<const EventListener*, bool> c_IsProcessing;
 
         friend class EventManager;
     };
