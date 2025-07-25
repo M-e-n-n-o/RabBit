@@ -10,6 +10,13 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
         # This does not directly choose the graphics API, but is used to compile the API specific code
         RB_GRAPHICS_API_D3D12
+        RB_GRAPHICS_API_OPENGL
+    )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_compile_definitions(
+        RB_PLATFORM_LINUX_ES
+
+        RB_GRAPHICS_API_OPENGL_ES
     )
 else()
     message(FATAL_ERROR "Unsupported platform!")
@@ -60,6 +67,13 @@ target_include_directories(RabBit PUBLIC
 
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
+target_include_directories(RabBit PUBLIC
+    # STB
+    "external/stb"
+    
+    # UFBX
+    "external/ufbx"
+)
 
 # Windows specific includes and libraries
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
@@ -72,12 +86,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         
         # DXC
         "external/DXC/inc"
-        
-        # STB
-        "external/stb"
-        
-        # UFBX
-        "external/ufbx"
     )
 
     # Library paths
@@ -115,24 +123,31 @@ function(RabBitCopyLibs)
             "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
             "$ENV{DXC_PATH}/bin/x64/dxcompiler.dll"
         )
+
+        # Copy the D3D12 DLL's to a specific folder
+        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$ENV{D3D_PATH}/bin/x64/D3D12Core.dll"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/D3D12Core.dll")
+        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$ENV{D3D_PATH}/bin/x64/d3d12SDKLayers.dll"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/d3d12SDKLayers.dll")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        list (APPEND DLLS_TO_COPY
+        )
     endif()
 
     foreach (file_i ${DLLS_TO_COPY})
+        if("${file_i}" STREQUAL "")
+            continue()
+        endif()
+
         add_custom_command(TARGET ${APP_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${file_i}"
             $<TARGET_FILE_DIR:${APP_NAME}>)
     endforeach(file_i)
-
-    # Copy the D3D12 DLL's to a specific folder
-    add_custom_command(TARGET ${APP_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$ENV{D3D_PATH}/bin/x64/D3D12Core.dll"
-        "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/D3D12Core.dll")
-    add_custom_command(TARGET ${APP_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$ENV{D3D_PATH}/bin/x64/d3d12SDKLayers.dll"
-        "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/d3d12SDKLayers.dll")
 endfunction()
 
 
