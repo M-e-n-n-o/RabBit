@@ -10,6 +10,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Set RabBit options
 set(RABBIT_BUILD_TESTS ON)
 
+# Set RabBit configuration definitions
+add_compile_definitions(
+    $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>
+    $<$<CONFIG:Release>:RB_CONFIG_OPTIMIZED>
+    $<$<CONFIG:RelWithDebInfo>:RB_CONFIG_OPTIMIZED>
+    $<$<CONFIG:MinSizeRel>:RB_CONFIG_DIST>
+)
+
 # Add main projects
 add_subdirectory(Core)
 add_subdirectory(Sample)

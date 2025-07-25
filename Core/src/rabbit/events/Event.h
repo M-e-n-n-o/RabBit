@@ -127,7 +127,7 @@ namespace RB::Events
         bool                m_QueueCycle;
         List<Event*>		m_QueuedEvents0;
         List<Event*>		m_QueuedEvents1;
-        CRITICAL_SECTION	m_CS;
+        std::mutex          m_Mutex;
 
         friend class EventManager;
     };

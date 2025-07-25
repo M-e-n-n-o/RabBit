@@ -78,8 +78,6 @@ namespace RB::Events
         : m_ListenerCategory(category)
         , m_DoubleQueue(double_queue)
     {
-        InitializeCriticalSection(&m_CS);
-
         m_QueuedEvents0.reserve(10);
         if (m_DoubleQueue)
             m_QueuedEvents1.reserve(10);
@@ -90,7 +88,6 @@ namespace RB::Events
     EventListener::~EventListener()
     {
         g_EventManager->RemoveListener(this);
-        DeleteCriticalSection(&m_CS);
     }
 
     void EventListener::ProcessEvents()
@@ -118,18 +115,18 @@ namespace RB::Events
 
         if (m_DoubleQueue)
         {
-            EnterCriticalSection(&m_CS);
+            m_Mutex.lock();
             m_QueueCycle = !m_QueueCycle;
             List<Event*>& queue = m_QueueCycle ? m_QueuedEvents0 : m_QueuedEvents1;
-            LeaveCriticalSection(&m_CS);
+            m_Mutex.unlock();
 
             process_events(queue);
         }
         else
         {
-            EnterCriticalSection(&m_CS);
+            m_Mutex.lock();
             process_events(m_QueuedEvents0);
-            LeaveCriticalSection(&m_CS);
+            m_Mutex.unlock();
         }
     }
 
@@ -154,17 +151,17 @@ namespace RB::Events
 
         if (m_DoubleQueue)
         {
-            EnterCriticalSection(&m_CS);
+            m_Mutex.lock();
             List<Event*>& queue = m_QueueCycle ? m_QueuedEvents1 : m_QueuedEvents0;
-            LeaveCriticalSection(&m_CS);
+            m_Mutex.unlock();
 
             add_event(queue);
         }
         else
         {
-            EnterCriticalSection(&m_CS);
+            m_Mutex.lock();
             add_event(m_QueuedEvents0);
-            LeaveCriticalSection(&m_CS);
+            m_Mutex.unlock();
         }
     }
 }

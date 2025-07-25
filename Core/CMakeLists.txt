@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.16.3)
 project(RabBitEngine VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 17)
 
-
 # Platform detection
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_compile_definitions(
@@ -30,14 +29,6 @@ endif()
 
 #options
 option(RABBIT_BUILD_TESTS "Build tests" ON)
-
-# Set RabBit configuration definitions
-add_compile_definitions(
-    $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>
-    $<$<CONFIG:Release>:RB_CONFIG_OPTIMIZED>
-    $<$<CONFIG:RelWithDebInfo>:RB_CONFIG_OPTIMIZED>
-    $<$<CONFIG:MinSizeRel>:RB_CONFIG_DIST>
-)
 
 file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
