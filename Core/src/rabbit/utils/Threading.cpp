@@ -1,15 +1,22 @@
 #include "RabBitCommon.h"
 #include "Threading.h"
 
+#if RB_PLATFORM_WINDOWS
+#include <windows.h>
+#include <processthreadsapi.h>
+#elif RB_PLATFORM_LINUX_ES
+#include <pthread.h>
+#endif
+
 namespace RB
 {
     // ---------------------------------------------------------------------------
     //								WorkerThread
     // ---------------------------------------------------------------------------
 
-    DWORD WINAPI WorkerThreadLoop(PVOID param);
+    void WorkerThreadLoop(WorkerThread::SharedContext* context);
 
-    WorkerThread::WorkerThread(const wchar_t* name, const ThreadPriority& priority)
+    WorkerThread::WorkerThread(const char* name, const ThreadPriority& priority)
     {
         LARGE_INTEGER li;
         if (!QueryPerformanceFrequency(&li))
@@ -33,15 +40,15 @@ namespace RB
         InitializeConditionVariable(&m_SharedContext->kickCV);
         InitializeConditionVariable(&m_SharedContext->syncCV);
         InitializeConditionVariable(&m_SharedContext->completedCV);
-        InitializeCriticalSection(&m_SharedContext->kickCS);
-        InitializeCriticalSection(&m_SharedContext->syncCS);
-        InitializeCriticalSection(&m_SharedContext->completedCS);
 
-        DWORD id;
-        m_ThreadHandle = CreateThread(NULL, 0, WorkerThreadLoop, (PVOID)m_SharedContext, 0, &id);
-        RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, m_ThreadHandle != 0, "Failed to create worker thread thread");
+        m_ThreadHandle = std::thread(WorkerThreadLoop, m_SharedContext);
 
-        SetThreadDescription(m_ThreadHandle, name);
+        // Set the name of the thread + thread priority
+#if RB_PLATFORM_WINDOWS
+        wchar_t* wchar_name = new wchar_t[strlen(name) + 1];
+        CharToWchar(name, wchar_name);
+        SetThreadDescription(static_cast<HANDLE>(m_ThreadHandle.native_handle()), wchar_name);
+        delete[] wchar_name;
 
         int job_prio = 0;
         switch (priority)
@@ -55,20 +62,73 @@ namespace RB
             break;
         }
 
-        SetThreadPriority(m_ThreadHandle, job_prio);
+        SetThreadPriority(static_cast<HANDLE>(m_ThreadHandle.native_handle()), job_prio);
+#elif RB_PLATFORM_LINUX_ES
+        pthread_setname_np(m_ThreadHandle.native_handle(), name);
+
+        sched_param param;
+        int policy;
+        pthread_getschedparam(m_ThreadHandle.native_handle(), &policy, &param);
+
+        switch (priority)
+        {
+        case ThreadPriority::Low:
+            param.sched_priority = 1;
+            break;
+        case ThreadPriority::Medium:
+            param.sched_priority = 50;
+            break;
+        case ThreadPriority::High:
+            param.sched_priority = 75;
+            break;
+        case ThreadPriority::Highest:
+            param.sched_priority = 99;
+            break;
+        default:
+            RB_LOG_ERROR(LOGTAG_MAIN, "Did not implement this thread priority yet");
+            break;
+        }
+
+        // Try SCHED_FIFO first (requires root privileges)
+        if (pthread_setschedparam(m_ThreadHandle.native_handle(), SCHED_FIFO, &param) != 0)
+        {
+            // If SCHED_FIFO fails, fall back to SCHED_OTHER with nice values
+            policy = SCHED_OTHER;
+            param.sched_priority = 0;  // SCHED_OTHER only allows 0
+            pthread_setschedparam(m_ThreadHandle.native_handle(), policy, &param);
+
+            int nice_value;
+            switch (priority)
+            {
+            case ThreadPriority::Low:     nice_value = 10;  break;
+            case ThreadPriority::Medium:  nice_value = 0;   break;
+            case ThreadPriority::High:    nice_value = -5;  break;
+            case ThreadPriority::Highest: nice_value = -10; break;
+            default:                      nice_value = 0;   break;
+            }
+        
+            if (nice_value != 0)
+            {
+                if (setpriority(PRIO_PROCESS, m_ThreadHandle.native_handle(), nice_value) != 0)
+                {
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Failed to set thread nice value");
+                }
+            }
+        }
+#endif
+
     }
 
     WorkerThread::~WorkerThread()
     {
         SyncAll();
 
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.lock();
         m_SharedContext->state = ThreadState::Terminating;
-        LeaveCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.unlock();
         WakeConditionVariable(&m_SharedContext->kickCV);
 
-        WaitForMultipleObjects(1, &m_ThreadHandle, TRUE, INFINITE);
-        CloseHandle(m_ThreadHandle);
+        m_ThreadHandle.join();
 
         delete m_SharedContext;
     }
@@ -94,7 +154,7 @@ namespace RB
 
         JobType& type = m_JobTypes[type_id];
 
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.lock();
 
         m_SharedContext->state = ThreadState::Waking;
 
@@ -129,7 +189,7 @@ namespace RB
             m_SharedContext->pendingJobs.push_back(job);
         }
 
-        LeaveCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.unlock();
         WakeConditionVariable(&m_SharedContext->kickCV);
 
         return job.id;
@@ -137,13 +197,12 @@ namespace RB
 
     void WorkerThread::PrioritizeJob(JobID job_id)
     {
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
 
         auto itr = FindJobBy(job_id);
 
         if (itr == m_SharedContext->pendingJobs.end())
         {
-            LeaveCriticalSection(&m_SharedContext->kickCS);
             return;
         }
 
@@ -161,30 +220,25 @@ namespace RB
             // Make sure nothing can get placed before this
             m_SharedContext->highPriorityInsertIndex++;
         }
-
-        LeaveCriticalSection(&m_SharedContext->kickCS);
     }
 
     bool WorkerThread::IsFinished(JobID job_id)
     {
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
 
         auto itr = FindJobBy(job_id);
 
         if (itr == m_SharedContext->pendingJobs.end() && m_SharedContext->currentJob != job_id)
         {
-            LeaveCriticalSection(&m_SharedContext->kickCS);
             return true;
         }
-
-        LeaveCriticalSection(&m_SharedContext->kickCS);
 
         return false;
     }
 
     void WorkerThread::Sync(JobID job_id)
     {
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.lock();
         
         uint64_t wait_for = m_SharedContext->startedJobsCount;
         
@@ -195,18 +249,18 @@ namespace RB
             if (itr == m_SharedContext->pendingJobs.end())
             {
                 // Job not found
-                LeaveCriticalSection(&m_SharedContext->kickCS);
+                m_SharedContext->kickMutex.unlock();
                 return;
             }
         
             wait_for += std::distance(m_SharedContext->pendingJobs.begin(), itr) + 1;
         }
         
-        LeaveCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.unlock();
         
         // Wait until the task has been completed
         {
-            EnterCriticalSection(&m_SharedContext->completedCS);
+            m_SharedContext->completedMutex.lock();
         
             // TODO This logic will break when syncing a job that has not been prioritized as other jobs can then jump before this one, fix!!!
 
@@ -215,30 +269,30 @@ namespace RB
                 SleepConditionVariableCS(&m_SharedContext->completedCV, &m_SharedContext->completedCS, INFINITE);
             }
         
-            LeaveCriticalSection(&m_SharedContext->completedCS);
+            m_SharedContext->completedMutex.unlock();
         }
     }
 
     void WorkerThread::SyncAll()
     {
         // Wait until thread completely idle
-        EnterCriticalSection(&m_SharedContext->syncCS);
+        m_SharedContext->syncMutex.lock();
 
         while (m_SharedContext->state != ThreadState::Idle)
         {
             SleepConditionVariableCS(&m_SharedContext->syncCV, &m_SharedContext->syncCS, INFINITE);
         }
 
-        LeaveCriticalSection(&m_SharedContext->syncCS);
+        m_SharedContext->syncMutex.unlock();
     }
 
     bool WorkerThread::IsStalling(uint32_t stall_threshold_ms, JobID& out_id)
     {
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.lock();
         ThreadState state           = m_SharedContext->state;
         uint64_t    counter_start   = m_SharedContext->counterStart;
         JobID       current_job     = m_SharedContext->currentJob;
-        LeaveCriticalSection(&m_SharedContext->kickCS);
+        m_SharedContext->kickMutex.unlock();
 
         if (state != ThreadState::Idle)
         {
@@ -257,38 +311,33 @@ namespace RB
 
     void WorkerThread::Cancel(JobID job_id)
     {
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
 
         auto itr = FindJobBy(job_id);
 
         if (itr == m_SharedContext->pendingJobs.end())
         {
-            LeaveCriticalSection(&m_SharedContext->kickCS);
             return;
         }
 
         SAFE_DELETE(itr->data);
         m_SharedContext->pendingJobs.erase(itr);
-
-        LeaveCriticalSection(&m_SharedContext->kickCS);
     }
 
     void WorkerThread::CancelAll()
     {
-        EnterCriticalSection(&m_SharedContext->kickCS);
+        RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
 
         for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
         {
             SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
         }
         m_SharedContext->pendingJobs.clear();
-
-        LeaveCriticalSection(&m_SharedContext->kickCS);
     }
 
     bool WorkerThread::IsCurrentThread()
     {
-        return GetCurrentThreadId() == GetThreadId(m_ThreadHandle);
+        return std::this_thread::get_id() == m_ThreadHandle.get_id();
     }
 
     List<WorkerThread::Job>::iterator WorkerThread::FindJobBy(JobID id)
@@ -299,11 +348,9 @@ namespace RB
             });
     }
 
-    DWORD WINAPI WorkerThreadLoop(PVOID param)
+    void WorkerThreadLoop(WorkerThread::SharedContext* context)
     {
-        WorkerThread::SharedContext* context = (WorkerThread::SharedContext*)param;
-
-        RB_LOG(LOGTAG_MAIN, "Started worker thread: %ws", context->name);
+        RB_LOG(LOGTAG_MAIN, "Started worker thread: %s", context->name);
 
         while (true)
         {
@@ -311,7 +358,7 @@ namespace RB
 
             // Wait until a new task is available
             {
-                EnterCriticalSection(&context->kickCS);
+                context->kickMutex.lock();
 
                 // Reset the timer
                 context->counterStart = 0;
@@ -326,9 +373,9 @@ namespace RB
                     {
                         // Notify that we are starting to idle
                         {
-                            EnterCriticalSection(&context->syncCS);
+                            context->syncMutex.lock();
                             context->state = WorkerThread::ThreadState::Idle;
-                            LeaveCriticalSection(&context->syncCS);
+                            context->syncMutex.unlock();
                             WakeConditionVariable(&context->syncCV);
                         }
 
@@ -340,7 +387,7 @@ namespace RB
 
                 if (context->state == WorkerThread::ThreadState::Terminating)
                 {
-                    LeaveCriticalSection(&context->kickCS);
+                    context->kickMutex.unlock();
                     break;
                 }
 
@@ -365,7 +412,7 @@ namespace RB
                 QueryPerformanceCounter(&li);
                 context->counterStart = li.QuadPart;
 
-                LeaveCriticalSection(&context->kickCS);
+                context->kickMutex.unlock();
             }
 
             // Do the job
@@ -376,17 +423,15 @@ namespace RB
 
             // Notify that we are done with a job
             {
-                EnterCriticalSection(&context->completedCS);
+                context->completedMutex.lock();
                 context->completedJobsCount++;
-                LeaveCriticalSection(&context->completedCS);
+                context->completedMutex.unlock();
                 WakeAllConditionVariable(&context->completedCV);
             }
         }
 
-        RB_LOG(LOGTAG_MAIN, "Terminated worker thread: %ws", context->name);
+        RB_LOG(LOGTAG_MAIN, "Terminated worker thread: %s", context->name);
 
         context->state = WorkerThread::ThreadState::Terminated;
-
-        return 0;
     }
 }

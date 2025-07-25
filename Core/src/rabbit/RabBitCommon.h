@@ -26,9 +26,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 
 #include "Core.h"
 
@@ -36,6 +33,7 @@
 #include "utils/String.h"
 #include "utils/Container.h"
 #include "utils/Memory.h"
+#include "utils/Threading.h"
 
 #include "utils/debug/Log.h"
 #include "utils/debug/Assert.h"

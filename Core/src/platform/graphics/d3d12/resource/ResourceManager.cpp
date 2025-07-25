@@ -14,8 +14,6 @@ namespace RB::Graphics::D3D12
 
     ResourceManager::ResourceManager()
     {
-        InitializeCriticalSection(&m_CS);
-
         m_CreationThread = new WorkerThread(L"Resource Creation Thread", ThreadPriority::Medium);
 
         m_CreationJob = m_CreationThread->AddJobType(&CreationJob, false);
@@ -32,13 +30,11 @@ namespace RB::Graphics::D3D12
             itr->first->queue->CpuWaitForFenceValue(itr->first->fenceValue);
             itr = m_InFlight.erase(itr);
         }
-
-        DeleteCriticalSection(&m_CS);
     }
 
     void ResourceManager::UpdateBookkeeping()
     {
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
         // TODO Future improvement would be to free the resources on the ResourceCreation thread as this can also be pretty expensive
 
@@ -68,8 +64,6 @@ namespace RB::Graphics::D3D12
                 ++itr;
             }
         }
-
-        LeaveCriticalSection(&m_CS);
     }
 
     void ResourceManager::MarkUsed(GpuResource* resource, DeviceQueue* queue)
@@ -80,7 +74,7 @@ namespace RB::Graphics::D3D12
             return;
         }
 
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
         auto itr = m_ScheduledUsages.find(queue);
 
@@ -99,8 +93,6 @@ namespace RB::Graphics::D3D12
                 itr->second.push_back(resource->GetResource());
             }
         }
-
-        LeaveCriticalSection(&m_CS);
     }
 
     void ResourceManager::MarkForDelete(GpuResource* resource)
@@ -111,7 +103,7 @@ namespace RB::Graphics::D3D12
 
     void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
     {
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
         auto scheduled_use_itr = m_ScheduledUsages.find(queue);
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, scheduled_use_itr != m_ScheduledUsages.end(), "DeviceQueue was not yet registered for the scheduled usages queue");
@@ -125,8 +117,6 @@ namespace RB::Graphics::D3D12
 
         // Clear the scheduled usages for this queue
         scheduled_use_itr->second.clear();
-
-        LeaveCriticalSection(&m_CS);
     }
 
     bool ResourceManager::WaitUntilResourceValid(GpuResource* resource)
@@ -137,31 +127,31 @@ namespace RB::Graphics::D3D12
             return true;
         }
 
-        EnterCriticalSection(&m_CS);
-
-        // Find the scheduled creation
-        auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool {
-            return resource == scheduled.resource;
-            });
-
-        if (itr == m_ScheduledCreations.end())
+        JobID id = -1;
         {
-            LeaveCriticalSection(&m_CS);
-            return false;
+            RB_MUTEX_AUTO_LOCK(m_Mutex);
+
+            // Find the scheduled creation
+            auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool {
+                return resource == scheduled.resource;
+                });
+
+            if (itr == m_ScheduledCreations.end())
+            {
+                return false;
+            }
+
+            id = itr->jobID;
+
+            // HACK
+            // TODO Somehow the references to the upload resources from RenderInterfaceD3D12::UploadDataToResource are somehow getting mixed up in this list 
+            // and they start waiting on eachothers job (no clue why). To fix this for now just remove the job from the list when starting to wait on it.
+            // This can break when having multiple threads calling WaitUntilResourceValid and thus should be removed when the big upload resource has been implemented!
+            m_ScheduledCreations.erase(itr);
+
+            // Tell the thread to prioritize this resource creation as we are waiting for it
+            m_CreationThread->PrioritizeJob(id);
         }
-
-        JobID id = itr->jobID;
-
-        // HACK
-        // TODO Somehow the references to the upload resources from RenderInterfaceD3D12::UploadDataToResource are somehow getting mixed up in this list 
-        // and they start waiting on eachothers job (no clue why). To fix this for now just remove the job from the list when starting to wait on it.
-        // This can break when having multiple threads calling WaitUntilResourceValid and thus should be removed when the big upload resource has been implemented!
-        m_ScheduledCreations.erase(itr);
-
-        // Tell the thread to prioritize this resource creation as we are waiting for it
-        m_CreationThread->PrioritizeJob(id);
-
-        LeaveCriticalSection(&m_CS);
 
         // Sync until the job is completed
         m_CreationThread->Sync(id);
@@ -181,12 +171,10 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->buffer    = buffer_desc;
 
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
         m_ScheduledCreations.push_back({ resource, id });
-
-        LeaveCriticalSection(&m_CS);
     }
 
     void ResourceManager::ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
@@ -201,12 +189,10 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->buffer    = buffer_desc;
 
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
         m_ScheduledCreations.push_back({ resource, id });
-
-        LeaveCriticalSection(&m_CS);
     }
 
     void ResourceManager::ScheduleCreateIndexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
@@ -221,12 +207,10 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->buffer    = buffer_desc;
 
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
         m_ScheduledCreations.push_back({ resource, id });
-
-        LeaveCriticalSection(&m_CS);
     }
 
     void ResourceManager::ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& tex_desc)
@@ -241,12 +225,10 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->tex2D     = tex_desc;
 
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
         m_ScheduledCreations.push_back({ resource, id });
-
-        LeaveCriticalSection(&m_CS);
     }
 
     GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,

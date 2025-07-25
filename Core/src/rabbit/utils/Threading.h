@@ -2,8 +2,38 @@
 
 #include "RabBitCommon.h"
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
 namespace RB
 {
+    // ---------------------------------------------------------------------------
+    //							  Wrappers/Helpers
+    // ---------------------------------------------------------------------------
+
+    using Mutex             = std::mutex;
+    using ConditionVariable = std::condition_variable;
+
+    struct AutoLock
+    {
+        AutoLock(Mutex& mutex)
+            : m_Mutex(mutex)
+        {
+            m_Mutex.lock();
+        }
+
+        ~AutoLock()
+        {
+            m_Mutex.unlock();
+        }
+
+    private:
+        Mutex& m_Mutex;
+    };
+
+    #define RB_MUTEX_AUTO_LOCK(m) AutoLock auto_locking_and_unlocking_mutex(m)
+
     // ---------------------------------------------------------------------------
     //								WorkerThread
     // ---------------------------------------------------------------------------
@@ -32,7 +62,7 @@ namespace RB
     class WorkerThread
     {
     public:
-        WorkerThread(const wchar_t* name, const ThreadPriority& priority = ThreadPriority::Default);
+        WorkerThread(const char* name, const ThreadPriority& priority = ThreadPriority::Default);
 
         ~WorkerThread();
 
@@ -77,15 +107,15 @@ namespace RB
 
         struct SharedContext
         {
-            const wchar_t*      name;
+            const char*         name;
 
             ThreadState			state;
             CONDITION_VARIABLE	kickCV;
-            CRITICAL_SECTION	kickCS;
+            Mutex	            kickMutex;
             CONDITION_VARIABLE	syncCV;
-            CRITICAL_SECTION	syncCS;
+            Mutex	            syncMutex;
             CONDITION_VARIABLE	completedCV;
-            CRITICAL_SECTION	completedCS;
+            Mutex	            completedMutex;
 
             uint64_t			counterStart;
 
@@ -102,12 +132,12 @@ namespace RB
             bool				overwritable;
         };
 
-        HANDLE					m_ThreadHandle;
+        std::thread             m_ThreadHandle;            
         SharedContext*          m_SharedContext;
         List<JobType>			m_JobTypes;
         double					m_PerformanceFreqMs;
 
-        friend DWORD WINAPI WorkerThreadLoop(PVOID param);
+        friend void WorkerThreadLoop(SharedContext* context);
     };
 
     // ---------------------------------------------------------------------------
