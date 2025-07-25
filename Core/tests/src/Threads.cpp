@@ -22,7 +22,7 @@ TEST(ThreadTest, SimpleWaitOnJob)
         *d->var = 1;
     };
     
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     thread.ScheduleJob(thread.AddJobType(job_test), data);
 
     thread.SyncAll();
@@ -49,7 +49,7 @@ TEST(ThreadTest, SimpleWaitOnSpecificJob)
         *d->var = 1;
     };
     
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     JobID job = thread.ScheduleJob(thread.AddJobType(job_test), data);
 
     thread.Sync(job);
@@ -64,7 +64,7 @@ TEST(ThreadTest, SimpleCheckFinished)
         Sleep(500);
     };
     
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     JobID job = thread.ScheduleJob(thread.AddJobType(job_test), nullptr);
 
     ASSERT_EQ(thread.IsFinished(job), false);
@@ -79,7 +79,7 @@ TEST(ThreadTest, SimpleStallCheck)
         Sleep(750);
     };
     
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     thread.ScheduleJob(thread.AddJobType(job_test), nullptr);
 
     JobID job;
@@ -109,7 +109,7 @@ TEST(ThreadTest, SimpleCancelTest)
         *(d->var) = *(d->var) + 1;
     };
     
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     JobTypeID job_type = thread.AddJobType(job_test);
     JobID job1 = thread.ScheduleJob(job_type, data);
     JobID job2 = thread.ScheduleJob(job_type, data2);
@@ -144,7 +144,7 @@ TEST(ThreadTest, SimpleCancelAllTest)
         *d->var = *d->var + 1;
     };
     
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     JobTypeID job_type = thread.AddJobType(job_test);
 
     for (int i = 0; i < 10; i++)
@@ -181,7 +181,7 @@ TEST(ThreadTest, SimpleJobOverwriteTest)
         *d->var = *d->var + 1;
     };
     
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     JobTypeID job_type = thread.AddJobType(job_test, true);
 
     for (int i = 0; i < 5; i++)
@@ -233,7 +233,7 @@ TEST(ThreadTest, PrioritizationTest)
         *result = value;
     };
 
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     JobTypeID job_type = thread.AddJobType(job_test);
 
     for (int i = 0; i < 7; i++)
@@ -288,8 +288,8 @@ TEST(ThreadTest, PrioritizationSyncTest)
         data->var->SetValue(value);
     };
 
-    WorkerThread thread(L"test1");
-    WorkerThread thread2(L"test2");
+    WorkerThread thread("test1");
+    WorkerThread thread2("test2");
     JobTypeID job_type = thread.AddJobType(job_test);
 
     JobID job0 = thread.ScheduleJob(job_type, datas[0]);
@@ -354,7 +354,7 @@ TEST(ThreadTest, PrioritizationCancelTest)
         *result = value;
     };
 
-    WorkerThread thread(L"test");
+    WorkerThread thread("test");
     JobTypeID job_type = thread.AddJobType(job_test);
 
     for (int i = 0; i < 7; i++)

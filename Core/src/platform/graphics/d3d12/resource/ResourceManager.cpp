@@ -14,7 +14,7 @@ namespace RB::Graphics::D3D12
 
     ResourceManager::ResourceManager()
     {
-        m_CreationThread = new WorkerThread(L"Resource Creation Thread", ThreadPriority::Medium);
+        m_CreationThread = new WorkerThread("Resource Creation", ThreadPriority::Medium);
 
         m_CreationJob = m_CreationThread->AddJobType(&CreationJob, false);
     }

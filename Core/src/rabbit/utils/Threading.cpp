@@ -36,11 +36,6 @@ namespace RB
         m_SharedContext->completedJobsCount         = 0;
         m_SharedContext->counterStart               = 0;
 
-        // Maybe change the critical section logic to SRWLocks to improve performance if needed in the future?
-        InitializeConditionVariable(&m_SharedContext->kickCV);
-        InitializeConditionVariable(&m_SharedContext->syncCV);
-        InitializeConditionVariable(&m_SharedContext->completedCV);
-
         m_ThreadHandle = std::thread(WorkerThreadLoop, m_SharedContext);
 
         // Set the name of the thread + thread priority
@@ -126,7 +121,7 @@ namespace RB
         m_SharedContext->kickMutex.lock();
         m_SharedContext->state = ThreadState::Terminating;
         m_SharedContext->kickMutex.unlock();
-        WakeConditionVariable(&m_SharedContext->kickCV);
+        m_SharedContext->kickCV.notify_one();
 
         m_ThreadHandle.join();
 
@@ -190,7 +185,7 @@ namespace RB
         }
 
         m_SharedContext->kickMutex.unlock();
-        WakeConditionVariable(&m_SharedContext->kickCV);
+        m_SharedContext->kickCV.notify_one();
 
         return job.id;
     }
@@ -260,30 +255,25 @@ namespace RB
         
         // Wait until the task has been completed
         {
-            m_SharedContext->completedMutex.lock();
+            std::unique_lock<Mutex> lock(m_SharedContext->completedMutex);
         
             // TODO This logic will break when syncing a job that has not been prioritized as other jobs can then jump before this one, fix!!!
-
             while (m_SharedContext->completedJobsCount < wait_for)
             {
-                SleepConditionVariableCS(&m_SharedContext->completedCV, &m_SharedContext->completedCS, INFINITE);
+                m_SharedContext->completedCV.wait(lock);
             }
-        
-            m_SharedContext->completedMutex.unlock();
         }
     }
 
     void WorkerThread::SyncAll()
     {
         // Wait until thread completely idle
-        m_SharedContext->syncMutex.lock();
+        std::unique_lock<Mutex> lock(m_SharedContext->syncMutex);
 
         while (m_SharedContext->state != ThreadState::Idle)
         {
-            SleepConditionVariableCS(&m_SharedContext->syncCV, &m_SharedContext->syncCS, INFINITE);
+            m_SharedContext->syncCV.wait(lock);
         }
-
-        m_SharedContext->syncMutex.unlock();
     }
 
     bool WorkerThread::IsStalling(uint32_t stall_threshold_ms, JobID& out_id)
@@ -358,7 +348,7 @@ namespace RB
 
             // Wait until a new task is available
             {
-                context->kickMutex.lock();
+                std::unique_lock<Mutex> kick_lock(context->kickMutex);
 
                 // Reset the timer
                 context->counterStart = 0;
@@ -376,18 +366,17 @@ namespace RB
                             context->syncMutex.lock();
                             context->state = WorkerThread::ThreadState::Idle;
                             context->syncMutex.unlock();
-                            WakeConditionVariable(&context->syncCV);
+                            context->syncCV.notify_one();
                         }
 
                         // Sleep
-                        SleepConditionVariableCS(&context->kickCV, &context->kickCS, INFINITE);
+                        context->kickCV.wait(kick_lock);
 
                     } while (context->state == WorkerThread::ThreadState::Idle);
                 }
 
                 if (context->state == WorkerThread::ThreadState::Terminating)
                 {
-                    context->kickMutex.unlock();
                     break;
                 }
 
@@ -411,8 +400,6 @@ namespace RB
                 LARGE_INTEGER li;
                 QueryPerformanceCounter(&li);
                 context->counterStart = li.QuadPart;
-
-                context->kickMutex.unlock();
             }
 
             // Do the job
@@ -426,7 +413,7 @@ namespace RB
                 context->completedMutex.lock();
                 context->completedJobsCount++;
                 context->completedMutex.unlock();
-                WakeAllConditionVariable(&context->completedCV);
+                context->completedCV.notify_all();
             }
         }
 

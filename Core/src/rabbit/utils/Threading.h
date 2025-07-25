@@ -12,6 +12,7 @@ namespace RB
     //							  Wrappers/Helpers
     // ---------------------------------------------------------------------------
 
+    // TODO Maybe change the critical section logic (on Windows) to SRWLocks to improve performance if needed in the future?
     using Mutex             = std::mutex;
     using ConditionVariable = std::condition_variable;
 
@@ -110,11 +111,11 @@ namespace RB
             const char*         name;
 
             ThreadState			state;
-            CONDITION_VARIABLE	kickCV;
+            ConditionVariable	kickCV;
             Mutex	            kickMutex;
-            CONDITION_VARIABLE	syncCV;
+            ConditionVariable	syncCV;
             Mutex	            syncMutex;
-            CONDITION_VARIABLE	completedCV;
+            ConditionVariable	completedCV;
             Mutex	            completedMutex;
 
             uint64_t			counterStart;
@@ -149,7 +150,7 @@ namespace RB
     {
     public:
         ThreadedVariable(const T& value);
-        ~ThreadedVariable();
+        ~ThreadedVariable() = default;
 
         void SetValue(const T& value);
         T	 GetValue();
@@ -158,39 +159,31 @@ namespace RB
 
     private:
         T					m_Variable;
-        CRITICAL_SECTION	m_CS;
-        CONDITION_VARIABLE	m_CV;
+        Mutex	            m_Mutex;
+        ConditionVariable	m_CV;
     };
 
     template<typename T>
     inline ThreadedVariable<T>::ThreadedVariable(const T& value)
     {
         m_Variable = value;
-        InitializeCriticalSection(&m_CS);
-        InitializeConditionVariable(&m_CV);
-    }
-
-    template<typename T>
-    inline ThreadedVariable<T>::~ThreadedVariable()
-    {
-        DeleteCriticalSection(&m_CS);
     }
 
     template<typename T>
     inline void ThreadedVariable<T>::SetValue(const T& value)
     {
-        EnterCriticalSection(&m_CS);
+        m_Mutex.lock();
         m_Variable = value;
-        LeaveCriticalSection(&m_CS);
-        WakeAllConditionVariable(&m_CV);
+        m_Mutex.unlock();
+        m_CV.notify_all();
     }
 
     template<typename T>
     inline T ThreadedVariable<T>::GetValue()
     {
-        EnterCriticalSection(&m_CS);
+        m_Mutex.lock();
         const T& value = m_Variable;
-        LeaveCriticalSection(&m_CS);
+        m_Mutex.unlock();
 
         return value;
     }
@@ -198,13 +191,11 @@ namespace RB
     template<typename T>
     inline void ThreadedVariable<T>::WaitUntilConditionMet(std::function<bool(const T&)> condition)
     {
-        EnterCriticalSection(&m_CS);
+        std::unique_lock<Mutex> lock(m_Mutex);
 
         while (!condition(m_Variable))
         {
-            SleepConditionVariableCS(&m_CV, &m_CS, INFINITE);
+            m_CV.wait(lock);
         }
-
-        LeaveCriticalSection(&m_CS);
     }
 }

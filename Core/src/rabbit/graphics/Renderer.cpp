@@ -105,7 +105,7 @@ namespace RB::Graphics
 
         if (m_MultiThreadingSupport)
         {
-            m_RenderThread = new WorkerThread(L"Render Thread", ThreadPriority::High);
+            m_RenderThread = new WorkerThread("Render Thread", ThreadPriority::High);
 
             m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
         }

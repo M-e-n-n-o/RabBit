@@ -115,6 +115,9 @@ namespace RB::Events
 
         if (m_DoubleQueue)
         {
+            // TODO This goes wrong when you do alt-enter, then you try to lock the mutex on the same thread which already has locked the mutex, we need to somehow avoid this!
+            static_assert(false);
+
             m_Mutex.lock();
             m_QueueCycle = !m_QueueCycle;
             List<Event*>& queue = m_QueueCycle ? m_QueuedEvents0 : m_QueuedEvents1;
