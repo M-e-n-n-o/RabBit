@@ -1,21 +1,5 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <wrl.h>
-
-#if defined(max)
-#undef max
-#endif
-
-#if defined(min)
-#undef min
-#endif
-
-#if defined(FindWindow)
-#undef FindWindow
-#endif
-
 #include <memory>
 
 namespace RB
@@ -31,10 +15,6 @@ namespace RB
     #define SAFE_DELETE(obj)		    if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
     #define SAFE_DELETE_ARR(obj)	    if ((obj) != nullptr) { delete[] (obj); (obj) = nullptr; }
     #define SAFE_FREE(obj)			    if ((obj) != nullptr) { free(obj); (obj) = nullptr; }
-
-    // Custom graphics pointer
-    template<class T>
-    using GPtr = Microsoft::WRL::ComPtr<T>;
 
     // Custom shared pointer
     template<typename T>
