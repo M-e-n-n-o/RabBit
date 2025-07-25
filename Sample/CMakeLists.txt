@@ -1,4 +1,4 @@
-#define app name
+# Define app name
 set(APP_NAME Sample)
 
 file(GLOB_RECURSE SAMPLE_SRC_FILES CONFIGURE_DEPENDS
@@ -8,6 +8,8 @@ file(GLOB_RECURSE SAMPLE_SRC_FILES CONFIGURE_DEPENDS
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_executable(${APP_NAME} WIN32 ${SAMPLE_SRC_FILES})
+else()
+    add_executable(${APP_NAME} ${SAMPLE_SRC_FILES})
 endif()
 
 # Link RabBit

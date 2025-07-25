@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16.3)
 project(RabBitEngine VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 17)
 
+
 # Platform detection
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_compile_definitions(
@@ -18,6 +19,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
         RB_GRAPHICS_API_OPENGL_ES
     )
+
+    # Adds Microsoft extentions to the compiler (necessary for supporting anonymous structs in unions)
+    # Does not work with the default Raspberry Pi GCC compiler, so use clang on this platform!
+    add_compile_options(-fms-extensions)
 else()
     message(FATAL_ERROR "Unsupported platform!")
     add_compile_definitions((RB_PLATFORM_UNKNOWN))
@@ -56,14 +61,14 @@ add_compile_definitions(
 # Give RabBit core access to itself
 target_compile_definitions(RabBit PRIVATE RB_CORE_ACCESS)
 
-# Set precompiled header
-target_precompile_headers(RabBit PRIVATE "src/RabBit/RabBitCommon.h")
-
 target_include_directories(RabBit PUBLIC
     "src"
     "src/rabbit"
     "external"
 )
+
+# Set precompiled header
+target_precompile_headers(RabBit PRIVATE "src/rabbit/RabBitCommon.h")
 
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
