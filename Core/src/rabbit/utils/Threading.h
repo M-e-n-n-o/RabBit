@@ -12,8 +12,9 @@ namespace RB
     //								    Mutex
     // ---------------------------------------------------------------------------
 
-    using Mutex             = std::mutex;
-    using ConditionVariable = std::condition_variable;
+    // TODO In the future make a wrapper class for this and use SRWLock on Windows to improve performance
+    using Mutex             = std::recursive_mutex;
+    using ConditionVariable = std::condition_variable_any;
 
     #define RB_MUTEX_AUTO_LOCK(m) std::lock_guard<Mutex> auto_locking_and_unlocking_mutex(m)
 

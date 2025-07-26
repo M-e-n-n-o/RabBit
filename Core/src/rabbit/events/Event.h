@@ -130,8 +130,6 @@ namespace RB::Events
         List<Event*>		m_QueuedEvents1;
         Mutex               m_Mutex;
 
-        static thread_local UnorderedMap<const EventListener*, bool> c_IsProcessing;
-
         friend class EventManager;
     };
 }

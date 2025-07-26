@@ -74,8 +74,6 @@ namespace RB::Events
     //								EventListener
     // ----------------------------------------------------------------------------
 
-    thread_local UnorderedMap<const EventListener*, bool> EventListener::c_IsProcessing;
-
     EventListener::EventListener(int category, bool double_queue)
         : m_ListenerCategory(category)
         , m_DoubleQueue(double_queue)
@@ -83,8 +81,6 @@ namespace RB::Events
         m_QueuedEvents0.reserve(10);
         if (m_DoubleQueue)
             m_QueuedEvents1.reserve(10);
-
-        c_IsProcessing.emplace(this, false);
 
         g_EventManager->AddListener(this);
     }
@@ -98,36 +94,25 @@ namespace RB::Events
     {
         auto process_events = [this](List<Event*>& queue)
         {
-            List<Event*> delayed;
-
-            // Stuff still goes wrong when doing alt-enter
-            // I think because the queue gets modified while its looping here??
-            static_assert(false);
-
-            while (!queue.empty())
+            // This loop is pretty slow, maybe faster to reverse loop to improve performance of the erase?
+            for (auto itr = queue.begin(); itr != queue.end();)
             {
-                Event* e = queue[0];
+                Event* e = *itr;
 
-                queue.erase(queue.begin());
                 bool handled = OnEvent(*e);
 
                 if (handled)
                 {
+                    itr = queue.erase(itr);
                     delete e;
                 }
                 else
                 {
                     // Do it next time
-                    delayed.emplace_back(e);
+                    itr++;
                 }
             }
-
-            queue.insert(queue.end(), delayed.begin(), delayed.end());
         };
-
-        // This should prevent the EventListener trying to double lock (which is undefined behaviour) when,
-        // while processing events its inserting a new event to the EventManager
-        c_IsProcessing[this] = true;
 
         if (m_DoubleQueue)
         {
@@ -144,8 +129,6 @@ namespace RB::Events
             process_events(m_QueuedEvents0);
             m_Mutex.unlock();
         }
-
-        c_IsProcessing[this] = false;
     }
 
     void EventListener::AddEvent(const Event& e)
@@ -160,6 +143,7 @@ namespace RB::Events
 
                 if (itr != queue.end())
                 {
+                    delete *itr;
                     queue.erase(itr);
                 }
             }
@@ -169,21 +153,17 @@ namespace RB::Events
 
         if (m_DoubleQueue)
         {
-            if (!c_IsProcessing[this])
-                m_Mutex.lock();
+            m_Mutex.lock();
             List<Event*>& queue = m_QueueCycle ? m_QueuedEvents1 : m_QueuedEvents0;
-            if (!c_IsProcessing[this])
-                m_Mutex.unlock();
+            m_Mutex.unlock();
 
             add_event(queue);
         }
         else
         {
-            if (!c_IsProcessing[this])
-                m_Mutex.lock();
+            m_Mutex.lock();
             add_event(m_QueuedEvents0);
-            if (!c_IsProcessing[this])
-                m_Mutex.unlock();
+            m_Mutex.unlock();
         }
     }
 }
