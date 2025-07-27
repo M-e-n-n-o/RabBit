@@ -5,19 +5,15 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Platform detection
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_compile_definitions(
-        RB_PLATFORM_WINDOWS
+    add_compile_definitions(RB_PLATFORM_WINDOWS)
 
-        # This does not directly choose the graphics API, but is used to compile the API specific code
-        RB_GRAPHICS_API_D3D12
-        RB_GRAPHICS_API_OPENGL
-    )
+    set(RABBIT_API_DX12     ON)
+    set(RABBIT_API_VULKAN   ON)
+
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_compile_definitions(
-        RB_PLATFORM_LINUX_ES
+    add_compile_definitions(RB_PLATFORM_LINUX_ES)
 
-        RB_GRAPHICS_API_OPENGL_ES
-    )
+    set(RABBIT_API_VULKAN   ON)
 
     # Adds Microsoft extentions to the compiler (necessary for supporting anonymous structs in unions)
     # Does not work with the default Raspberry Pi GCC compiler, so use clang on this platform!
@@ -27,9 +23,12 @@ else()
     add_compile_definitions((RB_PLATFORM_UNKNOWN))
 endif()
 
-#options
-option(RABBIT_BUILD_TESTS "Build tests" ON)
+# Options
+option(RABBIT_BUILD_TESTS "Build tests"     ON)
+option(RABBIT_API_DX12    "Compile DX12"    OFF)
+option(RABBIT_API_VULKAN  "Compile Vulkan"  OFF)
 
+# Source files
 file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.cpp"
@@ -71,8 +70,10 @@ target_include_directories(RabBit PUBLIC
     "external/ufbx"
 )
 
-# Windows specific includes and libraries
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+# DX12 specific includes and libraries
+if(RABBIT_API_DX12)
+    add_compile_definitions(RB_GRAPHICS_API_D3D12)
+
     target_include_directories(RabBit PUBLIC
         # D3D12
         "external/D3D12/include"
@@ -110,11 +111,19 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_subdirectory(shaderCompiler/d3d12)
 endif()
 
+if(RABBIT_API_VULKAN)
+    add_compile_definitions(RB_GRAPHICS_API_VULKAN)
+
+    # TODO Add the following as submodules
+    git submodule add https://github.com/KhronosGroup/Vulkan-Headers external/Vulkan-Headers
+    git submodule add https://github.com/KhronosGroup/Vulkan-Loader external/Vulkan-Loader
+endif()
+
 
 # Copy libraries next to the final executable (should be called app side)
 function(RabBitCopyLibs)
     # Create a lit of files to copy to the executable
-    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    if(RABBIT_API_DX12)
         list (APPEND DLLS_TO_COPY
             "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
             "$ENV{DXC_PATH}/bin/x64/dxcompiler.dll"

@@ -1,18 +1,18 @@
-#if RB_GRAPHICS_API_D3D12
+#if RB_GRAPHICS_API_VULKAN
 
 #pragma once
 #include "RabBitCommon.h"
 #include "graphics/Renderer.h"
 
-#include <d3d12.h>
+#include <vulkan/vulkan.h>
 
-namespace RB::Graphics::D3D12
+namespace RB::Graphics::VK
 {
-    class RendererD3D12 : public Renderer
+    class RendererVK : public Renderer
     {
     public:
-        RendererD3D12(bool enable_validation_layer);
-        ~RendererD3D12();
+        RendererVK(bool enable_validation_layer);
+        ~RendererVK();
 
         void OnFrameStart() override;
         void OnFrameEnd() override;

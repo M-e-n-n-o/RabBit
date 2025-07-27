@@ -19,6 +19,14 @@ namespace RB::Graphics::Windows
     class SwapChain
     {
     public:
+        SwapChain(void* native_window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count, RenderResourceFormat format, bool support_transparency);
+
+        void Present(uint32_t sync_interval, uint32_t present_flags);
+    };
+
+    class SwapChainD3D12 : public SwapChain
+    {
+    public:
         SwapChain(GPtr<IDXGIFactory2> factory, GPtr<ID3D12CommandQueue> command_queue, HWND window_handle, const uint32_t width, const uint32_t height, bool tearing_supported, const uint32_t buffer_count,
             DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, bool transparency_support = false);
         ~SwapChain();
