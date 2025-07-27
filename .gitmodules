@@ -7,3 +7,9 @@
 [submodule "Core/external/ufbx"]
 	path = Core/external/ufbx
 	url = https://github.com/ufbx/ufbx
+[submodule "Core/external/VulkanHeaders"]
+	path = Core/external/VulkanHeaders
+	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "Core/external/VulkanLoader"]
+	path = Core/external/VulkanLoader
+	url = https://github.com/KhronosGroup/Vulkan-Loader

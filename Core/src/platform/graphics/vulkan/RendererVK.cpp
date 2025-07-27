@@ -2,6 +2,7 @@
 
 #include "RabBitCommon.h"
 #include "RendererVK.h"
+#include "GraphicsDevice.h"
 
 namespace RB::Graphics::VK
 {

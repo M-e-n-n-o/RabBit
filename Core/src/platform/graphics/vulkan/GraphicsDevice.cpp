@@ -6,5 +6,15 @@
 namespace RB::Graphics::VK
 {
     GraphicsDevice* g_GraphicsDevice = nullptr;
+
+    GraphicsDevice::GraphicsDevice(bool debug_device)
+    {
+
+    }
+
+    GraphicsDevice::~GraphicsDevice()
+    {
+
+    }
 }
 #endif

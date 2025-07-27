@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.3)
+cmake_minimum_required(VERSION 3.22.1)
 
 project(RabBitEngine VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 17)
@@ -111,12 +111,17 @@ if(RABBIT_API_DX12)
     add_subdirectory(shaderCompiler/d3d12)
 endif()
 
+# DX12 specific includes and libraries
 if(RABBIT_API_VULKAN)
     add_compile_definitions(RB_GRAPHICS_API_VULKAN)
 
-    # TODO Add the following as submodules
-    git submodule add https://github.com/KhronosGroup/Vulkan-Headers external/Vulkan-Headers
-    git submodule add https://github.com/KhronosGroup/Vulkan-Loader external/Vulkan-Loader
+    add_subdirectory(external/VulkanHeaders)
+    add_subdirectory(external/VulkanLoader)
+
+    target_link_libraries(RabBit
+        Vulkan::Headers
+        Vulkan::Loader
+    )
 endif()
 
 

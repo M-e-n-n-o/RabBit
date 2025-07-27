@@ -10,6 +10,9 @@ namespace RB::Graphics::VK
 {
     class GraphicsDevice
     {
+    public:
+        GraphicsDevice(bool debug_device);
+        ~GraphicsDevice();
     };
 
     extern GraphicsDevice* g_GraphicsDevice;
