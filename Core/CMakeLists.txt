@@ -62,7 +62,7 @@ target_precompile_headers(RabBit PRIVATE "src/rabbit/RabBitCommon.h")
 
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
-target_include_directories(RabBit PUBLIC
+target_include_directories(RabBit PRIVATE
     # STB
     "external/stb"
     
@@ -74,7 +74,7 @@ target_include_directories(RabBit PUBLIC
 if(RABBIT_API_DX12)
     add_compile_definitions(RB_GRAPHICS_API_D3D12)
 
-    target_include_directories(RabBit PUBLIC
+    target_include_directories(RabBit PRIVATE
         # D3D12
         "external/D3D12/include"
         
@@ -90,7 +90,7 @@ if(RABBIT_API_DX12)
     set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
     set(ENV{DXC_PATH} "${EXTERNAL_PATH}/DXC")
     
-    target_link_libraries(RabBit
+    target_link_libraries(RabBit PRIVATE
         # D3D12
         d3d12.lib
         dxgi.lib
@@ -118,7 +118,7 @@ if(RABBIT_API_VULKAN)
     add_subdirectory(external/VulkanHeaders)
     add_subdirectory(external/VulkanLoader)
 
-    target_link_libraries(RabBit
+    target_link_libraries(RabBit PRIVATE
         Vulkan::Headers
         Vulkan::Loader
     )

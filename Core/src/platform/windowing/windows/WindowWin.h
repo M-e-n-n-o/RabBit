@@ -1,9 +1,10 @@
-#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+#if RB_PLATFORM_WINDOWS
 
 #pragma once
 
 #include "RabBitCommon.h"
 #include "graphics/Window.h"
+#include "platform/windowing/SwapChain.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -15,8 +16,6 @@
 
 namespace RB::Graphics::Windows
 {
-    class SwapChain;
-
     struct WindowArgs
     {
         HINSTANCE	            instance;
@@ -73,12 +72,9 @@ namespace RB::Graphics::Windows
 
         HWND					m_WindowHandle;
         SwapChain*              m_SwapChain;
-
         bool					m_IsValid;
-        bool					m_IsTearingSupported;
         bool                    m_IsSemiTransparent;
-
-        Graphics::Texture2D* m_BackBuffers[BACK_BUFFER_COUNT];
+        RenderResourceFormat    m_BackBufferFormat;
     };
 }
 #endif

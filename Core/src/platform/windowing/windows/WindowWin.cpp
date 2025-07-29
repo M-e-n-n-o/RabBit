@@ -1,25 +1,20 @@
-#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+#if RB_PLATFORM_WINDOWS
 
 #include "RabBitCommon.h"
 #include "WindowWin.h"
-#include "SwapChain.h"
 #include "app/Application.h"
 #include "graphics/Display.h"
 #include "graphics/Renderer.h"
-#include "platform/graphics/d3d12/GraphicsDevice.h"
-#include "platform/graphics/d3d12/DeviceQueue.h"
-#include "platform/graphics/d3d12/UtilsD3D12.h"
-#include "platform/graphics/d3d12/resource/GpuResource.h"
-#include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
 
 #include "events/WindowEvent.h"
 #include "events/MouseEvent.h"
 #include "events/KeyEvent.h"
 
-#include <d3d12.h>
+#if RB_GRAPHICS_API_D3D12
+#include "platform/graphics/d3d12/SwapChainD3D12.h"
+#endif
 
 using namespace RB::Events;
-using namespace RB::Graphics::D3D12;
 
 namespace RB::Graphics::Windows
 {
@@ -30,9 +25,8 @@ namespace RB::Graphics::Windows
         : Window(false, args.virtualScale, args.virtualAspect)
         , m_WindowHandle(nullptr)
         , m_IsValid(true)
+        , m_BackBufferFormat(args.format)
     {
-        m_IsTearingSupported = g_GraphicsDevice->IsFeatureSupported(DXGI_FEATURE_PRESENT_ALLOW_TEARING);
-
         RegisterWindowCLass(args.instance, args.className);
 
         DWORD style = WS_OVERLAPPEDWINDOW;
@@ -63,21 +57,15 @@ namespace RB::Graphics::Windows
         {
             // TODO Add the option for an HDR swapchain
 
-            m_SwapChain = new SwapChain(
-                g_GraphicsDevice->GetFactory(),
-                g_GraphicsDevice->GetGraphicsQueue()->GetCommandQueue(),
+#if RB_GRAPHICS_API_D3D12
+            m_SwapChain = new D3D12::SwapChainD3D12(
                 m_WindowHandle,
                 width, height,
-                m_IsTearingSupported,
                 BACK_BUFFER_COUNT,
-                ConvertToDXGIFormat(args.format),
+                args.format,
                 (bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
             );
-
-            for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
-            {
-                m_BackBuffers[i] = nullptr;
-            }
+#endif
         }
 
         if (args.fullscreen)
@@ -112,11 +100,7 @@ namespace RB::Graphics::Windows
 
     void WindowWin::Present(const VsyncMode& mode)
     {
-        bool vsync_enabled = mode != VsyncMode::Off;
-        UINT sync_interval = (UINT)mode;
-        UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0; // DXGI_PRESENT_ALLOW_TEARING cannot be here in exclusive fullscreen!
-
-        m_SwapChain->Present(sync_interval, present_flags);
+        m_SwapChain->Present(mode);
     }
 
     Math::Float4 WindowWin::GetWindowRectangle() const
@@ -212,7 +196,7 @@ namespace RB::Graphics::Windows
 
     RenderResourceFormat WindowWin::GetBackBufferFormat()
     {
-        return ConvertToEngineFormat(m_SwapChain->GetBackBufferFormat());
+        return m_BackBufferFormat;
     }
 
     uint32_t WindowWin::GetCurrentBackBufferIndex()
@@ -228,18 +212,7 @@ namespace RB::Graphics::Windows
             return nullptr;
         }
 
-        uint32_t index = m_SwapChain->GetCurrentBackBufferIndex();
-
-        if (m_BackBuffers[index] == nullptr)
-        {
-            std::string name = "Backbuffer resource " + std::to_string(index);
-            GPtr<ID3D12Resource> backbuffer = m_SwapChain->GetCurrentBackBuffer();
-            m_BackBuffers[index] = Texture2D::Create(name.c_str(), new GpuResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT, false), GetBackBufferFormat(), GetWidth(), GetHeight(), true, false);
-
-            ((Texture2DD3D12*)m_BackBuffers[index])->SetRenderTargetHandle(m_SwapChain->GetCurrentDescriptorHandleCPU());
-        }
-
-        return m_BackBuffers[index];
+        return m_SwapChain->GetCurrentBackBuffer();
     }
 
     void WindowWin::ResizeBackBuffers(uint32_t width, uint32_t height)
@@ -254,12 +227,6 @@ namespace RB::Graphics::Windows
         width = std::max(1u, width);
         height = std::max(1u, height);
 
-        // Release backbuffer references
-        for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
-        {
-            SAFE_DELETE(m_BackBuffers[i]);
-        }
-
         m_SwapChain->Resize(width, height);
     }
 
@@ -272,11 +239,6 @@ namespace RB::Graphics::Windows
         RB_LOG(LOGTAG_WINDOWING, "Scheduled destroy of window");
 
         m_IsValid = false;
-
-        for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
-        {
-            SAFE_DELETE(m_BackBuffers[i]);
-        }
 
         delete m_SwapChain;
     }
