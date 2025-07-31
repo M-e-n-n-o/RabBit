@@ -137,6 +137,20 @@ namespace RB::Graphics
         }
     }
 
+    void Renderer::SetAPI(RenderAPI api)
+    {
+        s_Api = api;
+
+        switch (s_Api)
+        {
+        case RB::Graphics::RenderAPI::D3D12: RB_LOG(LOGTAG_GRAPHICS, "Graphics API: D3D12"); break;
+        case RB::Graphics::RenderAPI::None:
+        default:
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Did not choose a valid graphics API");
+            break;
+        }
+    }
+
     void Renderer::Shutdown()
     {
         m_IsShutdown = true;

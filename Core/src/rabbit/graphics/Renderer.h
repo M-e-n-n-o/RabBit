@@ -39,7 +39,7 @@ namespace RB::Graphics
     public:
         virtual ~Renderer();
 
-        static void SetAPI(RenderAPI api) { s_Api = api; }
+        static void SetAPI(RenderAPI api);
         inline static RenderAPI GetAPI() { return s_Api; }
 
         // Submits current frame relevant information of the scene to the renderer
