@@ -16,7 +16,8 @@ namespace RB::Graphics
     enum class RenderAPI
     {
         None,
-        D3D12
+        D3D12,
+        Vulkan
     };
 
     class RenderInterface;

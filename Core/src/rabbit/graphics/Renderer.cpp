@@ -28,6 +28,10 @@
 #include "platform/graphics/d3d12/RendererD3D12.h"
 #endif
 
+#if RB_GRAPHICS_API_VULKAN
+#include "platform/graphics/vulkan/RendererVK.h"
+#endif
+
 using namespace RB::Math;
 using namespace RB::Events;
 
@@ -143,7 +147,12 @@ namespace RB::Graphics
 
         switch (s_Api)
         {
-        case RB::Graphics::RenderAPI::D3D12: RB_LOG(LOGTAG_GRAPHICS, "Graphics API: D3D12"); break;
+#if RB_GRAPHICS_API_D3D12
+        case RB::Graphics::RenderAPI::D3D12:    RB_LOG(LOGTAG_GRAPHICS, "Graphics API: D3D12"); break;
+#endif
+#if RB_GRAPHICS_API_VULKAN
+        case RB::Graphics::RenderAPI::Vulkan:   RB_LOG(LOGTAG_GRAPHICS, "Graphics API: Vulkan"); break;
+#endif
         case RB::Graphics::RenderAPI::None:
         default:
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "Did not choose a valid graphics API");
@@ -557,9 +566,13 @@ namespace RB::Graphics
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
             return new D3D12::RendererD3D12(enable_validation_layer);
+#endif
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return new VK::RendererVK(enable_validation_layer);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the Renderer for the set graphics API");

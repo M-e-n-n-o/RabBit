@@ -57,15 +57,27 @@ namespace RB::Graphics::Windows
         {
             // TODO Add the option for an HDR swapchain
 
+            switch (Renderer::GetAPI())
+            {
 #if RB_GRAPHICS_API_D3D12
-            m_SwapChain = new D3D12::SwapChainD3D12(
-                m_WindowHandle,
-                width, height,
-                BACK_BUFFER_COUNT,
-                args.format,
-                (bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
-            );
+            case RenderAPI::D3D12:
+            {
+                m_SwapChain = new D3D12::SwapChainD3D12(
+                    m_WindowHandle,
+                    width, height,
+                    BACK_BUFFER_COUNT,
+                    args.format,
+                    (bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
+                );
+            }
+            break;
 #endif
+
+            default:
+                RB_LOG_ERROR(LOGTAG_WINDOWING, "Did not yet implement a swapchain class for this graphics API");
+                break;
+            }
+
         }
 
         if (args.fullscreen)

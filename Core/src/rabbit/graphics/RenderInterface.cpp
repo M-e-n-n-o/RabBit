@@ -55,8 +55,8 @@ namespace RB::Graphics
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
             return new D3D12::RenderInterfaceD3D12(allow_only_copy_operations);
 #endif
         default:

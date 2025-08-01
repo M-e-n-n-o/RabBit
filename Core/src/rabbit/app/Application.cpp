@@ -77,7 +77,7 @@ namespace RB
         AssetManager::Init(asset_path);
 
 #if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
-        Renderer::SetAPI(RenderAPI::D3D12);
+        Renderer::SetAPI(RenderAPI::Vulkan);
 #else
         Renderer::SetAPI(RenderAPI::None);
 #endif

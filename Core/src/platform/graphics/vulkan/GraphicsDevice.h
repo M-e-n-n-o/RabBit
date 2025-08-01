@@ -17,9 +17,10 @@ namespace RB::Graphics::VK
     private:
         void CreateInstance(List<const char*> validation_layers);
         void CreateDevice(List<const char*> validation_layers);
-        VkPhysicalDevice FindPhysicalDevice();
+        VkPhysicalDevice FindPhysicalDevice(UnorderedMap<VkQueueFlagBits, uint32_t>& queue_families);
 
         VkInstance  m_Instance;
+        VkDevice    m_Device;
     };
 
     extern GraphicsDevice* g_GraphicsDevice;
