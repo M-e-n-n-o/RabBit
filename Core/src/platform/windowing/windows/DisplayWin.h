@@ -1,17 +1,15 @@
-#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+#if RB_PLATFORM_WINDOWS
 
 #pragma once
+#include "math/Vector.h"
 #include "graphics/Display.h"
-
-#include <d3d12.h>
-#include <dxgi1_6.h>
 
 namespace RB::Graphics::Windows
 {
     class DisplayWin : public Display
     {
     public:
-        DisplayWin(GPtr<IDXGIOutput> output, uint32_t output_index);
+        DisplayWin(HMONITOR monitor_handle, const char name[128], RB::Math::Float2 resolution);
 
         const char* GetName() override { return m_Name; }
 
@@ -20,7 +18,7 @@ namespace RB::Graphics::Windows
         void* GetNativeHandle() override { return m_Handle; }
 
     private:
-        char				m_Name[128 + 1];
+        char		        m_Name[128];
         HMONITOR			m_Handle;
         RB::Math::Float2	m_Resolution;
 

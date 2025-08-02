@@ -25,9 +25,37 @@ namespace RB::Graphics::VK
 
     }
 
+    VkQueue GraphicsDevice::GetGraphicsQueue() const
+    {
+        return m_GraphicsQueue;
+    }
+
+    VkQueue GraphicsDevice::GetComputeQueue() const
+    {
+        if (m_HasComputeQueue)
+            return m_ComputeQueue;
+
+        return m_GraphicsQueue;
+    }
+
+    VkQueue GraphicsDevice::GetTransferQueue() const
+    {
+        if (m_HasTransferQueue)
+            return m_TransferQueue;
+
+        return m_GraphicsQueue;
+    }
+
     void GraphicsDevice::CreateInstance(List<const char*> validation_layers)
     {
-        std::vector<const char*> extensions{};
+        std::vector<const char*> extensions = {
+
+#if !RB_PLATFORM_WINDOWS
+            // For enumerating connected display's using the Vulkan API (not supported on Windows)
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            VK_KHR_DISPLAY_EXTENSION_NAME
+#endif
+        };
 
         // If a debug callbacks should be enabled:
         //  * The extension must be specified and
@@ -41,7 +69,7 @@ namespace RB::Graphics::VK
         app_info.pApplicationName    = "RabBit App";
         app_info.applicationVersion  = VK_MAKE_VERSION(1, 0, 0);
         app_info.pEngineName         = "RabBit";
-        app_info.engineVersion       = VK_MAKE_VERSION(RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
+        app_info.engineVersion       = VK_MAKE_VERSION(0, 1, 0);
         app_info.apiVersion          = VK_API_VERSION_1_2;
 
         VkInstanceCreateInfo create_info = {};
@@ -60,7 +88,7 @@ namespace RB::Graphics::VK
     void GraphicsDevice::CreateDevice(List<const char*> validation_layers)
     {
         UnorderedMap<VkQueueFlagBits, uint32_t> queue_families;
-        VkPhysicalDevice physical_device = FindPhysicalDevice(queue_families);
+        m_PhysicalDevice = FindPhysicalDevice(queue_families);
 
         float queue_priority = 1.0f;
         List<VkDeviceQueueCreateInfo> queue_create_infos;
@@ -77,12 +105,42 @@ namespace RB::Graphics::VK
             queue_create_infos.push_back(queue_info);
         }
 
-        // TODO
-        // - Create the device
-        // - Make the several queue's available (if no dedicated compute/transfer queue, just return the graphics one)
-        static_assert(false);
+        VkDeviceCreateInfo info;
+        info.sType                      = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        info.pNext                      = NULL;
+        info.flags                      = 0;
+        info.queueCreateInfoCount       = static_cast<uint32_t>(queue_create_infos.size());
+        info.pQueueCreateInfos          = queue_create_infos.data();
+        info.pEnabledFeatures           = NULL;
+        info.enabledExtensionCount      = 0;
+        info.ppEnabledExtensionNames    = NULL;
+        info.enabledLayerCount          = static_cast<uint32_t>(validation_layers.size());
+        info.ppEnabledLayerNames        = validation_layers.data();
+
+        RB_ASSERT_FATAL_RELEASE_VK(vkCreateDevice(m_PhysicalDevice, &info, NULL, &m_Device), "Failed to create VK device");
+
+        // Get the several dedicated queue's
+        vkGetDeviceQueue(m_Device, queue_families[VK_QUEUE_GRAPHICS_BIT], 0, &m_GraphicsQueue);
         
-        //RB_ASSERT_FATAL_RELEASE_VK(vkCreateDevice(m_Device, ), "Failed to create VK device");
+        if (auto compute_itr = queue_families.find(VK_QUEUE_COMPUTE_BIT); compute_itr != queue_families.end())
+        {
+            m_HasComputeQueue = true;
+            vkGetDeviceQueue(m_Device, compute_itr->second, 0, &m_ComputeQueue);
+        }
+        else
+        {
+            m_HasComputeQueue = false;
+        }
+
+        if (auto transfer_itr = queue_families.find(VK_QUEUE_TRANSFER_BIT); transfer_itr != queue_families.end())
+        {
+            m_HasTransferQueue = true;
+            vkGetDeviceQueue(m_Device, transfer_itr->second, 0, &m_TransferQueue);
+        }
+        else
+        {
+            m_HasTransferQueue = false;
+        }
     }
     
     VkPhysicalDevice GraphicsDevice::FindPhysicalDevice(UnorderedMap<VkQueueFlagBits, uint32_t>& queue_families)
