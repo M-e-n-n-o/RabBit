@@ -115,8 +115,28 @@ endif()
 if(RABBIT_API_VULKAN)
     add_compile_definitions(RB_GRAPHICS_API_VULKAN)
 
+    option(BUILD_LOADER "Build Vulkan Loader" ON)
+    option(BUILD_TESTS "Disable Vulkan loader tests" OFF)
+    option(BUILD_LOADER_EXAMPLES "Disable loader examples" OFF)
+
+    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+        add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
+
+        option(BUILD_WSI_WINDOWS_SUPPORT ON)
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        add_compile_definitions(VK_USE_PLATFORM_DISPLAY_KHR)
+
+        option(BUILD_WSI_DISPLAY_SUPPORT ON)
+        option(BUILD_WSI_WAYLAND_SUPPORT OFF)
+        option(BUILD_WSI_XCB_SUPPORT OFF)
+    endif()
+
     add_subdirectory(external/VulkanHeaders)
     add_subdirectory(external/VulkanLoader)
+
+    target_include_directories(RabBit PRIVATE
+        "external/VulkanHeaders/include"
+    )
 
     target_link_libraries(RabBit PRIVATE
         Vulkan::Headers

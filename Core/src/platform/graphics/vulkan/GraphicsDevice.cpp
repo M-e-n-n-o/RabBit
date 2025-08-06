@@ -49,10 +49,12 @@ namespace RB::Graphics::VK
     void GraphicsDevice::CreateInstance(List<const char*> validation_layers)
     {
         std::vector<const char*> extensions = {
-
-#if !RB_PLATFORM_WINDOWS
-            // For enumerating connected display's using the Vulkan API (not supported on Windows)
             VK_KHR_SURFACE_EXTENSION_NAME,
+
+#if RB_PLATFORM_WINDOWS
+            VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+#else
+            // For enumerating connected display's using the Vulkan API (not supported on Windows)
             VK_KHR_DISPLAY_EXTENSION_NAME
 #endif
         };
@@ -82,6 +84,7 @@ namespace RB::Graphics::VK
         create_info.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
         create_info.ppEnabledExtensionNames = extensions.data();
 
+        // If this failed for you, did you already install the Vulkan SDK? (you need that to use the validation layer)
         RB_ASSERT_FATAL_RELEASE_VK(vkCreateInstance(&create_info, NULL, &m_Instance), "Failed to create VK instance");
     }
 

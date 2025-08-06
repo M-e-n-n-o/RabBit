@@ -49,6 +49,8 @@ namespace RB
         RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
         RB_LOG(LOGTAG_MAIN, "");
 
+        RB_LOG(LOGTAG_MAIN, "Command line arguments: %s", launch_args)
+
         char asset_path[256];
         if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
         {
