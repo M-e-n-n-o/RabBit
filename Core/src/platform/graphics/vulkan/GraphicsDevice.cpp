@@ -7,22 +7,65 @@ namespace RB::Graphics::VK
 {
     GraphicsDevice* g_GraphicsDevice = nullptr;
 
+#ifdef RB_CONFIG_DEBUG
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+        VkDebugUtilsMessageTypeFlagsEXT type,
+        const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+        void* userData) {
+
+        switch (severity)
+        {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            //RB_LOG(LOGTAG_GRAPHICS, "VK validation verbose: %s", callbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            //RB_LOG(LOGTAG_GRAPHICS, "VK validation info: %s", callbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "VK validation warning: %s", callbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "VK validation error: %s", callbackData->pMessage);
+            break;
+        default:
+            break;
+        }
+
+        return VK_FALSE;
+    }
+#endif
+
     GraphicsDevice::GraphicsDevice(bool debug_device)
     {
         List<const char*> validation_layers;
 
+#ifdef RB_CONFIG_DEBUG
         if (debug_device)
         {
             validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
         }
+#endif
 
-        CreateInstance(validation_layers);
+        ValidateLayers(validation_layers);
+
+        CreateInstance(debug_device, validation_layers);
         CreateDevice(validation_layers);
     }
 
     GraphicsDevice::~GraphicsDevice()
     {
+        vkDestroyDevice(m_Device, NULL);
 
+#ifdef RB_CONFIG_DEBUG
+        if (m_DebugMessenger != VK_NULL_HANDLE)
+        {
+            PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
+            vkDestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, NULL);
+        }
+#endif
+
+        vkDestroyInstance(m_Instance, NULL);
     }
 
     VkQueue GraphicsDevice::GetGraphicsQueue() const
@@ -46,28 +89,45 @@ namespace RB::Graphics::VK
         return m_GraphicsQueue;
     }
 
-    void GraphicsDevice::CreateInstance(List<const char*> validation_layers)
+    void GraphicsDevice::CreateInstance(bool debug_device, List<const char*> validation_layers)
     {
-        std::vector<const char*> extensions = {
+        List<const char*> extensions = 
+        {
             VK_KHR_SURFACE_EXTENSION_NAME,
 
 #if RB_PLATFORM_WINDOWS
-            VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+            VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #else
             // For enumerating connected display's using the Vulkan API (not supported on Windows)
             VK_KHR_DISPLAY_EXTENSION_NAME
 #endif
         };
 
-        // If a debug callbacks should be enabled:
-        //  * The extension must be specified and
-        //  * The "pNext" should point to a valid "VkDebugUtilsMessengercreate_infoEXT" struct.
-        // extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        //create_info.pNext = (VkDebugUtilsMessengercreate_infoEXT*) &debugInfo;
+#ifdef RB_CONFIG_DEBUG
+        VkDebugUtilsMessengerCreateInfoEXT msg_info = {};
+
+        if (debug_device)
+        {
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+            msg_info.sType              = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+            msg_info.pNext              = nullptr;
+            msg_info.messageSeverity    = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | 
+                                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | 
+                                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
+                                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            msg_info.messageType        = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                          VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                          VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+            msg_info.pfnUserCallback    = DebugCallback;
+        }
+#endif
+
+        ValidateExtensions(extensions);
 
         VkApplicationInfo app_info = {};
         app_info.sType               = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        app_info.pNext               = NULL;
+        app_info.pNext               = nullptr;
         app_info.pApplicationName    = "RabBit App";
         app_info.applicationVersion  = VK_MAKE_VERSION(1, 0, 0);
         app_info.pEngineName         = "RabBit";
@@ -76,7 +136,11 @@ namespace RB::Graphics::VK
 
         VkInstanceCreateInfo create_info = {};
         create_info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        create_info.pNext                   = NULL;
+#ifdef RB_CONFIG_DEBUG
+        create_info.pNext                   = debug_device ? & msg_info : nullptr;
+#else
+        create_info.pNext                   = nullptr;
+#endif
         create_info.flags                   = 0;
         create_info.pApplicationInfo        = &app_info;
         create_info.enabledLayerCount       = static_cast<uint32_t>(validation_layers.size());
@@ -84,8 +148,28 @@ namespace RB::Graphics::VK
         create_info.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
         create_info.ppEnabledExtensionNames = extensions.data();
 
-        // If this failed for you, did you already install the Vulkan SDK? (you need that to use the validation layer)
         RB_ASSERT_FATAL_RELEASE_VK(vkCreateInstance(&create_info, NULL, &m_Instance), "Failed to create VK instance");
+
+#ifdef RB_CONFIG_DEBUG
+        if (debug_device)
+        {
+            PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
+
+            if (vkCreateDebugUtilsMessengerEXT)
+            {
+                RB_ASSERT_FATAL_RELEASE_VK(vkCreateDebugUtilsMessengerEXT(m_Instance, &msg_info, nullptr, &m_DebugMessenger), "Failed to create VK debug messenger");
+            }
+            else
+            {
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load vkCreateDebugUtilsMessengerEXT, there will be no validation messages");
+            }
+        }
+        else
+        {
+            m_DebugMessenger = VK_NULL_HANDLE;
+        }
+
+#endif
     }
 
     void GraphicsDevice::CreateDevice(List<const char*> validation_layers)
@@ -108,7 +192,7 @@ namespace RB::Graphics::VK
             queue_create_infos.push_back(queue_info);
         }
 
-        VkDeviceCreateInfo info;
+        VkDeviceCreateInfo info = {};
         info.sType                      = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         info.pNext                      = NULL;
         info.flags                      = 0;
@@ -261,6 +345,81 @@ namespace RB::Graphics::VK
             queue_families.emplace(VK_QUEUE_TRANSFER_BIT, preferred_transfer_family);
 
         return devices[preferred_device_idx];
+    }
+
+    void GraphicsDevice::ValidateLayers(List<const char*>& layers)
+    {
+        if (layers.empty())
+        {
+            return;
+        }
+
+        uint32_t layer_count;
+        vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+        List<VkLayerProperties> available_layers(layer_count);
+        vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
+
+        // Remove unsupported layers
+        auto it = layers.begin();
+        while (it != layers.end())
+        {
+            bool layer_found = false;
+            for (const auto& layer_properties : available_layers)
+            {
+                if (strcmp(*it, layer_properties.layerName) == 0)
+                {
+                    layer_found = true;
+                    break;
+                }
+            }
+
+            if (!layer_found)
+            {
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "VK layer '%s' is not supported!", *it);
+                it = layers.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+
+    void GraphicsDevice::ValidateExtensions(List<const char*>& extensions)
+    {
+        if (extensions.empty())
+        {
+            return;
+        }
+
+        uint32_t extension_count;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
+        List<VkExtensionProperties> available_extensions(extension_count);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data());
+
+        auto it = extensions.begin();
+        while (it != extensions.end())
+        {
+            bool extension_found = false;
+            for (const auto& extension_properties : available_extensions)
+            {
+                if (strcmp(*it, extension_properties.extensionName) == 0)
+                {
+                    extension_found = true;
+                    break;
+                }
+            }
+
+            if (!extension_found)
+            {
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "VK extension '%s' is not supported!", *it);
+                it = extensions.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
     }
 }
 #endif

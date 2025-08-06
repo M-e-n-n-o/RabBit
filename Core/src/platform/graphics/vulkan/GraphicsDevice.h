@@ -25,19 +25,26 @@ namespace RB::Graphics::VK
         VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
 
     private:
-        void CreateInstance(List<const char*> validation_layers);
+        void CreateInstance(bool debug_device, List<const char*> validation_layers);
         void CreateDevice(List<const char*> validation_layers);
+
         VkPhysicalDevice FindPhysicalDevice(UnorderedMap<VkQueueFlagBits, uint32_t>& queue_families);
 
-        VkInstance          m_Instance;
-        VkDevice            m_Device;
-        VkPhysicalDevice    m_PhysicalDevice;
+        void ValidateLayers(List<const char*>& layers);
+        void ValidateExtensions(List<const char*>& extensions);
 
-        VkQueue             m_GraphicsQueue;
-        bool                m_HasComputeQueue;
-        VkQueue             m_ComputeQueue;
-        bool                m_HasTransferQueue;
-        VkQueue             m_TransferQueue; // (copy queue)
+        VkInstance                  m_Instance;
+        VkDevice                    m_Device;
+        VkPhysicalDevice            m_PhysicalDevice;
+#ifdef RB_CONFIG_DEBUG
+        VkDebugUtilsMessengerEXT    m_DebugMessenger;
+#endif
+
+        VkQueue                     m_GraphicsQueue;
+        bool                        m_HasComputeQueue;
+        VkQueue                     m_ComputeQueue;
+        bool                        m_HasTransferQueue;
+        VkQueue                     m_TransferQueue; // (copy queue)
     };
 
     extern GraphicsDevice* g_GraphicsDevice;
