@@ -43,7 +43,7 @@ namespace RB
         //								    Images
         // ---------------------------------------------------------------------------
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, uint32_t force_channels)
+        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb, uint32_t force_channels)
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
@@ -71,8 +71,14 @@ namespace RB
 
             switch (out_image->channels)
             {
-            case 1: out_image->format = RenderResourceFormat::R8_UNORM; break;
-            case 4: out_image->format = RenderResourceFormat::R8G8B8A8_UNORM; break;
+            case 1: 
+                out_image->format = RenderResourceFormat::R8_UNORM; 
+                if (srgb)
+                    RB_LOG_WARN(LOGTAG_MAIN, "A single channel image cannot be in srgb space");
+                break;
+            case 4: 
+                out_image->format = srgb ? RenderResourceFormat::R8G8B8A8_SRGB : RenderResourceFormat::R8G8B8A8_UNORM; 
+                break;
             case 0:
             case 2:
             case 3:

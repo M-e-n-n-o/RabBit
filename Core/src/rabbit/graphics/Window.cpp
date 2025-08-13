@@ -291,7 +291,7 @@ namespace RB::Graphics
         }
     }
 
-    Window* Window::Create(const char* window_name, Display* display, uint32_t window_style, float virtual_scale, float virtual_aspect)
+    Window* Window::Create(const char* window_name, Display* display, bool vsync, uint32_t window_style, float virtual_scale, float virtual_aspect)
     {
 #if RB_PLATFORM_WINDOWS
         Windows::WindowArgs args = {};
@@ -300,6 +300,7 @@ namespace RB::Graphics
         args.fullscreen     = true;
         args.width          = display->GetResolution().x;
         args.height         = display->GetResolution().y;
+        args.vsync          = vsync;
         args.virtualScale   = virtual_scale;
         args.virtualAspect  = virtual_aspect;
         args.windowStyle    = window_style;
@@ -313,7 +314,7 @@ namespace RB::Graphics
 #endif
     }
 
-    Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, RenderResourceFormat window_format, float virtual_scale, float virtual_aspect)
+    Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, bool vsync, uint32_t window_style, RenderResourceFormat window_format, float virtual_scale, float virtual_aspect)
     {
 #if RB_PLATFORM_WINDOWS
         Windows::WindowArgs args = {};
@@ -322,6 +323,7 @@ namespace RB::Graphics
         args.fullscreen     = false;
         args.width          = window_width;
         args.height         = window_height;
+        args.vsync          = vsync;
         args.virtualScale   = virtual_scale;
         args.virtualAspect  = virtual_aspect;
         args.windowStyle    = window_style;

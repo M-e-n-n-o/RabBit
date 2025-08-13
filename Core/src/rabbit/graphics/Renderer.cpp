@@ -727,7 +727,7 @@ namespace RB::Graphics
             uint32_t back_buffer_index = window_pairs[pair_index].window->GetCurrentBackBufferIndex();
             (*context->backBufferAvailabilityGuards)[window_pairs[pair_index].windowIndex].guards[back_buffer_index] = guard;
 
-            window_pairs[pair_index].window->Present(VsyncMode::On);
+            window_pairs[pair_index].window->Present();
         }
 
         context->OnRenderFrameEnd();

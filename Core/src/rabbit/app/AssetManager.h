@@ -48,7 +48,7 @@ namespace RB
     {
         void Init(const char* asset_base_path);
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, uint32_t force_channels = 0);
+        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb, uint32_t force_channels = 0);
 
         bool LoadMesh(const char* path, LoadedMesh* out_mesh);
     }

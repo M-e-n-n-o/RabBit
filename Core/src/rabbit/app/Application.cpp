@@ -98,11 +98,20 @@ namespace RB
         {
             if (window.fullscreen)
             {
-                m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
+                m_Windows.push_back(Window::Create(window.windowName, 
+                                                   m_Displays[0], 
+                                                   window.vsync, 
+                                                   window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, 
+                                                   window.renderScale, window.forcedRenderAspect));
             }
             else
             {
-                m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, RenderResourceFormat::R8G8B8A8_UNORM, window.renderScale, window.forcedRenderAspect));
+                m_Windows.push_back(Window::Create(window.windowName, 
+                                                   window.windowWidth, window.windowHeight, 
+                                                   window.vsync, 
+                                                   window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, 
+                                                   RenderResourceFormat::R8G8B8A8_UNORM, 
+                                                   window.renderScale, window.forcedRenderAspect));
             }
 
             (*(m_Windows.end()-1))->SetBrightness(window.brightness);

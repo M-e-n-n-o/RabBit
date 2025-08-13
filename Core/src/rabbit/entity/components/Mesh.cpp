@@ -55,7 +55,7 @@ namespace RB::Entity
         : m_Texture(nullptr)
     {
         LoadedImage img;
-        bool success = AssetManager::LoadImage8Bit(file_name, &img);
+        bool success = AssetManager::LoadImage8Bit(file_name, &img, color_space == Graphics::TextureColorSpace::sRGB);
 
         if (success)
         {

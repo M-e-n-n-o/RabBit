@@ -1,4 +1,4 @@
-#if RB_GRAPHICS_API_D3D12
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
 
 #pragma once
 
@@ -21,14 +21,14 @@ namespace RB::Graphics::D3D12
     class SwapChainD3D12 : public SwapChain
     {
     public:
-        SwapChainD3D12(HWND window_handle, const uint32_t width, const uint32_t height, const uint32_t buffer_count, RenderResourceFormat format, bool transparency_support);
+        SwapChainD3D12(HWND window_handle, uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support);
         ~SwapChainD3D12();
 
-        void Present(VsyncMode sync_mode) override;
+        void Present() override;
 
         void Resize(const uint32_t width, const uint32_t height) override;
 
-        GPtr<IDXGISwapChain4> Get4() const { return m_NativeSwapChain; }
+        void* GetNativeSwapChain() const { return m_NativeSwapChain.Get(); }
         uint32_t GetWidth() override { return m_Width; }
         uint32_t GetHeight() override { return m_Height; }
         uint32_t GetBackBufferCount() override { return m_BackBufferCount; }
@@ -42,22 +42,23 @@ namespace RB::Graphics::D3D12
         void UpdateRenderTargetViews();
         void CreateCompositionObjects(HWND window_handle);
 
-        GPtr<IDXGISwapChain4>		m_NativeSwapChain;
-        GPtr<ID3D12DescriptorHeap>	m_DescriptorHeap;
+        GPtr<IDXGISwapChain4>       m_NativeSwapChain;
+        GPtr<ID3D12DescriptorHeap>  m_DescriptorHeap;
         GPtr<ID3D12Resource>*       m_BackBuffers;
         Graphics::Texture2D*        m_WrappedBackBuffers[BACK_BUFFER_COUNT];
 
-        bool						m_UseComposition;
-        GPtr<IDXGIDevice>			m_DeviceForComposition;
-        GPtr<IDCompositionDevice>	m_CompositionDevice;
-        GPtr<IDCompositionTarget>	m_CompositionTarget;
+        bool                        m_UseComposition;
+        GPtr<IDXGIDevice>           m_DeviceForComposition;
+        GPtr<IDCompositionDevice>   m_CompositionDevice;
+        GPtr<IDCompositionTarget>   m_CompositionTarget;
 
-        uint32_t					m_DescriptorIncrementSize;
-        uint32_t					m_CurrentBackBufferIndex;
-        uint32_t					m_BackBufferCount;
-        uint32_t					m_Width;
-        uint32_t					m_Height;
+        uint32_t                    m_DescriptorIncrementSize;
+        uint32_t                    m_CurrentBackBufferIndex;
+        uint32_t                    m_BackBufferCount;
+        uint32_t                    m_Width;
+        uint32_t                    m_Height;
         bool                        m_IsTearingSupported;
+        bool                        m_Vsync;
         RenderResourceFormat        m_EngineFormat;
     };
 }

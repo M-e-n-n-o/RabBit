@@ -8,7 +8,12 @@ namespace RB::Graphics::VK
 {
     DisplayVK::DisplayVK()
     {
-
+        // TODO:
+        //vkGetPhysicalDeviceDisplayPropertiesKHR
+        //vkGetPhysicalDeviceDisplayPlanePropertiesKHR
+        //vkGetDisplayPlaneCapabilitiesKHR
+        //vkCreateDisplayPlaneSurfaceKHR
+        //vkGetPhysicalDeviceSurfaceSupportKHR (check for this in GraphicsDevice.cpp?)
     }
 
     List<Display*> CreateDisplays()

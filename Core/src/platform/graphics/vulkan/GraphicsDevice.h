@@ -15,14 +15,15 @@ namespace RB::Graphics::VK
         ~GraphicsDevice();
 
         static_assert(false);
-        // TODO
-        // - Create a wrapper around VkQueue (DeviceQueue) (check https://github.com/elecro/vkdemos/blob/master/vktriangle/vktriangle.cpp)
+        // TODO: Create a wrapper around VkQueue (DeviceQueue) (check https://github.com/elecro/vkdemos/blob/master/vktriangle/vktriangle.cpp)
 
         VkQueue GetGraphicsQueue() const;
         VkQueue GetComputeQueue() const;
         VkQueue GetTransferQueue() const;
 
+        VkDevice Get() const { return m_Device; }
         VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
+        VkInstance GetInstance() const { return m_Instance; }
 
     private:
         void CreateInstance(bool debug_device, List<const char*> validation_layers);
@@ -31,7 +32,8 @@ namespace RB::Graphics::VK
         VkPhysicalDevice FindPhysicalDevice(UnorderedMap<VkQueueFlagBits, uint32_t>& queue_families);
 
         void ValidateLayers(List<const char*>& layers);
-        void ValidateExtensions(List<const char*>& extensions);
+        void ValidateInstanceExtensions(List<const char*>& extensions);
+        void ValidateDeviceExtensions(List<const char*>& extensions);
 
         VkInstance                  m_Instance;
         VkDevice                    m_Device;

@@ -26,16 +26,13 @@ namespace RB::Graphics
         Unkown,
 
         // Regular format
-        R32G32B32A32_TYPELESS,
         R32G32B32A32_FLOAT,
         R16G16B16A16_FLOAT,
         R32G32_FLOAT,
         R8_UINT,
         R32_UINT,
-        R8G8B8A8_TYPELESS,
         R8G8B8A8_UNORM,
         R8G8B8A8_SRGB,
-        R11G11B10_FLOAT,
         R16G16_FLOAT,
         R16G16_UINT,
         R16_FLOAT,

@@ -19,8 +19,8 @@ namespace RB::Graphics::Windows
 
     private:
         char		        m_Name[128];
-        HMONITOR			m_Handle;
-        RB::Math::Float2	m_Resolution;
+        HMONITOR            m_Handle;
+        RB::Math::Float2    m_Resolution;
 
         //enum Rotation
         //{

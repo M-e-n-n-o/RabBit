@@ -12,15 +12,6 @@ namespace RB::Graphics
         kWindowStyle_SemiTransparent    = (1 << 0)
     };
 
-    enum class VsyncMode : uint8_t
-    {
-        Off     = 0,
-        On      = 1,
-        Half    = 2,
-        Quarter = 3,
-        Eighth  = 4
-    };
-
     struct RenderRect
     {
         uint32_t left;
@@ -32,7 +23,7 @@ namespace RB::Graphics
 
     class Display;
 
-    static const uint32_t BACK_BUFFER_COUNT = 2u;
+    static const uint32_t BACK_BUFFER_COUNT = 3u;
 
     class Window
     {
@@ -41,7 +32,7 @@ namespace RB::Graphics
 
         virtual void			Update() = 0;
 
-        virtual void			Present(const VsyncMode& mode) = 0;
+        virtual void			Present() = 0;
 
         // Returns width, height, x pos, and y pos of entire window
         virtual Math::Float4	GetWindowRectangle()	const = 0;
@@ -85,8 +76,8 @@ namespace RB::Graphics
 
         void		   ProcessEvent(Events::WindowEvent& event);
 
-        static Window* Create(const char* window_name, Display* display, uint32_t window_style, float virtual_resolution_scale = 1, float virtual_aspect = 0);
-        static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, RenderResourceFormat window_format, float virtual_resolution_scale = 1, float virtual_aspect = 0);
+        static Window* Create(const char* window_name, Display* display, bool vsync, uint32_t window_style, float virtual_resolution_scale = 1, float virtual_aspect = 0);
+        static Window* Create(const char* window_name, uint32_t window_width, uint32_t window_height, bool vsync, uint32_t window_style, RenderResourceFormat window_format, float virtual_resolution_scale = 1, float virtual_aspect = 0);
 
     protected:
         Window(bool is_fullscreen, float virtual_scale, float virtual_aspect);

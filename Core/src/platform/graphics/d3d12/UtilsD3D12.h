@@ -70,8 +70,6 @@ namespace RB::Graphics::D3D12
     {
         switch (format)
         {
-        case(RenderResourceFormat::R32G32B32A32_TYPELESS):
-            return DXGI_FORMAT_R32G32B32A32_TYPELESS;
         case(RenderResourceFormat::R32G32B32A32_FLOAT):
             return DXGI_FORMAT_R32G32B32A32_FLOAT;
         case(RenderResourceFormat::R16G16B16A16_FLOAT):
@@ -80,14 +78,10 @@ namespace RB::Graphics::D3D12
             return DXGI_FORMAT_R32G32_FLOAT;
         case(RenderResourceFormat::R32_UINT):
             return DXGI_FORMAT_R32_UINT;
-        case(RenderResourceFormat::R8G8B8A8_TYPELESS):
-            return DXGI_FORMAT_R8G8B8A8_TYPELESS;
         case(RenderResourceFormat::R8G8B8A8_SRGB):
             return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
         case(RenderResourceFormat::R8G8B8A8_UNORM):
             return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case(RenderResourceFormat::R11G11B10_FLOAT):
-            return DXGI_FORMAT_R11G11B10_FLOAT;
         case(RenderResourceFormat::R16G16_FLOAT):
             return DXGI_FORMAT_R16G16_FLOAT;
         case(RenderResourceFormat::R16G16_UINT):
@@ -110,8 +104,6 @@ namespace RB::Graphics::D3D12
             return DXGI_FORMAT_D32_FLOAT;
         case(RenderResourceFormat::D16_UNORM):
             return DXGI_FORMAT_D16_UNORM;
-        case(RenderResourceFormat::Unkown):
-            return DXGI_FORMAT_UNKNOWN;
         default:
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
             return DXGI_FORMAT_UNKNOWN;
@@ -122,8 +114,6 @@ namespace RB::Graphics::D3D12
     {
         switch (format)
         {
-        case(DXGI_FORMAT_R32G32B32A32_TYPELESS):
-            return RenderResourceFormat::R32G32B32A32_TYPELESS;
         case(DXGI_FORMAT_R32G32B32A32_FLOAT):
             return RenderResourceFormat::R32G32B32A32_FLOAT;
         case(DXGI_FORMAT_R16G16B16A16_FLOAT):
@@ -134,14 +124,10 @@ namespace RB::Graphics::D3D12
             return RenderResourceFormat::R32_UINT;
         case(DXGI_FORMAT_R32_FLOAT):
             return RenderResourceFormat::R32_FLOAT;
-        case(DXGI_FORMAT_R8G8B8A8_TYPELESS):
-            return RenderResourceFormat::R8G8B8A8_TYPELESS;
         case(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB):
             return RenderResourceFormat::R8G8B8A8_SRGB;
         case(DXGI_FORMAT_R8G8B8A8_UNORM):
             return RenderResourceFormat::R8G8B8A8_UNORM;
-        case(DXGI_FORMAT_R11G11B10_FLOAT):
-            return RenderResourceFormat::R11G11B10_FLOAT;
         case(DXGI_FORMAT_R16G16_FLOAT):
             return RenderResourceFormat::R16G16_FLOAT;
         case(DXGI_FORMAT_R16G16_UINT):
@@ -162,8 +148,6 @@ namespace RB::Graphics::D3D12
             return RenderResourceFormat::D32_FLOAT;
         case(DXGI_FORMAT_D16_UNORM):
             return RenderResourceFormat::D16_UNORM;
-        case(DXGI_FORMAT_UNKNOWN):
-            return RenderResourceFormat::Unkown;
         default:
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
             return RenderResourceFormat::Unkown;

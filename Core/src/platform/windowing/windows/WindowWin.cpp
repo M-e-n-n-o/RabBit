@@ -14,6 +14,10 @@
 #include "platform/graphics/d3d12/SwapChainD3D12.h"
 #endif
 
+#if RB_GRAPHICS_API_VULKAN
+#include "platform/graphics/vulkan/SwapChainVK.h"
+#endif
+
 using namespace RB::Events;
 
 namespace RB::Graphics::Windows
@@ -55,6 +59,8 @@ namespace RB::Graphics::Windows
 
         // Create swapchain
         {
+            bool transparency_support = (args.windowStyle & kWindowStyle_SemiTransparent) > 0;
+
             // TODO Add the option for an HDR swapchain
 
             switch (Renderer::GetAPI())
@@ -65,9 +71,24 @@ namespace RB::Graphics::Windows
                 m_SwapChain = new D3D12::SwapChainD3D12(
                     m_WindowHandle,
                     width, height,
+                    args.vsync,
                     BACK_BUFFER_COUNT,
                     args.format,
-                    (bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
+                    transparency_support
+                );
+            }
+            break;
+#endif
+#if RB_GRAPHICS_API_VULKAN
+            case RenderAPI::Vulkan:
+            {
+                m_SwapChain = new VK::SwapChainVK(
+                    m_WindowHandle, args.instance,
+                    width, height,
+                    args.vsync,
+                    BACK_BUFFER_COUNT,
+                    args.format,
+                    transparency_support
                 );
             }
             break;
@@ -110,9 +131,9 @@ namespace RB::Graphics::Windows
         }
     }
 
-    void WindowWin::Present(const VsyncMode& mode)
+    void WindowWin::Present()
     {
-        m_SwapChain->Present(mode);
+        m_SwapChain->Present();
     }
 
     Math::Float4 WindowWin::GetWindowRectangle() const

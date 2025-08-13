@@ -1,4 +1,4 @@
-#if RB_GRAPHICS_API_D3D12
+#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
 
 #include "RabBitCommon.h"
 #include "SwapChainD3D12.h"
@@ -10,12 +10,13 @@
 
 namespace RB::Graphics::D3D12
 {
-    SwapChainD3D12::SwapChainD3D12(HWND window_handle, uint32_t width, uint32_t height, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support)
+    SwapChainD3D12::SwapChainD3D12(HWND window_handle, uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support)
         : m_BackBufferCount(buffer_count)
         , m_Width(width)
         , m_Height(height)
         , m_UseComposition(transparency_support)
         , m_EngineFormat(format)
+        , m_Vsync(vsync)
     {
         DXGI_FORMAT dxgi_format = ConvertToDXGIFormat(format);
 
@@ -95,13 +96,11 @@ namespace RB::Graphics::D3D12
         delete[] m_BackBuffers;
     }
 
-    void SwapChainD3D12::Present(VsyncMode sync_mode)
+    void SwapChainD3D12::Present()
     {
-        bool vsync_enabled = sync_mode != VsyncMode::Off;
-        UINT sync_interval = (UINT)sync_mode;
-        UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0; // DXGI_PRESENT_ALLOW_TEARING cannot be here in exclusive fullscreen!
+        UINT present_flags = (m_IsTearingSupported && !m_Vsync) ? DXGI_PRESENT_ALLOW_TEARING : 0; // DXGI_PRESENT_ALLOW_TEARING cannot be here in exclusive fullscreen!
 
-        RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->Present(sync_interval, present_flags), "Failed to present frame");
+        RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->Present(m_Vsync, present_flags), "Failed to present frame");
 
         m_CurrentBackBufferIndex = m_NativeSwapChain->GetCurrentBackBufferIndex();
 

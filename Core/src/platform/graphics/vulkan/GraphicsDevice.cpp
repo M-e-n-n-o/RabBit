@@ -7,6 +7,25 @@ namespace RB::Graphics::VK
 {
     GraphicsDevice* g_GraphicsDevice = nullptr;
 
+
+    List<const char*> g_InstanceExtensions =
+    {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+
+#if RB_PLATFORM_WINDOWS
+            VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif RB_PLATFORM_LINUX_ES
+        // Used for both window creation on Linux, but also for enumerating
+        // connected display's using the Vulkan API (not supported on Windows)
+        VK_KHR_DISPLAY_EXTENSION_NAME
+#endif
+    };
+
+    List<const char*> g_DeviceExtensions =
+    {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    };
+
 #ifdef RB_CONFIG_DEBUG
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -91,24 +110,12 @@ namespace RB::Graphics::VK
 
     void GraphicsDevice::CreateInstance(bool debug_device, List<const char*> validation_layers)
     {
-        List<const char*> extensions = 
-        {
-            VK_KHR_SURFACE_EXTENSION_NAME,
-
-#if RB_PLATFORM_WINDOWS
-            VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-#else
-            // For enumerating connected display's using the Vulkan API (not supported on Windows)
-            VK_KHR_DISPLAY_EXTENSION_NAME
-#endif
-        };
-
 #ifdef RB_CONFIG_DEBUG
         VkDebugUtilsMessengerCreateInfoEXT msg_info = {};
 
         if (debug_device)
         {
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            g_InstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
             msg_info.sType              = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
             msg_info.pNext              = nullptr;
@@ -123,7 +130,7 @@ namespace RB::Graphics::VK
         }
 #endif
 
-        ValidateExtensions(extensions);
+        ValidateInstanceExtensions(g_InstanceExtensions);
 
         VkApplicationInfo app_info = {};
         app_info.sType               = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -145,8 +152,8 @@ namespace RB::Graphics::VK
         create_info.pApplicationInfo        = &app_info;
         create_info.enabledLayerCount       = static_cast<uint32_t>(validation_layers.size());
         create_info.ppEnabledLayerNames     = validation_layers.data();
-        create_info.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
-        create_info.ppEnabledExtensionNames = extensions.data();
+        create_info.enabledExtensionCount   = static_cast<uint32_t>(g_InstanceExtensions.size());
+        create_info.ppEnabledExtensionNames = g_InstanceExtensions.data();
 
         RB_ASSERT_FATAL_RELEASE_VK(vkCreateInstance(&create_info, NULL, &m_Instance), "Failed to create VK instance");
 
@@ -177,6 +184,8 @@ namespace RB::Graphics::VK
         UnorderedMap<VkQueueFlagBits, uint32_t> queue_families;
         m_PhysicalDevice = FindPhysicalDevice(queue_families);
 
+        ValidateDeviceExtensions(g_DeviceExtensions);
+
         float queue_priority = 1.0f;
         List<VkDeviceQueueCreateInfo> queue_create_infos;
 
@@ -199,8 +208,8 @@ namespace RB::Graphics::VK
         info.queueCreateInfoCount       = static_cast<uint32_t>(queue_create_infos.size());
         info.pQueueCreateInfos          = queue_create_infos.data();
         info.pEnabledFeatures           = NULL;
-        info.enabledExtensionCount      = 0;
-        info.ppEnabledExtensionNames    = NULL;
+        info.enabledExtensionCount      = static_cast<uint32_t>(g_DeviceExtensions.size());
+        info.ppEnabledExtensionNames    = g_DeviceExtensions.data();
         info.enabledLayerCount          = static_cast<uint32_t>(validation_layers.size());
         info.ppEnabledLayerNames        = validation_layers.data();
 
@@ -385,7 +394,7 @@ namespace RB::Graphics::VK
         }
     }
 
-    void GraphicsDevice::ValidateExtensions(List<const char*>& extensions)
+    void GraphicsDevice::ValidateInstanceExtensions(List<const char*>& extensions)
     {
         if (extensions.empty())
         {
@@ -412,7 +421,44 @@ namespace RB::Graphics::VK
 
             if (!extension_found)
             {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "VK extension '%s' is not supported!", *it);
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "VK instance extension '%s' is not supported!", *it);
+                it = extensions.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+
+    void GraphicsDevice::ValidateDeviceExtensions(List<const char*>& extensions)
+    {
+        if (extensions.empty())
+        {
+            return;
+        }
+
+        uint32_t extension_count;
+        vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extension_count, nullptr);
+        List<VkExtensionProperties> available_extensions(extension_count);
+        vkEnumerateDeviceExtensionProperties(m_PhysicalDevice,nullptr, &extension_count, available_extensions.data());
+
+        auto it = extensions.begin();
+        while (it != extensions.end())
+        {
+            bool extension_found = false;
+            for (const auto& extension_properties : available_extensions)
+            {
+                if (strcmp(*it, extension_properties.extensionName) == 0)
+                {
+                    extension_found = true;
+                    break;
+                }
+            }
+
+            if (!extension_found)
+            {
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "VK device extension '%s' is not supported!", *it);
                 it = extensions.erase(it);
             }
             else

@@ -18,15 +18,16 @@ namespace RB::Graphics::Windows
 {
     struct WindowArgs
     {
-        HINSTANCE	            instance;
+        HINSTANCE               instance;
         wchar_t*                className;
         const char*             windowName;
-        bool		            fullscreen;
-        uint32_t	            width;
-        uint32_t	            height;
-        float		            virtualScale;
-        float		            virtualAspect;
-        uint32_t	            windowStyle;
+        bool                    fullscreen;
+        uint32_t                width;
+        uint32_t                height;
+        bool                    vsync;
+        float                   virtualScale;
+        float                   virtualAspect;
+        uint32_t                windowStyle;
         RenderResourceFormat    format;
     };
 
@@ -38,14 +39,14 @@ namespace RB::Graphics::Windows
 
         void Update() override;
 
-        void Present(const VsyncMode& mode) override;
+        void Present() override;
 
-        Math::Float4 GetWindowRectangle()	const override;
-        uint32_t	 GetWidth()				const override;
-        uint32_t	 GetHeight()			const override;
-        RenderRect	 GetWindowRect()		const override;
-        bool		 IsMinimized()			const override;
-        bool		 IsValid()				const override;
+        Math::Float4 GetWindowRectangle()   const override;
+        uint32_t     GetWidth()             const override;
+        uint32_t     GetHeight()            const override;
+        RenderRect   GetWindowRect()        const override;
+        bool         IsMinimized()          const override;
+        bool         IsValid()              const override;
         bool         IsSemiTransparent()    const override;
 
         Display* GetParentDisplay() override;

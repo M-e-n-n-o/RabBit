@@ -29,6 +29,7 @@ namespace RB
             bool		fullscreen          = false;
             uint32_t    windowWidth         = 1280;
             uint32_t    windowHeight        = 720;
+            bool        vsync               = true;
             float		forcedRenderAspect  = 0.0f;
             float		renderScale         = 1.0f;
             float       gammaCorrection     = 2.2f;
