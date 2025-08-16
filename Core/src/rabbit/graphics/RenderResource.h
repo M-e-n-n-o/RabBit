@@ -159,6 +159,11 @@ namespace RB::Graphics
         virtual bool AllowedRandomReadWrites() const = 0;
         virtual bool AllowedDepthStencil() const = 0;
 
+        // Overwrite functions, allows you to create custom temporary views on a texture.
+        // Also add methods for array slices on 3D textures or texture array's.
+        //virtual void SetBaseMip(uint32_t mip) = 0;
+        //virtual void SetMipCount(uint32_t mips) = 0;
+
         TextureColorSpace GetColorSpace() const { return m_ColorSpace; }
 
     protected:

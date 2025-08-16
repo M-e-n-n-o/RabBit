@@ -94,20 +94,20 @@ namespace RB::Graphics::D3D12
 
         const char*                     m_Name;
         GpuResource*                    m_Resource;
-        uint32_t						m_Width;
-        uint32_t						m_Height;
-        RenderResourceFormat			m_Format;
+        uint32_t                        m_Width;
+        uint32_t                        m_Height;
+        RenderResourceFormat            m_Format;
 
-        bool							m_IsRenderTarget;
-        bool							m_IsDepthStencil;
-        bool							m_AllowUAV;
+        bool                            m_IsRenderTarget;
+        bool                            m_IsDepthStencil;
+        bool                            m_AllowUAV;
 
-        DescriptorIndex				    m_ReadHandle;
-        DescriptorIndex				    m_WriteHandle;
-        DescriptorIndex				    m_RenderTargetHandle;
-        D3D12_CPU_DESCRIPTOR_HANDLE		m_RenderTargetDescriptor;
-        DescriptorIndex				    m_DepthStencilHandle;
-        D3D12_CPU_DESCRIPTOR_HANDLE		m_DepthStencilDescriptor;
+        DescriptorIndex                 m_ReadHandle;
+        DescriptorIndex                 m_WriteHandle;
+        DescriptorIndex                 m_RenderTargetHandle;
+        D3D12_CPU_DESCRIPTOR_HANDLE     m_RenderTargetDescriptor;
+        DescriptorIndex                 m_DepthStencilHandle;
+        D3D12_CPU_DESCRIPTOR_HANDLE     m_DepthStencilDescriptor;
     };
 }
 #endif

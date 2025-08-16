@@ -3,6 +3,8 @@
 #include "RabBitCommon.h"
 #include "SwapChainVK.h"
 #include "GraphicsDevice.h"
+#include "GpuResource.h"
+#include "RenderResourceVK.h"
 #include "UtilsVK.h"
 
 namespace RB::Graphics::VK
@@ -20,11 +22,6 @@ namespace RB::Graphics::VK
         Init(width, height, vsync, buffer_count, format, transparency_support);
     }
 #endif
-    
-    Graphics::Texture2D* SwapChainVK::GetCurrentBackBuffer()
-    {
-        return nullptr;
-    }
 
     void SwapChainVK::Init(uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support)
     {
@@ -56,10 +53,6 @@ namespace RB::Graphics::VK
                 transparency_support = false;
                 RB_LOG_WARN(LOGTAG_GRAPHICS, "Tried to enable transparency on the window while it doesn't support that, ignoring..");
             }
-
-            static_assert(false);
-            // TODO:
-            // - Some of this stuff, especially VkSurfaceCapabilitiesKHR should probably be put into DisplayVK
 
             surface_transform = capabilities.currentTransform;
         }
@@ -140,22 +133,137 @@ namespace RB::Graphics::VK
         info.oldSwapchain        = VK_NULL_HANDLE;
 
         RB_ASSERT_FATAL_RELEASE_VK(vkCreateSwapchainKHR(g_GraphicsDevice->Get(), &info, nullptr, &m_Swapchain), "Failed to create swapchain");
+
+        m_CurrentBackBufferIndex = 0;
+        m_UpdatedBackBufferIndex = true;
+
+        m_WrappedBackBuffers = ALLOC_HEAPC(Texture2D*, m_BackBufferCount);
+        for (int i = 0; i < m_BackBufferCount; ++i)
+        {
+            m_WrappedBackBuffers[i] = nullptr;
+        }
+
+        m_SwapChainImages = new VkImage[m_BackBufferCount];
+        m_ImageViews = new VkImageView[m_BackBufferCount];
+
+        // Get swap chain images
+        uint32_t image_count;
+        vkGetSwapchainImagesKHR(g_GraphicsDevice->Get(), m_Swapchain, &image_count, nullptr);
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, image_count == m_BackBufferCount, "There were not as many backbuffer images (%d) as expected (%d)", image_count, m_BackBufferCount);
+        vkGetSwapchainImagesKHR(g_GraphicsDevice->Get(), m_Swapchain, &image_count, m_SwapChainImages);
+
+        for (size_t i = 0; i < m_BackBufferCount; i++)
+        {
+            VkImageViewCreateInfo view_info = {};
+            view_info.sType                             = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            view_info.image                             = m_SwapChainImages[i];
+            view_info.viewType                          = VK_IMAGE_VIEW_TYPE_2D;
+            view_info.format                            = surface_format.format;
+            view_info.subresourceRange.aspectMask       = VK_IMAGE_ASPECT_COLOR_BIT;
+            view_info.subresourceRange.baseMipLevel     = 0;
+            view_info.subresourceRange.levelCount       = 1;
+            view_info.subresourceRange.baseArrayLayer   = 0;
+            view_info.subresourceRange.layerCount       = 1;
+
+            RB_ASSERT_FATAL_RELEASE_VK(
+                vkCreateImageView(g_GraphicsDevice->Get(), &view_info, nullptr, &m_ImageViews[i]),
+                "Failed to create backbuffer image views"
+            );
+        }
     }
 
     SwapChainVK::~SwapChainVK()
     {
+        for (int i = 0; i < m_BackBufferCount; ++i)
+        {
+            SAFE_DELETE(m_WrappedBackBuffers[i]);
+            
+            vkDestroyImageView(g_GraphicsDevice->Get(), m_ImageViews[i], nullptr);
+        }
+        SAFE_FREE(m_WrappedBackBuffers);
+
+        delete[] m_ImageViews;
+        delete[] m_SwapChainImages;
+
         vkDestroySwapchainKHR(g_GraphicsDevice->Get(), m_Swapchain, nullptr);
         vkDestroySurfaceKHR(g_GraphicsDevice->GetInstance(), m_Surface, nullptr);
     }
 
     void SwapChainVK::Present()
     {
-        static_assert(false);
+        UpdateBackBufferIndex();
+
+        VkPresentInfoKHR present_info{};
+        present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present_info.waitSemaphoreCount = 0; // Synchronization happens via API independent code
+        present_info.pWaitSemaphores    = nullptr;
+        present_info.swapchainCount     = 1;
+        present_info.pSwapchains        = &m_Swapchain;
+        present_info.pImageIndices      = &m_CurrentBackBufferIndex;
+        present_info.pResults           = nullptr;
+
+        VkResult result = vkQueuePresentKHR(g_GraphicsDevice->GetGraphicsQueue(), &present_info);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+        {
+            // Do we need this?
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "TODO: implement resize on out of date present");
+            //Resize(m_Width, m_Height);
+        }
+        else
+        {
+            RB_ASSERT_FATAL_RELEASE_VK(result, "Failed to present swap chain image!");
+        }
+
+        m_UpdatedBackBufferIndex = false;
     }
 
     void SwapChainVK::Resize(const uint32_t width, const uint32_t height)
     {
-        static_assert(false);
+        // Release wrapped backbuffer references
+        for (int i = 0; i < m_BackBufferCount; ++i)
+        {
+            SAFE_DELETE(m_WrappedBackBuffers[i]);
+        }
+
+        //static_assert(false);
+        RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "TODO: implement resize for VK swapchain");
+    }
+
+    Graphics::Texture2D* SwapChainVK::GetCurrentBackBuffer()
+    {
+        UpdateBackBufferIndex();
+
+        if (m_WrappedBackBuffers[m_CurrentBackBufferIndex] == nullptr)
+        {
+            std::string name = "Backbuffer resource " + std::to_string(m_CurrentBackBufferIndex);
+
+            m_WrappedBackBuffers[m_CurrentBackBufferIndex] = Texture2D::Create(
+                name.c_str(),
+                new GpuResource(m_SwapChainImages[m_CurrentBackBufferIndex], false),
+                m_EngineFormat,
+                m_Width,
+                m_Height,
+                true,
+                false
+            );
+
+            ((Texture2DVK*)m_WrappedBackBuffers[m_CurrentBackBufferIndex])->SetView(m_ImageViews[m_CurrentBackBufferIndex]);
+        }
+
+        return m_WrappedBackBuffers[m_CurrentBackBufferIndex];
+    }
+
+    void SwapChainVK::UpdateBackBufferIndex()
+    {
+        if (m_UpdatedBackBufferIndex)
+        {
+            return;
+        }
+
+        RB_ASSERT_FATAL_RELEASE_VK(vkAcquireNextImageKHR(g_GraphicsDevice->Get(), m_Swapchain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &m_CurrentBackBufferIndex),
+                                    "Failed to acquire next backbuffer image");
+
+        m_UpdatedBackBufferIndex = true;
     }
 }
 #endif

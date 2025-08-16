@@ -22,24 +22,31 @@ namespace RB::Graphics::VK
         void Present() override;
         void Resize(const uint32_t width, const uint32_t height) override;
 
-        void* GetNativeSwapChain() const override { return nullptr; }
+        void* GetNativeSwapChain() const override { return m_Swapchain; }
         uint32_t GetWidth() override { return m_Width; }
         uint32_t GetHeight() override { return m_Height; }
         uint32_t GetBackBufferCount() override { return m_BackBufferCount; }
-        uint32_t GetCurrentBackBufferIndex() override { return 0; }
+        uint32_t GetCurrentBackBufferIndex() override { return m_CurrentBackBufferIndex; }
         Graphics::Texture2D* GetCurrentBackBuffer() override;
 
     private:
         void Init(uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support);
-        void CreateSwapChain(uint32_t);
+        void UpdateBackBufferIndex();
 
         VkSurfaceKHR            m_Surface;
         VkSwapchainKHR          m_Swapchain;
 
         uint32_t                m_Width;
         uint32_t                m_Height;
-        uint32_t                m_BackBufferCount;
         RenderResourceFormat    m_EngineFormat;
+
+        uint32_t                m_CurrentBackBufferIndex;
+        uint32_t                m_BackBufferCount;
+        bool                    m_UpdatedBackBufferIndex;
+
+        VkImage*                m_SwapChainImages;
+        VkImageView*            m_ImageViews;
+        Graphics::Texture2D**   m_WrappedBackBuffers;
     };
 }
 #endif

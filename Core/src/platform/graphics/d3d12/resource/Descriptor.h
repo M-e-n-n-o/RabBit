@@ -47,8 +47,9 @@ namespace RB::Graphics::D3D12
         // A transient descriptor will automatically be free'd/reused over time
         DescriptorIndex CreateDescriptor(ID3D12Resource* res, const D3D12_SHADER_RESOURCE_VIEW_DESC& desc, bool transient = false);
         DescriptorIndex CreateDescriptor(ID3D12Resource* res, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, bool transient = false);
-        DescriptorIndex CreateDescriptor(ID3D12Resource* res, const D3D12_RENDER_TARGET_VIEW_DESC& desc, bool transient = false);
         DescriptorIndex CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc, bool transient = false);
+        DescriptorIndex CreateDescriptor(ID3D12Resource* res, const D3D12_RENDER_TARGET_VIEW_DESC& desc, bool transient = false);
+        DescriptorIndex CreateDescriptor(ID3D12Resource* res, bool transient = false); // Uses a nullptr as descriptions
 
         D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle(const DescriptorIndex& idx);
         D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle(const DescriptorIndex& idx);

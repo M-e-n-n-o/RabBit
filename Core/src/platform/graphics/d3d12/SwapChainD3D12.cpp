@@ -69,9 +69,6 @@ namespace RB::Graphics::D3D12
 
         m_CurrentBackBufferIndex = m_NativeSwapChain->GetCurrentBackBufferIndex();
 
-        CreateDescriptorHeap();
-        m_DescriptorIncrementSize = g_GraphicsDevice->Get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
         m_BackBuffers = new GPtr<ID3D12Resource>[m_BackBufferCount];
         UpdateRenderTargetViews();
 
@@ -144,41 +141,23 @@ namespace RB::Graphics::D3D12
             m_WrappedBackBuffers[m_CurrentBackBufferIndex] = Texture2D::Create(name.c_str(),
                 new GpuResource(m_BackBuffers[m_CurrentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, false), m_EngineFormat, m_Width, m_Height, true, false);
         
-            ((Texture2DD3D12*)m_WrappedBackBuffers[m_CurrentBackBufferIndex])->SetRenderTargetHandle(GetDescriptorHandleCPU(m_CurrentBackBufferIndex));
+            ((Texture2DD3D12*)m_WrappedBackBuffers[m_CurrentBackBufferIndex])->SetRenderTargetHandle(g_DescriptorManager->GetCpuHandle(m_BufferDescriptors[m_CurrentBackBufferIndex]));
         }
 
         return m_WrappedBackBuffers[m_CurrentBackBufferIndex];
     }
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE SwapChainD3D12::GetDescriptorHandleCPU(uint32_t back_buffer_index) const
-    {
-        return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-            back_buffer_index, m_DescriptorIncrementSize);
-    }
-
-    void SwapChainD3D12::CreateDescriptorHeap()
-    {
-        D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-        desc.NumDescriptors = m_BackBufferCount;
-        desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-
-        RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)),
-            "Could not create descriptor heap for swap chain buffers");
-    }
-
     void SwapChainD3D12::UpdateRenderTargetViews()
     {
-        CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_handle(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
         for (uint32_t back_buffer_index = 0; back_buffer_index < m_BackBufferCount; ++back_buffer_index)
         {
             GPtr<ID3D12Resource> back_buffer;
             RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->GetBuffer(back_buffer_index, IID_PPV_ARGS(&back_buffer)), "Could not retrieve back buffer from swap chain");
 
-            g_GraphicsDevice->Get()->CreateRenderTargetView(back_buffer.Get(), nullptr, rtv_handle);
+            g_DescriptorManager->InvalidateDescriptor(m_BufferDescriptors[back_buffer_index]);
+            m_BufferDescriptors[back_buffer_index] = g_DescriptorManager->CreateDescriptor(back_buffer.Get());
 
             m_BackBuffers[back_buffer_index] = back_buffer;
-            rtv_handle.Offset(m_DescriptorIncrementSize);
 
             std::wstring name = L"Swapchain Buffer " + std::to_wstring(back_buffer_index);
             m_BackBuffers[back_buffer_index]->SetName(name.c_str());

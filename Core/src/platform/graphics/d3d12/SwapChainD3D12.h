@@ -4,6 +4,7 @@
 
 #include "RabBitCommon.h"
 #include "platform/windowing/SwapChain.h"
+#include "platform/graphics/d3d12/resource/Descriptor.h"
 #include "graphics/RenderResource.h"
 
 // DirectX 12 specific headers.
@@ -36,23 +37,19 @@ namespace RB::Graphics::D3D12
         Graphics::Texture2D* GetCurrentBackBuffer() override;
 
     private:
-        CD3DX12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandleCPU(uint32_t back_buffer_index) const;
-
-        void CreateDescriptorHeap();
         void UpdateRenderTargetViews();
         void CreateCompositionObjects(HWND window_handle);
 
         GPtr<IDXGISwapChain4>       m_NativeSwapChain;
-        GPtr<ID3D12DescriptorHeap>  m_DescriptorHeap;
         GPtr<ID3D12Resource>*       m_BackBuffers;
         Graphics::Texture2D*        m_WrappedBackBuffers[BACK_BUFFER_COUNT];
+        DescriptorIndex             m_BufferDescriptors[BACK_BUFFER_COUNT];
 
         bool                        m_UseComposition;
         GPtr<IDXGIDevice>           m_DeviceForComposition;
         GPtr<IDCompositionDevice>   m_CompositionDevice;
         GPtr<IDCompositionTarget>   m_CompositionTarget;
 
-        uint32_t                    m_DescriptorIncrementSize;
         uint32_t                    m_CurrentBackBufferIndex;
         uint32_t                    m_BackBufferCount;
         uint32_t                    m_Width;

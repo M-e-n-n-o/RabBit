@@ -113,6 +113,21 @@ namespace RB::Graphics::D3D12
         return di;
     }
 
+    DescriptorIndex DescriptorManager::CreateDescriptor(ID3D12Resource* res, bool transient)
+    {
+        uint32_t heap_index = transient ? m_RenderTargetHeap->AllocTransient() :
+                                          m_RenderTargetHeap->AllocPersistent();
+
+        g_GraphicsDevice->Get()->CreateRenderTargetView(res, nullptr, m_RenderTargetHeap->GetCpuHandle(heap_index));
+
+        DescriptorIndex di = {};
+        di.heapIndex = heap_index;
+        di.type      = DescriptorHandleType::RTV;
+        di.transient = transient;
+
+        return di;
+    }
+
     DescriptorIndex DescriptorManager::CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc, bool transient)
     {
         uint32_t heap_index = transient ? m_DepthStencilHeap->AllocTransient() :
@@ -138,7 +153,7 @@ namespace RB::Graphics::D3D12
         case DescriptorHandleType::DSV: m_DepthStencilHeap->InvalidateDescriptor(idx.heapIndex);    break;
         case DescriptorHandleType::CBV:
         default:
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Descriptor handle type not valid");
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Descriptor handle type not valid");
             break;
         }
     }
@@ -229,11 +244,9 @@ namespace RB::Graphics::D3D12
         }
 
         m_PersistentSlots[slot] = false;
-
-        uint32_t before = m_CurrPersistentIdx;
         m_CurrPersistentIdx = slot;
 
-        return (int32_t)before;
+        return (int32_t)slot;
     }
 
     int32_t DescriptorHeap::AllocTransient()
