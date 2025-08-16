@@ -6,6 +6,10 @@
 #include "platform/graphics/d3d12/RenderInterfaceD3D12.h"
 #endif
 
+#if RB_GRAPHICS_API_VULKAN
+#include "platform/graphics/vulkan/RenderInterfaceVK.h"
+#endif
+
 namespace RB::Graphics
 {
     Shared<GpuGuard> RenderInterface::ExecuteOnGpu()
@@ -59,6 +63,12 @@ namespace RB::Graphics
         case RenderAPI::D3D12:
             return new D3D12::RenderInterfaceD3D12(allow_only_copy_operations);
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return new VK::RenderInterfaceVK(allow_only_copy_operations);
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the render interface for the set graphics API");
             break;

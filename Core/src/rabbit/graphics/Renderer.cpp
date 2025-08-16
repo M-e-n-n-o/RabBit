@@ -591,6 +591,7 @@ namespace RB::Graphics
         context->frameAllocator->Cycle();
         context->OnRenderFrameStart();
 
+        /*
         {
             RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Frame");
 
@@ -620,6 +621,7 @@ namespace RB::Graphics
                 context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->frameAllocator, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
             }
         }
+        */
 
         // Prepare draw(s) to backbuffer(s)
         context->graphicsInterface->InvalidateState(false);

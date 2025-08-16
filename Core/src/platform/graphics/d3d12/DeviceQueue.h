@@ -43,15 +43,15 @@ namespace RB::Graphics::D3D12
             GPtr<ID3D12CommandAllocator> commandAllocator;
         };
 
-        D3D12_COMMAND_LIST_TYPE					m_Type;
-        GPtr<ID3D12CommandQueue>				m_CommandQueue;
-        GPtr<ID3D12Fence>						m_Fence;
-        uint64_t								m_FenceValue;
-        HANDLE									m_FenceEventHandle;
+        D3D12_COMMAND_LIST_TYPE                 m_Type;
+        GPtr<ID3D12CommandQueue>                m_CommandQueue;
+        GPtr<ID3D12Fence>                       m_Fence;
+        uint64_t                                m_FenceValue;
+        HANDLE                                  m_FenceEventHandle;
 
-        Queue<GPtr<ID3D12GraphicsCommandList2>>	m_CommandListQueue;
-        Queue<GPtr<ID3D12CommandAllocator>>		m_AvailableCommandAllocators;
-        List<CommandAllocatorEntry>				m_RunningCommandAllocators;
+        Queue<GPtr<ID3D12GraphicsCommandList2>> m_CommandListQueue;
+        Queue<GPtr<ID3D12CommandAllocator>>     m_AvailableCommandAllocators;
+        List<CommandAllocatorEntry>             m_RunningCommandAllocators;
     };
 }
 #endif
