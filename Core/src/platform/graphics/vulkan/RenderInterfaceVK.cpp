@@ -39,8 +39,7 @@ namespace RB::Graphics::VK
         else
             m_Queue = g_GraphicsDevice->GetGraphicsQueue();
 
-        // TODO set actual command buffer
-        static_assert(false);
+        SetNewCommandBuffer();
     }
     
     RenderInterfaceVK::~RenderInterfaceVK()
@@ -50,10 +49,11 @@ namespace RB::Graphics::VK
 
     Shared<GpuGuard> RenderInterfaceVK::ExecuteInternal()
     {
+        FlushAllPending();
+
         uint64_t submission_value = m_Queue->Submit(m_CommandBuffer);
 
-        // TODO Refresh the command buffer
-        static_assert(false);
+        SetNewCommandBuffer();
 
         return CreateShared<GpuGuardVK>(m_Queue, submission_value);
     }
@@ -62,6 +62,25 @@ namespace RB::Graphics::VK
     {
         GpuGuardVK* vk_guard = (GpuGuardVK*)guard;
         m_Queue->GpuWaitForSubmission(vk_guard->m_Queue->GetSemaphore(), vk_guard->m_SubmissionValue);
+    }
+
+    void RenderInterfaceVK::TransitionResource(RenderResource* resource, ResourceState state)
+    {
+    }
+
+    void RenderInterfaceVK::FlushResourceBarriers()
+    {
+
+    }
+
+    void RenderInterfaceVK::FlushAllPending()
+    {
+        FlushResourceBarriers();
+    }
+    
+    void RenderInterfaceVK::SetNewCommandBuffer()
+    {
+        m_CommandBuffer = m_Queue->GetCommandBuffer();
     }
 }
 #endif

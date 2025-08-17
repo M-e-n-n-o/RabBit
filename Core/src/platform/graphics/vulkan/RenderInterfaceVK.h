@@ -37,9 +37,9 @@ namespace RB::Graphics::VK
         Shared<GpuGuard> ExecuteInternal() override;
         void GpuWaitOn(GpuGuard* guard) override;
 
-        void TransitionResource(RenderResource* resource, ResourceState state) override {}
-        void FlushResourceBarriers() override {}
-        void FlushAllPending() override {}
+        void TransitionResource(RenderResource* resource, ResourceState state) override;
+        void FlushResourceBarriers() override;
+        void FlushAllPending() override;
 
         void PushRenderTarget(RenderResource* color_target, uint32_t index = 0) override {}
         void PopRenderTarget(uint32_t index = 0) override {}
@@ -81,6 +81,8 @@ namespace RB::Graphics::VK
         void ProfileMarkerEnd() override {}
 
     private:
+        void SetNewCommandBuffer();
+
         bool            m_CopyOperationsOnly;
         DeviceQueue*    m_Queue;
         VkCommandBuffer m_CommandBuffer;
