@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
+#include "graphics/RenderResource.h"
 
 #include <vulkan/vulkan.h>
 
@@ -22,6 +23,14 @@ namespace RB::Graphics::VK
 
         bool IsValid() const { return m_IsValid; }
 
+        void UpdateState(ResourceState new_state);
+        ResourceState GetState() const;
+
+        GpuResourceType GetType() const { return (GpuResourceType)m_ResourceType; }
+
+        VkBuffer GetNativeBuffer() const;
+        VkImage GetNativeImage() const;
+
     private:
         union
         {
@@ -34,7 +43,8 @@ namespace RB::Graphics::VK
         uint8_t         m_ResourceType  : 1;
         uint8_t         m_OwnsResource  : 1;
         uint8_t         m_IsValid       : 1;
-        uint8_t         m_Unused        : 5;
+        uint8_t         m_CurrentState  : 4;
+        uint8_t         m_Unused        : 1;
     };
 }
 #endif

@@ -3,6 +3,7 @@
 #include "RabBitCommon.h"
 #include "GpuResource.h"
 #include "ResourceManager.h"
+#include "GpuResource.h"
 
 namespace RB::Graphics::D3D12
 {
