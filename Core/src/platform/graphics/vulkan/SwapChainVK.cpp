@@ -3,6 +3,7 @@
 #include "RabBitCommon.h"
 #include "SwapChainVK.h"
 #include "GraphicsDevice.h"
+#include "DeviceQueue.h"
 #include "GpuResource.h"
 #include "RenderResourceVK.h"
 #include "UtilsVK.h"
@@ -202,7 +203,7 @@ namespace RB::Graphics::VK
         present_info.pImageIndices      = &m_CurrentBackBufferIndex;
         present_info.pResults           = nullptr;
 
-        VkResult result = vkQueuePresentKHR(g_GraphicsDevice->GetGraphicsQueue(), &present_info);
+        VkResult result = vkQueuePresentKHR(g_GraphicsDevice->GetGraphicsQueue()->GetQueue(), &present_info);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
         {
             // Do we need this?

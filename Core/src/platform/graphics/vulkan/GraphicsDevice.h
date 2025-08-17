@@ -2,24 +2,22 @@
 
 #pragma once
 #include "RabBitCommon.h"
-#include "graphics/Renderer.h"
 
 #include <vulkan/vulkan.h>
 
 namespace RB::Graphics::VK
 {
+    class DeviceQueue;
+
     class GraphicsDevice
     {
     public:
         GraphicsDevice(bool debug_device);
         ~GraphicsDevice();
 
-        static_assert(false);
-        // TODO: Create a wrapper around VkQueue (DeviceQueue) (check https://github.com/elecro/vkdemos/blob/master/vktriangle/vktriangle.cpp)
-
-        VkQueue GetGraphicsQueue() const;
-        VkQueue GetComputeQueue() const;
-        VkQueue GetTransferQueue() const;
+        DeviceQueue* GetGraphicsQueue() const;
+        DeviceQueue* GetComputeQueue() const;
+        DeviceQueue* GetTransferQueue() const;
 
         VkDevice Get() const { return m_Device; }
         VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
@@ -42,11 +40,9 @@ namespace RB::Graphics::VK
         VkDebugUtilsMessengerEXT    m_DebugMessenger;
 #endif
 
-        VkQueue                     m_GraphicsQueue;
-        bool                        m_HasComputeQueue;
-        VkQueue                     m_ComputeQueue;
-        bool                        m_HasTransferQueue;
-        VkQueue                     m_TransferQueue; // (copy queue)
+        DeviceQueue*                m_GraphicsQueue;
+        DeviceQueue*                m_ComputeQueue;
+        DeviceQueue*                m_TransferQueue; // (copy queue)
     };
 
     extern GraphicsDevice* g_GraphicsDevice;

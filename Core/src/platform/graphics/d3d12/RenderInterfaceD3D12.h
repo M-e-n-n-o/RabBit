@@ -105,7 +105,7 @@ namespace RB::Graphics::D3D12
         void SetComputePipelineState();
         void SetNewCommandList();
 
-        bool								m_CopyOperationsOnly;
+        bool                                m_CopyOperationsOnly;
         DeviceQueue*                        m_Queue;
         GPtr<ID3D12GraphicsCommandList2>	m_CommandList;
 

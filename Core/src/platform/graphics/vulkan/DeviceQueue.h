@@ -10,43 +10,47 @@ namespace RB::Graphics::VK
     class DeviceQueue
     {
     public:
-        DeviceQueueVK(VkQueueFlags type, uint32_t queue_family_index, uint32_t queue_index);
-        ~DeviceQueueVK();
-
-        VkQueueFlags GetType() const { return m_Type; }
-        uint32_t GetQueueFamilyIndex() const { return m_QueueFamilyIndex; }
-
-        uint64_t SignalFence();
-        bool IsFenceCompleted(uint64_t fence_value);
-        void CpuWaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
-        void GpuWaitForFenceValue(uint64_t fence_value);
-        void CpuWaitUntilIdle();
+        DeviceQueue(VkQueueFlags type, uint32_t queue_family_index, uint32_t queue_index);
+        ~DeviceQueue();
 
         VkCommandBuffer GetCommandBuffer();
-        uint64_t ExecuteCommandBuffer(VkCommandBuffer cmd_buffer, bool wait_for_completion = false);
+
+        uint64_t Submit(VkCommandBuffer command_buffer);
+
+        void CpuWaitUntilIdle(uint64_t max_duration_ms = UINT64_MAX);
+        void CpuWaitForSubmission(uint64_t submission_value, uint64_t max_duration_ms = UINT64_MAX);
+        void GpuWaitForSubmission(VkSemaphore other_semaphore, uint64_t submission_value);
+
+        bool IsSubmissionComplete(uint64_t submission_value);
 
         VkQueue GetQueue() const { return m_Queue; }
+        uint32_t GetQueueFamilyIndex() const { return m_QueueFamilyIndex; }
+
+        VkSemaphore GetSemaphore() const { return m_TimelineSemaphore; }
 
     private:
-        struct CommandPoolEntry
+        void UpdateRunningSubmissions();
+        void CreateFence();
+        void CreateTimelineSemaphore();
+
+        struct CommandSubmission
         {
-            uint64_t fence_value;
-            VkCommandPool command_pool;
-            std::vector<VkCommandBuffer> command_buffers;
+            VkCommandBuffer commandBuffer;
+            uint64_t submissionValue;
         };
 
-        void CreateFence();
-        void UpdateCompletedCommandPools();
+        VkQueueFlags            m_Type;
+        uint32_t                m_QueueFamilyIndex;
+        VkQueue                 m_Queue;
 
-        VkQueueFlags                        m_Type;
-        uint32_t                            m_QueueFamilyIndex;
-        VkQueue                             m_Queue;
-        VkFence                             m_Fence;
-        uint64_t                            m_FenceValue;
+        // TODO: If we ever want to add multithreaded command recording,
+        // then we should have 1 commandPool for every thread!
+        VkCommandPool           m_CommandPool;
+        Queue<VkCommandBuffer>  m_AvailableCommandBuffers;
+        List<CommandSubmission> m_RunningSubmissions;
 
-        List<VkCommandBuffer>               m_AvailableCommandBuffers;
-        List<CommandPoolEntry>              m_ActiveCommandPools;
-        Map<VkCommandBuffer, VkCommandPool> m_CommandBufferToPool;
+        uint64_t                m_LastSignaledValue;
+        VkSemaphore             m_TimelineSemaphore;
     };
 }
 #endif

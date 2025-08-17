@@ -3,6 +3,7 @@
 #include "RabBitCommon.h"
 #include "DeviceQueue.h"
 #include "GraphicsDevice.h"
+#include "DeviceQueue.h"
 
 namespace RB::Graphics::D3D12
 {

@@ -2,6 +2,7 @@
 
 #include "RabBitCommon.h"
 #include "GraphicsDevice.h"
+#include "DeviceQueue.h"
 
 namespace RB::Graphics::VK
 {
@@ -24,6 +25,7 @@ namespace RB::Graphics::VK
     List<const char*> g_DeviceExtensions =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
     };
 
 #ifdef RB_CONFIG_DEBUG
@@ -74,6 +76,12 @@ namespace RB::Graphics::VK
 
     GraphicsDevice::~GraphicsDevice()
     {
+        delete m_GraphicsQueue;
+        if (m_ComputeQueue)
+            delete m_ComputeQueue;
+        if (m_TransferQueue)
+            delete m_TransferQueue;
+
         vkDestroyDevice(m_Device, NULL);
 
 #ifdef RB_CONFIG_DEBUG
@@ -87,22 +95,22 @@ namespace RB::Graphics::VK
         vkDestroyInstance(m_Instance, NULL);
     }
 
-    VkQueue GraphicsDevice::GetGraphicsQueue() const
+    DeviceQueue* GraphicsDevice::GetGraphicsQueue() const
     {
         return m_GraphicsQueue;
     }
 
-    VkQueue GraphicsDevice::GetComputeQueue() const
+    DeviceQueue* GraphicsDevice::GetComputeQueue() const
     {
-        if (m_HasComputeQueue)
+        if (m_ComputeQueue)
             return m_ComputeQueue;
 
         return m_GraphicsQueue;
     }
 
-    VkQueue GraphicsDevice::GetTransferQueue() const
+    DeviceQueue* GraphicsDevice::GetTransferQueue() const
     {
-        if (m_HasTransferQueue)
+        if (m_TransferQueue)
             return m_TransferQueue;
 
         return m_GraphicsQueue;
@@ -216,27 +224,17 @@ namespace RB::Graphics::VK
         RB_ASSERT_FATAL_RELEASE_VK(vkCreateDevice(m_PhysicalDevice, &info, NULL, &m_Device), "Failed to create VK device");
 
         // Get the several dedicated queue's
-        vkGetDeviceQueue(m_Device, queue_families[VK_QUEUE_GRAPHICS_BIT], 0, &m_GraphicsQueue);
+        m_GraphicsQueue = new DeviceQueue(VK_QUEUE_GRAPHICS_BIT, queue_families[VK_QUEUE_GRAPHICS_BIT], 0);
         
         if (auto compute_itr = queue_families.find(VK_QUEUE_COMPUTE_BIT); compute_itr != queue_families.end())
-        {
-            m_HasComputeQueue = true;
-            vkGetDeviceQueue(m_Device, compute_itr->second, 0, &m_ComputeQueue);
-        }
+            m_ComputeQueue = new DeviceQueue(VK_QUEUE_COMPUTE_BIT, compute_itr->second, 0);
         else
-        {
-            m_HasComputeQueue = false;
-        }
+            m_ComputeQueue = nullptr;
 
         if (auto transfer_itr = queue_families.find(VK_QUEUE_TRANSFER_BIT); transfer_itr != queue_families.end())
-        {
-            m_HasTransferQueue = true;
-            vkGetDeviceQueue(m_Device, transfer_itr->second, 0, &m_TransferQueue);
-        }
+            m_TransferQueue = new DeviceQueue(VK_QUEUE_TRANSFER_BIT, transfer_itr->second, 0);
         else
-        {
-            m_HasTransferQueue = false;
-        }
+            m_TransferQueue = nullptr;
     }
     
     VkPhysicalDevice GraphicsDevice::FindPhysicalDevice(UnorderedMap<VkQueueFlagBits, uint32_t>& queue_families)

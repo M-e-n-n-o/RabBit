@@ -9,6 +9,23 @@
 
 namespace RB::Graphics::VK
 {
+    class DeviceQueue;
+
+    class GpuGuardVK : public GpuGuard
+    {
+    public:
+        GpuGuardVK(DeviceQueue* queue, uint64_t submission_value);
+
+        bool IsFinishedRendering() override;
+        void WaitUntilFinishedRendering() override;
+
+    private:
+        DeviceQueue* m_Queue;
+        uint64_t     m_SubmissionValue;
+
+        friend class RenderInterfaceVK;
+    };
+
     class RenderInterfaceVK : public RenderInterface
     {
     public:
@@ -17,10 +34,8 @@ namespace RB::Graphics::VK
 
         void InvalidateState(bool rebind_descriptor_heap) override {}
 
-        // This method executes the command list and sets a new internal valid command list
-        // Returns the execute ID (on which can be waited)
-        Shared<GpuGuard> ExecuteInternal() override { return nullptr; }
-        void GpuWaitOn(GpuGuard* guard) override {}
+        Shared<GpuGuard> ExecuteInternal() override;
+        void GpuWaitOn(GpuGuard* guard) override;
 
         void TransitionResource(RenderResource* resource, ResourceState state) override {}
         void FlushResourceBarriers() override {}
@@ -66,7 +81,9 @@ namespace RB::Graphics::VK
         void ProfileMarkerEnd() override {}
 
     private:
-        
+        bool            m_CopyOperationsOnly;
+        DeviceQueue*    m_Queue;
+        VkCommandBuffer m_CommandBuffer;
     };
 }
 #endif

@@ -19,6 +19,10 @@
 
 namespace RB::Graphics::D3D12
 {
+    // ---------------------------------------------------------------------------
+    //                                GpuGuard
+    // ---------------------------------------------------------------------------
+
     GpuGuardD3D12::GpuGuardD3D12(uint64_t fence_value, DeviceQueue* queue)
         : m_FenceValue(fence_value)
         , m_Queue(queue)
@@ -36,7 +40,7 @@ namespace RB::Graphics::D3D12
     }
 
     // ---------------------------------------------------------------------------
-    //								GpuGuard
+    //                             RenderInterface
     // ---------------------------------------------------------------------------
 
     RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
