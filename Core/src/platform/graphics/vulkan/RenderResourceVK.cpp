@@ -24,6 +24,28 @@ namespace RB::Graphics::VK
         SAFE_DELETE(m_Resource);
     }
     
+    uint32_t Texture2DVK::GetMipCount() const
+    {
+        // TODO Add mip support
+        return 1;
+    }
+
+    uint32_t Texture2DVK::GetBaseMip() const
+    {
+        // TODO Add mip support
+        return 0;
+    }
+
+    void Texture2DVK::SetBaseMip(uint32_t mip)
+    {
+        // TODO Add mip support
+    }
+
+    void Texture2DVK::SetMipCount(uint32_t mips)
+    {
+        // TODO Add mip support
+    }
+
     void Texture2DVK::SetView(VkImageView image_view)
     {
         m_ImageView = image_view;

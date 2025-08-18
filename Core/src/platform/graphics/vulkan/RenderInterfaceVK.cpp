@@ -1,9 +1,13 @@
 #if RB_GRAPHICS_API_VULKAN
 
 #include "RabBitCommon.h"
-#include "RenderInterfaceVK.h"
 #include "GraphicsDevice.h"
 #include "DeviceQueue.h"
+#include "GpuResource.h"
+#include "RenderInterfaceVK.h"
+#include "RenderResourceVK.h"
+#include "ResourceStateManager.h"
+#include "UtilsVK.h"
 
 namespace RB::Graphics::VK
 {
@@ -66,16 +70,55 @@ namespace RB::Graphics::VK
 
     void RenderInterfaceVK::TransitionResource(RenderResource* resource, ResourceState state)
     {
+        g_ResourceStateManager->TransitionResource(resource, state);
     }
 
     void RenderInterfaceVK::FlushResourceBarriers()
     {
-
+        g_ResourceStateManager->FlushPendingTransitions(m_CommandBuffer);
     }
 
     void RenderInterfaceVK::FlushAllPending()
     {
         FlushResourceBarriers();
+    }
+
+    void RenderInterfaceVK::Clear(RenderResource* resource, const Math::Float4& color)
+    {
+        // TODO: Batch clears together?
+
+        Texture* tex = ((Texture*)resource);
+
+        if (tex->AllowedRenderTarget())
+        {
+            TransitionResource(resource, ResourceState::COPY_DEST);
+            FlushResourceBarriers();
+
+            GpuResource* native_res = (GpuResource*)((VK::Texture2DVK*)resource)->GetNativeResource();
+
+            VkClearColorValue native_color = {};
+            native_color.float32[0] = color.r;
+            native_color.float32[1] = color.g;
+            native_color.float32[2] = color.b;
+            native_color.float32[3] = color.a;
+
+            VkImageSubresourceRange color_range = GetImageSubResourceRange(resource);
+
+            vkCmdClearColorImage(m_CommandBuffer, 
+                                 native_res->GetNativeImage(),
+                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                 &native_color,
+                                 1,
+                                 &color_range);
+        }
+        else if (tex->AllowedDepthStencil())
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Depth Stencil clearing not yet implemented");
+        }
+        else
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Could not clear RenderResource as its not a rendertarget or a depth stencil");
+        }
     }
     
     void RenderInterfaceVK::SetNewCommandBuffer()

@@ -125,7 +125,7 @@ namespace RB::Graphics::VK
         info.imageColorSpace     = surface_format.colorSpace;
         info.imageExtent         = { m_Width, m_Height };
         info.imageArrayLayers    = 1;
-        info.imageUsage          = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        info.imageUsage          = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         info.imageSharingMode    = VK_SHARING_MODE_EXCLUSIVE;
         info.preTransform        = surface_transform;
         info.compositeAlpha      = transparency_support ? VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR : VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -194,7 +194,7 @@ namespace RB::Graphics::VK
     {
         UpdateBackBufferIndex();
 
-        VkPresentInfoKHR present_info{};
+        VkPresentInfoKHR present_info = {};
         present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         present_info.waitSemaphoreCount = 0; // Synchronization happens via API independent code
         present_info.pWaitSemaphores    = nullptr;

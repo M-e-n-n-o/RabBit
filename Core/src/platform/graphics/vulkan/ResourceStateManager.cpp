@@ -3,6 +3,7 @@
 #include "RabBitCommon.h"
 #include "ResourceStateManager.h"
 #include "GpuResource.h"
+#include "UtilsVK.h"
 
 namespace RB::Graphics::VK
 {
@@ -12,9 +13,11 @@ namespace RB::Graphics::VK
     {
     }
 
-    void ResourceStateManager::TransitionResource(GpuResource* resource, ResourceState new_state)
+    void ResourceStateManager::TransitionResource(RenderResource* resource, ResourceState new_state)
     {
-        if (resource->GetState() == new_state)
+        GpuResource* native_res = (GpuResource*)resource->GetNativeResource();
+
+        if (native_res->GetState() == new_state)
         {
             return;
         }
@@ -23,13 +26,15 @@ namespace RB::Graphics::VK
         VkPipelineStageFlags src_stage, dst_stage;
         VkImageLayout old_layout, new_layout;
 
-        GetAccessMasksForState(resource->GetState(), src_access, src_stage, old_layout);
+        GetAccessMasksForState(native_res->GetState(), src_access, src_stage, old_layout);
         GetAccessMasksForState(new_state, dst_access, dst_stage, new_layout);
 
-        resource->UpdateState(new_state);
+        native_res->UpdateState(new_state);
 
-        if (resource->GetType() == GpuResourceType::Image)
+        if (native_res->GetType() == GpuResourceType::Image)
         {
+            Texture* texture = (Texture*)resource;
+
             VkImageMemoryBarrier barrier = {};
             barrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
             barrier.srcAccessMask       = src_access;
@@ -38,11 +43,8 @@ namespace RB::Graphics::VK
             barrier.newLayout           = new_layout;
             barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.image               = resource->GetNativeImage();
-            barrier.subresourceRange    = resource->GetSubresourceRange(); 
-            // TODO Need to store GetSubresourceRange in GpuResource? Or somewhere else? 
-            // Also need it for creating views and doing clears and other stuff.
-            // Maybe just store it in Texture2DVK?
+            barrier.image               = native_res->GetNativeImage();
+            barrier.subresourceRange    = GetImageSubResourceRange(resource);
 
             m_PendingImageBarriers.push_back({ src_stage, dst_stage, barrier });
         }
@@ -54,7 +56,7 @@ namespace RB::Graphics::VK
             barrier.dstAccessMask       = dst_access;
             barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.buffer              = resource->GetNativeBuffer();
+            barrier.buffer              = native_res->GetNativeBuffer();
             barrier.offset              = 0;
             barrier.size                = VK_WHOLE_SIZE;
 

@@ -10,7 +10,7 @@ namespace RB::Graphics::VK
     class DeviceQueue
     {
     public:
-        DeviceQueue(VkQueueFlags type, uint32_t queue_family_index, uint32_t queue_index);
+        DeviceQueue(VkDevice device, VkQueueFlags type, uint32_t queue_family_index, uint32_t queue_index);
         ~DeviceQueue();
 
         VkCommandBuffer GetCommandBuffer();
@@ -31,7 +31,7 @@ namespace RB::Graphics::VK
     private:
         void UpdateRunningSubmissions();
         void CreateFence();
-        void CreateTimelineSemaphore();
+        void CreateTimelineSemaphore(VkDevice device);
 
         struct CommandSubmission
         {

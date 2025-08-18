@@ -16,7 +16,7 @@ namespace RB::Graphics::VK
     public:
         ResourceStateManager();
 
-        void TransitionResource(GpuResource* resource, ResourceState new_state);
+        void TransitionResource(RenderResource* resource, ResourceState new_state);
 
         void FlushPendingTransitions(VkCommandBuffer cmd);
 

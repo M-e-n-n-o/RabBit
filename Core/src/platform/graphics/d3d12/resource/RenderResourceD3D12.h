@@ -82,6 +82,12 @@ namespace RB::Graphics::D3D12
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
 
+        uint32_t GetMipCount() const;
+        uint32_t GetBaseMip() const;
+
+        void SetBaseMip(uint32_t mip);
+        void SetMipCount(uint32_t mips);
+
         DescriptorIndex GetSrvHandle() const { return m_ReadHandle; }
         DescriptorIndex GetUavHandle() const { return m_WriteHandle; }
 

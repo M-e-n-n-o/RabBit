@@ -65,10 +65,11 @@ namespace RB::Graphics
 
         ~RenderContext()
         {
-            for (int i = 0; i < totalViewContexts; ++i)
-            {
-                renderGraphs[viewContexts[i].renderGraphType]->DestroyEntries(renderPassEntries[i]);
-            }
+            // TODO: Enable for proper rendering
+            //for (int i = 0; i < totalViewContexts; ++i)
+            //{
+            //    renderGraphs[viewContexts[i].renderGraphType]->DestroyEntries(renderPassEntries[i]);
+            //}
             SAFE_FREE(renderPassEntries);
             SAFE_FREE(viewContexts);
         }
@@ -204,10 +205,11 @@ namespace RB::Graphics
 
             // Gather the entries from all render passes for every view context
             RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
-            for (int i = 0; i < total_view_contexts; ++i)
-            {
-                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], m_RenderAllocator, scene);
-            }
+            // TODO: Enable for proper rendering
+            //for (int i = 0; i < total_view_contexts; ++i)
+            //{
+            //    entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], m_RenderAllocator, scene);
+            //}
 
             RenderContext* context                  = new RenderContext();
             context->viewContexts                   = view_contexts;
@@ -313,37 +315,38 @@ namespace RB::Graphics
             contexts[context_index].viewport.left = 0; // TODO Add DRS support
             contexts[context_index].viewport.top = 0;
 
-            Texture2D* render_texture = camera->GetRenderTexture();
-            if (render_texture == nullptr)
-            {
-                Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
-
-                if (virtual_back_buffer == nullptr)
-                {
-                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Virutal back buffer of window invalid, skipping...");
-                    out_context_count--;
-                    continue;
-                }
-
-                // Set window virtual backbuffer as finalColorTarget
-                contexts[context_index].isOffscreenContext  = false;
-                contexts[context_index].windowIndex         = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
-                contexts[context_index].finalColorTarget    = virtual_back_buffer;
-                contexts[context_index].viewport.width      = virtual_back_buffer->GetWidth();
-                contexts[context_index].viewport.height     = virtual_back_buffer->GetHeight();
-            }
-            else
-            {
-                contexts[context_index].isOffscreenContext  = true;
-                contexts[context_index].finalColorTarget    = render_texture;
-                contexts[context_index].viewport.width      = render_texture->GetWidth();
-                contexts[context_index].viewport.height     = render_texture->GetHeight();
-            }
-
-            contexts[context_index].viewFrustum = {};
-            contexts[context_index].viewFrustum.SetTransform(transform->GetLocalToWorldMatrix());
-            contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetAspectRatio(), true);
-            //contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, true);
+            // TODO: Enable for proper rendering
+            //Texture2D* render_texture = camera->GetRenderTexture();
+            //if (render_texture == nullptr)
+            //{
+            //    Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
+            //
+            //    if (virtual_back_buffer == nullptr)
+            //    {
+            //        RB_LOG_WARN(LOGTAG_GRAPHICS, "Virutal back buffer of window invalid, skipping...");
+            //        out_context_count--;
+            //        continue;
+            //    }
+            //
+            //    // Set window virtual backbuffer as finalColorTarget
+            //    contexts[context_index].isOffscreenContext  = false;
+            //    contexts[context_index].windowIndex         = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
+            //    contexts[context_index].finalColorTarget    = virtual_back_buffer;
+            //    contexts[context_index].viewport.width      = virtual_back_buffer->GetWidth();
+            //    contexts[context_index].viewport.height     = virtual_back_buffer->GetHeight();
+            //}
+            //else
+            //{
+            //    contexts[context_index].isOffscreenContext  = true;
+            //    contexts[context_index].finalColorTarget    = render_texture;
+            //    contexts[context_index].viewport.width      = render_texture->GetWidth();
+            //    contexts[context_index].viewport.height     = render_texture->GetHeight();
+            //}
+            //
+            //contexts[context_index].viewFrustum = {};
+            //contexts[context_index].viewFrustum.SetTransform(transform->GetLocalToWorldMatrix());
+            //contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetAspectRatio(), true);
+            ////contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, true);
 
             contexts[context_index].clearColor = camera->GetClearColor();
             contexts[context_index].renderGraphType = camera->GetRenderGraphType();
@@ -591,6 +594,7 @@ namespace RB::Graphics
         context->frameAllocator->Cycle();
         context->OnRenderFrameStart();
 
+        // TODO: Enable for proper rendering
         /*
         {
             RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Frame");
@@ -679,32 +683,35 @@ namespace RB::Graphics
             Texture2D* back_buffer = window->GetCurrentBackBuffer();
             RenderRect rect = window->GetVirtualWindowRect();
 
-            PresentCB present_data = {};
-            present_data.currSize           = Math::Float2(window->GetWidth(), window->GetHeight());
-            present_data.texOffset          = Math::Float2(rect.left, rect.top);
-            present_data.gammaValue         = window->GetGammaCorrection();
-            present_data.brightnessValue    = window->GetBrighness();
+            // TODO: Enable for proper rendering
+            //PresentCB present_data = {};
+            //present_data.currSize           = Math::Float2(window->GetWidth(), window->GetHeight());
+            //present_data.texOffset          = Math::Float2(rect.left, rect.top);
+            //present_data.gammaValue         = window->GetGammaCorrection();
+            //present_data.brightnessValue    = window->GetBrighness();
 
-            context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
+            //context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
 
-            context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
-            context->graphicsInterface->PushRenderTarget(back_buffer, 0);
+            //context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
+            //context->graphicsInterface->PushRenderTarget(back_buffer, 0);
 
-            if (window->IsSemiTransparent())
-            {
-                // Enable blending on a semi transparent window
-                context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
+            //if (window->IsSemiTransparent())
+            //{
+            //    // Enable blending on a semi transparent window
+            //    context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
 
-                // Clear the backbuffer as we don't want to see the data of a previous frame
-                context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
-            }
-            else
-            {
-                context->graphicsInterface->SetBlendMode(BlendMode::None);
-            }
+            //    // Clear the backbuffer as we don't want to see the data of a previous frame
+            //    context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
+            //}
+            //else
+            //{
+            //    context->graphicsInterface->SetBlendMode(BlendMode::None);
+            //}
 
-            // Backbuffer copy
-            context->graphicsInterface->Draw();
+            //// Backbuffer copy
+            //context->graphicsInterface->Draw();
+
+            context->graphicsInterface->Clear(back_buffer, context->viewContexts[0].clearColor);
 
             // Prepare for present
             context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);

@@ -51,5 +51,25 @@ namespace RB::Graphics::VK
             return VK_FORMAT_UNDEFINED;
         }
     }
+
+    static VkImageSubresourceRange GetImageSubResourceRange(RenderResource* resource)
+    {
+        if (resource->GetPrimitiveType() != RenderResourceType::Texture)
+        {
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Cannot get the subresource range of an image that is not of the texture type");
+            return {};
+        }
+
+        Texture* tex = ((Texture*)resource);
+
+        VkImageSubresourceRange range = {};
+        range.aspectMask     = tex->AllowedDepthStencil() ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_COLOR_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+        range.baseMipLevel   = tex->GetBaseMip();
+        range.levelCount     = tex->GetMipCount();
+        range.baseArrayLayer = tex->GetFirstArraySlice();
+        range.layerCount     = tex->GetArraySize();
+
+        return range;
+    }
 }
 #endif

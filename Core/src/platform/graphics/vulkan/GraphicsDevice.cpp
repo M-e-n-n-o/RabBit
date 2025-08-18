@@ -25,7 +25,6 @@ namespace RB::Graphics::VK
     List<const char*> g_DeviceExtensions =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
     };
 
 #ifdef RB_CONFIG_DEBUG
@@ -209,9 +208,22 @@ namespace RB::Graphics::VK
             queue_create_infos.push_back(queue_info);
         }
 
+        VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {};
+        {
+            timeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+
+            VkPhysicalDeviceFeatures2 features = {};
+            features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            features.pNext = &timeline_features;
+
+            vkGetPhysicalDeviceFeatures2(m_PhysicalDevice, &features);
+
+            RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, timeline_features.timelineSemaphore, "Device doesnt support timeline semaphore, which is required");
+        }
+
         VkDeviceCreateInfo info = {};
         info.sType                      = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        info.pNext                      = NULL;
+        info.pNext                      = &timeline_features;
         info.flags                      = 0;
         info.queueCreateInfoCount       = static_cast<uint32_t>(queue_create_infos.size());
         info.pQueueCreateInfos          = queue_create_infos.data();
@@ -224,15 +236,15 @@ namespace RB::Graphics::VK
         RB_ASSERT_FATAL_RELEASE_VK(vkCreateDevice(m_PhysicalDevice, &info, NULL, &m_Device), "Failed to create VK device");
 
         // Get the several dedicated queue's
-        m_GraphicsQueue = new DeviceQueue(VK_QUEUE_GRAPHICS_BIT, queue_families[VK_QUEUE_GRAPHICS_BIT], 0);
+        m_GraphicsQueue = new DeviceQueue(m_Device, VK_QUEUE_GRAPHICS_BIT, queue_families[VK_QUEUE_GRAPHICS_BIT], 0);
         
         if (auto compute_itr = queue_families.find(VK_QUEUE_COMPUTE_BIT); compute_itr != queue_families.end())
-            m_ComputeQueue = new DeviceQueue(VK_QUEUE_COMPUTE_BIT, compute_itr->second, 0);
+            m_ComputeQueue = new DeviceQueue(m_Device, VK_QUEUE_COMPUTE_BIT, compute_itr->second, 0);
         else
             m_ComputeQueue = nullptr;
 
         if (auto transfer_itr = queue_families.find(VK_QUEUE_TRANSFER_BIT); transfer_itr != queue_families.end())
-            m_TransferQueue = new DeviceQueue(VK_QUEUE_TRANSFER_BIT, transfer_itr->second, 0);
+            m_TransferQueue = new DeviceQueue(m_Device, VK_QUEUE_TRANSFER_BIT, transfer_itr->second, 0);
         else
             m_TransferQueue = nullptr;
     }

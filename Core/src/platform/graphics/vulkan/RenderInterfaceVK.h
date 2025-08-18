@@ -57,7 +57,7 @@ namespace RB::Graphics::VK
         void SetPixelShader(uint32_t shader_index) override {}
         void SetComputeShader(uint32_t shader_index) override {}
 
-        void Clear(RenderResource* resource, const Math::Float4& color) override {}
+        void Clear(RenderResource* resource, const Math::Float4& color) override;
 
         void SetViewport(const Viewport& viewport) override {}
         void SetViewports(const Viewport* viewports, uint32_t total_viewports) override {}

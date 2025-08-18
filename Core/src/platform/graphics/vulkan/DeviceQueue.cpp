@@ -6,11 +6,11 @@
 
 namespace RB::Graphics::VK
 {
-    DeviceQueue::DeviceQueue(VkQueueFlags type, uint32_t queue_family_index, uint32_t queue_index)
+    DeviceQueue::DeviceQueue(VkDevice device, VkQueueFlags type, uint32_t queue_family_index, uint32_t queue_index)
         : m_Type(type)
         , m_QueueFamilyIndex(queue_family_index)
     {
-        vkGetDeviceQueue(g_GraphicsDevice->Get(), queue_family_index, queue_index, &m_Queue);
+        vkGetDeviceQueue(device, queue_family_index, queue_index, &m_Queue);
 
         // Create a single command pool
         VkCommandPoolCreateInfo pool_info = {};
@@ -18,10 +18,10 @@ namespace RB::Graphics::VK
         pool_info.queueFamilyIndex  = queue_family_index;
         pool_info.flags             = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-        RB_ASSERT_FATAL_RELEASE_VK(vkCreateCommandPool(g_GraphicsDevice->Get(), &pool_info, nullptr, &m_CommandPool),
+        RB_ASSERT_FATAL_RELEASE_VK(vkCreateCommandPool(device, &pool_info, nullptr, &m_CommandPool),
             "Failed to create command pool");
 
-        CreateTimelineSemaphore();
+        CreateTimelineSemaphore(device);
     }
 
     DeviceQueue::~DeviceQueue()
@@ -185,7 +185,7 @@ namespace RB::Graphics::VK
         return completed_value >= submission_value;
     }
 
-    void DeviceQueue::CreateTimelineSemaphore()
+    void DeviceQueue::CreateTimelineSemaphore(VkDevice device)
     {
         m_LastSignaledValue = 0;
 
@@ -198,7 +198,7 @@ namespace RB::Graphics::VK
         sem_info.sType              = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         sem_info.pNext              = &timeline_info;
 
-        RB_ASSERT_FATAL_RELEASE_VK(vkCreateSemaphore(g_GraphicsDevice->Get(), &sem_info, nullptr, &m_TimelineSemaphore),
+        RB_ASSERT_FATAL_RELEASE_VK(vkCreateSemaphore(device, &sem_info, nullptr, &m_TimelineSemaphore),
             "Failed to create timeline semaphore");
     }
 }

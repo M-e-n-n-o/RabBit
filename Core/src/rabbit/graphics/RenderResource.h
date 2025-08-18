@@ -159,10 +159,17 @@ namespace RB::Graphics
         virtual bool AllowedRandomReadWrites() const = 0;
         virtual bool AllowedDepthStencil() const = 0;
 
-        // Overwrite functions, allows you to create custom temporary views on a texture.
-        // Also add methods for array slices on 3D textures or texture array's.
-        //virtual void SetBaseMip(uint32_t mip) = 0;
-        //virtual void SetMipCount(uint32_t mips) = 0;
+        virtual uint32_t GetMipCount() const = 0;
+        virtual uint32_t GetBaseMip() const = 0;
+
+        virtual void SetBaseMip(uint32_t mip) = 0;
+        virtual void SetMipCount(uint32_t mips) = 0;
+
+        virtual uint32_t GetArraySize() const = 0;
+        virtual uint32_t GetFirstArraySlice() const = 0;
+
+        virtual void SetArraySize(uint32_t size) = 0;
+        virtual void SetFirstArraySlice(uint32_t slice) = 0;
 
         TextureColorSpace GetColorSpace() const { return m_ColorSpace; }
 
@@ -183,6 +190,12 @@ namespace RB::Graphics
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
         float	         GetAspectRatio() const;
+
+        uint32_t GetArraySize() const { return 1; }
+        uint32_t GetFirstArraySlice() const { return 0; }
+
+        void SetArraySize(uint32_t size) {}
+        void SetFirstArraySlice(uint32_t slice) {}
 
         static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
         static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);

@@ -177,6 +177,28 @@ namespace RB::Graphics::D3D12
         SAFE_DELETE(m_Resource);
     }
 
+    uint32_t Texture2DD3D12::GetMipCount() const
+    {
+        // TODO Add mip support
+        return 1;
+    }
+
+    uint32_t Texture2DD3D12::GetBaseMip() const
+    {
+        // TODO Add mip support
+        return 0;
+    }
+
+    void Texture2DD3D12::SetBaseMip(uint32_t mip)
+    {
+        // TODO Add mip support
+    }
+
+    void Texture2DD3D12::SetMipCount(uint32_t mips)
+    {
+        // TODO Add mip support
+    }
+
     void Texture2DD3D12::SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle)
     {
         if (m_RenderTargetHandle.isValid())
