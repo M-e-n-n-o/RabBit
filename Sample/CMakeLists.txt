@@ -6,11 +6,7 @@ file(GLOB_RECURSE SAMPLE_SRC_FILES CONFIGURE_DEPENDS
     "src/*.cpp"
 )
 
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_executable(${APP_NAME} WIN32 ${SAMPLE_SRC_FILES})
-else()
-    add_executable(${APP_NAME} ${SAMPLE_SRC_FILES})
-endif()
+add_executable(${APP_NAME} ${SAMPLE_SRC_FILES})
 
 # Link RabBit
 target_include_directories(${APP_NAME} PUBLIC

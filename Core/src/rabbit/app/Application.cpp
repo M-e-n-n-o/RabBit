@@ -49,16 +49,20 @@ namespace RB
         RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
         RB_LOG(LOGTAG_MAIN, "");
 
-        RB_LOG(LOGTAG_MAIN, "Command line arguments: %s", launch_args)
+        RB_LOG(LOGTAG_MAIN, "Launch arguments: %s", launch_args)
 
         char asset_path[256];
         if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
         {
             std::string s = offset;
 
-            int start = s.find_first_of("\"") + 1;
+            int start = std::strlen("-assetPath") + 1;
             s = s.substr(start);
-            int end = s.find_first_of("\"");
+            int end = s.find_first_of(" ");
+            if (end == std::string::npos)
+            {
+                end = s.size(); // This is the final argument
+            }
 
             if (s[end-1] != '/' && s[end-1] != '\\')
             {
