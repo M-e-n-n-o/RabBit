@@ -81,7 +81,7 @@ namespace RB::Graphics::VK
         if (m_TransferQueue)
             delete m_TransferQueue;
 
-        vkDestroyDevice(m_Device, NULL);
+        vkDestroyDevice(m_Device, nullptr);
 
 #ifdef RB_CONFIG_DEBUG
         if (m_DebugMessenger != VK_NULL_HANDLE)
@@ -91,7 +91,7 @@ namespace RB::Graphics::VK
         }
 #endif
 
-        vkDestroyInstance(m_Instance, NULL);
+        vkDestroyInstance(m_Instance, nullptr);
     }
 
     DeviceQueue* GraphicsDevice::GetGraphicsQueue() const
@@ -227,13 +227,13 @@ namespace RB::Graphics::VK
         info.flags                      = 0;
         info.queueCreateInfoCount       = static_cast<uint32_t>(queue_create_infos.size());
         info.pQueueCreateInfos          = queue_create_infos.data();
-        info.pEnabledFeatures           = NULL;
+        info.pEnabledFeatures           = nullptr;
         info.enabledExtensionCount      = static_cast<uint32_t>(g_DeviceExtensions.size());
         info.ppEnabledExtensionNames    = g_DeviceExtensions.data();
         info.enabledLayerCount          = static_cast<uint32_t>(validation_layers.size());
         info.ppEnabledLayerNames        = validation_layers.data();
 
-        RB_ASSERT_FATAL_RELEASE_VK(vkCreateDevice(m_PhysicalDevice, &info, NULL, &m_Device), "Failed to create VK device");
+        RB_ASSERT_FATAL_RELEASE_VK(vkCreateDevice(m_PhysicalDevice, &info, nullptr, &m_Device), "Failed to create VK device");
 
         // Get the several dedicated queue's
         m_GraphicsQueue = new DeviceQueue(m_Device, VK_QUEUE_GRAPHICS_BIT, queue_families[VK_QUEUE_GRAPHICS_BIT], 0);

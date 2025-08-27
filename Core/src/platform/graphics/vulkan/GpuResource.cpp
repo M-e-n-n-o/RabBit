@@ -49,7 +49,7 @@ namespace RB::Graphics::VK
         if (m_ResourceType != (uint8_t)GpuResourceType::Buffer)
         {
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Cannot retrieve native buffer as this resource is not of this type");
-            return nullptr;
+            return VK_NULL_HANDLE;
         }
 
         return m_Buffer;
@@ -60,7 +60,7 @@ namespace RB::Graphics::VK
         if (m_ResourceType != (uint8_t)GpuResourceType::Image)
         {
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Cannot retrieve native image as this resource is not of this type");
-            return nullptr;
+            return VK_NULL_HANDLE;
         }
 
         return m_Image;
