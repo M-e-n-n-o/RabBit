@@ -27,5 +27,5 @@ gtest_discover_tests(EngineTest
 # Add post build command to copy RabBit library to build location
 add_custom_command(TARGET EngineTest POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_FILE_DIR:RabBit>/RabBit.lib"
+        "$<TARGET_FILE:RabBit>"
         $<TARGET_FILE_DIR:EngineTest>)
