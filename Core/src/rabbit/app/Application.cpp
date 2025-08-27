@@ -14,6 +14,8 @@
 #include "events/input/KeyCodes.h"
 #include "events/input/Input.h"
 
+#include "utils/Timer.h"
+
 using namespace RB::Graphics;
 using namespace RB::Events;
 using namespace RB::Entity;
@@ -143,19 +145,16 @@ namespace RB
 
     void Application::Run()
     {
-        LARGE_INTEGER frequency;
-        if (!QueryPerformanceFrequency(&frequency))
-        {
-            RB_LOG_ERROR(LOGTAG_MAIN, "Could not retrieve value from QueryPerformanceFrequency");
-        }
-
-        LARGE_INTEGER prev_time, curr_time;
-        QueryPerformanceCounter(&prev_time);
+        Timer frame_timer;
+        float delta_time;
+        double curr_time;
+        double prev_time = frame_timer.ElapsedSeconds();
 
         while (!m_ShouldStop)
         {
-            QueryPerformanceCounter(&curr_time);
-            float delta_time = static_cast<float>(curr_time.QuadPart - prev_time.QuadPart) / frequency.QuadPart;
+            // Update delta time
+            curr_time = frame_timer.ElapsedSeconds();
+            delta_time = float(curr_time - prev_time);
             prev_time = curr_time;
 
             // Poll inputs and update windows

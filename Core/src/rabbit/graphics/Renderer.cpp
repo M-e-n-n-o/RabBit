@@ -42,7 +42,7 @@ namespace RB::Graphics
     struct RenderContext : public JobData
     {
         ViewContext*                        viewContexts;
-        uint32_t							totalViewContexts;
+        uint32_t                            totalViewContexts;
 
         List<Renderer::BackBufferGuard>*    backBufferAvailabilityGuards;
 
@@ -58,10 +58,10 @@ namespace RB::Graphics
 
         FrameAllocator*                     frameAllocator;
 
-        std::function<void()>				OnRenderFrameStart;
-        std::function<void()>				OnRenderFrameEnd;
-        std::function<void()>				SyncWithGpu;
-        std::function<void()>				ProcessEvents;
+        std::function<void()>               OnRenderFrameStart;
+        std::function<void()>               OnRenderFrameEnd;
+        std::function<void()>               SyncWithGpu;
+        std::function<void()>               ProcessEvents;
 
         ~RenderContext()
         {

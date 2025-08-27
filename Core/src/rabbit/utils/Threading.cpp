@@ -18,14 +18,6 @@ namespace RB
 
     WorkerThread::WorkerThread(const char* name, const ThreadPriority& priority)
     {
-        LARGE_INTEGER li;
-        if (!QueryPerformanceFrequency(&li))
-        {
-            RB_LOG_ERROR(LOGTAG_MAIN, "Could not retrieve value from QueryPerformanceFrequency");
-        }
-
-        m_PerformanceFreqMs = double(li.QuadPart) / 1000.0;
-
         m_SharedContext = new SharedContext();
         m_SharedContext->name                       = name;
         m_SharedContext->state                      = ThreadState::Idle;
@@ -278,16 +270,14 @@ namespace RB
     {
         m_SharedContext->kickMutex.lock();
         ThreadState state           = m_SharedContext->state;
-        uint64_t    counter_start   = m_SharedContext->counterStart;
+        double      counter_start   = m_SharedContext->counterStart;
+        double      current_time    = m_SharedContext->timer.ElapsedMilliseconds();
         JobID       current_job     = m_SharedContext->currentJob;
         m_SharedContext->kickMutex.unlock();
 
         if (state != ThreadState::Idle)
         {
-            LARGE_INTEGER li;
-            QueryPerformanceCounter(&li);
-
-            if ((double(li.QuadPart - counter_start) / m_PerformanceFreqMs) > stall_threshold_ms)
+            if ((current_time - counter_start) > stall_threshold_ms)
             {
                 out_id = current_job;
                 return true;
@@ -339,6 +329,8 @@ namespace RB
     void WorkerThreadLoop(WorkerThread::SharedContext* context)
     {
         RB_LOG(LOGTAG_MAIN, "Started worker thread: %s", context->name);
+        
+        context->timer.Reset();
 
         while (true)
         {
@@ -347,9 +339,6 @@ namespace RB
             // Wait until a new task is available
             {
                 std::unique_lock<Mutex> kick_lock(context->kickMutex);
-
-                // Reset the timer
-                context->counterStart = 0;
 
                 context->currentJob = UINT64_MAX;
 
@@ -395,9 +384,7 @@ namespace RB
                 context->state = WorkerThread::ThreadState::Running;
 
                 // Start timer
-                LARGE_INTEGER li;
-                QueryPerformanceCounter(&li);
-                context->counterStart = li.QuadPart;
+                context->counterStart = context->timer.ElapsedMilliseconds();
             }
 
             // Do the job

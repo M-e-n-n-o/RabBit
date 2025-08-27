@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RabBitCommon.h"
+#include "Timer.h"
 
 #include <thread>
 #include <mutex>
@@ -52,23 +53,23 @@ namespace RB
 
         // If overwritable is true, only 1 of this type of job can be scheduled at a time.
         // So, if a job is scheduled that is already in the queue, the old job will be overwritten.
-        JobTypeID	AddJobType(JobFunction function, bool overwritable = false);
+        JobTypeID   AddJobType(JobFunction function, bool overwritable = false);
 
         // The JobData is deleted when the task is completed or has been overwritten (allocate the data with new!)
-        JobID		ScheduleJob(JobTypeID type_id, JobData* data);
+        JobID       ScheduleJob(JobTypeID type_id, JobData* data);
 
-        void		PrioritizeJob(JobID job_id);
+        void        PrioritizeJob(JobID job_id);
 
-        bool		IsFinished(JobID job_id);
-        bool		IsStalling(uint32_t stall_threshold_ms, JobID& out_id);
+        bool        IsFinished(JobID job_id);
+        bool        IsStalling(uint32_t stall_threshold_ms, JobID& out_id);
 
-        void		Sync(JobID job_id);
-        void		SyncAll();
+        void        Sync(JobID job_id);
+        void        SyncAll();
 
-        void		Cancel(JobID job_id);
-        void		CancelAll();
+        void        Cancel(JobID job_id);
+        void        CancelAll();
 
-        bool		IsCurrentThread();
+        bool        IsCurrentThread();
 
     private:
         struct Job
@@ -93,33 +94,33 @@ namespace RB
         {
             const char*         name;
 
-            ThreadState			state;
-            ConditionVariable	kickCV;
-            Mutex	            kickMutex;
-            ConditionVariable	syncCV;
-            Mutex	            syncMutex;
-            ConditionVariable	completedCV;
+            ThreadState         state;
+            ConditionVariable   kickCV;
+            Mutex               kickMutex;
+            ConditionVariable   syncCV;
+            Mutex               syncMutex;
+            ConditionVariable   completedCV;
             Mutex	            completedMutex;
 
-            uint64_t			counterStart;
+            Timer               timer;
+            double              counterStart;
 
-            JobID				currentJob;
-            List<Job>			pendingJobs;
-            uint32_t			highPriorityInsertIndex;
-            uint64_t			startedJobsCount;
-            uint64_t			completedJobsCount;
+            JobID               currentJob;
+            List<Job>           pendingJobs;
+            uint32_t            highPriorityInsertIndex;
+            uint64_t            startedJobsCount;
+            uint64_t            completedJobsCount;
         };
 
         struct JobType
         {
-            JobFunction			function;
-            bool				overwritable;
+            JobFunction         function;
+            bool                overwritable;
         };
 
         std::thread             m_ThreadHandle;            
         SharedContext*          m_SharedContext;
-        List<JobType>			m_JobTypes;
-        double					m_PerformanceFreqMs;
+        List<JobType>           m_JobTypes;
 
         friend void WorkerThreadLoop(SharedContext* context);
     };
@@ -136,13 +137,13 @@ namespace RB
         ~ThreadedVariable() = default;
 
         void SetValue(const T& value);
-        T	 GetValue();
+        T    GetValue();
 
         void WaitUntilConditionMet(std::function<bool(const T&)> condition);
 
     private:
-        T					m_Variable;
-        Mutex	            m_Mutex;
+        T                   m_Variable;
+        Mutex               m_Mutex;
         ConditionVariable	m_CV;
     };
 
