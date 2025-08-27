@@ -22,7 +22,7 @@ namespace RB::Graphics::VK
         void Present() override;
         void Resize(const uint32_t width, const uint32_t height) override;
 
-        void* GetNativeSwapChain() const override { return m_Swapchain; }
+        void* GetNativeSwapChain() const override { return (void*)&m_Swapchain; }
         uint32_t GetWidth() override { return m_Width; }
         uint32_t GetHeight() override { return m_Height; }
         uint32_t GetBackBufferCount() override { return m_BackBufferCount; }
