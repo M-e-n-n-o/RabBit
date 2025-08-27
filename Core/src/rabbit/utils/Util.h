@@ -4,6 +4,10 @@
 
 namespace RB
 {
+    #ifndef _countof
+        #define _countof(arr) (sizeof(arr) / sizeof(arr[0]))
+    #endif
+
     #define kKB(x) (x * 1024)
     #define kMB(x) (x * 1024 * 1024)
     
