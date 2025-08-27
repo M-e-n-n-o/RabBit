@@ -71,9 +71,9 @@ namespace RB::Graphics::Windows
 
         void CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style);
 
-        HWND					m_WindowHandle;
+        HWND                    m_WindowHandle;
         SwapChain*              m_SwapChain;
-        bool					m_IsValid;
+        bool                    m_IsValid;
         bool                    m_IsSemiTransparent;
         RenderResourceFormat    m_BackBufferFormat;
     };

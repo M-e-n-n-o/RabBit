@@ -17,8 +17,8 @@ namespace RB::Graphics::LinuxES
 
     struct WindowArgs
     {
-        uint32_t	            width;
-        uint32_t	            height;
+        uint32_t                width;
+        uint32_t                height;
         RenderResourceFormat    format;
     };
 
@@ -32,12 +32,12 @@ namespace RB::Graphics::LinuxES
 
         void Present() override;
 
-        Math::Float4 GetWindowRectangle()	const override;
-        uint32_t	 GetWidth()				const override;
-        uint32_t	 GetHeight()			const override;
-        RenderRect	 GetWindowRect()		const override;
-        bool		 IsMinimized()			const override;
-        bool		 IsValid()				const override;
+        Math::Float4 GetWindowRectangle()   const override;
+        uint32_t     GetWidth()             const override;
+        uint32_t     GetHeight()            const override;
+        RenderRect   GetWindowRect()        const override;
+        bool         IsMinimized()          const override;
+        bool         IsValid()              const override;
         bool         IsSemiTransparent()    const override;
 
         Display* GetParentDisplay() override;
@@ -59,7 +59,7 @@ namespace RB::Graphics::LinuxES
         uint32_t                m_Width;
         uint32_t                m_Height;
         RenderResourceFormat    m_Format;
-        bool		            m_IsValid;
+        bool                    m_IsValid;
     };
 }
 #endif
