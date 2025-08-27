@@ -30,7 +30,7 @@ namespace RB::Graphics::LinuxES
 
         void Update() override;
 
-        void Present(const VsyncMode& mode) override;
+        void Present() override;
 
         Math::Float4 GetWindowRectangle()	const override;
         uint32_t	 GetWidth()				const override;
