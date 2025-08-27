@@ -19,11 +19,6 @@ target_link_libraries(EngineTest PRIVATE
     gtest
 )
 
-gtest_discover_tests(EngineTest
-    DISCOVERY_TIMEOUT
-        240
-)
-
 # Add post build command to copy RabBit library to build location
 add_custom_command(TARGET EngineTest POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
