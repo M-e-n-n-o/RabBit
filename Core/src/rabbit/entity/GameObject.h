@@ -1,6 +1,7 @@
 #pragma once
 #include "RabBitCommon.h"
 #include "ComponentRegister.h"
+#include "components/Transform.h"
 
 namespace RB::Entity
 {
