@@ -6,21 +6,37 @@
 
 namespace RB::Graphics::VK
 {
-    DisplayVK::DisplayVK()
+    DisplayVK::DisplayVK(VkDisplayKHR handle, const char* name, RB::Math::Float2 resolution)
+        : m_Name(name)
+        , m_Handle(handle)
+        , m_Resolution(resolution)
     {
-        // TODO:
-        //vkGetPhysicalDeviceDisplayPropertiesKHR
-        //vkGetPhysicalDeviceDisplayPlanePropertiesKHR
-        //vkGetDisplayPlaneCapabilitiesKHR
-        //vkCreateDisplayPlaneSurfaceKHR
-        //vkGetPhysicalDeviceSurfaceSupportKHR (check for this in GraphicsDevice.cpp?)
+        // TODO Add extra checking for the displays using vkGetDisplayPlaneCapabilitiesKHR
     }
 
     List<Display*> CreateDisplays()
     {
-        List<Display*> displays;
+        List<Display*> out_displays;
 
-        return displays;
+        uint32_t displayCount = 0;
+        vkGetPhysicalDeviceDisplayPropertiesKHR(g_GraphicsDevice->GetPhysicalDevice(), &displayCount, nullptr);
+        std::vector<VkDisplayPropertiesKHR> displays(displayCount);
+        vkGetPhysicalDeviceDisplayPropertiesKHR(g_GraphicsDevice->GetPhysicalDevice(), &displayCount, displays.data());
+
+        for (uint32_t i = 0; i < displayCount; ++i)
+        {
+            VkDisplayPropertiesKHR& disp = displays[i];
+            std::string name = disp.displayName ? disp.displayName : "Unknown";
+
+            RB::Math::Float2 resolution;
+            resolution.x = static_cast<float>(disp.physicalResolution.width);
+            resolution.y = static_cast<float>(disp.physicalResolution.height);
+
+            Display* displayObj = new DisplayVK(disp.display, name.c_str(), resolution);
+            out_displays.push_back(displayObj);
+        }
+
+        return out_displays;
     }
 }
 #endif

@@ -27,8 +27,7 @@ namespace RB::Graphics
 #if RB_PLATFORM_WINDOWS
         displays = Windows::CreateDisplays();
 #elif RB_GRAPHICS_API_VULKAN
-        // TODO: This path is only used for Vulkan when not on Windows
-        static_assert(false);
+        displays = VK::CreateDisplays();
 #else
         RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the display class for the windowing platform");
 #endif

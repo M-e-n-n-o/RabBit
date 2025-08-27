@@ -24,8 +24,15 @@ namespace RB::Graphics::VK
     }
 #endif
 
+    //vkCreateDisplayPlaneSurfaceKHR
+
     void SwapChainVK::Init(uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support)
     {
+        // If this goes off, then we need to create a separate present queue
+        VkBool32 present_support = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(g_GraphicsDevice->GetPhysicalDevice(), g_GraphicsDevice->GetGraphicsQueueFamilyIdx(), m_Surface, &present_support);
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, present_support == VK_TRUE, "The current VK graphics queue does not support presenting to the surface!");
+
         // Check surface capabilities
         VkSurfaceTransformFlagBitsKHR surface_transform;
         {
