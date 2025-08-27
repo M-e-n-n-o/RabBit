@@ -70,4 +70,5 @@
 #include "rabbit/events/input/KeyCodes.h"
 #include "rabbit/events/input/MouseCodes.h"
 
+#include "rabbit/math/Matrix.h"
 #include "rabbit/math/Vector.h"

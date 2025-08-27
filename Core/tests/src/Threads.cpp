@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <RabBit/utils/Threading.h>
+#include <rabbit/utils/Threading.h>
 
 using namespace RB;
 

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include <RabBit/math/Matrix.h>
-#include <RabBit/math/Vector.h>
+#include <rabbit/math/Matrix.h>
+#include <rabbit/math/Vector.h>
 
 using namespace RB::Math;
 using namespace testing;

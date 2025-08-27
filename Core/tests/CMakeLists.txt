@@ -9,7 +9,7 @@ add_executable(EngineTest ${TEST_SRC_FILES})
 # Link RabBit & GoogleTest
 target_include_directories(EngineTest PUBLIC 
     "../src" 
-    "../src/RabBit"
+    "../src/rabbit"
 )
 target_link_directories(EngineTest PUBLIC 
     RabBit
