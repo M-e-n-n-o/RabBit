@@ -7,7 +7,7 @@ namespace RB
 {
     Unique<FileHandle> FileLoader::OpenFile(const char* file_name, uint32_t open_mode)
     {
-        std::ios_base::openmode mode = 0;
+        std::ios_base::openmode mode = {};
 
         if ((open_mode & OpenFileMode::kFileMode_Read) > 0)
             mode |= std::fstream::in;
