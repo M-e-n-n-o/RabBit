@@ -209,7 +209,7 @@ namespace RB::Graphics
                 ResourceID id = -1;
 
                 // Get the already scheduled resources for this graph
-                List<ResourceID>& resources = context->GetScheduledGraphResources(graph_id);
+                const List<ResourceID>& resources = context->GetScheduledGraphResources(graph_id);
 
                 for (const ResourceID& other_id : resources)
                 {
