@@ -79,31 +79,14 @@ namespace RB
         // Try SCHED_FIFO first (requires root privileges)
         if (pthread_setschedparam(m_ThreadHandle.native_handle(), SCHED_FIFO, &param) != 0)
         {
-            // If SCHED_FIFO fails, fall back to SCHED_OTHER with nice values
+            // If SCHED_FIFO fails, fall back to SCHED_OTHER
             policy = SCHED_OTHER;
             param.sched_priority = 0;  // SCHED_OTHER only allows 0
             pthread_setschedparam(m_ThreadHandle.native_handle(), policy, &param);
 
-            int nice_value;
-            switch (priority)
-            {
-            case ThreadPriority::Low:     nice_value = 10;  break;
-            case ThreadPriority::Medium:  nice_value = 0;   break;
-            case ThreadPriority::High:    nice_value = -5;  break;
-            case ThreadPriority::Highest: nice_value = -10; break;
-            default:                      nice_value = 0;   break;
-            }
-        
-            if (nice_value != 0)
-            {
-                if (setpriority(PRIO_PROCESS, m_ThreadHandle.native_handle(), nice_value) != 0)
-                {
-                    RB_LOG_ERROR(LOGTAG_MAIN, "Failed to set thread nice value");
-                }
-            }
+            RB_LOG_WARN(LOGTAG_MAIN, "Failed to set thread prioriy. The app is likely missing root privileges");
         }
 #endif
-
     }
 
     WorkerThread::~WorkerThread()
