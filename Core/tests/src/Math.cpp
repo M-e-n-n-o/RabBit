@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
-#include <RabBit.h>
+#include <rabbit/math/Misc.h>
+#include <rabbit/math/Matrix.h>
+#include <rabbit/math/Vector.h>
 
 using namespace RB::Math;
 using namespace testing;
