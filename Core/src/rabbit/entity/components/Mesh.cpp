@@ -29,7 +29,7 @@ namespace RB::Entity
 
         m_VertexPair.vertexBuffer = Graphics::VertexBuffer::Create(vertex_name, RB::Graphics::TopologyType::TriangleList, submodel.vertices.data(), vertex_size, vertex_size * submodel.vertices.size());
 
-        if (submodel.indices.data() > 0)
+        if (!submodel.indices.empty())
         {
             char index_name[100];
             sprintf(index_name, "%s indices", file_name);
