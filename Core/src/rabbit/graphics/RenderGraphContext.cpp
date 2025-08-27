@@ -26,7 +26,7 @@ namespace RB::Graphics
         if (id < 0)
         {
             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Trying to grab an invalid RenderResource from the RenderGraphContext");
-            return nullptr;
+            return false;
         }
 
         return m_Clears[m_ResourcePointers[id]];
