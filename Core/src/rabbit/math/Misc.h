@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 namespace RB::Math
 {
     #define kPI 3.14159265359
