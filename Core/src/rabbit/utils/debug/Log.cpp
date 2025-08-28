@@ -42,11 +42,11 @@ namespace RB::Utils::Debug
         printf("\033[1;31m");
     }
 
-    void Logger::LogCore(const wchar_t* tag, const char* format, ...)
+    void Logger::LogCore(const char* tag, const char* format, ...)
     {
         if (strlen(format) == 0)
         {
-            wprintf(L"\n");
+            printf("\n");
             return;
         }
 
@@ -54,25 +54,9 @@ namespace RB::Utils::Debug
 
         va_list args;
         va_start(args, format);
-        if (wcslen(tag) != 0)
-            wprintf(L"[RabBit-%s] ", tag);
+        if (strlen(tag) != 0)
+            printf("[RabBit-%s] ", tag);
         vprintf(format, args);
-        va_end(args);
-    }
-
-    void Logger::LogCore(const wchar_t* tag, const wchar_t* format, ...)
-    {
-        if (wcslen(format) == 0)
-        {
-            wprintf(L"\n");
-            return;
-        }
-
-        va_list args;
-        va_start(args, format);
-        if (wcslen(tag) != 0)
-            wprintf(L"[RabBit-%s] ", tag);
-        vwprintf(format, args);
         va_end(args);
     }
 
@@ -80,13 +64,13 @@ namespace RB::Utils::Debug
     {
         if (strlen(format) == 0)
         {
-            wprintf(L"\n");
+            printf("\n");
             return;
         }
 
         va_list args;
         va_start(args, format);
-        wprintf(L"[App] ");
+        printf("[App] ");
         vprintf(format, args);
         va_end(args);
     }

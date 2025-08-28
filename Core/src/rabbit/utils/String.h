@@ -2,9 +2,11 @@
 
 namespace RB
 {
+#if RB_PLATFORM_WINDOWS
     void CharToWchar(const char* inChar, wchar_t* outChar);
 
     void WcharToChar(const wchar_t* inChar, char* outChar);
+#endif
 
     //struct String
     //{

@@ -39,7 +39,7 @@ namespace RB::Graphics::D3D12
 
     UploadAllocation UploadPage::Allocate(uint64_t size, uint64_t alignment)
     {
-        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, HasSpace(size, alignment), L"Not enough space to allocate %d bytes on upload resource: %s", size, m_Name);
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, HasSpace(size, alignment), "Not enough space to allocate %d bytes on upload resource: %s", size, m_Name);
 
         uint64_t aligned_size = Math::AlignUp(size, alignment);
         m_UploadOffset = Math::AlignUp(m_UploadOffset, alignment);
@@ -108,7 +108,7 @@ namespace RB::Graphics::D3D12
 
     UploadAllocation UploadAllocator::Allocate(uint64_t size, uint64_t alignment)
     {
-        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, size <= m_PageSize, L"Upload resource: %s, is too small to allocate %d bytes, increase the page size", m_Name, size);
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, size <= m_PageSize, "Upload resource: %s, is too small to allocate %d bytes, increase the page size", m_Name, size);
 
         if (m_CurrentPage == -1)
         {

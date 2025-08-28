@@ -28,7 +28,7 @@ namespace RB::Events
         POINT point;
         if (!GetCursorPos(&point))
         {
-            RB_LOG_ERROR(LOGTAG_MAIN, "GetCursorPos failed.Error: %ws", GetLastError());
+            RB_LOG_ERROR(LOGTAG_MAIN, "GetCursorPos failed.Error: %ls", GetLastError());
         }
 
         return Math::Float2(point.x, point.y);

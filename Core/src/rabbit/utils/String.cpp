@@ -3,6 +3,7 @@
 
 namespace RB
 {
+#if RB_PLATFORM_WINDOWS
     void CharToWchar(const char* inChar, wchar_t* outChar)
     {
         const size_t cSize = strlen(inChar) + 1;
@@ -16,4 +17,5 @@ namespace RB
         memset(outChar, 0, cSize);
         wcstombs(outChar, inChar, cSize);
     }
+#endif
 }

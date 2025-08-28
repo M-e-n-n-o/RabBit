@@ -211,7 +211,7 @@ namespace RB::Graphics::D3D12
         gpu_desc.NodeMask       = 0;
 
         RB_ASSERT_FATAL_D3D(g_GraphicsDevice->Get()->CreateDescriptorHeap(&gpu_desc, IID_PPV_ARGS(&m_Heap)),
-            "Failed to create main descriptor heap: %ws", name);
+            "Failed to create main descriptor heap: %ls", name);
 
         m_Heap->SetName(name);
 
