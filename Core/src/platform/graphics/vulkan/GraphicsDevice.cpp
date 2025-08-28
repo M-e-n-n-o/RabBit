@@ -312,6 +312,13 @@ namespace RB::Graphics::VK
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
 
+            if (VK_VERSION_MAJOR(properties.apiVersion) < 1 ||
+                (VK_VERSION_MAJOR(properties.apiVersion) == 1 && VK_VERSION_MINOR(properties.apiVersion) < 2))
+            {
+                // Need at least Vulkan 1.2 support
+                continue;
+            }
+
             if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
                 properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
             {
@@ -364,7 +371,7 @@ namespace RB::Graphics::VK
             }
         }
 
-        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, preferred_device_idx >= 0, "Could not find any Vulkan compatible GPU");
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, preferred_device_idx >= 0, "Could not find any Vulkan 1.2 compatible GPU");
 
         RB_LOG(LOGTAG_GRAPHICS, "Selected graphics device:");
         RB_LOG(LOGTAG_GRAPHICS, "\tName: %s", preferred_name.c_str());
