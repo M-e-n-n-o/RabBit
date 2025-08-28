@@ -312,8 +312,21 @@ namespace RB::Graphics::VK
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
 
+            if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
+                properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            {
+                // Device type not valid
+                continue;
+            }
+
+            std::string device_name = properties.deviceName;
+            if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+                device_name += " (integrated)";
+
             // Print the device name
-            RB_LOG(LOGTAG_GRAPHICS, "\t%d. %s", device_idx + 1, properties.deviceName);
+            RB_LOG(LOGTAG_GRAPHICS, "\t%d. %s", device_idx + 1, device_name.c_str());
+
+            
 
             // Choose the device with the most VRAM
             VkPhysicalDeviceMemoryProperties mem_props;
@@ -346,7 +359,7 @@ namespace RB::Graphics::VK
             {
                 preferred_device_idx        = device_idx;
                 preferred_vram_size         = dedicated_vram_size;
-                preferred_name              = properties.deviceName;
+                preferred_name              = device_name;
                 preferred_graphics_family   = graphics_family;
                 preferred_compute_family    = compute_family;
                 preferred_transfer_family   = transfer_family;
