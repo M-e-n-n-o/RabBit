@@ -6,12 +6,12 @@
 
 namespace RB::Graphics::VK
 {
-    DisplayVK::DisplayVK(VkDisplayKHR handle, const char* name, RB::Math::Float2 resolution)
-        : m_Name(name)
-        , m_Handle(handle)
+    DisplayVK::DisplayVK(VkDisplayKHR handle, const char name[128], RB::Math::Float2 resolution)
+        : m_Handle(handle)
         , m_Resolution(resolution)
     {
         // TODO Add extra checking for the displays using vkGetDisplayPlaneCapabilitiesKHR
+        std::snprintf(m_Name, sizeof(m_Name), "%s", name);
     }
 
     List<Display*> CreateDisplays()
@@ -26,6 +26,7 @@ namespace RB::Graphics::VK
         for (uint32_t i = 0; i < displayCount; ++i)
         {
             VkDisplayPropertiesKHR& disp = displays[i];
+
             std::string name = disp.displayName ? disp.displayName : "Unknown";
 
             RB::Math::Float2 resolution;

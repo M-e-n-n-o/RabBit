@@ -10,7 +10,7 @@ namespace RB::Graphics::VK
     class DisplayVK : public Display
     {
     public:
-        DisplayVK(VkDisplayKHR handle, const char* name, RB::Math::Float2 resolution);
+        DisplayVK(VkDisplayKHR handle, const char name[128], RB::Math::Float2 resolution);
 
         const char* GetName() override { return m_Name; }
 
@@ -19,7 +19,7 @@ namespace RB::Graphics::VK
         void* GetNativeHandle() override { return (void*)&m_Handle; }
 
     private:
-        const char*         m_Name;
+        char                m_Name[128];
         VkDisplayKHR        m_Handle;
         RB::Math::Float2    m_Resolution;
     };

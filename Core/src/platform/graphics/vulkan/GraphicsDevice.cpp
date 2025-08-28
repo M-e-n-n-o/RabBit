@@ -326,8 +326,6 @@ namespace RB::Graphics::VK
             // Print the device name
             RB_LOG(LOGTAG_GRAPHICS, "\t%d. %s", device_idx + 1, device_name.c_str());
 
-            
-
             // Choose the device with the most VRAM
             VkPhysicalDeviceMemoryProperties mem_props;
             vkGetPhysicalDeviceMemoryProperties(device, &mem_props);
