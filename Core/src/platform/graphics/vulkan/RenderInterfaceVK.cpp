@@ -48,7 +48,7 @@ namespace RB::Graphics::VK
     
     RenderInterfaceVK::~RenderInterfaceVK()
     {
-        // TODO
+
     }
 
     Shared<GpuGuard> RenderInterfaceVK::ExecuteInternal()

@@ -64,7 +64,7 @@ namespace RB::Graphics
 
         inputs.ri->SetRandomReadWriteInput(inputs.outputTextures[0], 0);
 
-        // TODO: Make this a dispatch indirect per BRDF type
+        // TODO: Make this a dispatch indirect per BRDF type if the code paths start to diverge
         inputs.ri->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);
     }
 }

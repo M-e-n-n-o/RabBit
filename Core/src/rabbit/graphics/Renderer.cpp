@@ -275,7 +275,7 @@ namespace RB::Graphics
 
         out_context_count = camera_components.size();
 
-        // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)  ?
+        // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)?
         ViewContext* contexts = (ViewContext*)ALLOC_HEAP(sizeof(ViewContext) * out_context_count);
 
         uint32_t context_index = 0;
@@ -676,7 +676,7 @@ namespace RB::Graphics
 
                 if (guards[back_buffer_index])
                 {
-                    guards[back_buffer_index]->WaitUntilFinishedRendering();
+                    guards[back_buffer_index]->WaitUntilFinishedRendering(); // TODO Do I really need this sync point here?
                 }
             }
 

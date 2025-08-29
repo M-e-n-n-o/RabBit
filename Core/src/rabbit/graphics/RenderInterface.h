@@ -18,8 +18,6 @@ namespace RB::Graphics
     #define RB_PROFILE_GPU_SCOPED_COLOR(render_interface, name, color) 
 #endif
 
-    #define INTERMEDIATE_EXECUTE_THRESHOLD 350
-
     class RenderResource;
     class RenderTargetBundle;
     enum class ResourceState;
@@ -50,7 +48,7 @@ namespace RB::Graphics
         virtual ~GpuGuard() = default;
 
         virtual bool IsFinishedRendering() = 0;
-        virtual void WaitUntilFinishedRendering() = 0;
+        virtual void WaitUntilFinishedRendering() = 0; // TODO Implement a timer functionality here to check how long we keep waiting here
 
     protected:
         GpuGuard() = default;
@@ -123,8 +121,6 @@ namespace RB::Graphics
         virtual Shared<GpuGuard> ExecuteInternal() = 0;
         virtual void DrawInternal() = 0;
         virtual void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) = 0;
-
-        uint32_t m_TotalDraws = 0;
     };
 
 #ifdef RB_ENABLE_LOGS

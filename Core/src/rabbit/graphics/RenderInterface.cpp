@@ -14,18 +14,16 @@ namespace RB::Graphics
 {
     Shared<GpuGuard> RenderInterface::ExecuteOnGpu()
     {
-        m_TotalDraws = 0;
         return ExecuteInternal();
     }
 
     bool RenderInterface::NeedsIntermediateExecute()
     {
-        return m_TotalDraws > INTERMEDIATE_EXECUTE_THRESHOLD;
+        return false; //m_TotalDraws > INTERMEDIATE_EXECUTE_THRESHOLD;
     }
 
     void RenderInterface::Draw()
     {
-        m_TotalDraws++;
         DrawInternal();
 
         if (NeedsIntermediateExecute())
@@ -36,7 +34,6 @@ namespace RB::Graphics
 
     void RenderInterface::Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
-        m_TotalDraws++;
         DispatchInternal(thread_groups_x, thread_groups_y, thread_groups_z);
 
         if (NeedsIntermediateExecute())

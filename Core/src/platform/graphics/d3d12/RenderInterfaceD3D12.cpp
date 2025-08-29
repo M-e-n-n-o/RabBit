@@ -306,7 +306,6 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::ClearRandomReadWriteInput(uint32_t slot)
     {
-        // TODO Might be super handy to have some sort of validation every few frames to check if we accidentially wrote something to the error texture in debug mode
         m_RenderState.rwTex2DsrvHandles[slot] = DescriptorIndex{};
     }
 
@@ -390,7 +389,7 @@ namespace RB::Graphics::D3D12
 
         // Delay the clears so that they can get batched together just before a draw/dispatch
 
-        // TODO Add UAV clear if possible on the resource (then also auto place UAV barriers if needed)
+        // TODO Add UAV clear if possible on the resource
         // (Will then also have to implement a non-shader visible SRV/UAV descriptor heap, or just do a clear in a compute shader?)
 
         if (tex->AllowedRenderTarget())
@@ -822,9 +821,6 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
-        // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
-        // Do this by storing when a resource was set as UAV on a dispatch and checking if, until the next dispatch with that resource as UAV, that resource got a barrier (so was bound as SRV for example)
-
         HandlePendingClears();
         FlushResourceBarriers();
 

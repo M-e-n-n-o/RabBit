@@ -7,7 +7,7 @@ namespace RB
 	{
 		RB_LOG(LOGTAG_MAIN, "");
 		RB_LOG(LOGTAG_MAIN, "======== GRAPHICS SETTINGS ========");
-		// TODO Print settings
+		// Print settings...
 		RB_LOG(LOGTAG_MAIN, "");
 	}
 }

@@ -99,6 +99,8 @@ namespace RB::Graphics::D3D12
     {
         // Don't need to do anything to delete at the right time. This because when the resource is currently in flight or still 
         // has to be used by a command list, there is a reference being kept to it by the m_ScheduledUsages or the m_InFlight member.
+
+        // TODO Doing this tracking using smart pointers might be slow as refcounting is slow, maybe get rid of the smart pointer in GpuResource?
     }
 
     void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
