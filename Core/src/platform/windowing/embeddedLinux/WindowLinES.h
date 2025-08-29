@@ -5,6 +5,11 @@
 #include "RabBitCommon.h"
 #include "graphics/Window.h"
 
+struct drmModeConnector;
+struct drmModeCrtc;
+struct drmModeRes;
+struct gbm_device;
+
 namespace RB::Graphics::LinuxES
 {
     class SwapChain;
