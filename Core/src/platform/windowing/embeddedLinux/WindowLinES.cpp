@@ -3,16 +3,17 @@
 #include "RabBitCommon.h"
 #include "WindowLinES.h"
 
-#include <xf86drm.h>
-#include <xf86drmMode.h>
-#include <gbm.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h> 
 
 namespace RB::Graphics::LinuxES
 {
     WindowLinuxES::WindowLinuxES(const WindowArgs& args)
         : Window(true, args.virtualScale, args.virtualAspect)
     {
-        m_DrmFileDescriptor = open(drmDeviceName, O_RDWR | O_CLOEXEC);
+        m_DrmFileDescriptor = open(args.drmDeviceName, O_RDWR | O_CLOEXEC);
         RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_DrmFileDescriptor >= 0, "Could not open DRM device");
 
         m_DrmResources = drmModeGetResources(m_DrmFileDescriptor);

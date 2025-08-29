@@ -5,10 +5,9 @@
 #include "RabBitCommon.h"
 #include "graphics/Window.h"
 
-struct drmModeConnector;
-struct drmModeCrtc;
-struct drmModeRes;
-struct gbm_device;
+#include <xf86drm.h>
+#include <xf86drmMode.h>
+#include <gbm.h>
 
 namespace RB::Graphics::LinuxES
 {
