@@ -5,27 +5,25 @@
 #include "RabBitCommon.h"
 #include "graphics/Window.h"
 
-//#include <xf86drm.h>
-//#include <xf86drmMode.h>
-//#include <gbm.h>
-//#include <EGL/egl.h>
-//#include <EGL/eglext.h>
-
 namespace RB::Graphics::LinuxES
 {
     class SwapChain;
 
     struct WindowArgs
     {
+        const char*             drmDeviceName;
         uint32_t                width;
         uint32_t                height;
         RenderResourceFormat    format;
+        bool                    vsync;
+        float                   virtualScale;
+        float                   virtualAspect;
     };
 
     class WindowLinuxES : public Window
     {
     public:
-        WindowLinuxES(const WindowArgs args);
+        WindowLinuxES(const WindowArgs& args);
         ~WindowLinuxES();
 
         void Update() override;
@@ -56,10 +54,11 @@ namespace RB::Graphics::LinuxES
         void ResizeBackBuffers(uint32_t width, uint32_t height) override;
         void DestroyWindow() override;
 
-        uint32_t                m_Width;
-        uint32_t                m_Height;
-        RenderResourceFormat    m_Format;
-        bool                    m_IsValid;
+        int                 m_DrmFileDescriptor;
+        drmModeRes*         m_DrmResources;
+        drmModeConnector*   m_DrmConnector;
+        drmModeCrtc*        m_DrmCrtc;
+        gbm_device*         m_GbmDevice;
     };
 }
 #endif

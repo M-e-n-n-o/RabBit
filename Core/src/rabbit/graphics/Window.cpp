@@ -8,6 +8,10 @@
 #include "platform/windowing/windows/WindowWin.h"
 #endif
 
+#if RB_PLATFORM_LINUX_ES
+#include "platform/windowing/embeddedLinux/WindowLinES.h"
+#endif
+
 using namespace RB::Events;
 
 namespace RB::Graphics
@@ -293,6 +297,8 @@ namespace RB::Graphics
 
     Window* Window::Create(const char* window_name, Display* display, bool vsync, uint32_t window_style, float virtual_scale, float virtual_aspect)
     {
+        // TODO This currently doesn't actually place/create the window on the selected display
+
 #if RB_PLATFORM_WINDOWS
         Windows::WindowArgs args = {};
         args.className      = L"RabBit WindowClass";
@@ -308,6 +314,17 @@ namespace RB::Graphics
         args.format         = RenderResourceFormat::R8G8B8A8_UNORM; // TODO Do this based on the display
 
         return new Windows::WindowWin(args);
+#elif RB_PLATFORM_LINUX_ES
+        LinuxES::WindowArgs args = {};
+        args.drmDeviceName  = "/dev/dri/card1"; // TODO Should probably add this as a command line argument
+        args.width          = display->GetResolution().x;
+        args.height         = display->GetResolution().y;
+        args.vsync          = vsync;
+        args.virtualScale   = virtual_scale;
+        args.virtualAspect  = virtual_aspect;
+        args.format         = RenderResourceFormat::R8G8B8A8_UNORM; // TODO Do this based on the display
+
+        return new LinuxES::WindowLinuxES(args);
 #else
         RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the platform");
         return nullptr;

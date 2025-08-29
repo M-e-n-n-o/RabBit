@@ -25,7 +25,7 @@ namespace RB::Graphics::Windows
     // Window callback function
     LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-    WindowWin::WindowWin(const WindowArgs args)
+    WindowWin::WindowWin(const WindowArgs& args)
         : Window(false, args.virtualScale, args.virtualAspect)
         , m_WindowHandle(nullptr)
         , m_IsValid(true)

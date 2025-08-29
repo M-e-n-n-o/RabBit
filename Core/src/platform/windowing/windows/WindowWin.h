@@ -34,7 +34,7 @@ namespace RB::Graphics::Windows
     class WindowWin : public Window
     {
     public:
-        WindowWin(const WindowArgs args);
+        WindowWin(const WindowArgs& args);
         ~WindowWin();
 
         void Update() override;
