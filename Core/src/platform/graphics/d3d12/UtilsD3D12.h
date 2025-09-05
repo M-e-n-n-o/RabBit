@@ -80,6 +80,8 @@ namespace RB::Graphics::D3D12
             return DXGI_FORMAT_R32_UINT;
         case(RenderResourceFormat::R8G8B8A8_SRGB):
             return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+        case(RenderResourceFormat::B8G8R8A8_UNORM):
+            return DXGI_FORMAT_B8G8R8A8_UNORM;
         case(RenderResourceFormat::R8G8B8A8_UNORM):
             return DXGI_FORMAT_R8G8B8A8_UNORM;
         case(RenderResourceFormat::R16G16_FLOAT):
@@ -126,6 +128,8 @@ namespace RB::Graphics::D3D12
             return RenderResourceFormat::R32_FLOAT;
         case(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB):
             return RenderResourceFormat::R8G8B8A8_SRGB;
+        case(DXGI_FORMAT_B8G8R8A8_UNORM):
+            return RenderResourceFormat::B8G8R8A8_UNORM;
         case(DXGI_FORMAT_R8G8B8A8_UNORM):
             return RenderResourceFormat::R8G8B8A8_UNORM;
         case(DXGI_FORMAT_R16G16_FLOAT):

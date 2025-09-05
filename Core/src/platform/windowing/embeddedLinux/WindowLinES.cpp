@@ -58,7 +58,7 @@ namespace RB::Graphics::LinuxES
 
     Math::Float4 WindowLinuxES::GetNativeWindowRectangle() const
     {
-        return Math::Float4(GetWidth(), getHeight(), 0, 0);
+        return Math::Float4(GetWidth(), GetHeight(), 0, 0);
     }
 
     uint32_t WindowLinuxES::GetWidth() const

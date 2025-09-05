@@ -23,6 +23,7 @@ namespace RB::Graphics
             return 8;
         case(RenderResourceFormat::R32_UINT):
         case(RenderResourceFormat::R8G8B8A8_SRGB):
+        case(RenderResourceFormat::B8G8R8A8_UNORM):
         case(RenderResourceFormat::R8G8B8A8_UNORM):
         case(RenderResourceFormat::R16G16_FLOAT):
         case(RenderResourceFormat::R16G16_UINT):
@@ -57,6 +58,7 @@ namespace RB::Graphics
         case RenderResourceFormat::R32G32_FLOAT:
         case RenderResourceFormat::R8_UINT:
         case RenderResourceFormat::R32_UINT:
+        case RenderResourceFormat::B8G8R8A8_UNORM:
         case RenderResourceFormat::R8G8B8A8_UNORM:
         case RenderResourceFormat::R8G8B8A8_SRGB:
         case RenderResourceFormat::R16G16_FLOAT:

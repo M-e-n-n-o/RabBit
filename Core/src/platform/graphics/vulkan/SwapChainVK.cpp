@@ -87,8 +87,6 @@ namespace RB::Graphics::VK
     }
 #endif
 
-    //vkCreateDisplayPlaneSurfaceKHR
-
     void SwapChainVK::Init(uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support)
     {
         // If this goes off, then we need to create a separate present queue
