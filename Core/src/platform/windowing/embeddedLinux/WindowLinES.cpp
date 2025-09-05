@@ -9,10 +9,11 @@
 #include "platform/graphics/vulkan/SwapChainVK.h"
 #endif
 
+#include <linux/vt.h>
+#include <linux/kd.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
-#include <linux/kd.h>
 
 namespace RB::Graphics::LinuxES
 {
