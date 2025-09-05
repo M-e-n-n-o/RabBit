@@ -11,8 +11,8 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h> 
+#include <sys/ioctl.h>
+#include <linux/kd.h>
 
 namespace RB::Graphics::LinuxES
 {
@@ -21,15 +21,21 @@ namespace RB::Graphics::LinuxES
         , m_IsValid(false)
         , m_BackBufferFormat(args.format)
     {
-        m_TTY = open("/dev/tty1", O_RDWR | O_NOCTTY);
-        RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_TTY >= 0, "Could not open TTY");
-        ioctl(m_TTY, KDSETMODE, KD_GRAPHICS); // switch to graphics mode
+        // Take over the screen
+        {
+            int new_vt;
+            m_TTY0 = open("/dev/tty0", O_RDWR | O_NOCTTY);
+            RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_TTY0 >= 0, "Could not open TTY0");
+            ioctl(m_TTY0, VT_OPENQRY, &new_vt); // find free VT
 
-        //RB_ASSERT(LOGTAG_WINDOWING, args.format == RenderResourceFormat::B8G8R8A8_UNORM, "Currently only the B8G8R8A8_UNORM format is supported on a embedded linux window");
-        //
-        //InitializeDRM(args);
-        //
-        //RB_LOG(LOGTAG_WINDOWING, "Embedded window initialized: connector %u, crtc %u, mode %ux%u", m_DrmConnectorId, m_CrtcId, m_DrmMode.hdisplay, m_DrmMode.vdisplay);
+            char tty_name[32];
+            sprintf(tty_name, "/dev/tty%d", new_vt);
+            m_CurrentTTY = open(tty_name, O_RDWR | O_NOCTTY);
+            RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_CurrentTTY >= 0, "Could not open TTY%d", new_vt);
+            ioctl(m_CurrentTTY, KDSETMODE, KD_GRAPHICS);
+
+            RB_LOG(LOGTAG_WINDOWING, "Took over the virtual terminal");
+        }
 
         switch (Renderer::GetAPI())
         {
@@ -56,118 +62,6 @@ namespace RB::Graphics::LinuxES
         m_IsValid = true;
     }
 
-    //void WindowLinuxES::InitializeDRM(const WindowArgs& args)
-    //{
-    //    const char* drm_device_name = args.drmDeviceName ? args.drmDeviceName : "/dev/dri/card0";
-    //    m_DrmFileDescriptor = open(drm_device_name, O_RDWR | O_CLOEXEC);
-    //    RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_DrmFileDescriptor >= 0, "Could not open DRM device");
-
-    //    m_DrmResources = drmModeGetResources(m_DrmFileDescriptor);
-    //    RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_DrmResources != nullptr, "Could not get the DRM resources");
-
-    //    // Choose first connected connector with a mode
-    //    drmModeConnector* chosen_conn = nullptr;
-    //    for (int i = 0; i < m_DrmResources->count_connectors; ++i)
-    //    {
-    //        drmModeConnector* conn = drmModeGetConnector(m_DrmFileDescriptor, m_DrmResources->connectors[i]);
-
-    //        if (!conn)
-    //        {
-    //            continue;
-    //        }
-
-    //        if (conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0)
-    //        {
-    //            chosen_conn = conn;
-    //            break;
-    //        }
-
-    //        drmModeFreeConnector(conn);
-    //    }
-    //    RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, chosen_conn != nullptr, "No connected DRM connector found");
-    //    m_DrmConnector = chosen_conn;
-    //    m_DrmConnectorId = chosen_conn->connector_id;
-
-    //    // Pick preferred mode
-    //    int preferred = -1;
-    //    for (int i = 0; i < m_DrmConnector->count_modes; ++i)
-    //    {
-    //        if (m_DrmConnector->modes[i].type & DRM_MODE_TYPE_PREFERRED)
-    //        { 
-    //            preferred = i; break; 
-    //        }
-    //    }
-
-    //    m_DrmMode = m_DrmConnector->modes[Math::Max(0, preferred)];
-
-    //    RB_ASSERT(LOGTAG_WINDOWING, m_DrmMode.hdisplay == args.width && m_DrmMode.vdisplay == args.height, "The specified display size does not match the output display's size");
-
-    //    // Choose a CRTC
-    //    drmModeEncoder* encoder = nullptr;
-    //    if (m_DrmConnector->encoder_id)
-    //    {
-    //        encoder = drmModeGetEncoder(m_DrmFileDescriptor, m_DrmConnector->encoder_id);
-    //    }
-
-    //    if (!encoder)
-    //    {
-    //        // Fallback: pick first encoder for connector
-    //        for (int i = 0; i < m_DrmConnector->count_encoders && !encoder; ++i)
-    //        {
-    //            encoder = drmModeGetEncoder(m_DrmFileDescriptor, m_DrmConnector ->encoders[i]);
-    //        }
-    //    }
-    //    RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, encoder != nullptr, "Failed to get encoder for connector");
-
-    //    // Find a compatible CRTC
-    //    bool found_crtc = false;
-    //    if (encoder->crtc_id)
-    //    {
-    //        m_CrtcId = encoder->crtc_id;
-    //        found_crtc = true;
-    //    }
-    //    else
-    //    {
-    //        // Fallback: choose first possible crtc
-    //        for (int i = 0; i < m_DrmResources->count_crtcs; ++i)
-    //        {
-    //            if (encoder->possible_crtcs & (1 << i))
-    //            {
-    //                m_CrtcId = m_DrmResources->crtcs[i];
-    //                found_crtc = true;
-    //                break;
-    //            }
-    //        }
-    //    }
-    //    drmModeFreeEncoder(encoder);
-    //    RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, found_crtc, "Failed to pick a CRTC for the connector");
-
-    //    // Save original CRTC to restore on destroy
-    //    m_OriginalCrtc = drmModeGetCrtc(m_DrmFileDescriptor, m_CrtcId);
-    //}
-
-    //void WindowLinuxES::InitializeGBM(const WindowArgs& args)
-    //{
-    //    // Create GBM device
-    //    m_GbmDevice = gbm_create_device(m_DrmFileDescriptor);
-    //    RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_GbmDevice != nullptr, "Failed to create GBM device");
-
-    //    // Create GBM surface sized to the selected mode
-    //    const uint32_t format = GBM_FORMAT_XBGR8888;
-    //    const uint32_t flags = GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING;
-    //    m_GbmSurface = gbm_surface_create(m_GbmDevice, m_DrmMode.hdisplay, m_DrmMode.vdisplay, format, flags);
-    //    RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_GbmSurface != nullptr, "Failed to create GBM surface");
-
-    //    // TODO set the vulkan backbuffer images as the framebuffers in drm (drmModeAddFB2)
-    //    //          - to do this I think I need to 
-    //    // TODO set crtc to use these new framebuffers.
-    //    // 
-    //    // I am actually not yet sure if I need GBM at all here, maybe I can bypass it?
-    //    // Also not completely sure yet if I can just use vulkan's vkQueuePresentKHR for presenting or that I need something more manual
-    //    //
-    //    // Maybe I actually don't need GBM or DRM at all and just use VK_KHR_display??
-    //}
-
     WindowLinuxES::~WindowLinuxES()
     {
         if (m_IsValid)
@@ -175,42 +69,11 @@ namespace RB::Graphics::LinuxES
             RB_LOG_ERROR(LOGTAG_WINDOWING, "Deleting window while the actual window has not yet been destroyed");
         }
 
-        RB_LOG(LOGTAG_WINDOWING, "Destroying window");
+        RB_LOG(LOGTAG_WINDOWING, "Restoring original terminal");
 
-        ioctl(m_TTY, KDSETMODE, KD_TEXT);
-        close(m_TTY);
-
-        //if (m_GbmSurface)
-        //{
-        //    gbm_surface_destroy(m_GbmSurface);
-        //}
-
-        //if (m_GbmDevice)
-        //{
-        //    gbm_device_destroy(m_GbmDevice);
-        //}
-
-        //if (m_OriginalCrtc)
-        //{
-        //    // Restore original mode/CRTC if we changed it during present (safe to call even if we didn't modeset)
-        //    drmModeSetCrtc(m_DrmFileDescriptor, m_OriginalCrtc->crtc_id, m_OriginalCrtc->buffer_id, m_OriginalCrtc->x, m_OriginalCrtc->y, &m_DrmConnectorId, 1, &m_OriginalCrtc->mode);
-        //    drmModeFreeCrtc(m_OriginalCrtc);
-        //}
-
-        //if (m_DrmConnector)
-        //{
-        //    drmModeFreeConnector(m_DrmConnector);
-        //}
-
-        //if (m_DrmResources)
-        //{
-        //    drmModeFreeResources(m_DrmResources);
-        //}
-
-        //if (m_DrmFileDescriptor >= 0)
-        //{
-        //    close(m_DrmFileDescriptor);
-        //}
+        ioctl(m_CurrentTTY, KDSETMODE, KD_TEXT);
+        close(m_CurrentTTY);
+        close(m_TTY0);
     }
 
     void WindowLinuxES::Update()

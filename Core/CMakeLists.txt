@@ -119,39 +119,7 @@ if(RABBIT_API_VULKAN)
         add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         add_compile_definitions(VK_USE_PLATFORM_DISPLAY_KHR)
-
-        # Find DRM
-        find_library(LIBDRM_LIBRARY
-            NAMES drm
-            PATHS /usr/lib /usr/lib/arm-linux-gnueabihf /usr/lib/aarch64-linux-gnu
-        )
-
-        # Find GBM
-        find_library(LIBGBM_LIBRARY
-            NAMES gbm
-            PATHS /usr/lib /usr/lib/arm-linux-gnueabihf /usr/lib/aarch64-linux-gnu
-        )
-
-        # Check if found
-        if (NOT LIBDRM_LIBRARY)
-            message(WARNING "libdrm not found! Please install libdrm-dev")
-        endif()
-
-        if (NOT LIBGBM_LIBRARY)
-            message(WARNING "libgbm not found! Please install libgbm-dev")
-        endif()
-
-        # Include & link
-        target_include_directories(RabBit PRIVATE
-            /usr/include 
-            /usr/include/libdrm
-        )
-
-        target_link_libraries(RabBit PRIVATE
-            ${LIBDRM_LIBRARY}
-            ${LIBGBM_LIBRARY}
-        )
-    endif() 
+    endif()
 
     add_subdirectory(external/VulkanHeaders)
 

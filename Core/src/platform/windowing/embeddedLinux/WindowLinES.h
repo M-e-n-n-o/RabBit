@@ -7,15 +7,10 @@
 #include "graphics/Display.h"
 #include "platform/windowing/SwapChain.h"
 
-//#include <xf86drm.h>
-//#include <xf86drmMode.h>
-//#include <gbm.h>
-
 namespace RB::Graphics::LinuxES
 {
     struct WindowArgs
     {
-        //const char*             drmDeviceName
         Display*                display;    
         uint32_t                width;
         uint32_t                height;
@@ -59,19 +54,8 @@ namespace RB::Graphics::LinuxES
         void ResizeBackBuffers(uint32_t width, uint32_t height) override;
         void DestroyWindow() override;
 
-        //int                     m_DrmFileDescriptor;
-        //drmModeRes*             m_DrmResources;
-        //uint32_t                m_DrmConnectorId;
-        //drmModeConnector*       m_DrmConnector;
-        //drmModeModeInfo         m_DrmMode;
-        //uint32_t                m_CrtcId;
-        //drmModeCrtc*            m_OriginalCrtc;
-        //
-        //gbm_device*             m_GbmDevice;
-        //gbm_surface*            m_GbmSurface;
-
-        int                     m_TTY;
-
+        int                     m_TTY0;
+        int                     m_CurrentTTY;
         SwapChain*              m_SwapChain;
         bool                    m_IsValid;
         RenderResourceFormat    m_BackBufferFormat;
