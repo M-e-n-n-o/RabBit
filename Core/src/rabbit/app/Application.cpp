@@ -104,10 +104,13 @@ namespace RB
 
         for (const AppInfo::Window& window : m_StartAppInfo.windows)
         {
-            if (window.fullscreen)
+            if (window.fullscreen && window.windowIndex >= 0)
             {
+                RB_ASSERT(LOGTAG_MAIN, window.windowIndex < m_Displays.size(), "Specified window index is invalid");
+                int32_t index = Math::Min(window.windowIndex, (int32_t)m_Displays.size());
+
                 m_Windows.push_back(Window::Create(window.windowName, 
-                                                   m_Displays[0], 
+                                                   m_Displays[index],
                                                    window.vsync, 
                                                    window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, 
                                                    window.renderScale, window.forcedRenderAspect));

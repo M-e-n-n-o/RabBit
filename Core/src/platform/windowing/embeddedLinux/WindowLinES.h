@@ -4,24 +4,20 @@
 
 #include "RabBitCommon.h"
 #include "graphics/Window.h"
-
-#include <xf86drm.h>
-#include <xf86drmMode.h>
-#include <gbm.h>
+#include "graphics/Display.h"
+#include "platform/windowing/SwapChain.h"
 
 namespace RB::Graphics::LinuxES
 {
-    class SwapChain;
-
     struct WindowArgs
     {
-        const char*             drmDeviceName;
+        Display*                display;    
         uint32_t                width;
         uint32_t                height;
-        RenderResourceFormat    format;
         bool                    vsync;
         float                   virtualScale;
         float                   virtualAspect;
+        RenderResourceFormat    format;
     };
 
     class WindowLinuxES : public Window
@@ -34,13 +30,13 @@ namespace RB::Graphics::LinuxES
 
         void Present() override;
 
-        Math::Float4 GetWindowRectangle()   const override;
-        uint32_t     GetWidth()             const override;
-        uint32_t     GetHeight()            const override;
-        RenderRect   GetWindowRect()        const override;
-        bool         IsMinimized()          const override;
-        bool         IsValid()              const override;
-        bool         IsSemiTransparent()    const override;
+        Math::Float4 GetNativeWindowRectangle() const override;
+        uint32_t     GetWidth()                 const override;
+        uint32_t     GetHeight()                const override;
+        RenderRect   GetWindowRect()            const override;
+        bool         IsMinimized()              const override;
+        bool         IsValid()                  const override;
+        bool         IsSemiTransparent()        const override;
 
         Display* GetParentDisplay() override;
 
@@ -58,11 +54,9 @@ namespace RB::Graphics::LinuxES
         void ResizeBackBuffers(uint32_t width, uint32_t height) override;
         void DestroyWindow() override;
 
-        int                 m_DrmFileDescriptor;
-        drmModeRes*         m_DrmResources;
-        drmModeConnector*   m_DrmConnector;
-        drmModeCrtc*        m_DrmCrtc;
-        gbm_device*         m_GbmDevice;
+        SwapChain*              m_SwapChain;
+        bool                    m_IsValid;
+        RenderResourceFormat    m_BackBufferFormat;
     };
 }
 #endif

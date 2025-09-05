@@ -4,6 +4,7 @@
 
 #include "platform/windowing/SwapChain.h"
 #include "graphics/RenderResource.h"
+#include "graphics/Display.h"
 
 #include <vulkan/vulkan.h>
 
@@ -15,7 +16,7 @@ namespace RB::Graphics::VK
 #if RB_PLATFORM_WINDOWS
         SwapChainVK(HWND window_handle, HINSTANCE h_instance, uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support);
 #elif RB_PLATFORM_LINUX_ES
-        SwapChainVK(uint32_t width, uint32_t height, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support);
+        SwapChainVK(Display* display, uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format);
 #endif
         ~SwapChainVK();
 

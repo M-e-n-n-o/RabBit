@@ -41,13 +41,13 @@ namespace RB::Graphics::Windows
 
         void Present() override;
 
-        Math::Float4 GetWindowRectangle()   const override;
-        uint32_t     GetWidth()             const override;
-        uint32_t     GetHeight()            const override;
-        RenderRect   GetWindowRect()        const override;
-        bool         IsMinimized()          const override;
-        bool         IsValid()              const override;
-        bool         IsSemiTransparent()    const override;
+        Math::Float4 GetNativeWindowRectangle() const override;
+        uint32_t     GetWidth()                 const override;
+        uint32_t     GetHeight()                const override;
+        RenderRect   GetWindowRect()            const override;
+        bool         IsMinimized()              const override;
+        bool         IsValid()                  const override;
+        bool         IsSemiTransparent()        const override;
 
         Display* GetParentDisplay() override;
 

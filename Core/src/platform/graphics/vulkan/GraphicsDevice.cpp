@@ -14,7 +14,7 @@ namespace RB::Graphics::VK
         VK_KHR_SURFACE_EXTENSION_NAME,
 
 #if RB_PLATFORM_WINDOWS
-            VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #elif RB_PLATFORM_LINUX_ES
         // Used for both window creation on Linux, but also for enumerating
         // connected display's using the Vulkan API (not supported on Windows)

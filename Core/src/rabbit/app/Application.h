@@ -27,6 +27,7 @@ namespace RB
         {
             const char* windowName          = "RabBit App";
             bool		fullscreen          = false;
+            int32_t     windowIndex         = -1;
             uint32_t    windowWidth         = 1280;
             uint32_t    windowHeight        = 720;
             bool        vsync               = true;

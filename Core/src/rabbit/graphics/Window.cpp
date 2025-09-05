@@ -129,7 +129,7 @@ namespace RB::Graphics
         m_NewVirtualResScale = resolution_scale;
         m_NewVirtualAspect = aspect;
 
-        Math::Float4 window_rect = GetWindowRectangle();
+        Math::Float4 window_rect = GetNativeWindowRectangle();
         Resize(window_rect.x, window_rect.y, window_rect.z, window_rect.w);
     }
 
@@ -162,7 +162,7 @@ namespace RB::Graphics
         }
         else
         {
-            m_OriginalRect = GetWindowRectangle();
+            m_OriginalRect = GetNativeWindowRectangle();
 
             SetBorderless(true);
 
@@ -316,7 +316,7 @@ namespace RB::Graphics
         return new Windows::WindowWin(args);
 #elif RB_PLATFORM_LINUX_ES
         LinuxES::WindowArgs args = {};
-        args.drmDeviceName  = "/dev/dri/card1"; // TODO Should probably add this as a command line argument
+        args.display        = display;
         args.width          = display->GetResolution().x;
         args.height         = display->GetResolution().y;
         args.vsync          = vsync;

@@ -136,7 +136,7 @@ namespace RB::Graphics::Windows
         m_SwapChain->Present();
     }
 
-    Math::Float4 WindowWin::GetWindowRectangle() const
+    Math::Float4 WindowWin::GetNativeWindowRectangle() const
     {
         RECT window_rect;
         ::GetWindowRect(m_WindowHandle, &window_rect);

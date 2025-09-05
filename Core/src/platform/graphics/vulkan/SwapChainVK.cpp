@@ -22,6 +22,69 @@ namespace RB::Graphics::VK
 
         Init(width, height, vsync, buffer_count, format, transparency_support);
     }
+#elif RB_PLATFORM_LINUX_ES
+    SwapChainVK::SwapChainVK(Display* display, uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format)
+    {
+        VkDisplayKHR native_display = *(VkDisplayKHR*)display->GetNativeHandle();
+
+        // Find a plane compatible with the display
+        uint32_t plane_count = 0;
+        vkGetPhysicalDeviceDisplayPlanePropertiesKHR(g_GraphicsDevice->GetPhysicalDevice(), &plane_count, nullptr);
+
+        uint32_t plane_index = UINT32_MAX;
+        for (uint32_t i = 0; i < plane_count; i++)
+        {
+            uint32_t mode_count = 0;
+            vkGetDisplayPlaneSupportedDisplaysKHR(g_GraphicsDevice->GetPhysicalDevice(), i, &mode_count, nullptr);
+            std::vector<VkDisplayKHR> supported_displays(mode_count);
+            vkGetDisplayPlaneSupportedDisplaysKHR(g_GraphicsDevice->GetPhysicalDevice(), i, &mode_count, supported_displays.data());
+
+            if (std::find(supported_displays.begin(), supported_displays.end(), native_display) != supported_displays.end())
+            {
+                plane_index = i;
+                break;
+            }
+        }
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, plane_index != UINT32_MAX, "No compatible plane found for the display!");
+
+        // Pick a display mode (first mode)
+        uint32_t mode_count = 0;
+        vkGetDisplayModePropertiesKHR(g_GraphicsDevice->GetPhysicalDevice(), native_display, &mode_count, nullptr);
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, mode_count > 0, "No display modes available!");
+        std::vector<VkDisplayModePropertiesKHR> modes(mode_count);
+        vkGetDisplayModePropertiesKHR(g_GraphicsDevice->GetPhysicalDevice(), native_display, &mode_count, modes.data());
+
+        uint32_t mode_index = UINT32_MAX;
+        for (uint32_t i = 0; i < mode_count; i++)
+        {
+            if (modes[i].parameters.visibleRegion.width == width &&
+                modes[i].parameters.visibleRegion.height == height)
+            {
+                mode_index = i;
+                break;
+            }
+        }
+
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, mode_index != UINT32_MAX, "No compatible display mode found for the display!");
+
+        // Create the plane surface
+        VkDisplaySurfaceCreateInfoKHR surface_info = {};
+        surface_info.sType           = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
+        surface_info.displayMode     = modes[mode_index].displayMode;
+        surface_info.planeIndex      = plane_index;
+        surface_info.planeStackIndex = 0;
+        surface_info.transform       = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        surface_info.globalAlpha     = 1.0f;
+        surface_info.alphaMode       = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
+        surface_info.imageExtent     = modes[mode_index].parameters.visibleRegion;
+
+        RB_ASSERT_FATAL_RELEASE_VK(
+            vkCreateDisplayPlaneSurfaceKHR(g_GraphicsDevice->GetInstance(), &surface_info, nullptr, &m_Surface),
+            "Failed to create Vulkan display plane surface"
+        );
+
+        Init(width, height, vsync, buffer_count, format, false);
+    }
 #endif
 
     //vkCreateDisplayPlaneSurfaceKHR
