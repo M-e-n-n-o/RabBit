@@ -294,7 +294,6 @@ namespace RB::Graphics::VK
             SAFE_DELETE(m_WrappedBackBuffers[i]);
         }
 
-        //static_assert(false);
         RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "TODO: implement resize for VK swapchain");
     }
 

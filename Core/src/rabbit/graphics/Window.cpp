@@ -316,6 +316,7 @@ namespace RB::Graphics
         return new Windows::WindowWin(args);
 #elif RB_PLATFORM_LINUX_ES
         LinuxES::WindowArgs args = {};
+        //args.drmDeviceName  = "/dev/dri/card1"; // TODO Pass this in as a command line argument
         args.display        = display;
         args.width          = display->GetResolution().x;
         args.height         = display->GetResolution().y;
