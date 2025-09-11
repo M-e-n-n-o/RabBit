@@ -50,6 +50,7 @@ namespace RB::Graphics
 
     uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
     bool IsDepthFormat(const RenderResourceFormat& format);
+    bool IsSRGBFormat(const RenderResourceFormat& format);
 
     enum class RenderResourceType : uint32_t
     {
@@ -143,12 +144,6 @@ namespace RB::Graphics
         IndexBuffer() : Buffer(RenderResourceType::IndexBuffer) {}
     };
 
-    enum class TextureColorSpace
-    {
-        Linear,
-        sRGB
-    };
-
     #define MAX_TEXTURE_SUBRESOURCE_COUNT 8
 
     class Texture : public RenderResource
@@ -172,15 +167,10 @@ namespace RB::Graphics
         virtual void SetArraySize(uint32_t size) = 0;
         virtual void SetFirstArraySlice(uint32_t slice) = 0;
 
-        TextureColorSpace GetColorSpace() const { return m_ColorSpace; }
-
     protected:
-        Texture(RenderResourceType type, TextureColorSpace color_space) 
-            : RenderResource(type) 
-            , m_ColorSpace(color_space)
+        Texture(RenderResourceType type) 
+            : RenderResource(type)
         {}
-
-        TextureColorSpace m_ColorSpace;
     };
 
     class Texture2D : public Texture
@@ -198,12 +188,12 @@ namespace RB::Graphics
         void SetArraySize(uint32_t size) {}
         void SetFirstArraySlice(uint32_t slice) {}
 
-        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
-        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
-        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space = TextureColorSpace::Linear);
+        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
 
     protected:
-        Texture2D(TextureColorSpace color_space) : Texture(RenderResourceType::Texture2D, color_space) {}
+        Texture2D() : Texture(RenderResourceType::Texture2D) {}
     };
 
     struct RenderTargetBundle

@@ -51,15 +51,15 @@ namespace RB::Entity
         }
     }
 
-    Material::Material(const char* file_name, Graphics::TextureColorSpace color_space)
+    Material::Material(const char* file_name, TextureColorSpace color_space)
         : m_Texture(nullptr)
     {
         LoadedImage img;
-        bool success = AssetManager::LoadImage8Bit(file_name, &img, color_space == Graphics::TextureColorSpace::sRGB);
+        bool success = AssetManager::LoadImage8Bit(file_name, &img, color_space == TextureColorSpace::sRGB);
 
         if (success)
         {
-            m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false, color_space);
+            m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
         }
     }
 }

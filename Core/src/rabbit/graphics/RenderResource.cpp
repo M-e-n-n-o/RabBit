@@ -75,6 +75,35 @@ namespace RB::Graphics
         }
     }
 
+    bool IsSRGBFormat(const RenderResourceFormat& format)
+    {
+        switch (format)
+        {
+        case RenderResourceFormat::R8G8B8A8_SRGB:
+            return true;
+        case RenderResourceFormat::D32_FLOAT:
+        case RenderResourceFormat::D16_UNORM:
+        case RenderResourceFormat::R32G32B32A32_FLOAT:
+        case RenderResourceFormat::R16G16B16A16_FLOAT:
+        case RenderResourceFormat::R32G32_FLOAT:
+        case RenderResourceFormat::R8_UINT:
+        case RenderResourceFormat::R32_UINT:
+        case RenderResourceFormat::B8G8R8A8_UNORM:
+        case RenderResourceFormat::R8G8B8A8_UNORM:
+        case RenderResourceFormat::R16G16_FLOAT:
+        case RenderResourceFormat::R16G16_UINT:
+        case RenderResourceFormat::R16_FLOAT:
+        case RenderResourceFormat::R16_UINT:
+        case RenderResourceFormat::R16_UNORM:
+        case RenderResourceFormat::R16_SNORM:
+        case RenderResourceFormat::R8_UNORM:
+        case RenderResourceFormat::R32_FLOAT:
+            return false;
+        default:
+            return false;
+        }
+    }
+
     float Texture2D::GetAspectRatio() const
     {
         return (float)GetWidth() / (float)GetHeight();
@@ -122,13 +151,13 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space)
+    Texture2D* Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::Texture2DD3D12(name, format, width, height, is_render_target, random_read_write_access, color_space);
+            return new D3D12::Texture2DD3D12(name, format, width, height, is_render_target, random_read_write_access);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
@@ -138,13 +167,13 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space)
+    Texture2D* Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::Texture2DD3D12(name, data, data_size, format, width, height, is_render_target, random_read_write_access, color_space);
+            return new D3D12::Texture2DD3D12(name, data, data_size, format, width, height, is_render_target, random_read_write_access);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
@@ -154,18 +183,18 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space)
+    Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height, is_render_target, random_read_write_access, color_space);
+            return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
 #endif
 
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
-            return new VK::Texture2DVK(name, internal_resource, format, width, height, is_render_target, random_read_write_access, color_space);
+            return new VK::Texture2DVK(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
 #endif
 
         default:

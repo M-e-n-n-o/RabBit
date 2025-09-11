@@ -32,11 +32,17 @@ namespace RB::Entity
         VertexPair m_VertexPair;
     };
 
+    enum class TextureColorSpace
+    {
+        Linear,
+        sRGB
+    };
+
     class Material
     {
     public:
 
-        Material(const char* file_name, Graphics::TextureColorSpace color_space = Graphics::TextureColorSpace::sRGB);
+        Material(const char* file_name, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
         ~Material()
         {

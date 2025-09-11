@@ -260,7 +260,7 @@ namespace RB::Graphics::D3D12
             Texture2DD3D12* tex = (Texture2DD3D12*)resource;
 
             m_RenderState.tex2DsrvHandles[slot] = tex->GetSrvHandle();
-            m_RenderState.tex2DSRGBs[slot] = tex->GetColorSpace() == TextureColorSpace::sRGB;
+            m_RenderState.tex2DSRGBs[slot] = IsSRGBFormat(tex->GetFormat());
         }
         break;
 
