@@ -14,6 +14,7 @@ namespace RB::Graphics::VK
     class Texture2DVK : public Texture2D
     {
     public:
+        Texture2DVK(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         Texture2DVK(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         ~Texture2DVK();
 

@@ -307,7 +307,7 @@ namespace RB::Graphics::VK
 
             m_WrappedBackBuffers[m_CurrentBackBufferIndex] = Texture2D::Create(
                 name.c_str(),
-                new GpuResource(m_SwapChainImages[m_CurrentBackBufferIndex], false),
+                new GpuResource(name.c_str(), m_SwapChainImages[m_CurrentBackBufferIndex], false),
                 m_EngineFormat,
                 m_Width,
                 m_Height,

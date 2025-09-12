@@ -30,7 +30,7 @@ namespace RB::Graphics::D3D12
         streamable.resource     = this;
         streamable.uploadData   = data;
         streamable.uploadSize   = data_size;
-        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
+        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
     }
 
     VertexBufferD3D12::~VertexBufferD3D12()
@@ -69,7 +69,7 @@ namespace RB::Graphics::D3D12
         streamable.resource     = this;
         streamable.uploadData   = data;
         streamable.uploadSize   = size;
-        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
+        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
     }
 
     IndexBufferD3D12::~IndexBufferD3D12()
@@ -144,7 +144,7 @@ namespace RB::Graphics::D3D12
         streamable.resource     = this;
         streamable.uploadData   = data;
         streamable.uploadSize   = data_size;
-        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleForStream(streamable);
+        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
     }
 
     Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)

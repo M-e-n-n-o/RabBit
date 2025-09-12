@@ -30,6 +30,7 @@ namespace RB::Graphics::VK
 
     void RendererVK::SyncWithGpu()
     {
+        g_GraphicsDevice->WaitUntilIdle();
     }
 }
 #endif

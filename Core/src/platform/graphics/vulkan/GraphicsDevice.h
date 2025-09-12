@@ -25,6 +25,8 @@ namespace RB::Graphics::VK
 
         uint32_t GetGraphicsQueueFamilyIdx() const { return m_GraphicsQueueFamilyIdx; }
 
+        void WaitUntilIdle();
+
     private:
         void CreateInstance(bool debug_device, List<const char*> validation_layers);
         void CreateDevice(List<const char*> validation_layers);

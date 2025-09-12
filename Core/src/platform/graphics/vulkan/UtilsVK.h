@@ -2,13 +2,14 @@
 
 #pragma once
 
+#include "GraphicsDevice.h"
 #include "graphics/RenderResource.h"
 
 #include <vulkan/vulkan.h>
 
 namespace RB::Graphics::VK
 {
-    static VkFormat ConvertToVKFormat(const RenderResourceFormat& format)
+    static inline VkFormat ConvertToVKFormat(const RenderResourceFormat& format)
     {
         switch (format)
         {
@@ -54,7 +55,7 @@ namespace RB::Graphics::VK
         }
     }
 
-    static VkImageSubresourceRange GetImageSubResourceRange(RenderResource* resource)
+    static inline VkImageSubresourceRange GetImageSubResourceRange(RenderResource* resource)
     {
         if (resource->GetPrimitiveType() != RenderResourceType::Texture)
         {
@@ -72,6 +73,40 @@ namespace RB::Graphics::VK
         range.layerCount     = tex->GetArraySize();
 
         return range;
+    }
+
+    static inline uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties mem_props;
+        vkGetPhysicalDeviceMemoryProperties(g_GraphicsDevice->GetPhysicalDevice(), &mem_props);
+
+        for (uint32_t i = 0; i < mem_props.memoryTypeCount; i++)
+        {
+            if ((type_filter & (1 << i)) && (mem_props.memoryTypes[i].propertyFlags & properties) == properties)
+            {
+                return i;
+            }
+        }
+
+        RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Failed to find suitable memory type");
+        return 0;
+    }
+
+    static inline void SetObjectName(uint64_t handle, VkObjectType type, const char* name) 
+    {
+#ifdef RB_CONFIG_DEBUG
+        VkDebugUtilsObjectNameInfoEXT name_info = {};
+        name_info.sType          = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        name_info.objectHandle   = handle;
+        name_info.objectType     = type;
+        name_info.pObjectName    = name;
+
+        auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(g_GraphicsDevice->Get(), "vkSetDebugUtilsObjectNameEXT");
+        if (func) 
+        {
+            func(g_GraphicsDevice->Get(), &name_info);
+        }
+#endif
     }
 }
 #endif

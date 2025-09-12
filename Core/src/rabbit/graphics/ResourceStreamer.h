@@ -21,7 +21,7 @@ namespace RB::Graphics
         ResourceStreamer();
         ~ResourceStreamer();
 
-        void ScheduleForStream(const Streamable& streamable);
+        void ScheduleUpload(const Streamable& streamable);
 
         Shared<GpuGuard> Stream(RenderInterface* render_interface);
 

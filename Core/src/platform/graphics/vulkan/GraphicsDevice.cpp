@@ -18,7 +18,11 @@ namespace RB::Graphics::VK
 #elif RB_PLATFORM_LINUX_ES
         // Used for both window creation on Linux, but also for enumerating
         // connected display's using the Vulkan API (not supported on Windows)
-        VK_KHR_DISPLAY_EXTENSION_NAME
+        VK_KHR_DISPLAY_EXTENSION_NAME,
+#endif
+
+#ifdef RB_CONFIG_DEBUG
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 #endif
     };
 
@@ -32,7 +36,8 @@ namespace RB::Graphics::VK
         VkDebugUtilsMessageSeverityFlagBitsEXT severity,
         VkDebugUtilsMessageTypeFlagsEXT type,
         const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
-        void* userData) {
+        void* userData) 
+    {
 
         switch (severity)
         {
@@ -113,6 +118,18 @@ namespace RB::Graphics::VK
             return m_TransferQueue;
 
         return m_GraphicsQueue;
+    }
+
+    void GraphicsDevice::WaitUntilIdle()
+    {
+        if (m_TransferQueue)
+            m_TransferQueue->CpuWaitUntilIdle();
+
+        if (m_ComputeQueue)
+            m_ComputeQueue->CpuWaitUntilIdle();
+
+        if (m_GraphicsQueue)
+            m_GraphicsQueue->CpuWaitUntilIdle();
     }
 
     void GraphicsDevice::CreateInstance(bool debug_device, List<const char*> validation_layers)

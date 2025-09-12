@@ -159,6 +159,12 @@ namespace RB::Graphics
         case RenderAPI::D3D12:
             return new D3D12::Texture2DD3D12(name, format, width, height, is_render_target, random_read_write_access);
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return new VK::Texture2DVK(name, format, width, height, is_render_target, random_read_write_access);
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;

@@ -6,6 +6,11 @@
 
 namespace RB::Graphics::VK
 {
+    Texture2DVK::Texture2DVK(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    {
+        static_assert(false);
+    }
+
     Texture2DVK::Texture2DVK(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
         : m_Name(name)
         , m_Resource((GpuResource*)internal_resource)

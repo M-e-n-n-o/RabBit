@@ -3,15 +3,44 @@
 #include "RabBitCommon.h"
 #include "GpuResource.h"
 #include "GraphicsDevice.h"
+#include "UtilsVK.h"
 
 namespace RB::Graphics::VK
 {
-    GpuResource::GpuResource(const VkImage& image, bool transfer_ownership)
+    GpuResource::GpuResource(const char* name, const VkImageCreateInfo& image_create_info, VkMemoryPropertyFlagBits memory_type)
+        : m_ResourceType((uint8_t)GpuResourceType::Image)
+        , m_OwnsResource(true)
+        , m_IsValid(true)
+    {
+        const VkDevice& device = g_GraphicsDevice->Get();
+
+        RB_ASSERT_FATAL_RELEASE_VK(vkCreateImage(device, &image_create_info, nullptr, &m_Image), "Failed to create image");
+
+        VkMemoryRequirements mem_reqs;
+        vkGetImageMemoryRequirements(device, m_Image, &mem_reqs);
+
+        uint32_t memoryTypeIndex = FindMemoryType(mem_reqs.memoryTypeBits, memory_type);
+
+        VkMemoryAllocateInfo alloc_info = {};
+        alloc_info.sType            = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        alloc_info.pNext            = NULL;
+        alloc_info.allocationSize   = mem_reqs.size;
+        alloc_info.memoryTypeIndex  = memoryTypeIndex;
+
+        RB_ASSERT_FATAL_RELEASE_VK(vkAllocateMemory(device, &alloc_info, NULL, &m_Memory), "Failed to allocate image memory");
+
+        vkBindImageMemory(device, m_Image, m_Memory, 0);
+
+        SetObjectName((uint64_t)m_Image, VK_OBJECT_TYPE_IMAGE, name);
+    }
+
+    GpuResource::GpuResource(const char* name, const VkImage& image, bool transfer_ownership)
         : m_Image(image)
         , m_ResourceType((uint8_t)GpuResourceType::Image)
         , m_OwnsResource(transfer_ownership)
         , m_IsValid(true)
     {
+        SetObjectName((uint64_t)m_Image, VK_OBJECT_TYPE_IMAGE, name);
     }
 
     GpuResource::~GpuResource()
@@ -31,6 +60,8 @@ namespace RB::Graphics::VK
         {
             vkDestroyBuffer(g_GraphicsDevice->Get(), m_Buffer, nullptr);
         }
+
+        vkFreeMemory(g_GraphicsDevice->Get(), m_Memory, nullptr);
     }
 
     void GpuResource::UpdateState(ResourceState new_state)

@@ -33,7 +33,7 @@ namespace RB::Graphics
         m_StreamedEntries.clear();
     }
 
-    void ResourceStreamer::ScheduleForStream(const Streamable& streamable)
+    void ResourceStreamer::ScheduleUpload(const Streamable& streamable)
     {
         // Set the resource as streaming
         streamable.resource->SetStreaming(true);
