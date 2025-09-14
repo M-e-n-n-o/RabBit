@@ -121,7 +121,7 @@ namespace RB::Graphics::D3D12
         if (m_IsDepthStencil)
         {
             flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE; // Should we have this here? What if you want to read from a depth texture in a compute shader?
         }
 
         // TODO Add mip support
@@ -174,6 +174,10 @@ namespace RB::Graphics::D3D12
 
         SAFE_DELETE(m_Resource);
     }
+
+
+    // TODO: Setting any of the following methods will cause the GetXHandle methods
+    // to return a transient view using the newly set amount of mips.
 
     uint32_t Texture2DD3D12::GetMipCount() const
     {

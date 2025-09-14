@@ -4,21 +4,22 @@ namespace RB::Graphics
 {
     enum class ResourceState
     {
-        COMMON                              = 0,
-        VERTEX_AND_CONSTANT_BUFFER          = 1,
-        INDEX_BUFFER                        = 2,
-        RENDER_TARGET                       = 3,
-        UNORDERED_ACCESS                    = 4,
-        DEPTH_WRITE                         = 5,
-        DEPTH_READ                          = 6,
-        NON_PIXEL_SHADER_RESOURCE           = 7,
-        PIXEL_SHADER_RESOURCE               = 8,
-        COPY_DEST                           = 9,
-        COPY_SOURCE                         = 10,
-        RAYTRACING_ACCELERATION_STRUCTURE   = 11,
-        READ                                = 12,
-        ALL_SHADER_RESOURCE                 = 13,
-        PRESENT                             = 14,
+        UNKNOWN                             = 0,
+        COMMON                              = 1,
+        VERTEX_AND_CONSTANT_BUFFER          = 2,
+        INDEX_BUFFER                        = 3,
+        RENDER_TARGET                       = 4,
+        UNORDERED_ACCESS                    = 5,
+        DEPTH_WRITE                         = 6,
+        DEPTH_READ                          = 7,
+        NON_PIXEL_SHADER_RESOURCE           = 8,
+        PIXEL_SHADER_RESOURCE               = 9,
+        COPY_DEST                           = 10,
+        COPY_SOURCE                         = 11,
+        RAYTRACING_ACCELERATION_STRUCTURE   = 12,
+        READ                                = 13,
+        ALL_SHADER_RESOURCE                 = 14,
+        PRESENT                             = 15,
     };
 
     enum class RenderResourceFormat

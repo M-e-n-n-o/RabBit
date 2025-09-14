@@ -193,7 +193,7 @@ namespace RB::Graphics::VK
         info.imageColorSpace     = surface_format.colorSpace;
         info.imageExtent         = { m_Width, m_Height };
         info.imageArrayLayers    = 1;
-        info.imageUsage          = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        info.imageUsage          = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         info.imageSharingMode    = VK_SHARING_MODE_EXCLUSIVE;
         info.preTransform        = surface_transform;
         info.compositeAlpha      = transparency_support ? VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR : VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -307,7 +307,7 @@ namespace RB::Graphics::VK
 
             m_WrappedBackBuffers[m_CurrentBackBufferIndex] = Texture2D::Create(
                 name.c_str(),
-                new GpuResource(name.c_str(), m_SwapChainImages[m_CurrentBackBufferIndex], false),
+                new GpuResource(name.c_str(), m_SwapChainImages[m_CurrentBackBufferIndex], ResourceState::UNKNOWN, false),
                 m_EngineFormat,
                 m_Width,
                 m_Height,

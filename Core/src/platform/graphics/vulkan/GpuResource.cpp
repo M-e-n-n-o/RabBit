@@ -7,10 +7,39 @@
 
 namespace RB::Graphics::VK
 {
-    GpuResource::GpuResource(const char* name, const VkImageCreateInfo& image_create_info, VkMemoryPropertyFlagBits memory_type)
+    GpuResource(const char* name, const VkBufferCreateInfo& buffer_create_info, VkMemoryPropertyFlagBits memory_type, ResourceState state)
+        : m_ResourceType((uint8_t)GpuResourceType::Buffer)
+        , m_OwnsResource(true)
+        , m_IsValid(true)
+        , m_CurrentState((uint8_t)state)
+    {
+        const VkDevice& device = g_GraphicsDevice->Get();
+
+        RB_ASSERT_FATAL_RELEASE_VK(vkCreateBuffer(device, &buffer_create_info, nullptr, &m_Buffer), "Failed to create buffer");
+
+        VkMemoryRequirements mem_reqs;
+        vkGetImageMemoryRequirements(device, m_Buffer, &mem_reqs);
+
+        uint32_t memoryTypeIndex = FindMemoryType(mem_reqs.memoryTypeBits, memory_type);
+
+        VkMemoryAllocateInfo alloc_info = {};
+        alloc_info.sType            = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        alloc_info.pNext            = NULL;
+        alloc_info.allocationSize   = mem_reqs.size;
+        alloc_info.memoryTypeIndex  = memoryTypeIndex;
+
+        RB_ASSERT_FATAL_RELEASE_VK(vkAllocateMemory(device, &alloc_info, NULL, &m_Memory), "Failed to allocate buffer memory");
+
+        vkBindImageMemory(device, m_Buffer, m_Memory, 0);
+
+        SetObjectName((uint64_t)m_Buffer, VK_OBJECT_TYPE_BUFFER, name);
+    }
+
+    GpuResource::GpuResource(const char* name, const VkImageCreateInfo& image_create_info, VkMemoryPropertyFlagBits memory_type, ResourceState state)
         : m_ResourceType((uint8_t)GpuResourceType::Image)
         , m_OwnsResource(true)
         , m_IsValid(true)
+        , m_CurrentState((uint8_t)state)
     {
         const VkDevice& device = g_GraphicsDevice->Get();
 
@@ -34,11 +63,12 @@ namespace RB::Graphics::VK
         SetObjectName((uint64_t)m_Image, VK_OBJECT_TYPE_IMAGE, name);
     }
 
-    GpuResource::GpuResource(const char* name, const VkImage& image, bool transfer_ownership)
+    GpuResource::GpuResource(const char* name, const VkImage& image, ResourceState state, bool transfer_ownership)
         : m_Image(image)
         , m_ResourceType((uint8_t)GpuResourceType::Image)
         , m_OwnsResource(transfer_ownership)
         , m_IsValid(true)
+        , m_CurrentState((uint8_t)state)
     {
         SetObjectName((uint64_t)m_Image, VK_OBJECT_TYPE_IMAGE, name);
     }

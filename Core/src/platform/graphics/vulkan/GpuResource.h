@@ -18,8 +18,9 @@ namespace RB::Graphics::VK
     class GpuResource
     {
     public:
-        GpuResource(const char* name, const VkImageCreateInfo& image_create_info, VkMemoryPropertyFlagBits memory_type);
-        GpuResource(const char* name, const VkImage& image, bool transfer_ownership);
+        GpuResource(const char* name, const VkImageCreateInfo& image_create_info, VkMemoryPropertyFlagBits memory_type, ResourceState state);
+        GpuResource(const char* name, const VkBufferCreateInfo& buffer_create_info, VkMemoryPropertyFlagBits memory_type, ResourceState state);
+        GpuResource(const char* name, const VkImage& image, ResourceState state, bool transfer_ownership);
         ~GpuResource();
 
         bool IsValid() const { return m_IsValid; }

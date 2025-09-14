@@ -18,6 +18,10 @@ namespace RB::Graphics::VK
 
         void TransitionResource(RenderResource* resource, ResourceState new_state);
 
+        // TODO
+        static_assert(false);
+        void TransferOwnership(RenderResource* resource, uint32_t queue_family);
+
         void FlushPendingTransitions(VkCommandBuffer cmd);
 
     private:

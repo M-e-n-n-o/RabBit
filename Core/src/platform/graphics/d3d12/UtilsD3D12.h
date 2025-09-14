@@ -29,6 +29,7 @@ namespace RB::Graphics::D3D12
     {
         switch (state)
         {
+        case ResourceState::UNKNOWN:
         case ResourceState::COMMON:
             return D3D12_RESOURCE_STATE_COMMON;
         case ResourceState::VERTEX_AND_CONSTANT_BUFFER:
