@@ -7,18 +7,19 @@
 
 namespace RB::Graphics::VK
 {
-    GpuResource(const char* name, const VkBufferCreateInfo& buffer_create_info, VkMemoryPropertyFlagBits memory_type, ResourceState state)
+    GpuResource::GpuResource(const char* name, const VkBufferCreateInfo& buffer_create_info, VkMemoryPropertyFlagBits memory_type, ResourceState state)
         : m_ResourceType((uint8_t)GpuResourceType::Buffer)
         , m_OwnsResource(true)
         , m_IsValid(true)
         , m_CurrentState((uint8_t)state)
+        , m_CurrentQueueIdx(255)
     {
         const VkDevice& device = g_GraphicsDevice->Get();
 
         RB_ASSERT_FATAL_RELEASE_VK(vkCreateBuffer(device, &buffer_create_info, nullptr, &m_Buffer), "Failed to create buffer");
 
         VkMemoryRequirements mem_reqs;
-        vkGetImageMemoryRequirements(device, m_Buffer, &mem_reqs);
+        vkGetBufferMemoryRequirements(device, m_Buffer, &mem_reqs);
 
         uint32_t memoryTypeIndex = FindMemoryType(mem_reqs.memoryTypeBits, memory_type);
 
@@ -30,7 +31,7 @@ namespace RB::Graphics::VK
 
         RB_ASSERT_FATAL_RELEASE_VK(vkAllocateMemory(device, &alloc_info, NULL, &m_Memory), "Failed to allocate buffer memory");
 
-        vkBindImageMemory(device, m_Buffer, m_Memory, 0);
+        vkBindBufferMemory(device, m_Buffer, m_Memory, 0);
 
         SetObjectName((uint64_t)m_Buffer, VK_OBJECT_TYPE_BUFFER, name);
     }
@@ -40,6 +41,7 @@ namespace RB::Graphics::VK
         , m_OwnsResource(true)
         , m_IsValid(true)
         , m_CurrentState((uint8_t)state)
+        , m_CurrentQueueIdx(255)
     {
         const VkDevice& device = g_GraphicsDevice->Get();
 
@@ -69,6 +71,7 @@ namespace RB::Graphics::VK
         , m_OwnsResource(transfer_ownership)
         , m_IsValid(true)
         , m_CurrentState((uint8_t)state)
+        , m_CurrentQueueIdx(255)
     {
         SetObjectName((uint64_t)m_Image, VK_OBJECT_TYPE_IMAGE, name);
     }
@@ -103,6 +106,12 @@ namespace RB::Graphics::VK
     ResourceState GpuResource::GetState() const
     {
         return (ResourceState)m_CurrentState;
+    }
+
+    void GpuResource::SetQueueOwnership(uint32_t new_queue_family_idx)
+    {
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, new_queue_family_idx < 255, "We need more bits to store the queue family index in the GpuResource");
+        m_CurrentQueueIdx = (uint8_t)new_queue_family_idx;
     }
     
     VkBuffer GpuResource::GetNativeBuffer() const

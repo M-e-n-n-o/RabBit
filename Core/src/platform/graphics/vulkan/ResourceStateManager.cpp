@@ -13,11 +13,17 @@ namespace RB::Graphics::VK
     {
     }
 
-    void ResourceStateManager::TransitionResource(RenderResource* resource, ResourceState new_state)
+    void ResourceStateManager::TransitionResource(RenderResource* resource, ResourceState new_state, uint32_t queue_family)
     {
         GpuResource* native_res = (GpuResource*)resource->GetNativeResource();
 
-        if (native_res->GetState() == new_state)
+        bool needs_state_change = native_res->GetState() != new_state;
+
+        uint32_t current_family = native_res->GetCurrentQueueOwnership();
+        bool need_transfer = (queue_family != current_family && native_res->IsOwnedByQueue());
+        native_res->SetQueueOwnership(queue_family);
+
+        if (!needs_state_change && !need_transfer)
         {
             return;
         }
@@ -37,12 +43,12 @@ namespace RB::Graphics::VK
 
             VkImageMemoryBarrier barrier = {};
             barrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            barrier.srcAccessMask       = src_access;
-            barrier.dstAccessMask       = dst_access;
+            barrier.srcAccessMask       = needs_state_change ? src_access : (VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
+            barrier.dstAccessMask       = needs_state_change ? dst_access : (VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
             barrier.oldLayout           = old_layout;
             barrier.newLayout           = new_layout;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.srcQueueFamilyIndex = need_transfer ? current_family : VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = need_transfer ? queue_family   : VK_QUEUE_FAMILY_IGNORED;
             barrier.image               = native_res->GetNativeImage();
             barrier.subresourceRange    = GetImageSubResourceRange(resource);
 
@@ -52,10 +58,10 @@ namespace RB::Graphics::VK
         {
             VkBufferMemoryBarrier barrier = {};
             barrier.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-            barrier.srcAccessMask       = src_access;
-            barrier.dstAccessMask       = dst_access;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.srcAccessMask       = needs_state_change ? src_access : (VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
+            barrier.dstAccessMask       = needs_state_change ? dst_access : (VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
+            barrier.srcQueueFamilyIndex = need_transfer ? current_family : VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = need_transfer ? queue_family   : VK_QUEUE_FAMILY_IGNORED;
             barrier.buffer              = native_res->GetNativeBuffer();
             barrier.offset              = 0;
             barrier.size                = VK_WHOLE_SIZE;
@@ -132,7 +138,7 @@ namespace RB::Graphics::VK
 
         case ResourceState::PIXEL_SHADER_RESOURCE:
             access_mask = VK_ACCESS_SHADER_READ_BIT;
-            stage_mask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             layout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             break;
 

@@ -23,8 +23,6 @@ namespace RB::Graphics::VK
         VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
         VkInstance GetInstance() const { return m_Instance; }
 
-        uint32_t GetGraphicsQueueFamilyIdx() const { return m_GraphicsQueueFamilyIdx; }
-
         void WaitUntilIdle();
 
     private:
@@ -47,8 +45,6 @@ namespace RB::Graphics::VK
         DeviceQueue*                m_GraphicsQueue;
         DeviceQueue*                m_ComputeQueue;
         DeviceQueue*                m_TransferQueue; // (copy queue)
-
-        uint32_t                    m_GraphicsQueueFamilyIdx;
     };
 
     extern GraphicsDevice* g_GraphicsDevice;

@@ -91,7 +91,7 @@ namespace RB::Graphics::VK
     {
         // If this goes off, then we need to create a separate present queue
         VkBool32 present_support = VK_FALSE;
-        vkGetPhysicalDeviceSurfaceSupportKHR(g_GraphicsDevice->GetPhysicalDevice(), g_GraphicsDevice->GetGraphicsQueueFamilyIdx(), m_Surface, &present_support);
+        vkGetPhysicalDeviceSurfaceSupportKHR(g_GraphicsDevice->GetPhysicalDevice(), g_GraphicsDevice->GetGraphicsQueue()->GetQueueFamilyIndex(), m_Surface, &present_support);
         RB_ASSERT_FATAL_RELEASE(LOGTAG_GRAPHICS, present_support == VK_TRUE, "The current VK graphics queue does not support presenting to the surface!");
 
         // Check surface capabilities
@@ -307,7 +307,7 @@ namespace RB::Graphics::VK
 
             m_WrappedBackBuffers[m_CurrentBackBufferIndex] = Texture2D::Create(
                 name.c_str(),
-                new GpuResource(name.c_str(), m_SwapChainImages[m_CurrentBackBufferIndex], ResourceState::UNKNOWN, false),
+                new GpuResource(name.c_str(), m_SwapChainImages[m_CurrentBackBufferIndex], ResourceState::PRESENT, false),
                 m_EngineFormat,
                 m_Width,
                 m_Height,

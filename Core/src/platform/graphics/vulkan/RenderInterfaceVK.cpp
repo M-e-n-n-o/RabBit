@@ -70,7 +70,7 @@ namespace RB::Graphics::VK
 
     void RenderInterfaceVK::TransitionResource(RenderResource* resource, ResourceState state)
     {
-        g_ResourceStateManager->TransitionResource(resource, state);
+        g_ResourceStateManager->TransitionResource(resource, state, m_Queue->GetQueueFamilyIndex());
     }
 
     void RenderInterfaceVK::FlushResourceBarriers()

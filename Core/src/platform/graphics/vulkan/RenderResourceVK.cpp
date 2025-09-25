@@ -3,6 +3,7 @@
 #include "RabBitCommon.h"
 #include "RenderResourceVK.h"
 #include "GpuResource.h"
+#include "UtilsVK.h"
 
 namespace RB::Graphics::VK
 {
@@ -21,9 +22,9 @@ namespace RB::Graphics::VK
         info.flags          = 0;
         info.imageType      = VK_IMAGE_TYPE_2D;
         info.format         = ConvertToVKFormat(format);
-        info.extend         = { width, height, 1 };
+        info.extent         = { width, height, 1 };
         info.mipLevels      = 1;
-        info.arrayLevels    = 1;
+        info.arrayLayers    = 1;
         info.samples        = VK_SAMPLE_COUNT_1_BIT;
         info.tiling         = VK_IMAGE_TILING_OPTIMAL;
         info.usage          = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -34,16 +35,12 @@ namespace RB::Graphics::VK
 
         if (m_IsRenderTarget)
             info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        if (m_IsAllowReadWrite)
+        if (m_AllowReadWrite)
             info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
         if (m_IsDepthStencil)
             info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-
         m_Resource = new GpuResource(name, info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResourceState::COMMON);
-
-        // TODO Have to do an ownership transfer (using barrier or vkCmdAcquireOwnership) aftter the transfer queue has copied data into the image 
-        static_assert(false);
     }
 
     Texture2DVK::Texture2DVK(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)

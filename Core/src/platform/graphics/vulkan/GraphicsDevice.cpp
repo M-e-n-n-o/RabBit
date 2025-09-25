@@ -208,8 +208,6 @@ namespace RB::Graphics::VK
         UnorderedMap<VkQueueFlagBits, uint32_t> queue_families;
         m_PhysicalDevice = FindPhysicalDevice(queue_families);
 
-        m_GraphicsQueueFamilyIdx = queue_families[VK_QUEUE_GRAPHICS_BIT];
-
         ValidateDeviceExtensions(g_DeviceExtensions);
 
         float queue_priority = 1.0f;

@@ -28,6 +28,10 @@ namespace RB::Graphics::VK
         void UpdateState(ResourceState new_state);
         ResourceState GetState() const;
 
+        void SetQueueOwnership(uint32_t new_queue_family_idx);
+        uint8_t GetCurrentQueueOwnership() const { return m_CurrentQueueIdx; }
+        bool IsOwnedByQueue() const { return m_CurrentQueueIdx != 255; }
+
         GpuResourceType GetType() const { return (GpuResourceType)m_ResourceType; }
 
         VkBuffer GetNativeBuffer() const;
@@ -47,6 +51,8 @@ namespace RB::Graphics::VK
         uint8_t         m_IsValid       : 1;
         uint8_t         m_CurrentState  : 4;
         uint8_t         m_Unused        : 1;
+
+        uint8_t         m_CurrentQueueIdx;
     };
 }
 #endif
