@@ -15,7 +15,7 @@ void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>&
 
 /*
 
-	RabBit D3D12 Shader Compiler
+	RabBit D3D12/VK Shader Compiler
 	- It only compiles files with the ".hlsl" extension, so ".h" files serve as include files (a bridge between cpp and hlsl)
 	- It writes all the compiled shaders into the generated folder which the engine can include
 
@@ -23,7 +23,11 @@ void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>&
 
 int main(int argc, char* argv[])
 {
+#if RB_SHADER_COMPILER_D3D12
 	LOGW(L"---------------- Starting RabBit's D3D12 shader compiler ----------------");
+#elif RB_SHADER_COMPILER_VK
+	LOGW(L"---------------- Starting RabBit's vulkan shader compiler ----------------");
+#endif
 
 	std::string shader_bin_dir;
 
@@ -66,7 +70,7 @@ int main(int argc, char* argv[])
 	LOGW(L"");
 
 	ShaderWriter writer;
-	writer.WriteOutShaders(RB_GRAPHICS_FOLDER, RB_D3D_GRAPHICS_FOLDER, shader_bin_dir, compiler.GetCompiledShaders());
+	writer.WriteOutShaders(RB_GRAPHICS_FOLDER, RB_API_GRAPHICS_FOLDER, shader_bin_dir, compiler.GetCompiledShaders());
 
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");

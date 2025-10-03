@@ -7,6 +7,58 @@
 
 namespace RB::Graphics::VK
 {
+    // ---------------------------------------------------------------------------
+    //								VertexBuffer
+    // ---------------------------------------------------------------------------
+
+    VertexBufferVK::VertexBufferVK(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size)
+        : m_Name(name)
+        , m_Type(type)
+        , m_VertexSize(vertex_size)
+        , m_Size(data_size)
+    {
+        VkBufferCreateInfo info = {};
+        info.sType          = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        info.flags          = 0;
+        info.size           = data_size;
+        info.usage          = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        info.sharingMode    = VK_SHARING_MODE_EXCLUSIVE;
+
+        m_Resource = new GpuResource(name, info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResourceState::COMMON);
+    }
+    
+    VertexBufferVK::~VertexBufferVK()
+    {
+        SAFE_DELETE(m_Resource);
+    }
+
+    // ---------------------------------------------------------------------------
+    //								IndexBuffer
+    // ---------------------------------------------------------------------------
+
+    IndexBufferVK::IndexBufferVK(const char* name, uint16_t* data, uint64_t elements)
+        : m_Name(name)
+        , m_Elements(elements)
+    {
+        VkBufferCreateInfo info = {};
+        info.sType          = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        info.flags          = 0;
+        info.size           = GetElementSizeFromFormat(GetFormat()) * elements;
+        info.usage          = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        info.sharingMode    = VK_SHARING_MODE_EXCLUSIVE;
+
+        m_Resource = new GpuResource(name, info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResourceState::COMMON);
+    }
+
+    IndexBufferVK::~IndexBufferVK()
+    {
+        SAFE_DELETE(m_Resource);
+    }
+
+    // ---------------------------------------------------------------------------
+    //								Texture2D
+    // ---------------------------------------------------------------------------
+
     Texture2DVK::Texture2DVK(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
         : m_Name(name)
         , m_Format(format)

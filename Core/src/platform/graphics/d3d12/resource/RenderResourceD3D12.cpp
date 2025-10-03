@@ -60,7 +60,7 @@ namespace RB::Graphics::D3D12
         , m_Data(data)
         , m_View{}
     {
-        uint64_t size = m_Elements * sizeof(uint16_t);
+        uint64_t size = m_Elements * GetElementSizeFromFormat(GetFormat());
 
         m_Resource = new GpuResource();
         g_ResourceManager->ScheduleCreateIndexResource(m_Resource, name, { size });

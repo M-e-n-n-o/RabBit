@@ -129,6 +129,9 @@ if(RABBIT_API_VULKAN)
         Vulkan::Headers
         Vulkan::Vulkan
     )
+
+    # Add VK shader compiler
+    add_subdirectory(shaderCompiler/vulkan)
 endif()
 
 

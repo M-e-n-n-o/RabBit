@@ -121,6 +121,11 @@ namespace RB::Graphics::VK
         }
     }
     
+    void RenderInterfaceVK::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
+    {
+
+    }
+
     void RenderInterfaceVK::SetNewCommandBuffer()
     {
         m_CommandBuffer = m_Queue->GetCommandBuffer();

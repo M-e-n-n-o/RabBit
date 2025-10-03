@@ -127,6 +127,12 @@ namespace RB::Graphics
         case RenderAPI::D3D12:
             return new D3D12::VertexBufferD3D12(name, type, data, vertex_size, data_size);
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return new VK::VertexBufferVK(name, type, data, vertex_size, data_size);
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -143,6 +149,12 @@ namespace RB::Graphics
         case RenderAPI::D3D12:
             return new D3D12::IndexBufferD3D12(name, data, elements);
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return new VK::IndexBufferVK(name, data, elements);
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;

@@ -42,7 +42,7 @@ namespace RB::Graphics::D3D12
     class IndexBufferD3D12 : public IndexBuffer
     {
     public:
-        IndexBufferD3D12(const char* name, uint16_t* data, uint64_t data_size);
+        IndexBufferD3D12(const char* name, uint16_t* data, uint64_t elements);
         ~IndexBufferD3D12();
 
         const char* GetName() const override { return m_Name; }

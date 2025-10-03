@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <filesystem>
 #include "ShaderWriter.h"
 #include "Utils.h"
 
@@ -57,7 +58,7 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 	std::string bin_filename(bin_folder);
 	bin_filename.append("/Shaders.bin");
 
-	CreateDirectory(bin_folder.c_str(), NULL);
+	std::filesystem::create_directories(bin_folder.c_str());
 
 	std::ofstream bin_file;
 	bin_file.open(bin_filename.c_str(), std::fstream::out | std::fstream::trunc | std::fstream::binary);
@@ -88,32 +89,36 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 	// Close bin file
 	bin_file.close();
 
-
 	// Start outputting to the defines files
-	std::string d3d_defines_file_name = d3d_defines_folder;
-	d3d_defines_file_name.append("/codeGen");
 	std::string defines_file_name = defines_folder;
 	defines_file_name.append("/codeGen");
 
-	// Create the directory if it does not already exist
-	CreateDirectory(d3d_defines_file_name.c_str(), NULL);
-	CreateDirectory(defines_file_name.c_str(), NULL);
+	std::filesystem::create_directories(defines_file_name.c_str());
+
+	defines_file_name.append("/ShaderDefines.h");
+
+	std::wstring defines_output;
+	defines_output.append(SHADER_START);
+
+#if RB_SHADER_COMPILER_D3D12
+	std::string d3d_defines_file_name = d3d_defines_folder;
+	d3d_defines_file_name.append("/codeGen");
+
+	std::filesystem::create_directories(d3d_defines_file_name.c_str());
 
 	d3d_defines_file_name.append("/ShaderDefines.h");
-	defines_file_name.append("/ShaderDefines.h");
 
 	std::wstring d3d_output;
 	d3d_output.append(D3D_SHADER_START);
 	d3d_output.append(std::to_wstring(shaders.size()));
 	d3d_output.append(L";\n\tstatic const ShaderBlobLookup SHADER_LUT[] = {");
-
-	std::wstring defines_output;
-	defines_output.append(SHADER_START);
+#endif
 
 	for (int i = 0; i < shader_table.size(); i++)
 	{
 		const ShaderBlobLookup& entry = shader_table[i];
 
+#if RB_SHADER_COMPILER_D3D12
 		d3d_output.append(L"{");
 		d3d_output.append(std::to_wstring(entry.offsetInFile));
 		d3d_output.append(L",");
@@ -129,6 +134,7 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 		d3d_output.append(L",");
 		d3d_output.append(std::to_wstring(entry.samplerMask));
 		d3d_output.append(L"},");
+#endif
 
 		defines_output.append(L"\tstatic const uint32_t ");
 		defines_output.append(entry.name);
@@ -137,6 +143,7 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 		defines_output.append(L";\n");
 	}
 
+#if RB_SHADER_COMPILER_D3D12
 	// D3D file
 	{
 		d3d_output.append(L"};\n}");
@@ -154,6 +161,7 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 
 		delete[] output;
 	}
+#endif
 
 	// Defines file
 	{

@@ -11,6 +11,48 @@ namespace RB::Graphics::VK
 {
     class GpuResource;
 
+    class VertexBufferVK : public VertexBuffer
+    {
+    public:
+        VertexBufferVK(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
+        ~VertexBufferVK();
+
+        const char* GetName() const override { return m_Name; }
+
+        void* GetNativeResource() const override { return m_Resource; }
+
+        uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
+
+        TopologyType GetTopologyType() const override { return m_Type; }
+
+    private:
+        const char*     m_Name;
+        GpuResource*    m_Resource;
+        VkBufferView    m_View;
+        TopologyType	m_Type;
+        uint32_t		m_VertexSize;
+        uint64_t		m_Size;
+    };
+
+    class IndexBufferVK : public IndexBuffer
+    {
+    public:
+        IndexBufferVK(const char* name, uint16_t* data, uint64_t elements);
+        ~IndexBufferVK();
+
+        const char* GetName() const override { return m_Name; }
+
+        void* GetNativeResource() const override { return m_Resource; }
+
+        uint64_t GetIndexCount() const override { return m_Elements; }
+
+    private:
+        const char*     m_Name;
+        GpuResource*    m_Resource;
+        VkBufferView    m_View;
+        uint64_t	    m_Elements;
+    };
+
     class Texture2DVK : public Texture2D
     {
     public:
@@ -40,16 +82,16 @@ namespace RB::Graphics::VK
         void SetView(VkImageView image_view);
 
     private:
-        const char*                     m_Name;
-        GpuResource*                    m_Resource;
-        VkImageView                     m_ImageView;
-        uint32_t                        m_Width;
-        uint32_t                        m_Height;
-        RenderResourceFormat            m_Format;
+        const char*             m_Name;
+        GpuResource*            m_Resource;
+        VkImageView             m_ImageView;
+        uint32_t                m_Width;
+        uint32_t                m_Height;
+        RenderResourceFormat    m_Format;
 
-        bool                            m_IsRenderTarget;
-        bool                            m_IsDepthStencil;
-        bool                            m_AllowReadWrite;
+        bool                    m_IsRenderTarget;
+        bool                    m_IsDepthStencil;
+        bool                    m_AllowReadWrite;
     };
 }
 #endif

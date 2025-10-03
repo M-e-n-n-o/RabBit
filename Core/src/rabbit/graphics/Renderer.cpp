@@ -181,10 +181,10 @@ namespace RB::Graphics
 
         SAFE_DELETE(m_BackBufferCopyVB);
 
-        delete m_ResourceStreamer;
-
         // Delete default resources
         DeleteResourceDefaults();
+
+        delete m_ResourceStreamer;
 
         delete m_GraphicsInterface;
         delete m_CopyInterface;
