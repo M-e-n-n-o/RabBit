@@ -46,14 +46,14 @@ PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input)
 {
     GBuffer gbuf;
 
-    bool tex_is_srgb;
-    float4 color = FetchTex2D(1, tex_is_srgb).Sample(g_ClampAnisoSampler, input.uv);
+    Tex2D tex = FetchTex2D(1);
+    float4 color = tex.Sample<float4>(g_ClampAnisoSampler, input.uv);
 
     gbuf.color  = float4(color.rgb, 1.0f);
     gbuf.normal = input.normal;
     gbuf.depth = LinearizeDepth(input.position.z);
 
-    if (tex_is_srgb)
+    if (tex.IsSRGB())
     {
         // Convert from sRGB to linear space (apply inverted gamma)
         const float gamma = 2.2f; // Hardcoded gamma value, TODO is this always correct?

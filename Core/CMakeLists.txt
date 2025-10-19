@@ -108,7 +108,7 @@ if(RABBIT_API_DX12)
     )
     
     # Add D3D12 shader compiler
-    add_subdirectory(shaderCompiler/d3d12)
+    add_subdirectory(tools/shaderCompiler/d3d12)
 endif()
 
 # DX12 specific includes and libraries
@@ -131,7 +131,7 @@ if(RABBIT_API_VULKAN)
     )
 
     # Add VK shader compiler
-    add_subdirectory(shaderCompiler/vulkan)
+    add_subdirectory(tools/shaderCompiler/vulkan)
 endif()
 
 

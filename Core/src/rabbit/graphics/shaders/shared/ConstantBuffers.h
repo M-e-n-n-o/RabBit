@@ -3,13 +3,14 @@
 
 #include "Common.h"
 
-struct PresentCB
+struct HLSL_ALIGN PresentCB
 {
     float2 texOffset;
     float2 currSize;
     float  brightnessValue;
     float  gammaValue;
 };
+ALIGN_CHECK(PresentCB);
 
 struct Light
 {

@@ -32,11 +32,8 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
                            light,
                            diffuse,
                            specular);
-
     float3 ambient = gbuf.color.rgb * 0.05f;
     float4 final_color = float4(ambient + diffuse + specular, 1.0f);
 
-    RWTexture2D<float4> output = FetchRwTex2D(0);
-
-    output[screen_coord] = final_color;
+    FetchRWTex2D(0).Store<float4>(screen_coord, final_color);
 }

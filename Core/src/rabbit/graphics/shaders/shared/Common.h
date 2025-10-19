@@ -4,25 +4,20 @@
 #if !SHADER
 #include "RabBitCommon.h"
 
-typedef uint32_t			uint;
-
+typedef uint32_t            uint;
 typedef RB::Math::UInt2     uint2;
-typedef RB::Math::UInt4		uint4;
-typedef RB::Math::Float2	float2;
-typedef RB::Math::Float3	float3;
+typedef RB::Math::UInt4     uint4;
+typedef RB::Math::Float2    float2;
+typedef RB::Math::Float3    float3;
 typedef RB::Math::Float4    float4;
-typedef RB::Math::Float4x4	float4x4;
+typedef RB::Math::Float4x4  float4x4;
 
+#define HLSL_ALIGN alignas(16)
+#define ALIGN_CHECK(type) static_assert(sizeof(type) % 16 == 0); \
+                          static_assert(alignof(type) == 16);
 #else
-
-#define COMBINE(a,b)		a##b
-
-#define SAMPLER_REG(r)		register( COMBINE(s,r) )
-#define TBUFFER_REG(r)		register( COMBINE(t,r) )
-#define CBUFFER_REG(r)		register( COMBINE(b,r) )
-#define TEXTURE_SPACE(s)	register( COMBINE(t,0), COMBINE(space,s) )
-#define UBUFFER_SPACE(s)	register( COMBINE(u,0), COMBINE(space,s) )
-
+#define HLSL_ALIGN
+#define ALIGN_CHECK(type)
 #endif
 
 
@@ -30,51 +25,49 @@ typedef RB::Math::Float4x4	float4x4;
 // ---------------------------------------------------------------
 
 // Constant buffer slots
-#define kTexIndicesCB			    0
-#define kFrameConstantsCB		    1
-#define kInstanceCB				    2
+#define kRenderResourceMapCB        0
+#define kFrameConstantsCB           1
+#define kInstanceCB                 2
 
-// Sampler slots
-#define kClampAnisoSamplerSlot		0
-#define kClampPointSamplerSlot		1
+// Static samplers
+#define kClampAnisoSamplerSlot      0
+#define kClampPointSamplerSlot      1
 
 
 // Global constant buffer structs
 // ---------------------------------------------------------------
 
+#include "RenderResources.h"
+
 #define SHADER_TEX2D_SLOTS          8
 
-struct ShaderTexInfo
+struct HLSL_ALIGN RenderResourceMap
 {
-    uint  tableID;
-    uint  isSRGB;
-    uint2 padding;
+    Tex2D   tex2D[SHADER_TEX2D_SLOTS];
+    RwTex2D rwTex2D[SHADER_TEX2D_SLOTS];
 };
 
-struct TextureIndices
+struct HLSL_ALIGN FrameConstants
 {
-    ShaderTexInfo tex2D[SHADER_TEX2D_SLOTS];
-    ShaderTexInfo rwTex2D[SHADER_TEX2D_SLOTS];
-};
-
-struct FrameConstants
-{
-    float4x4 worldToViewMat;	// View matrix
+    float4x4 worldToViewMat;    // View matrix
     float4x4 viewToWorldMat;    // Inverse view matrix
-    float4x4 viewToClipMat;		// Projection matrix
+    float4x4 viewToClipMat;     // Projection matrix
     float4x4 clipToViewMat;     // Inverse projection matrix
 
     float4   dimensions;        // width, height, 1/width, 1/height
 };
+
+ALIGN_CHECK(RenderResourceMap);
+ALIGN_CHECK(FrameConstants);
 
 #if SHADER
 
 // Global constant buffers
 // ---------------------------------------------------------------
 
-cbuffer TextureIndicesCB : CBUFFER_REG(kTexIndicesCB)
+cbuffer RenderResourceMapCB : CBUFFER_REG(kRenderResourceMapCB)
 {
-    TextureIndices g_TextureIndices;
+    RenderResourceMap g_RenderResourceMap;
 }
 
 cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
@@ -82,26 +75,10 @@ cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
     FrameConstants g_FC;
 }
 
+#define FetchTex2D(index)   g_RenderResourceMap.tex2D[index]
+#define FetchRWTex2D(index) g_RenderResourceMap.rwTex2D[index]
 
-// Global resource table
-// ---------------------------------------------------------------
-
-#define FetchRwTex2D(tex_id)    (ResourceDescriptorHeap[NonUniformResourceIndex(g_TextureIndices.rwTex2D[(tex_id)].tableID)])
-
-Texture2D FetchTex2D(in uint tex_id, out bool is_srgb_space)
-{
-    ShaderTexInfo info = g_TextureIndices.tex2D[tex_id];
-    is_srgb_space = info.isSRGB;
-    return ResourceDescriptorHeap[NonUniformResourceIndex(info.tableID)];
-}
-
-Texture2D FetchTex2D(in uint tex_id)
-{
-    bool srgb;
-    return FetchTex2D(tex_id, srgb);
-}
-
-// Global samplers
+// Static samplers
 // ---------------------------------------------------------------
 
 SamplerState g_ClampAnisoSampler : SAMPLER_REG(kClampAnisoSamplerSlot);

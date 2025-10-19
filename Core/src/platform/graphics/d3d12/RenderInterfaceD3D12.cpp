@@ -958,24 +958,24 @@ namespace RB::Graphics::D3D12
         bool bind_textures;
         if (compute)
         {
-            bind_textures = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << kTexIndicesCB)) > 0;
+            bind_textures = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << kRenderResourceMapCB)) > 0;
         }
         else
         {
-            bind_textures = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kTexIndicesCB)) > 0 ||
-                             (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kTexIndicesCB)) > 0);
+            bind_textures = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kRenderResourceMapCB)) > 0 ||
+                             (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kRenderResourceMapCB)) > 0);
         }
 
         // Set the bindless SRV/UAV slots (only if the shader is actually using any textures)
         if (bind_textures)
         {
-            TextureIndices indices = {};
+            RenderResourceMap indices = {};
 
             // Set the Texture2D's
             for (int i = 0; i < _countof(indices.tex2D); ++i)
             {
-                uint32_t& index  = indices.tex2D[i].tableID;
-                uint32_t& isSRGB = indices.tex2D[i].isSRGB;
+                uint32_t& index = indices.tex2D[i].handle;
+                uint32_t& isSRGB = indices.tex2D[i].isSrgb;
 
                 if (m_RenderState.tex2DsrvHandles[i].isValid())
                 {
@@ -993,8 +993,7 @@ namespace RB::Graphics::D3D12
             // Set the RwTexture2D's
             for (int i = 0; i < _countof(indices.rwTex2D); ++i)
             {
-                uint32_t& index = indices.rwTex2D[i].tableID;
-                indices.rwTex2D[i].isSRGB = false;
+                uint32_t& index = indices.rwTex2D[i].handle;
 
                 if (m_RenderState.rwTex2DsrvHandles[i].isValid())
                 {
@@ -1007,7 +1006,9 @@ namespace RB::Graphics::D3D12
                 }
             }
 
-            SetConstantShaderData(kTexIndicesCB, &indices, sizeof(TextureIndices)); // TODO Make the texture indices a root constant instead of a CBV
+            // TODO Make the texture indices a root constant instead of a CBV.
+            // Or just remove the kTexIndicesCB and let each shader itself pass in the correct handle/index using their CBV?
+            SetConstantShaderData(kRenderResourceMapCB, &indices, sizeof(RenderResourceMap));
         }
 
         // Bind the CBV's
