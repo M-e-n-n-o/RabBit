@@ -6,13 +6,21 @@
 // --------------------------------------------------------------
 float3 GetCameraDir()
 {
-    return g_FC.viewToWorldMat[2].xyz;
+    return float3(
+        g_FC.viewToWorldMat[0].z,
+        g_FC.viewToWorldMat[1].z,
+        g_FC.viewToWorldMat[2].z
+    );
 }
 
 // --------------------------------------------------------------
 float3 GetCameraPos()
 {
-    return g_FC.viewToWorldMat[3].xyz;
+    return float3(
+        g_FC.viewToWorldMat[0].w,
+        g_FC.viewToWorldMat[1].w,
+        g_FC.viewToWorldMat[2].w
+    );
 }
 
 // --------------------------------------------------------------
@@ -47,13 +55,13 @@ float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth)
     float4 clip_pos = float4(ndc.x, ndc.y, 1.0f, 1.0f);
 
     // Transform to view space
-    float4 view_dir = mul(clip_pos, g_FC.clipToViewMat);
+    float4 view_dir = mul(g_FC.clipToViewMat, clip_pos);
     view_dir.xyz /= view_dir.w;
 
     float3 view_pos = normalize(view_dir.xyz) * linear_depth;
 
     // Transform to world space
-    float4 world_pos = mul(float4(view_pos, 1.0f), g_FC.viewToWorldMat);
+    float4 world_pos = mul(g_FC.viewToWorldMat, float4(view_pos, 1.0f));
 
     return world_pos.xyz;
 }

@@ -46,7 +46,6 @@ struct RenderResourceMap
 
 struct FrameConstants
 {
-    // These are column major!
     float4x4 worldToViewMat;    // View matrix
     float4x4 viewToWorldMat;    // Inverse view matrix
     float4x4 viewToClipMat;     // Projection matrix
