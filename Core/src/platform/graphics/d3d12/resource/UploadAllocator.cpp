@@ -1,3 +1,4 @@
+#include "UploadAllocator.h"
 #if RB_GRAPHICS_API_D3D12
 
 #include "RabBitCommon.h"
@@ -7,7 +8,7 @@
 namespace RB::Graphics::D3D12
 {
     // ----------------------------------------------------------------------------
-    //									UploadPage
+    //                                  UploadPage
     // ----------------------------------------------------------------------------
 
     UploadPage::UploadPage(const char* name, uint64_t size)
@@ -48,7 +49,7 @@ namespace RB::Graphics::D3D12
         location.resource           = m_UploadResource;
         location.maxWriteSize       = aligned_size;
         location.offset             = m_UploadOffset;
-        location.address            = m_GpuAddress + m_UploadOffset;
+        location.gpuAddress         = m_GpuAddress + m_UploadOffset;
         location.cpuWriteAddress    = m_WriteAddress + m_UploadOffset;
 
         m_UploadOffset += aligned_size;
@@ -57,7 +58,7 @@ namespace RB::Graphics::D3D12
     }
 
     // ----------------------------------------------------------------------------
-    //								UploadAllocator
+    //                              UploadAllocator
     // ----------------------------------------------------------------------------
 
     UploadAllocator::UploadAllocator(const char* name, uint64_t page_size)
@@ -66,7 +67,6 @@ namespace RB::Graphics::D3D12
         , m_CurrentPage(-1)
         , m_ResetCounter(0)
     {
-
     }
 
     UploadAllocator::~UploadAllocator()
@@ -81,6 +81,11 @@ namespace RB::Graphics::D3D12
 
     void UploadAllocator::Reset()
     {
+        if (m_Pages.empty())
+        {
+            return;
+        }
+
         for (UploadPage* page : m_Pages)
         {
             page->Reset();
@@ -110,7 +115,7 @@ namespace RB::Graphics::D3D12
     {
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, size <= m_PageSize, "Upload resource: %s, is too small to allocate %d bytes, increase the page size", m_Name, size);
 
-        if (m_CurrentPage == -1)
+        if (m_CurrentPage == -1 || m_Pages.empty())
         {
             m_CurrentPage = AddNewPage();
         }
@@ -151,6 +156,41 @@ namespace RB::Graphics::D3D12
         m_Pages.push_back(new UploadPage(name.c_str(), m_PageSize));
 
         return m_Pages.size() - 1;
+    }
+
+    // ----------------------------------------------------------------------------
+    //                          TransientUploadBuffer
+    // ----------------------------------------------------------------------------
+    
+    TransientUploadBuffer* g_TransientCBVAllocator = nullptr;
+    TransientUploadBuffer* g_TransientVBAllocator = nullptr;
+
+    TransientUploadBuffer::TransientUploadBuffer(const char* name, uint64_t page_size)
+        : m_CurrentAllocation(0)
+    {
+        for (int i = 0; i < m_UploadBuffers.size(); i++)
+        {
+            m_UploadBuffers[i] = new UploadAllocator(name, page_size);
+        }
+    }
+
+    TransientUploadBuffer::~TransientUploadBuffer()
+    {
+        for (int i = 0; i < m_UploadBuffers.size(); i++)
+        {
+            SAFE_DELETE(m_UploadBuffers[i]);
+        }
+    }
+
+    UploadAllocation TransientUploadBuffer::Allocate(uint64_t size, uint64_t alignment)
+    {
+        return m_UploadBuffers[m_CurrentAllocation]->Allocate(size, alignment);
+    }
+
+    void TransientUploadBuffer::CycleBuffers()
+    {
+        m_CurrentAllocation = (m_CurrentAllocation + 1) % TRANSIENT_CYCLES;
+        m_UploadBuffers[m_CurrentAllocation]->Reset();
     }
 }
 #endif

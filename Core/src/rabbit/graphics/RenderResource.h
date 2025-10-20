@@ -124,7 +124,7 @@ namespace RB::Graphics
         virtual uint32_t GetVertexElementCount() const = 0;
         virtual TopologyType GetTopologyType() const = 0;
 
-        static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
+        static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false);
 
     protected:
         VertexBuffer() : Buffer(RenderResourceType::VertexBuffer) {}

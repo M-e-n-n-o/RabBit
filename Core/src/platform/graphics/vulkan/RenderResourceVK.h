@@ -14,7 +14,7 @@ namespace RB::Graphics::VK
     class VertexBufferVK : public VertexBuffer
     {
     public:
-        VertexBufferVK(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size);
+        VertexBufferVK(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
         ~VertexBufferVK();
 
         const char* GetName() const override { return m_Name; }

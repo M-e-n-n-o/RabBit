@@ -119,18 +119,18 @@ namespace RB::Graphics
         return (RenderResourceType)primitive_type;
     }
 
-    VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size)
+    VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::VertexBufferD3D12(name, type, data, vertex_size, data_size);
+            return new D3D12::VertexBufferD3D12(name, type, data, vertex_size, data_size, transient);
 #endif
 
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
-            return new VK::VertexBufferVK(name, type, data, vertex_size, data_size);
+            return new VK::VertexBufferVK(name, type, data, vertex_size, data_size, transient);
 #endif
 
         default:

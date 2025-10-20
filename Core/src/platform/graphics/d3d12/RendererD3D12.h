@@ -3,11 +3,14 @@
 #pragma once
 #include "RabBitCommon.h"
 #include "graphics/Renderer.h"
+#include "graphics/Window.h"
 
 #include <d3d12.h>
 
 namespace RB::Graphics::D3D12
 {
+    #define TRANSIENT_CYCLES (BACK_BUFFER_COUNT + 1)
+
     class RendererD3D12 : public Renderer
     {
     public:

@@ -46,7 +46,6 @@ namespace RB::Graphics::D3D12
     RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
         : m_CopyOperationsOnly(allow_only_copy_operations)
         , m_RenderState()
-        , m_CurrentCBVAllocator(nullptr)
     {
         if (allow_only_copy_operations)
             m_Queue = g_GraphicsDevice->GetCopyQueue();
@@ -59,18 +58,6 @@ namespace RB::Graphics::D3D12
 
     RenderInterfaceD3D12::~RenderInterfaceD3D12()
     {
-        SAFE_DELETE(m_CurrentCBVAllocator);
-
-        while (!m_AvailableCBVAllocators.empty())
-        {
-            SAFE_DELETE(m_AvailableCBVAllocators.front());
-            m_AvailableCBVAllocators.pop();
-        }
-
-        for (int i = 0; i < m_InFlightCBVAllocators.size(); ++i)
-        {
-            SAFE_DELETE(m_InFlightCBVAllocators[i].allocator);
-        }
     }
 
     void RenderInterfaceD3D12::InvalidateState(bool rebind_descriptor_heap)
@@ -105,13 +92,6 @@ namespace RB::Graphics::D3D12
         uint64_t fence_value = m_Queue->ExecuteCommandList(m_CommandList);
 
         g_ResourceManager->OnCommandListExecute(m_Queue, fence_value);
-
-        if (m_CurrentCBVAllocator)
-        {
-            m_InFlightCBVAllocators.push_back({ m_CurrentCBVAllocator, fence_value });
-
-            m_CurrentCBVAllocator = nullptr;
-        }
 
         SetNewCommandList();
         InvalidateState(true);
@@ -317,42 +297,11 @@ namespace RB::Graphics::D3D12
     {
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.cbvAddresses), "Up the amount of possible CBV addresses");
 
-        if (m_CurrentCBVAllocator == nullptr)
-        {
-            // Update the available allocators
-            {
-                auto itr = m_InFlightCBVAllocators.begin();
-                while (itr != m_InFlightCBVAllocators.end())
-                {
-                    if (m_Queue->IsFenceReached(itr->fenceValue))
-                    {
-                        itr->allocator->Reset();
-                        m_AvailableCBVAllocators.push(itr->allocator);
-                        itr = m_InFlightCBVAllocators.erase(itr);
-                    }
-                    else
-                    {
-                        ++itr;
-                    }
-                }
-            }
-
-            if (m_AvailableCBVAllocators.empty())
-            {
-                m_CurrentCBVAllocator = new UploadAllocator("CBV Upload Allocator", k64KB);
-            }
-            else
-            {
-                m_CurrentCBVAllocator = m_AvailableCBVAllocators.front();
-                m_AvailableCBVAllocators.pop();
-            }
-        }
-
-        UploadAllocation allocation = m_CurrentCBVAllocator->Allocate(data_size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+        UploadAllocation allocation = g_TransientCBVAllocator->Allocate(data_size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
         memcpy(allocation.cpuWriteAddress, data, data_size);
 
-        m_RenderState.cbvAddresses[slot] = allocation.address;
+        m_RenderState.cbvAddresses[slot] = allocation.gpuAddress;
     }
 
     void RenderInterfaceD3D12::SetVertexShader(uint32_t shader_index)

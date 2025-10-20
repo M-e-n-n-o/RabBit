@@ -8,6 +8,7 @@
 #include "graphics/ResourceStreamer.h"
 #include "platform/graphics/d3d12/UtilsD3D12.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
+#include "platform/graphics/d3d12/resource/UploadAllocator.h"
 
 namespace RB::Graphics::D3D12
 {
@@ -15,34 +16,50 @@ namespace RB::Graphics::D3D12
     //								VertexBuffer
     // ---------------------------------------------------------------------------
 
-    VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size)
+    VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
         : m_Name(name)
         , m_Type(type)
         , m_VertexSize(vertex_size)
         , m_Size(data_size)
         , m_Data(data)
         , m_View{}
+        , m_Transient(transient)
+        , m_GpuAddress(0)
     {
-        m_Resource = new GpuResource();
-        g_ResourceManager->ScheduleCreateVertexResource(m_Resource, name, { data_size });
+        if (m_Transient)
+        {
+            UploadAllocation alloc = g_TransientVBAllocator->Allocate(data_size);
+            m_Resource   = alloc.resource;
+            m_GpuAddress = alloc.gpuAddress;
 
-        Streamable streamable = {};
-        streamable.resource     = this;
-        streamable.uploadData   = data;
-        streamable.uploadSize   = data_size;
-        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
+            memcpy(alloc.cpuWriteAddress, data, data_size);
+        }
+        else
+        {
+            m_Resource = new GpuResource();
+            g_ResourceManager->ScheduleCreateVertexResource(m_Resource, name, { data_size });
+
+            Streamable streamable = {};
+            streamable.resource     = this;
+            streamable.uploadData   = data;
+            streamable.uploadSize   = data_size;
+            Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
+        }
     }
 
     VertexBufferD3D12::~VertexBufferD3D12()
     {
-        SAFE_DELETE(m_Resource);
+        if (!m_Transient)
+        {
+            SAFE_DELETE(m_Resource);
+        }
     }
 
     D3D12_VERTEX_BUFFER_VIEW VertexBufferD3D12::GetView()
     {
         if (m_View.SizeInBytes == 0)
         {
-            m_View.BufferLocation = m_Resource->GetResource()->GetGPUVirtualAddress();
+            m_View.BufferLocation = m_GpuAddress > 0 ? m_GpuAddress : m_Resource->GetResource()->GetGPUVirtualAddress();
             m_View.SizeInBytes    = m_Size;
             m_View.StrideInBytes  = m_VertexSize;
         }

@@ -15,8 +15,6 @@ namespace RB::Graphics::D3D12
     #define DEPTHSTENCIL_REGULAR_DESCRIPTORS	        1000
     #define RTV_DSV_TRANSIENT_DESCRIPTORS_PER_CYCLE     50
 
-    #define DESCRIPTOR_HEAP_TRANSIENT_CYCLES            3
-
     enum class DescriptorHandleType
     {
         SRV,

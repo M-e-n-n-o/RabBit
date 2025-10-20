@@ -2,6 +2,7 @@
 
 #include "RabBitCommon.h"
 #include "Descriptor.h"
+#include "platform/graphics/d3d12/RendererD3D12.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
 
 namespace RB::Graphics::D3D12
@@ -191,7 +192,7 @@ namespace RB::Graphics::D3D12
         , m_CurrPersistentIdx(0)
         , m_CycleIndex(0)
     {
-        uint32_t max_descriptors = m_MaxPersistent + (m_MaxTransientPerCycle * DESCRIPTOR_HEAP_TRANSIENT_CYCLES);
+        uint32_t max_descriptors = m_MaxPersistent + (m_MaxTransientPerCycle * TRANSIENT_CYCLES);
 
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, max_descriptors < 1e6, "The max total of descriptors cannot exceed 1 million");
 
@@ -266,7 +267,7 @@ namespace RB::Graphics::D3D12
 
     void DescriptorHeap::CycleTransientDescriptors()
     {
-        m_CycleIndex        = (m_CycleIndex + 1) % DESCRIPTOR_HEAP_TRANSIENT_CYCLES;
+        m_CycleIndex        = (m_CycleIndex + 1) % TRANSIENT_CYCLES;
         m_TransientBase     = m_CycleIndex * m_MaxTransientPerCycle + m_MaxPersistent;
         m_CurrTransientIdx  = m_TransientBase;
     }
