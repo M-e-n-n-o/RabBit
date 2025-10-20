@@ -310,4 +310,8 @@ namespace RB::Math
         //	// Returns the angle between the two vectors in radians
         //	static float Angle(const Float4& first, const Float4& second);
     };
+
+    static const Float3 WorldRight   = Float3(1, 0, 0);
+    static const Float3 WorldUp      = Float3(0, 1, 0);
+    static const Float3 WorldForward = Float3(0, 0, 1);
 }

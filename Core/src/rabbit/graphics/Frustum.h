@@ -20,7 +20,6 @@ namespace RB::Graphics
         Math::Float4x4 GetViewToWorldMatrix() const { return m_ViewToWorldMat; }
 
         void SetTransform(Math::Float3 position, Math::Float3 rotation);
-        void SetTransform(Math::Float4x4 view_to_world);
 
         // Projection matrix
         Math::Float4x4 GetViewToClipMatrix() const { return m_ViewToClipMat; }

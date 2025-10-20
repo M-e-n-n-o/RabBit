@@ -19,19 +19,17 @@ namespace RB::Graphics
     void Frustum::SetTransform(Math::Float3 position, Math::Float3 rotation)
     {
         Math::Float4x4 m;
+
         m.RotateAroundX(Math::DegreesToRadians(rotation.x));
         m.RotateAroundY(Math::DegreesToRadians(rotation.y));
         m.RotateAroundZ(Math::DegreesToRadians(rotation.z));
+        
         m.SetPosition(position);
         m.Scale(1.0f);
+        
+        m.Invert();
 
-        SetTransform(m);
-    }
-
-    void Frustum::SetTransform(Math::Float4x4 view_to_world)
-    {
-        m_WorldToViewMat = view_to_world;
-        m_WorldToViewMat.SetPosition(view_to_world.GetPosition() * -1);
+        m_WorldToViewMat = m;
     }
 
     void Frustum::SetPerspectiveProjectionVFov(float near, float far, float vfov, float aspect, bool reverse_depth)

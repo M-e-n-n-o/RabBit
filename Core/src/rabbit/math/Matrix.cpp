@@ -42,56 +42,50 @@ namespace RB::Math
 
     void Float4x4::RotateAroundX(float xrad)
     {
-        Float4x4 copy = *this;
-
-        float sin_theta = Sin(xrad);
-        float cos_theta = Cos(xrad);
-
-        for (int i = 0; i < 4; ++i)
-        {
-            copy.row[i].y = cos_theta * row[i].y - sin_theta * row[i].z;
-            copy.row[i].z = sin_theta * row[i].y + cos_theta * row[i].z;
-            copy.row[i].x = row[i].x;
-            copy.row[i].w = row[i].w;
-        }
-
-        memcpy(a, copy.a, 16 * sizeof(float));
+        float s = Sin(xrad);
+        float c = Cos(xrad);
+    
+        // Create rotation matrix
+        Float4x4 rot;
+        rot.row0 = Float4(1, 0, 0, 0);
+        rot.row1 = Float4(0, c, s, 0);
+        rot.row2 = Float4(0, -s, c, 0);
+        rot.row3 = Float4(0, 0, 0, 1);
+    
+        // Apply rotation
+        *this = (*this) * rot;
     }
-
+    
     void Float4x4::RotateAroundY(float yrad)
     {
-        Float4x4 copy = *this;
-
-        float sin_theta = Sin(yrad);
-        float cos_theta = Cos(yrad);
-
-        for (int i = 0; i < 4; ++i)
-        {
-            copy.row[i].z = cos_theta * row[i].z - sin_theta * row[i].x;
-            copy.row[i].x = sin_theta * row[i].z + cos_theta * row[i].x;
-            copy.row[i].y = row[i].y;
-            copy.row[i].w = row[i].w;
-        }
-
-        memcpy(a, copy.a, 16 * sizeof(float));
+        float s = Sin(yrad);
+        float c = Cos(yrad);
+    
+        // Create rotation matrix
+        Float4x4 rot;
+        rot.row0 = Float4(c, 0, -s, 0);
+        rot.row1 = Float4(0, 1, 0, 0);
+        rot.row2 = Float4(s, 0, c, 0);
+        rot.row3 = Float4(0, 0, 0, 1);
+    
+        // Apply rotation
+        *this = (*this) * rot;
     }
-
+    
     void Float4x4::RotateAroundZ(float zrad)
     {
-        Float4x4 copy = *this;
-
-        float sin_theta = Sin(zrad);
-        float cos_theta = Cos(zrad);
-
-        for (int i = 0; i < 4; ++i)
-        {
-            copy.row[i].x = cos_theta * row[i].x - sin_theta * row[i].y;
-            copy.row[i].y = sin_theta * row[i].x + cos_theta * row[i].y;
-            copy.row[i].z = row[i].z;
-            copy.row[i].w = row[i].w;
-        }
-
-        memcpy(a, copy.a, 16 * sizeof(float));
+        float s = Sin(zrad);
+        float c = Cos(zrad);
+    
+        // Create rotation matrix
+        Float4x4 rot;
+        rot.row0 = Float4(c, s, 0, 0);
+        rot.row1 = Float4(-s, c, 0, 0);
+        rot.row2 = Float4(0, 0, 1, 0);
+        rot.row3 = Float4(0, 0, 0, 1);
+    
+        // Apply rotation
+        *this = (*this) * rot;
     }
 
     Float3 Float4x4::GetPosition()

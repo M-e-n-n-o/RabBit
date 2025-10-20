@@ -74,7 +74,7 @@ public:
 
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
-        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 60.0f, window_handle0);
+        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 70.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
 
         //m_Obj2 = scene->CreateGameObject();
@@ -93,33 +93,6 @@ public:
         {
             m_Transform->rotation.x += 25.0f * delta;
         }
-
-        Float3 movement(0);
-
-        if (IsKeyDown(KeyCode::W))
-        {
-            movement.z += 250.0f;
-        }
-        if (IsKeyDown(KeyCode::S))
-        {
-            movement.z -= 250.0f;
-        }
-        if (IsKeyDown(KeyCode::D))
-        {
-            movement.x += 250.0f;
-        }
-        if (IsKeyDown(KeyCode::A))
-        {
-            movement.x -= 250.0f;
-        }
-        if (IsKeyDown(KeyCode::Space))
-        {
-            movement.y += 250.0f;
-        }
-        if (IsKeyDown(KeyCode::LeftShift))
-        {
-            movement.y -= 250.0f;
-        }
         
         static Float2 last_pos = GetMousePos();
         Float2 new_pos = GetMousePos();
@@ -127,37 +100,48 @@ public:
         if (IsMouseKeyDown(MouseCode::ButtonRight))
         {
             Float2 vel = (new_pos - last_pos) * 0.2f;
-            m_Camera->rotation.x -= vel.y;
-            m_Camera->rotation.y -= vel.x;
+            m_Camera->rotation.x += vel.y;
+            m_Camera->rotation.y += vel.x;
         }
 
         last_pos = new_pos;
 
-  //      float dx = movement.z * Cos(DegreesToRadians(m_Camera->rotation.y + 90.0f));
-		//float dz = movement.z * Sin(DegreesToRadians(m_Camera->rotation.y + 90.0f));
-		//dx += movement.x * Cos(DegreesToRadians(m_Camera->rotation.y));
-		//dz += movement.x * Sin(DegreesToRadians(m_Camera->rotation.y));
-  //      
-		//m_Camera->position.x += (dx * delta);
-		//m_Camera->position.z += (dz * delta);
-		//m_Camera->position.y += (movement.y * delta);
+        m_Camera->rotation.x = Clamp(m_Camera->rotation.x, -89.0f, 89.0f);
 
-        float yawRad = DegreesToRadians(m_Camera->rotation.y);
+        float pitch = DegreesToRadians(-m_Camera->rotation.x);
+        float yaw   = DegreesToRadians(m_Camera->rotation.y);
 
-        // Direction vectors
-        float forwardX = Sin(yawRad);
-        float forwardZ = Cos(yawRad);
-        float rightX = Cos(yawRad);
-        float rightZ = -Sin(yawRad);
+        Float3 worldUp = Math::WorldUp;
 
-        // Blend directions
-        float dx = movement.z * forwardX + movement.x * rightX;
-        float dz = movement.z * forwardZ + movement.x * rightZ;
+        Float3 forward(
+            Cos(pitch) * Sin(yaw),
+            Sin(pitch),
+            Cos(pitch) * Cos(yaw)
+        );
 
-        // Apply movement
-        m_Camera->position.x += dx * delta;
-        m_Camera->position.z += dz * delta;
-        m_Camera->position.y += movement.y * delta;
+        Float3 right = Float3::Cross(worldUp, forward);
+        right.Normalize();
+
+        Float3 up = Float3::Cross(forward, right);
+
+
+        // Move forward/backward
+        if (IsKeyDown(KeyCode::W))
+            m_Camera->position = m_Camera->position + (forward * (250 * delta));
+        if (IsKeyDown(KeyCode::S))
+            m_Camera->position = m_Camera->position - (forward * (250 * delta));
+        
+        // Strafe left/right
+        if (IsKeyDown(KeyCode::A))
+            m_Camera->position = m_Camera->position - (right * (250 * delta));
+        if (IsKeyDown(KeyCode::D))
+            m_Camera->position = m_Camera->position + (right * (250 * delta));
+
+        // Move up/down
+        if (IsKeyDown(KeyCode::Space))
+            m_Camera->position = m_Camera->position + (up * (250 * delta));
+        if (IsKeyDown(KeyCode::LeftShift))
+            m_Camera->position = m_Camera->position - (up * (250 * delta));
     }
 
     bool OnEvent(const Event& event) override
