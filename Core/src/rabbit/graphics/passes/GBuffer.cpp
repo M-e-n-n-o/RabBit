@@ -78,7 +78,7 @@ namespace RB::Graphics
             const Material*         mat             = mesh_renderer->GetMaterial();
             const Mesh::VertexPair& vp              = mesh->GetVertexPair();
 
-            if (!vp.vertexBuffer->ReadyToRender() || 
+            if (!vp.vertexBuffer || !vp.vertexBuffer->ReadyToRender() || 
                 (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()) ||
                 !mat->GetTexture()->ReadyToRender())
             {

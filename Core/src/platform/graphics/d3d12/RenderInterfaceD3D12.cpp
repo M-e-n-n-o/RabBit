@@ -95,7 +95,11 @@ namespace RB::Graphics::D3D12
 
     Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
     {
-        FlushAllPending();
+        if (!m_CopyOperationsOnly)
+        {
+            // Copy queue should not (have to) handle transitions
+            FlushAllPending();
+        }
 
         // TODO Maybe do the ExecuteCommandLists on a separate thread in the future?
         uint64_t fence_value = m_Queue->ExecuteCommandList(m_CommandList);
