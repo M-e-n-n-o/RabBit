@@ -21,7 +21,7 @@
 
 typedef uint RenderResourceHandle;
 
-struct HLSL_ALIGN Tex2D
+struct Tex2D
 {
 #if !SHADER
 public:
@@ -60,7 +60,7 @@ public:
 };
 ALIGN_CHECK(Tex2D);
 
-struct HLSL_ALIGN RwTex2D
+struct RwTex2D
 {
 #if !SHADER
 public:

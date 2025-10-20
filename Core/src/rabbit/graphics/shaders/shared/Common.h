@@ -12,11 +12,8 @@ typedef RB::Math::Float3    float3;
 typedef RB::Math::Float4    float4;
 typedef RB::Math::Float4x4  float4x4;
 
-#define HLSL_ALIGN alignas(16)
-#define ALIGN_CHECK(type) static_assert(sizeof(type) % 16 == 0); \
-                          static_assert(alignof(type) == 16);
+#define ALIGN_CHECK(type) static_assert(sizeof(type) % 16 == 0);
 #else
-#define HLSL_ALIGN
 #define ALIGN_CHECK(type)
 #endif
 
@@ -41,13 +38,13 @@ typedef RB::Math::Float4x4  float4x4;
 
 #define SHADER_TEX2D_SLOTS          8
 
-struct HLSL_ALIGN RenderResourceMap
+struct RenderResourceMap
 {
     Tex2D   tex2D[SHADER_TEX2D_SLOTS];
     RwTex2D rwTex2D[SHADER_TEX2D_SLOTS];
 };
 
-struct HLSL_ALIGN FrameConstants
+struct FrameConstants
 {
     // These are column major!
     float4x4 worldToViewMat;    // View matrix

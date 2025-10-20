@@ -3,12 +3,13 @@
 
 #include "Common.h"
 
-struct HLSL_ALIGN PresentCB
+struct PresentCB
 {
     float2 texOffset;
     float2 currSize;
     float  brightnessValue;
     float  gammaValue;
+    float2 padding;
 };
 ALIGN_CHECK(PresentCB);
 
