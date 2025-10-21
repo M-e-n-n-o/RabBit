@@ -19,7 +19,7 @@ namespace RB::Graphics
         }
     }
 
-    RenderPassEntry** RenderGraph::SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene)
+    RenderPassEntry** RenderGraph::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
         size_t size = sizeof(RenderPassEntry*) * m_RenderFlow.size();
         RenderPassEntry** entries = (RenderPassEntry**)ALLOC_HEAP(size);
@@ -40,7 +40,7 @@ namespace RB::Graphics
             }
 
             submitted[id] = true;
-            entries[idx] = m_UnorderedPasses[id]->SubmitEntry(view_context, allocator, scene);
+            entries[idx] = m_UnorderedPasses[id]->SubmitEntry(view_context, scene);
         }
 
         return entries;

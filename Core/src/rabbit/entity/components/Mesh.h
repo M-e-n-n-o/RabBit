@@ -2,6 +2,7 @@
 #include "RabBitCommon.h"
 #include "entity/ObjectComponent.h"
 #include "graphics/RenderResource.h"
+#include "app/AssetManager.h"
 
 namespace RB::Entity
 {
@@ -14,7 +15,7 @@ namespace RB::Entity
             Graphics::IndexBuffer*  indexBuffer = nullptr;
         };
 
-        Mesh(const char* file_name);
+        Mesh(const char* name, LoadedMesh::Submodel& submodel);
         Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count);
 
         ~Mesh()

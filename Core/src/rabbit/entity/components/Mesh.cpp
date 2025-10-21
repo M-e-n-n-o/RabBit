@@ -4,26 +4,10 @@
 
 namespace RB::Entity
 {
-    Mesh::Mesh(const char* file_name)
+    Mesh::Mesh(const char* name, LoadedMesh::Submodel& submodel)
     {
-        LoadedMesh mesh;
-        bool success = AssetManager::LoadMesh(file_name, &mesh);
-
-        if (!success)
-        {
-            return;
-        }
-
-        if (mesh.models.size() > 1)
-        {
-            RB_LOG_ERROR(LOGTAG_ENTITY, "A Mesh can not have multiple models, load this model differently!");
-            return;
-        }
-
-        LoadedMesh::Submodel submodel = mesh.models[0];
-
         char vertex_name[100];
-        sprintf(vertex_name, "%s vertices", file_name);
+        sprintf(vertex_name, "%s vertices", name);
 
         uint32_t vertex_size = sizeof(LoadedMesh::Vertex);
 
@@ -32,7 +16,7 @@ namespace RB::Entity
         if (!submodel.indices.empty())
         {
             char index_name[100];
-            sprintf(index_name, "%s indices", file_name);
+            sprintf(index_name, "%s indices", name);
 
             m_VertexPair.indexBuffer = Graphics::IndexBuffer::Create(index_name, submodel.indices.data(), submodel.indices.size());
         }

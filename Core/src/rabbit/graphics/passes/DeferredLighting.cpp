@@ -37,7 +37,7 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRandomReadWrites},
                 },
                 1,
 
@@ -46,8 +46,10 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene)
+    RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
+        // TODO: Collect lighting information
+
         // Just create an empty entry
         DeferredLightingEntry* entry = new DeferredLightingEntry();
         return entry;

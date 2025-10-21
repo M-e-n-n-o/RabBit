@@ -23,6 +23,7 @@
 
 #include "passes/GBuffer.h"
 #include "passes/DeferredLighting.h"
+#include "passes/Overlay2D.h"
 
 #if RB_GRAPHICS_API_D3D12
 #include "platform/graphics/d3d12/RendererD3D12.h"
@@ -202,13 +203,15 @@ namespace RB::Graphics
             UpdateRenderGraphSizes(view_contexts, total_view_contexts);
 
             // TODO: Start making better use of the m_RenderAllocator in the Renderer and RenderGraph itself!
+            // TODO: We need to add a specific frame allocator for the flow between the SubmitEntry and Render calls,
+            // cause currently this can cause reading invalid data!!!
 
             // Gather the entries from all render passes for every view context
             RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
             // TODO: Enable for proper rendering
             //for (int i = 0; i < total_view_contexts; ++i)
             //{
-            //    entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], m_RenderAllocator, scene);
+            //    entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], scene);
             //}
 
             RenderContext* context                  = new RenderContext();
@@ -371,14 +374,18 @@ namespace RB::Graphics
             // Passes
             .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
             .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
+            .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
 
             // Connections           (from)     ->      (to)
             .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
                                      0u,                0u,
                                      1u,                1u)
 
+            .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
+                                     0u,                0u)
+
             // Finalize
-            .SetFinalPass(RenderPassType::DeferredLighting, 0)
+            .SetFinalPass(RenderPassType::Overlay2D, 0)
             .Build(kRenderGraphType_Normal, m_RenderGraphContext);
     }
 

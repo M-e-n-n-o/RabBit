@@ -3,15 +3,15 @@
 
 namespace RB::Graphics
 {
-    struct GBufferSettings : public RenderPassSettings
+    struct Overlay2DSettings : public RenderPassSettings
     {
         // No settings
     };
 
-    class GBufferPass : public RenderPass
+    class Overlay2DPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "GBuffer"; }
+        const char* GetName() override { return "Overlay2D"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
 

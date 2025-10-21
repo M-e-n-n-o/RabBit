@@ -62,9 +62,10 @@
 
 #include "rabbit/entity/Scene.h"
 #include "rabbit/entity/GameObject.h"
-#include "rabbit/entity/components/Mesh.h"
-#include "rabbit/entity/components/Camera.h"
 #include "rabbit/entity/components/Transform.h"
+#include "rabbit/entity/components/Camera.h"
+#include "rabbit/entity/components/Mesh.h"
+#include "rabbit/entity/components/Rect2D.h"
 
 #include "rabbit/events/input/Input.h"
 #include "rabbit/events/input/KeyCodes.h"

@@ -19,6 +19,7 @@ namespace RB::Graphics
         None,
         GBuffer,
         DeferredLighting,
+        Overlay2D,
 
         Count
     };
@@ -79,7 +80,7 @@ namespace RB::Graphics
     {
         const char* name;
         bool        depthFormat;
-        // Points to an optional output texture (usefull for depth textures that we want to read from and write to)
+        // Points to an optional output texture (useful for depth textures that we want to read from and write to)
         // If this is set, then the dependencyTexture stays nullptr and the RenderPass should use the outputTexture
         int32_t     outputTextureIndex;
     };
@@ -136,7 +137,7 @@ namespace RB::Graphics
         // It can also do some preprocessing before the actual Render() call to, for example, determine which RenderEntries 
         // this pass needs, so the RenderThread does not need to do this. But it can maybe also determine if the pass needs 
         // to run at all even.
-        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene) = 0;
+        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene) = 0;
 
         // Executed on the render thread
         // Runs for every ViewContext

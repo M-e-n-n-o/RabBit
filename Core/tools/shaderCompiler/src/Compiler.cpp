@@ -35,6 +35,11 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 		source.Size		= source_blob->GetBufferSize();
 		source.Encoding = DXC_CP_ACP;
 
+		if (source.Size == 0)
+		{
+			continue;
+		}
+
 		std::vector<Shader> entries;
 		RetrieveShaderEntries(source, entries);
 

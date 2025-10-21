@@ -31,6 +31,7 @@ namespace RB::Graphics
 
         ~GBufferEntry()
         {
+            SAFE_FREE(entries);
         }
     };
 
@@ -63,11 +64,11 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Scene* const scene)
+    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene)
     {
         auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
 
-        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderers.size());
+        GBufferEntry::ModelEntry* entries = ALLOC_HEAPC(GBufferEntry::ModelEntry, mesh_renderers.size());
 
         uint32_t total_entries = 0;
 
@@ -99,6 +100,7 @@ namespace RB::Graphics
 
         if (total_entries == 0)
         {
+            SAFE_FREE(entries);
             return nullptr;
         }
 

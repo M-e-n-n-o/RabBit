@@ -18,6 +18,8 @@ private:
     Transform* m_Transform;
     Transform* m_Camera;
 
+    Font* m_Font;
+
 public:
     TestLayer() : ApplicationLayer("TestLayer") {}
 
@@ -53,29 +55,58 @@ public:
         //	0.5f, -0.5f, 0,		0, 0, 1,
         //};
 
+        LoadedMesh mesh;
+        bool success = AssetManager::LoadMesh("Bunny.fbx", &mesh);
+
         //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        //m_Mesh = new Mesh("Sponza/source/Sponza.fbx");
-        m_Mesh = new Mesh("Bunny.fbx");
+        //m_Mesh = new Mesh("Bunny.fbx");
         m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
 
+        for (int i = 0; i < mesh.models.size(); i++)
+        {
+            m_Mesh = new Mesh("Mesh", mesh.models[i]);
+
+            GameObject* object = scene->CreateGameObject();
+            object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
+            Transform* t = object->AddComponent<Transform>();
+            t->position = Float3(0.0f, 0.0f, 600.0f);
+            t->rotation = Float3(0.0f, 180.0f, 0.0f);
+            t->scale = Float3(1.0f);
+            
+            m_Transform = t;
+        }
+
+
         void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
         //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
 
-        GameObject* object = scene->CreateGameObject();
-        object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
-        Transform* t = object->AddComponent<Transform>();
-        t->position = Float3(0.0f, 0.0f, 600.0f);
-        t->rotation = Float3(0.0f, 180.0f, 0.0f);
-        t->scale = Float3(1.0f);
-
-        m_Transform = t;
 
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
         Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 70.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
+
+        // UI
+        {
+            auto ui = scene->CreateGameObject();
+            ui->AddComponent<Rect2D>(200.0f, 200.0f);
+            auto ui_t = ui->AddComponent<Transform>();
+            ui_t->position.x = 100.0f;
+            ui_t->position.y = 100.0f;
+
+            LoadedFont font;
+            AssetManager::LoadFont("TypoGraphica.otf", &font, 48);
+
+            m_Font = new Font("Cool Font", font);
+
+            auto text = scene->CreateGameObject();
+            text->AddComponent<Text2D>(m_Font, "Hoi Sylvia", 0.3f, 0.3f);
+            auto text_t = text->AddComponent<Transform>();
+            text_t->position.x = 0.5f;
+            text_t->position.y = 50.0f;
+        }
 
         //m_Obj2 = scene->CreateGameObject();
         //m_Obj2->AddComponent<Transform>();
@@ -142,6 +173,9 @@ public:
             m_Camera->position = m_Camera->position + (up * (250 * delta));
         if (IsKeyDown(KeyCode::LeftShift))
             m_Camera->position = m_Camera->position - (up * (250 * delta));
+
+
+        //RB_LOG("Pos: %f, %f, %f", m_Camera->position.x, m_Camera->position.y, m_Camera->position.z);
     }
 
     bool OnEvent(const Event& event) override
@@ -168,5 +202,6 @@ public:
     {
         delete m_Mesh;
         delete m_Material;
+        delete m_Font;
     }
 };

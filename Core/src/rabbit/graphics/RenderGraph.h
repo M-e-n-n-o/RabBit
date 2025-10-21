@@ -25,7 +25,7 @@ namespace RB::Graphics
 
         RenderGraph() = default;
 
-        RenderPassEntry** SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene);
+        RenderPassEntry** SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene);
         void RunGraph(ViewContext* view_context, FrameAllocator* allocator, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context);
 
         void DestroyEntries(RenderPassEntry** entries);

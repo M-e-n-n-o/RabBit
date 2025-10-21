@@ -7,18 +7,30 @@
 
 #include <ufbx.h>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 using namespace RB::Graphics;
 
 namespace RB
 {
     LoadedImage::LoadedImage()
         : data(nullptr)
+        , dataSize(0)
+        , width(0)
+        , height(0)
     {}
 
     LoadedImage::~LoadedImage()
     {
-        stbi_image_free(data);
-        data = nullptr;
+        if (loadedUsingStb)
+        {
+            stbi_image_free(data);
+        }
+        else
+        {
+            SAFE_FREE(data);
+        }
     }
 
     LoadedMesh::LoadedMesh()
@@ -28,6 +40,19 @@ namespace RB
     LoadedMesh::~LoadedMesh()
     {
         ufbx_free_scene((ufbx_scene*)internalScene);
+    }
+
+    LoadedFont::LoadedFont()
+        : fontFace(nullptr)
+        , fontLibrary(nullptr)
+    {}
+
+    LoadedFont::~LoadedFont()
+    {
+        if (fontFace)
+            FT_Done_Face((FT_Face)fontFace);
+        if (fontLibrary)
+            FT_Done_FreeType((FT_Library)fontLibrary);
     }
 
     namespace AssetManager
@@ -47,14 +72,16 @@ namespace RB
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
-            RB_LOG(LOGTAG_MAIN, "Loading: %s", final_path.c_str());
+            RB_LOG(LOGTAG_MAIN, "Loading image: %s", final_path.c_str());
 
             auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
             FileData data = file_handle->ReadFull();
 
             // Note that this loads a 8 bit per channel image (use stbi_load_16_from_memory or stbi_loadf_from_memory for 16 or 32 bit)
-            out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &out_image->channels, force_channels);
+            int32_t channels;
+            out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &channels, force_channels);
+            out_image->loadedUsingStb = true;
 
             if (out_image->data == NULL)
             {
@@ -66,17 +93,17 @@ namespace RB
             if (force_channels != 0)
             {
                 // We forced to read only certain channels
-                out_image->channels = force_channels;
+                channels = force_channels;
             }
 
-            switch (out_image->channels)
+            switch (channels)
             {
-            case 1: 
+            case 1:
                 out_image->format = RenderResourceFormat::R8_UNORM; 
                 if (srgb)
                     RB_LOG_WARN(LOGTAG_MAIN, "A single channel image cannot be in srgb space");
                 break;
-            case 4: 
+            case 4:
                 out_image->format = srgb ? RenderResourceFormat::R8G8B8A8_SRGB : RenderResourceFormat::R8G8B8A8_UNORM; 
                 break;
             case 0:
@@ -103,7 +130,7 @@ namespace RB
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
-            RB_LOG(LOGTAG_MAIN, "Loading: %s", final_path.c_str());
+            RB_LOG(LOGTAG_MAIN, "Loading mesh: %s", final_path.c_str());
 
             auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
@@ -140,6 +167,8 @@ namespace RB
 
                 if (mesh == nullptr)
                     continue;
+
+                //node->local_transform
 
                 for (const ufbx_mesh_part& mesh_part : mesh->material_parts)
                 {
@@ -270,5 +299,97 @@ namespace RB
 
             return out_submodel;
         }
-}
+
+        // ---------------------------------------------------------------------------
+        //								    Fonts
+        // ---------------------------------------------------------------------------
+
+        bool LoadFont(const char* path, LoadedFont* out_font, uint32_t font_size)
+        {
+            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+
+            RB_LOG(LOGTAG_MAIN, "Loading font: %s", final_path.c_str());
+
+            LoadedImage* img = &out_font->fontAtlas;
+            *img = {};
+            img->loadedUsingStb = false;
+            img->format         = RenderResourceFormat::R8_UNORM;
+
+            FT_Library ft;
+            if (FT_Init_FreeType(&ft))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, " Could not init FreeType");
+                return false;
+            }
+            out_font->fontLibrary = ft;
+
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
+
+            FileData file_data = file_handle->ReadFull();
+
+            FT_Face face;
+            if (FT_New_Memory_Face(ft, file_data.data, file_data.size, 0, &face))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load font");
+                return false;
+            }
+            out_font->fontFace = face;
+
+            FT_Set_Pixel_Sizes(face, 0, font_size);
+
+            // Calculate the width and height of the font atlas
+            for (uint8_t c = 0; c < 128; c++)
+            {
+                FT_Load_Char(face, c, FT_LOAD_RENDER);
+                img->width += face->glyph->bitmap.width;
+                img->height = Math::Max(img->height, (int32_t)face->glyph->bitmap.rows);
+            }
+
+            img->dataSize = sizeof(uint8_t) * img->width * img->height;
+            img->data = (uint8_t*)ALLOC_HEAP(img->dataSize);
+            memset(img->data, 0, img->dataSize);
+
+            // Just load the first 128 ASCII characters
+            uint32_t offset = 0;
+            for (uint8_t c = 0; c < 128; c++)
+            {
+                if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+                {
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load glyph: %c", c);
+                    continue;
+                }
+                
+                FT_GlyphSlot g = face->glyph;
+
+                int pitch = g->bitmap.pitch;
+                const uint8_t* src_buffer = g->bitmap.buffer;
+                
+                if (pitch < 0)
+                {
+                    // rows are stored bottom-up, reverse this
+                    src_buffer += g->bitmap.rows * pitch;
+                    pitch = -pitch;
+                }
+                
+                for (uint32_t row = 0; row < g->bitmap.rows; ++row)
+                {
+                    memcpy((uint8_t*)img->data + row * img->width + offset,
+                           src_buffer + row * pitch,
+                           g->bitmap.width);
+                }
+                
+                LoadedFont::Character character = {};
+                character.imageUV       = Math::Float4((float)offset / img->width, 0.0f, (float)(offset + g->bitmap.width) / img->width, (float)g->bitmap.rows / img->height);
+                character.size          = Math::Float2(g->bitmap.width, g->bitmap.rows);
+                character.bearing       = Math::Float2(g->bitmap_left, g->bitmap_top);
+                character.advance       = g->advance.x >> 6; // Go from 26.6 fixed point to regular int
+                
+                out_font->characters.emplace(c, character);
+                
+                offset += g->bitmap.width;
+            }
+
+            return true;
+        }
+    }
 }
