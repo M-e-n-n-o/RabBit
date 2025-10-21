@@ -68,6 +68,14 @@ target_include_directories(RabBit PRIVATE
     
     # UFBX
     "external/ufbx"
+
+    # FreeType
+    "external/freetype/include"
+)
+
+target_link_libraries(RabBit PRIVATE
+    # FreeType
+    "${EXTERNAL_PATH}/freetype/bin/x64/freetype.lib"
 )
 
 # DX12 specific includes and libraries
@@ -111,7 +119,7 @@ if(RABBIT_API_DX12)
     add_subdirectory(tools/shaderCompiler/d3d12)
 endif()
 
-# DX12 specific includes and libraries
+# Vulkan specific includes and libraries
 if(RABBIT_API_VULKAN)
     add_compile_definitions(RB_GRAPHICS_API_VULKAN)
 

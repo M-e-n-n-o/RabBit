@@ -133,29 +133,29 @@ namespace RB::Graphics
                 const auto& ch = char_map->at(c);
         
                 float xpos = start_x + ch.bearing.x * scale;
-                float ypos = start_y - (ch.size.y - ch.bearing.y) * scale;
+                float ypos = start_y + (ch.size.y - ch.bearing.y) * scale;
         
                 float w = ch.size.x * scale;
                 float h = ch.size.y * scale;
 
                 // Top left
                 character_vertices[total_vertices + 0].x = xpos;
-                character_vertices[total_vertices + 0].y = ypos;
+                character_vertices[total_vertices + 0].y = ypos - h;
                 character_vertices[total_vertices + 0].u = ch.imageUV.x;
                 character_vertices[total_vertices + 0].v = ch.imageUV.w;
                 // Top right
                 character_vertices[total_vertices + 1].x = xpos + w;
-                character_vertices[total_vertices + 1].y = ypos;
+                character_vertices[total_vertices + 1].y = ypos - h;
                 character_vertices[total_vertices + 1].u = ch.imageUV.z;
                 character_vertices[total_vertices + 1].v = ch.imageUV.w;
                 // Bottom left
                 character_vertices[total_vertices + 2].x = xpos;
-                character_vertices[total_vertices + 2].y = ypos + h;
+                character_vertices[total_vertices + 2].y = ypos;
                 character_vertices[total_vertices + 2].u = ch.imageUV.x;
                 character_vertices[total_vertices + 2].v = ch.imageUV.y;
                 // Bottom right
                 character_vertices[total_vertices + 3].x = xpos + w;
-                character_vertices[total_vertices + 3].y = ypos + h;
+                character_vertices[total_vertices + 3].y = ypos;
                 character_vertices[total_vertices + 3].u = ch.imageUV.z;
                 character_vertices[total_vertices + 3].v = ch.imageUV.y;
 
@@ -223,8 +223,8 @@ namespace RB::Graphics
         }
 
         // Render text
-        in.ri->SetVertexShader(VS_SimpleTex2D);
-        in.ri->SetPixelShader(PS_SimpleTex2D);
+        in.ri->SetVertexShader(VS_Font2D);
+        in.ri->SetPixelShader(PS_Font2D);
         for (int i = 0; i < entry->characterCount; i += 4)
         {
             const Overlay2DEntry::CharacterVertex& vertex0 = entry->characters[i + 0];

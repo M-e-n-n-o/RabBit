@@ -8,28 +8,28 @@ cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
 // Simple color
 // ---------------------------------------------------------------
 
-struct VI_SIMPLE
+struct VI_Simple
 {
     float2 position : POSITION;
     float3 color    : TEXCOORD0;
 };
 
-struct PI_SIMPLE
+struct PI_Simple
 {
     float4 position : SV_POSITION;
     float3 color    : TEXCOORD0;
 };
 
-PI_SIMPLE VS_Simple2D(VI_SIMPLE input)
+PI_Simple VS_Simple2D(VI_Simple input)
 {
-    PI_SIMPLE output;
+    PI_Simple output;
     output.position = mul(projection, float4(input.position, 1, 1));
     output.color    = input.color;
 
     return output;
 }
 
-float4 PS_Simple2D(PI_SIMPLE input) : SV_Target0
+float4 PS_Simple2D(PI_Simple input) : SV_Target0
 {
     return float4(input.color, 1.0f);
 }
@@ -37,30 +37,28 @@ float4 PS_Simple2D(PI_SIMPLE input) : SV_Target0
 // Simple texture
 // ---------------------------------------------------------------
 
-struct VI_SIMPLETEX
+struct VI_SimpleTex
 {
     float2 position : POSITION;
     float2 uv       : TEXCOORD0;
 };
 
-struct PI_SIMPLETEX
+struct PI_SimpleTex
 {
     float4 position : SV_POSITION;
     float2 uv       : TEXCOORD0;
 };
 
-PI_SIMPLETEX VS_SimpleTex2D(VI_SIMPLETEX input)
+PI_SimpleTex VS_SimpleTex2D(VI_SimpleTex input)
 {
-    PI_SIMPLETEX output;
+    PI_SimpleTex output;
     output.position = mul(projection, float4(input.position, 1, 1));
     output.uv = input.uv;
 
     return output;
 }
 
-float4 PS_SimpleTex2D(PI_SIMPLETEX input) : SV_Target0
+float4 PS_SimpleTex2D(PI_SimpleTex input) : SV_Target0
 {
-    //return float4(input.uv.y, 0, 0, 1);
-    float alpha = FetchTex2D(0).Sample<float>(g_ClampAnisoSampler, input.uv);
-    return float4(1.0, 1.0, 1.0, alpha);
+    return FetchTex2D(0).Sample<float4>(g_ClampAnisoSampler, input.uv);
 }

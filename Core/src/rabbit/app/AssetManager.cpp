@@ -373,7 +373,9 @@ namespace RB
                 
                 for (uint32_t row = 0; row < g->bitmap.rows; ++row)
                 {
-                    memcpy((uint8_t*)img->data + row * img->width + offset,
+                    // Write to the destination from bottom to top
+                    uint32_t flipped_row = g->bitmap.rows - 1 - row;
+                    memcpy((uint8_t*)img->data + flipped_row * img->width + offset,
                            src_buffer + row * pitch,
                            g->bitmap.width);
                 }
