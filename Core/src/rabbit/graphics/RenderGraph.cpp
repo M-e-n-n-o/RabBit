@@ -309,7 +309,7 @@ namespace RB::Graphics
                                 return nullptr;
                             }
 
-                            if (from_pass_ptr->first == m_FinalPassType && from_res_idx == m_FinalResourceId)
+                            if (pass_type == m_FinalPassType && from_res_idx == m_FinalResourceId)
                             {
                                 RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Its currently not possible for the final output resource of the rendergraph to be an inout resource", (uint32_t)pass_type, to_res_idx);
                                 return nullptr;
@@ -468,7 +468,7 @@ namespace RB::Graphics
 
             if (!found)
             {
-                RB_LOG(LOGTAG_GRAPHICS, "Detected an unused RenderPass in the graph, %d", (uint32_t)itr->first);
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Detected an unused RenderPass in the graph, %d", (uint32_t)itr->first);
                 delete itr->second;
             }
         }
