@@ -50,7 +50,7 @@ namespace RB::Graphics
         RenderResourceFormat    format;
         uint32_t                width;  // RenderTextureSize
         uint32_t                height; // RenderTextureSize
-        uint32_t                flags;
+        uint32_t                flags = UINT32_MAX; // UINT32_MAX means this texture is invalid!
 
         bool IsAliasableWith(const RenderTextureDesc& other) const
         {
@@ -79,7 +79,6 @@ namespace RB::Graphics
     struct RenderTextureInputDesc
     {
         const char* name;
-        bool        depthFormat;
         // Points to an optional output texture (useful for depth textures that we want to read from and write to)
         // If this is set, then the dependencyTexture stays nullptr and the RenderPass should use the outputTexture
         int32_t     outputTextureIndex;
@@ -90,14 +89,9 @@ namespace RB::Graphics
 
     struct RenderPassConfig
     {
-        // TODO Remove the totalDependencies, totalWorkingTextures& totalOutputTextures indices, they are confusing and not very fool/me proof
-
         RenderTextureInputDesc	dependencies[MAX_INOUT_RESOURCES_PER_RENDERPASS];
-        uint32_t                totalDependencies;
         RenderTextureDesc	    workingTextures[MAX_WORKING_RESOURCES_PER_RENDERPASS];
-        uint32_t                totalWorkingTextures;
         RenderTextureDesc	    outputTextures[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // Maybe it should be possible to not only output rendertextures, but also buffers?
-        uint32_t                totalOutputTextures;
         bool                    asyncComputeCompatible  = false; // TODO Still unused
     };
 

@@ -26,20 +26,17 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"GBuffer0", false, -1},
-                    RenderTextureInputDesc{"GBuffer1", false, -1}
+                    RenderTextureInputDesc{"GBuffer0", -1},
+                    RenderTextureInputDesc{"GBuffer1", -1}
                 },
-                2,
 
                 // Working textures
                 {},
-                0,
 
                 // Output textures
                 {
                     RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRandomReadWrites},
                 },
-                1,
 
                 // Async compute compatible
                 false

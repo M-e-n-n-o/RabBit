@@ -54,19 +54,16 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"Color", false, 0}
+                    RenderTextureInputDesc{"Color", 0}
                 },
-                1,
 
-            // Working textures
-            {},
-            0,
+                // Working textures
+                {},
 
-            // Output textures
-            {
-                RenderTextureDesc{"ColorOverlay",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
-            },
-            1,
+                // Output textures
+                {
+                    RenderTextureDesc{"ColorOverlay",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
+                },
 
             // Async compute compatible
             false

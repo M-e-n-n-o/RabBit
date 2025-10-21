@@ -104,8 +104,8 @@ public:
             auto text = scene->CreateGameObject();
             text->AddComponent<Text2D>(m_Font, "Hoi Sylvia", 0.3f, 0.3f);
             auto text_t = text->AddComponent<Transform>();
-            text_t->position.x = 0.5f;
-            text_t->position.y = 50.0f;
+            text_t->position.x = 400.0f;
+            text_t->position.y = 300.0f;
         }
 
         //m_Obj2 = scene->CreateGameObject();

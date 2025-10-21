@@ -77,8 +77,6 @@ namespace RB::Graphics
         RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context);
 
     private:
-        RenderPassType GetNextLeafPass(uint64_t processed_mask, RenderPassType current_type);
-
         using ResourceConnections = List<uint32_t>;
 
         // Yes, I know, these types are getting very long and confusing :(

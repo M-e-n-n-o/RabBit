@@ -10,6 +10,8 @@ namespace RB::Graphics
     //                               RenderGraph
     // ---------------------------------------------------------------------------
 
+    #define VIEWCONTEXT_OUTPUT_ID INT32_MAX
+
     RenderGraph::~RenderGraph()
     {
         for (const auto& pass : m_UnorderedPasses) 
@@ -82,7 +84,9 @@ namespace RB::Graphics
 
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
-                if (m_RenderFlow[i].parameterIDs[j] != -1)
+                if (m_RenderFlow[i].parameterIDs[j] == VIEWCONTEXT_OUTPUT_ID)
+                    parameters[j] = view_context->finalColorTarget;
+                else if (m_RenderFlow[i].parameterIDs[j] != -1)
                     parameters[j] = graph_context->GetResource(m_RenderFlow[i].parameterIDs[j]);
                 else
                     parameters[j] = nullptr;
@@ -98,16 +102,12 @@ namespace RB::Graphics
 
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
-                if (m_RenderFlow[i].outputIDs[j] != -1)
+                if (m_RenderFlow[i].outputIDs[j] == VIEWCONTEXT_OUTPUT_ID)
+                    outputs[j] = view_context->finalColorTarget;
+                else if (m_RenderFlow[i].outputIDs[j] != -1)
                     outputs[j] = graph_context->GetResource(m_RenderFlow[i].outputIDs[j]);
                 else
                     outputs[j] = nullptr;
-            }
-
-            // The final pass uses the output target of the ViewContext
-            if (i == m_RenderFlow.size() - 1)
-            {
-                outputs[m_FinalOutputResourceID] = view_context->finalColorTarget;
             }
 
             RB_PROFILE_GPU_SCOPED(render_interface, pass->GetName());
@@ -165,308 +165,274 @@ namespace RB::Graphics
             return nullptr;
         }
 
-        uint64_t processed_mask = 0;
-        RenderPassType pass_type = RenderPassType::None;
 
-        UnorderedMap<uint32_t, RenderPass*> passes;
-        List<RenderGraph::FlowNode> render_flow;
-
-        // Process from back to front
-        do
+        // Collect pass configs
+        struct GraphInfo
         {
-            pass_type = GetNextLeafPass(processed_mask, m_FinalPassType);
+            UnorderedMap<RenderPassType, RenderPassConfig> configs;
+            decltype(m_Connections) connections;
+        } info;
 
-            auto pass_ptr     = m_Passes.find(pass_type);
-            auto settings_ptr = m_PassSettings.find(pass_type);
+        info.connections = m_Connections;
 
-            if (pass_ptr == m_Passes.end() || settings_ptr == m_PassSettings.end())
+        for (auto& p : m_Passes)
+        {
+            auto settings_itr = m_PassSettings.find(p.first);
+            if (settings_itr == m_PassSettings.end())
             {
-                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "A pass type of the RenderGraph is not actually added as a pass");
+                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has no settings", (uint32_t)p.first);
                 return nullptr;
             }
+            info.configs[p.first] = p.second->GetConfiguration(settings_itr->second);
+        }
 
-            // Mark pass type as processed
-            processed_mask |= (1u << (uint64_t) pass_type);
 
-            passes.emplace((uint32_t)pass_ptr->first, pass_ptr->second);
+        // Determine pass order (topological sort, producers first, depth first search)
+        List<RenderPassType> ordered_passes;
+        UnorderedSet<uint32_t> visited;
+        std::function<void(RenderPassType)> DFS = [&](RenderPassType pass)
+        {
+            if (visited.find((uint32_t)pass) != visited.end())
+                return;
+            visited.insert((uint32_t)pass);
+
+            auto it = info.connections.find(pass);
+            if (it != info.connections.end())
+            {
+                for (auto& from : it->second)
+                    DFS(from.first);
+            }
+
+            ordered_passes.push_back(pass); // Add after producers
+        };
+        DFS(m_FinalPassType);
+
+
+        // Track outputs that must use viewcontext resource
+        UnorderedMap<RenderPassType, uint32_t> pending_view_outputs;
+        auto MarkViewOutput = [&](RenderPassType p, uint32_t idx)
+        {
+            pending_view_outputs[p] |= (1u << idx);
+        };
+        auto IsViewOutput = [&](RenderPassType p, uint32_t idx) -> bool
+        {
+            auto it = pending_view_outputs.find(p);
+            return it != pending_view_outputs.end() && ((it->second & (1u << idx)) != 0);
+        };
+        
+
+        // Map outputs to linked consumers
+        UnorderedMap<RenderPassType, UnorderedMap<uint32_t, List<std::pair<RenderPassType, uint32_t>>>> downstream_map;
+        for (auto& conn : info.connections)
+        {
+            RenderPassType consumer = conn.first;
+            for (auto& pair : conn.second)
+            {
+                RenderPassType producer = pair.first;
+                const List<uint32_t>& flat = pair.second;
+                for (size_t i = 0; i + 1 < flat.size(); i += 2)
+                {
+                    downstream_map[producer][flat[i]].push_back({ consumer, flat[i + 1] });
+                }
+            }
+        }
+
+
+        // Recursive function to propagate viewcontext upstream
+        std::function<void(RenderPassType, uint32_t)> PropagateViewOutput = [&](RenderPassType pass, uint32_t out_idx)
+        {
+            if (IsViewOutput(pass, out_idx))
+                return; // Already marked
+
+            MarkViewOutput(pass, out_idx);
+
+            // Check producers of this output (linked in-outs)
+            auto itConn = m_Connections.find(pass);
+            if (itConn == m_Connections.end()) 
+                return;
+
+            const RenderPassConfig& config = info.configs[pass];
+
+            for (auto& from_pair : itConn->second)
+            {
+                RenderPassType producer = from_pair.first;
+                const List<uint32_t>& flat = from_pair.second;
+
+                for (size_t i = 0; i + 1 < flat.size(); i += 2)
+                {
+                    uint32_t from_res_idx = flat[i];
+                    uint32_t to_res_idx = flat[i + 1];
+
+                    // Only propagate if this input is linked in-out (consumer output index == out_idx)
+                    int32_t linked_out_idx = config.dependencies[to_res_idx].outputTextureIndex;
+                    if (linked_out_idx == (int32_t)out_idx)
+                    {
+                        PropagateViewOutput(producer, from_res_idx);
+                    }
+                }
+            }
+        };
+
+
+        // Initial propagation from final pass
+        const RenderPassConfig& final_cfg = info.configs[m_FinalPassType];
+        for (uint32_t i = 0; i < _countof(final_cfg.outputTextures); ++i)
+        {
+            if (i == (uint32_t)m_FinalResourceId)
+            {
+                PropagateViewOutput(m_FinalPassType, i);
+            }
+        }
+
+
+        // Build render flow
+        List<RenderGraph::FlowNode> render_flow;
+        UnorderedMap<uint32_t, RenderPass*> used_passes;
+
+        auto GetAlias = [&](const RenderTextureDesc& desc, ResourceID* parameter_ids, ResourceID* working_ids, ResourceID* output_ids, bool check_lifetime) -> ResourceID
+        {
+            ResourceID id = -1;
+            const List<ResourceID>& resources = context->GetScheduledGraphResources(graph_id);
+
+            for (ResourceID other_id : resources)
+            {
+                const RenderTextureDesc& other = context->GetScheduledResource(other_id);
+
+                if (!desc.IsAliasableWith(other)) 
+                    continue;
+
+                // Don't alias with current pass
+                bool match = false;
+                for (int i = 0; i < MAX_INOUT_RESOURCES_PER_RENDERPASS && !match; ++i)   if (parameter_ids[i] == other_id) match = true;
+                for (int i = 0; i < MAX_WORKING_RESOURCES_PER_RENDERPASS && !match; ++i) if (working_ids[i] == other_id) match = true;
+                for (int i = 0; i < MAX_INOUT_RESOURCES_PER_RENDERPASS && !match; ++i)   if (output_ids[i] == other_id) match = true;
+                if (match) continue;
+
+                if (!check_lifetime) 
+                { 
+                    id = other_id; 
+                    break; 
+                }
+
+                // TODO Future optimization, figure out if they don't overlap in lifetime and use as alias
+            }
+
+            return id;
+        };
+
+        for (RenderPassType pass_type : ordered_passes)
+        {
+            auto pass_ptr = m_Passes.find(pass_type);
+            auto settings_ptr = m_PassSettings.find(pass_type);
+            RB_ASSERT(LOGTAG_GRAPHICS, pass_ptr != m_Passes.end() && settings_ptr != m_PassSettings.end(), "Missing pass");
+
+            used_passes[(uint32_t)pass_ptr->first] = pass_ptr->second;
 
             RenderGraph::FlowNode node = {};
             node.passID = (uint32_t)pass_ptr->first;
 
-            // Figure out the lifetime of the resources
             ResourceID parameter_ids[MAX_INOUT_RESOURCES_PER_RENDERPASS];
             ResourceID working_ids[MAX_WORKING_RESOURCES_PER_RENDERPASS];
             ResourceID output_ids[MAX_INOUT_RESOURCES_PER_RENDERPASS];
 
-            memset(&parameter_ids[0], -1, _countof(parameter_ids) * sizeof(ResourceID));
-            memset(&working_ids[0],   -1, _countof(working_ids)   * sizeof(ResourceID));
-            memset(&output_ids[0],    -1, _countof(output_ids)    * sizeof(ResourceID));
+            memset(parameter_ids, -1, sizeof(parameter_ids));
+            memset(working_ids, -1, sizeof(working_ids));
+            memset(output_ids, -1, sizeof(output_ids));
 
-            RenderPassConfig config = pass_ptr->second->GetConfiguration(settings_ptr->second);
+            const RenderPassConfig& config = info.configs[pass_type];
 
-            auto GetAlias = [&](const RenderTextureDesc& desc, bool check_lifetime) -> ResourceID
+            // Create outputs
+            for (uint32_t i = 0; i < _countof(config.outputTextures); ++i)
             {
-                ResourceID id = -1;
+                if (config.outputTextures[i].flags == UINT32_MAX)
+                    break;
 
-                // Get the already scheduled resources for this graph
-                const List<ResourceID>& resources = context->GetScheduledGraphResources(graph_id);
-
-                for (const ResourceID& other_id : resources)
+                if (IsViewOutput(pass_type, i))
                 {
-                    const RenderTextureDesc& other = context->GetScheduledResource(other_id);
-
-                    if (!desc.IsAliasableWith(other))
-                        continue;
-
-                    // Check to not alias with resurces from the current pass
-                    {
-                        bool match = false;
-
-                        for (int i = 0; i < _countof(parameter_ids) && !match; ++i)
-                        {
-                            if (parameter_ids[i] == other_id)
-                                match = true;
-                        }
-                        for (int i = 0; i < _countof(working_ids) && !match; ++i)
-                        {
-                            if (working_ids[i] == other_id)
-                                match = true;
-                        }
-                        for (int i = 0; i < _countof(output_ids) && !match; ++i)
-                        {
-                            if (output_ids[i] == other_id)
-                                match = true;
-                        }
-
-                        if (match)
-                            continue;
-                    }
-
-                    if (!check_lifetime)
-                    {
-                        id = other_id;
-                        break;
-                    }
-
-                    // TODO Future optimization, figure out if they don't overlap in lifetime and use as alias
+                    output_ids[i] = VIEWCONTEXT_OUTPUT_ID;
+                    continue;
                 }
 
-                return id;
-            };
-
-            // Parameter ID's & linked inouts
-            auto connections_ptr = m_Connections.find(pass_type);
-            if (connections_ptr != m_Connections.end())
-            {
-                for (const auto& from_ptr : connections_ptr->second)
+                ResourceID alias = GetAlias(config.outputTextures[i], parameter_ids, working_ids, output_ids, true);
+                if (alias == -1)
+                    output_ids[i] = context->ScheduleNewResource(config.outputTextures[i], graph_id);
+                else
                 {
-                    RenderPassType from_type = from_ptr.first;
+                    output_ids[i] = alias;
+                    context->GetScheduledResource(alias).CombineFlags(config.outputTextures[i].flags);
+                }
+            }
 
-                    auto from_pass_ptr = m_Passes.find(from_type);
-                    auto from_settings_ptr = m_PassSettings.find(from_type);
+            // Assign parameters
+            auto conn_it = m_Connections.find(pass_type);
+            if (conn_it != m_Connections.end())
+            {
+                for (auto& from_pair : conn_it->second)
+                {
+                    RenderPassType producer = from_pair.first;
+                    const List<uint32_t>& flat = from_pair.second;
 
-                    if (from_pass_ptr == m_Passes.end() || from_settings_ptr == m_PassSettings.end())
+                    for (size_t j = 0; j + 1 < flat.size(); j += 2)
                     {
-                        RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "A connection's pass type of the RenderGraph is not actually added as a pass");
-                        return nullptr;
-                    }
+                        uint32_t from_idx = flat[j];
+                        uint32_t to_idx = flat[j + 1];
 
-                    RenderPassConfig from_config = from_pass_ptr->second->GetConfiguration(from_settings_ptr->second);
-
-                    for (uint32_t i = 0; i < from_ptr.second.size(); i += 2)
-                    {
-                        uint32_t from_res_idx = from_ptr.second[i];
-                        uint32_t to_res_idx = from_ptr.second[i + 1];
-
-                        if (to_res_idx >= config.totalDependencies)
-                        {
-                            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has more linked input resources from RenderPass %d than it has inputs", (uint32_t)pass_type, (uint32_t)from_pass_ptr->first);
-                            return nullptr;
-                        }
-
-                        if (to_res_idx >= MAX_INOUT_RESOURCES_PER_RENDERPASS)
-                        {
-                            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has too many input resources, we currently only support %d", (uint32_t)pass_type, MAX_INOUT_RESOURCES_PER_RENDERPASS);
-                            return nullptr;
-                        }
-
-                        const RenderTextureDesc& from_desc = from_config.outputTextures[from_res_idx];
-
-                        if (IsDepthFormat(from_desc.format) != config.dependencies[to_res_idx].depthFormat)
-                        {
-                            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has resource %d linked from RenderPass %d which have incompatible formats", (uint32_t)pass_type, to_res_idx, (uint32_t)from_pass_ptr->first);
-                            return nullptr;
-                        }
-                        
-                        int32_t linked_out_idx = config.dependencies[to_res_idx].outputTextureIndex;
+                        int32_t linked_out_idx = config.dependencies[to_idx].outputTextureIndex;
                         if (linked_out_idx >= 0)
                         {
-                            // This parameter is also an output
-
-                            if (IsDepthFormat(config.outputTextures[linked_out_idx].format) != config.dependencies[to_res_idx].depthFormat)
-                            {
-                                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has resource %d that is an in- and output that have incompatible formats", (uint32_t)pass_type, to_res_idx);
-                                return nullptr;
-                            }
-
-                            if (pass_type == m_FinalPassType && from_res_idx == m_FinalResourceId)
-                            {
-                                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Its currently not possible for the final output resource of the rendergraph to be an inout resource", (uint32_t)pass_type, to_res_idx);
-                                return nullptr;
-                            }
-
-                            // The pass will use the output parameter to access this input
-                            parameter_ids[to_res_idx] = -1;
-
-                            const RenderTextureDesc& desc = config.outputTextures[linked_out_idx];
-
-                            // Create the linked inout texture
-                            ResourceID id = GetAlias(desc, true);
-
-                            if (id == -1)
-                            {
-                                // No alias found
-                                output_ids[linked_out_idx] = context->ScheduleNewResource(desc, graph_id);
-                            }
-                            else
-                            {
-                                // Found an alias
-                                output_ids[linked_out_idx] = id;
-                                // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
-                                context->GetScheduledResource(id).CombineFlags(desc.flags);
-                            }
+                            parameter_ids[to_idx] = output_ids[linked_out_idx];
                         }
                         else
                         {
-                            // This is just a regular input
-
-                            ResourceID from_res = -1;
-
-                            // Find the scheduled resources of the from pass
-                            for (const auto& node : render_flow)
+                            int producerNode = -1;
+                            for (size_t k = 0; k < render_flow.size(); ++k)
                             {
-                                if (node.passID == (uint32_t)from_pass_ptr->first)
+                                if (render_flow[k].passID == (uint32_t)producer)
                                 {
-                                    from_res = node.outputIDs[from_res_idx];
+                                    producerNode = (int)k;
                                     break;
                                 }
                             }
-
-                            if (from_res == -1)
-                            {
-                                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Something is wrong in the logic of the RenderGraphBuilder, the output RenderPass %d should have been processed before RenderPass %d", (uint32_t)from_pass_ptr->first, (uint32_t)pass_type);
-                                return nullptr;
-                            }
-
-                            parameter_ids[to_res_idx] = from_res;
+                            RB_ASSERT(LOGTAG_GRAPHICS, producerNode != -1, "Producer %d not added yet", from_idx);
+                            parameter_ids[to_idx] = render_flow[producerNode].outputIDs[from_idx];
                         }
                     }
                 }
             }
 
-            // Working ID's
-            if (config.totalWorkingTextures > MAX_WORKING_RESOURCES_PER_RENDERPASS)
+            // Working textures
+            for (uint32_t i = 0; i < _countof(config.workingTextures); ++i)
             {
-                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has too many working textures, we currently only support %d", (uint32_t)pass_type, MAX_WORKING_RESOURCES_PER_RENDERPASS);
-                return nullptr;
-            }
+                if (config.workingTextures[i].flags == UINT32_MAX)
+                    break;
 
-            for (uint32_t i = 0; i < config.totalWorkingTextures; ++i)
-            {
-                const RenderTextureDesc& desc = config.workingTextures[i];
-
-                // No need to check the full lifetime of working textures, they are only used by this pass
-                ResourceID id = GetAlias(desc, false);
-
-                if (id == -1)
-                {
-                    // No alias found
-                    working_ids[i] = context->ScheduleNewResource(desc, graph_id);
-                }
+                ResourceID alias = GetAlias(config.workingTextures[i], parameter_ids, working_ids, output_ids, false);
+                if (alias == -1)
+                    working_ids[i] = context->ScheduleNewResource(config.workingTextures[i], graph_id);
                 else
                 {
-                    // Found an alias
-                    working_ids[i] = id;
-                    // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
-                    context->GetScheduledResource(id).CombineFlags(desc.flags);
-                }
-
-            }
-
-            // Output ID's
-            if (config.totalOutputTextures > MAX_INOUT_RESOURCES_PER_RENDERPASS)
-            {
-                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has too many output textures, we currently only support %d", (uint32_t)pass_type, MAX_INOUT_RESOURCES_PER_RENDERPASS);
-                return nullptr;
-            }
-
-            for (uint32_t i = 0; i < config.totalOutputTextures; ++i)
-            {
-                if (pass_type == m_FinalPassType && i == m_FinalResourceId)
-                {
-                    if (config.outputTextures[i].width != kRTSize_Full || config.outputTextures[i].height != kRTSize_Full)
-                    {
-                        RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "The final resource (%d) of the final RenderPass (%d) should have a width and height of kRTSize_Full", m_FinalResourceId, (uint32_t)pass_type);
-                        return nullptr;
-                    }
-
-                    // The final pass doesn't need a dedicated output texture for this one, it will use the one of the ViewContext
-                    continue;
-                }
-
-                if (output_ids[i] != -1)
-                {
-                    // This output texture is also an input texture linked to a different pass, so we don't have to create a new texture
-                    continue;
-                }
-
-                const RenderTextureDesc& desc = config.outputTextures[i];
-
-                ResourceID id = GetAlias(desc, true);
-
-                if (id == -1)
-                {
-                    // No alias found
-                    output_ids[i] = context->ScheduleNewResource(desc, graph_id);
-                }
-                else
-                {
-                    // Found an alias
-                    output_ids[i] = id;
-                    // Make sure to combine the resource flags of the already scheduled resource with the current resource' flags
-                    context->GetScheduledResource(id).CombineFlags(desc.flags);
+                    working_ids[i] = alias;
+                    context->GetScheduledResource(alias).CombineFlags(config.workingTextures[i].flags);
                 }
             }
 
-            // Add this pass to the render_flow
-            memcpy(node.parameterIDs, parameter_ids, _countof(parameter_ids) * sizeof(ResourceID));
-            memcpy(node.workingIDs,   working_ids,   _countof(working_ids)   * sizeof(ResourceID));
-            memcpy(node.outputIDs,    output_ids,    _countof(output_ids)    * sizeof(ResourceID));
+            memcpy(node.parameterIDs, parameter_ids, sizeof(parameter_ids));
+            memcpy(node.workingIDs, working_ids, sizeof(working_ids));
+            memcpy(node.outputIDs, output_ids, sizeof(output_ids));
             render_flow.push_back(node);
+        }
 
-        } while (pass_type != m_FinalPassType);
-
-        // Copy over all the necessary data into an actual RenderGraph
+        // Create final graph
         RenderGraph* graph = new RenderGraph();
-        graph->m_ID                      = graph_id;
-        graph->m_FinalOutputResourceID   = m_FinalResourceId;
-        graph->m_UnorderedPasses         = passes;
-        graph->m_RenderFlow              = render_flow;
+        graph->m_ID                    = graph_id;
+        graph->m_FinalOutputResourceID = m_FinalResourceId;
+        graph->m_UnorderedPasses       = used_passes;
+        graph->m_RenderFlow            = render_flow;
 
-        // Remove all the passes that were not needed in the end, if any
+        // Remove unused passes
         for (auto itr = m_Passes.begin(); itr != m_Passes.end(); ++itr)
         {
-            bool found = false;
-            for (auto other_itr = passes.begin(); other_itr != passes.end(); other_itr++)
-            {
-                if ((uint32_t)itr->first == other_itr->first)
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
+            if (used_passes.find((uint32_t)itr->first) == used_passes.end())
             {
                 RB_LOG_WARN(LOGTAG_GRAPHICS, "Detected an unused RenderPass in the graph, %d", (uint32_t)itr->first);
                 delete itr->second;
@@ -474,33 +440,5 @@ namespace RB::Graphics
         }
 
         return graph;
-    }
-
-    RenderPassType RenderGraphBuilder::GetNextLeafPass(uint64_t processed_mask, RenderPassType current_type)
-    {
-        auto itr = m_Connections.find(current_type);
-
-        if (itr == m_Connections.end())
-        {
-            // This is a leaf pass
-            return current_type;
-        }
-        
-        for (const auto& from : itr->second)
-        {
-            RenderPassType type = from.first;
-
-            if ((processed_mask & (1u << (uint64_t)type)) != 0)
-            {
-                // This pass is already processed
-                continue;
-            }
-
-            // See if this pass has any leafs or is the actual leaf
-            return GetNextLeafPass(processed_mask, type);
-        }
-
-        // All inputs of this pass are processed
-        return current_type;
     }
 }

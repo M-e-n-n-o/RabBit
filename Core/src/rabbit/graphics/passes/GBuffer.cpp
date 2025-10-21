@@ -43,13 +43,11 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"Depth", true, 2}, // In-/output
+                    RenderTextureInputDesc{"Depth", 2}, // In-/output
                 },
-                1,
 
                 // Working textures
                 {},
-                0,
 
                 // Output textures
                 {
@@ -57,7 +55,6 @@ namespace RB::Graphics
                     RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
                     RenderTextureDesc{"Hyper Depth",    RenderResourceFormat::D32_FLOAT,          kRTSize_Full, kRTSize_Full, kRTFlag_ClearBeforeGraph  },
                 },
-                3,
 
                 // Async compute compatible
                 false
