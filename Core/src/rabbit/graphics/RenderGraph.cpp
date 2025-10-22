@@ -166,15 +166,8 @@ namespace RB::Graphics
         }
 
 
-        // Collect pass configs
-        struct GraphInfo
-        {
-            UnorderedMap<RenderPassType, RenderPassConfig> configs;
-            decltype(m_Connections) connections;
-        } info;
-
-        info.connections = m_Connections;
-
+        // Collect pass configurations
+        UnorderedMap<RenderPassType, RenderPassConfig> configs;
         for (auto& p : m_Passes)
         {
             auto settings_itr = m_PassSettings.find(p.first);
@@ -183,7 +176,7 @@ namespace RB::Graphics
                 RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has no settings", (uint32_t)p.first);
                 return nullptr;
             }
-            info.configs[p.first] = p.second->GetConfiguration(settings_itr->second);
+            configs[p.first] = p.second->GetConfiguration(settings_itr->second);
         }
 
 
@@ -196,8 +189,8 @@ namespace RB::Graphics
                 return;
             visited.insert((uint32_t)pass);
 
-            auto it = info.connections.find(pass);
-            if (it != info.connections.end())
+            auto it = m_Connections.find(pass);
+            if (it != m_Connections.end())
             {
                 for (auto& from : it->second)
                     DFS(from.first);
@@ -206,6 +199,23 @@ namespace RB::Graphics
             ordered_passes.push_back(pass); // Add after producers
         };
         DFS(m_FinalPassType);
+        
+
+        // Map outputs to linked consumers
+        UnorderedMap<RenderPassType, UnorderedMap<uint32_t, List<std::pair<RenderPassType, uint32_t>>>> downstream_map;
+        for (auto& conn : m_Connections)
+        {
+            RenderPassType consumer = conn.first;
+            for (auto& pair : conn.second)
+            {
+                RenderPassType producer = pair.first;
+                const List<uint32_t>& flat = pair.second;
+                for (size_t i = 0; i + 1 < flat.size(); i += 2)
+                {
+                    downstream_map[producer][flat[i]].push_back({ consumer, flat[i + 1] });
+                }
+            }
+        }
 
 
         // Track outputs that must use viewcontext resource
@@ -219,23 +229,6 @@ namespace RB::Graphics
             auto it = pending_view_outputs.find(p);
             return it != pending_view_outputs.end() && ((it->second & (1u << idx)) != 0);
         };
-        
-
-        // Map outputs to linked consumers
-        UnorderedMap<RenderPassType, UnorderedMap<uint32_t, List<std::pair<RenderPassType, uint32_t>>>> downstream_map;
-        for (auto& conn : info.connections)
-        {
-            RenderPassType consumer = conn.first;
-            for (auto& pair : conn.second)
-            {
-                RenderPassType producer = pair.first;
-                const List<uint32_t>& flat = pair.second;
-                for (size_t i = 0; i + 1 < flat.size(); i += 2)
-                {
-                    downstream_map[producer][flat[i]].push_back({ consumer, flat[i + 1] });
-                }
-            }
-        }
 
 
         // Recursive function to propagate viewcontext upstream
@@ -251,7 +244,7 @@ namespace RB::Graphics
             if (itConn == m_Connections.end()) 
                 return;
 
-            const RenderPassConfig& config = info.configs[pass];
+            const RenderPassConfig& config = configs[pass];
 
             for (auto& from_pair : itConn->second)
             {
@@ -275,7 +268,7 @@ namespace RB::Graphics
 
 
         // Initial propagation from final pass
-        const RenderPassConfig& final_cfg = info.configs[m_FinalPassType];
+        const RenderPassConfig& final_cfg = configs[m_FinalPassType];
         for (uint32_t i = 0; i < _countof(final_cfg.outputTextures); ++i)
         {
             if (i == (uint32_t)m_FinalResourceId)
@@ -324,7 +317,7 @@ namespace RB::Graphics
         {
             auto pass_ptr = m_Passes.find(pass_type);
             auto settings_ptr = m_PassSettings.find(pass_type);
-            RB_ASSERT(LOGTAG_GRAPHICS, pass_ptr != m_Passes.end() && settings_ptr != m_PassSettings.end(), "Missing pass");
+            RB_ASSERT(LOGTAG_GRAPHICS, pass_ptr != m_Passes.end() && settings_ptr != m_PassSettings.end(), "Missing pass %d", pass_type);
 
             used_passes[(uint32_t)pass_ptr->first] = pass_ptr->second;
 
@@ -339,13 +332,13 @@ namespace RB::Graphics
             memset(working_ids, -1, sizeof(working_ids));
             memset(output_ids, -1, sizeof(output_ids));
 
-            const RenderPassConfig& config = info.configs[pass_type];
+            const RenderPassConfig& config = configs[pass_type];
 
             // Create outputs
             for (uint32_t i = 0; i < _countof(config.outputTextures); ++i)
             {
                 if (config.outputTextures[i].flags == UINT32_MAX)
-                    break;
+                    break; // No more output textures
 
                 if (IsViewOutput(pass_type, i))
                 {
@@ -404,7 +397,7 @@ namespace RB::Graphics
             for (uint32_t i = 0; i < _countof(config.workingTextures); ++i)
             {
                 if (config.workingTextures[i].flags == UINT32_MAX)
-                    break;
+                    break; // No more working textures
 
                 ResourceID alias = GetAlias(config.workingTextures[i], parameter_ids, working_ids, output_ids, false);
                 if (alias == -1)
