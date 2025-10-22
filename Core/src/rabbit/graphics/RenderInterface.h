@@ -94,6 +94,9 @@ namespace RB::Graphics
         virtual void SetViewport(const Viewport& viewport) = 0;
         virtual void SetViewports(const Viewport* viewports, uint32_t total_viewports) = 0;
 
+        virtual void SetScissor(const Viewport& scissor) = 0;
+        virtual void SetScissors(const Viewport* scissors, uint32_t total_scissors) = 0;
+
         virtual void SetBlendMode(const BlendMode& mode) = 0;
         virtual void SetCullMode(const CullMode& mode) = 0;
         virtual void SetDepthMode(const DepthMode& mode, bool write_depth, bool reversed_depth) = 0;

@@ -381,7 +381,6 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::SetViewports(const Viewport* viewports, uint32_t total_viewports)
     {
         D3D12_VIEWPORT* sizes = ALLOC_STACKC(D3D12_VIEWPORT, total_viewports);
-        D3D12_RECT* rects = ALLOC_STACKC(D3D12_RECT, total_viewports);
 
         for (uint32_t i = 0; i < total_viewports; ++i)
         {
@@ -391,20 +390,34 @@ namespace RB::Graphics::D3D12
             sizes[i].Height     = viewports[i].height;
             sizes[i].MinDepth   = D3D12_MIN_DEPTH;
             sizes[i].MaxDepth   = D3D12_MAX_DEPTH;
-
-            // Hardcoded scissor rects for now
-            rects[i].left       = 0;
-            rects[i].right      = LONG_MAX;
-            rects[i].top        = 0;
-            rects[i].bottom     = LONG_MAX;
         }
 
-        m_CommandList->RSSetScissorRects(total_viewports, rects);
         m_CommandList->RSSetViewports(total_viewports, sizes);
 
-        m_RenderState.scissorSet = true;
         m_RenderState.viewportSet = true;
+        m_RenderState.psoDirty = true;
+    }
 
+    void RenderInterfaceD3D12::SetScissor(const Viewport& scissor)
+    {
+        SetScissors(&scissor, 1);
+    }
+
+    void RenderInterfaceD3D12::SetScissors(const Viewport* scissors, uint32_t total_scissors)
+    {
+        D3D12_RECT* rects = ALLOC_STACKC(D3D12_RECT, total_scissors);
+
+        for (uint32_t i = 0; i < total_scissors; ++i)
+        {
+            rects[i].left   = scissors[i].left;
+            rects[i].right  = scissors[i].left + scissors[i].width;
+            rects[i].top    = scissors[i].top;
+            rects[i].bottom = scissors[i].top + scissors[i].height;
+        }
+
+        m_CommandList->RSSetScissorRects(total_scissors, rects);
+
+        m_RenderState.scissorSet = true;
         m_RenderState.psoDirty = true;
     }
 
@@ -902,7 +915,11 @@ namespace RB::Graphics::D3D12
             vp.top      = 0;
             vp.width    = m_RenderState.width;
             vp.height   = m_RenderState.height;
-            SetViewport(vp);
+
+            if (!m_RenderState.viewportSet)
+                SetViewport(vp);
+            if (!m_RenderState.scissorSet)
+            SetScissor(vp);
         }
     }
 

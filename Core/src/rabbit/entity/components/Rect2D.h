@@ -56,17 +56,40 @@ namespace RB::Entity
     public:
         DEFINE_COMP_TAG("Text2D");
 
-        Text2D(Font* font, const std::string& text, float width, float height)
+        Text2D(Font* font, const std::string& text, float w = 0, float h = 0)
             : font(font)
             , text(text)
-            , width(width)
-            , height(height)
+            , width(w)
+            , height(h)
         {
+            textBoundWidth = 0;
+            textBoundHeight = 0;
+            textMaxBearingUpper = 0;
+            float textMaxBearingLower = 0;
+            auto* cm = font->GetCharacterMap();
+            for (char c : text)
+            {
+                const auto& ch = cm->at(c);
+                textBoundWidth += ch.advance;
+                textMaxBearingLower = Math::Max(ch.size.y - ch.bearing.y, textMaxBearingLower);
+                textMaxBearingUpper = Math::Max(ch.bearing.y, textMaxBearingUpper);
+            }
+
+            textBoundHeight = textMaxBearingUpper + textMaxBearingLower;
+
+            if (width == 0)
+                width = textBoundWidth;
+            if (height == 0)
+                height = textBoundHeight;
         }
 
         Font* font;
         std::string text;
         float width;
         float height;
+
+        float textBoundWidth;
+        float textBoundHeight;
+        float textMaxBearingUpper;
     };
 }

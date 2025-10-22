@@ -67,6 +67,9 @@ namespace RB::Graphics::D3D12
         void SetViewport(const Viewport& viewport) override;
         void SetViewports(const Viewport* viewports, uint32_t total_viewports) override;
 
+        void SetScissor(const Viewport& scissor) override;
+        void SetScissors(const Viewport* scissors, uint32_t total_scissors) override;
+
         void SetBlendMode(const BlendMode& mode) override;
         void SetCullMode(const CullMode& mode) override;
         void SetDepthMode(const DepthMode& mode, bool write_depth, bool reversed_depth) override;

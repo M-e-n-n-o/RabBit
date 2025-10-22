@@ -38,6 +38,7 @@ namespace RB::Graphics
         Texture2D* fontTex;
         CharacterVertex* characters;
         uint32_t characterCount;
+        Viewport scissor;
 
         ~Overlay2DEntry()
         {
@@ -115,6 +116,8 @@ namespace RB::Graphics
         Overlay2DEntry::CharacterVertex* character_vertices = ALLOC_HEAPC(Overlay2DEntry::CharacterVertex, expected_characters * 4);
         uint32_t total_vertices = 0;
         
+        Viewport scissor;
+
         for (int tex_idx = 0; tex_idx < texts.size(); ++tex_idx)
         {
             const Text2D* text = (const Text2D*)texts[tex_idx];
@@ -123,8 +126,15 @@ namespace RB::Graphics
 
             auto char_map = text->font->GetCharacterMap();
         
+            // Calculate the baseline start position
             float start_x = transform->position.x;
-            float start_y = transform->position.y;
+            float start_y = transform->position.y + (text->textMaxBearingUpper * scale);
+
+            scissor.left   = transform->position.x;
+            scissor.top    = transform->position.y;
+            scissor.width  = text->width * scale;
+            scissor.height = text->height * scale;
+
             for (char c : text->text)
             {
                 const auto& ch = char_map->at(c);
@@ -174,6 +184,7 @@ namespace RB::Graphics
         entry->fontTex          = ((const Text2D*)texts[0])->font->GetFontTexture();
         entry->characters       = character_vertices;
         entry->characterCount   = total_vertices;
+        entry->scissor          = scissor;
 
         return entry;
     }
@@ -190,7 +201,6 @@ namespace RB::Graphics
         frustum.SetOrthographicProjection(0.0f, 1.0f, 0.0f, in.viewContext->viewport.width, 0.0f, in.viewContext->viewport.height, false);
 
         Overlay2DEntry* entry = (Overlay2DEntry*)in.entryContext;
-
 
         // Render 2D rectangles
         in.ri->SetVertexShader(VS_Simple2D);
@@ -218,6 +228,8 @@ namespace RB::Graphics
 
             SAFE_DELETE(vb);
         }
+
+        in.ri->SetScissor(entry->scissor);
 
         // Render text
         in.ri->SetVertexShader(VS_Font2D);

@@ -102,10 +102,10 @@ public:
             m_Font = new Font("Cool Font", font);
 
             auto text = scene->CreateGameObject();
-            text->AddComponent<Text2D>(m_Font, "Hoi Sylvia", 0.3f, 0.3f);
+            text->AddComponent<Text2D>(m_Font, "Hoi Sylvia! (dit zie je niet)", 200.0f, 50.0f);
             auto text_t = text->AddComponent<Transform>();
-            text_t->position.x = 400.0f;
-            text_t->position.y = 300.0f;
+            text_t->position.x = 0.0f;
+            text_t->position.y = 0.0f;
         }
 
         //m_Obj2 = scene->CreateGameObject();
