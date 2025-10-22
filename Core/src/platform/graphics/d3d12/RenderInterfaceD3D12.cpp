@@ -980,6 +980,10 @@ namespace RB::Graphics::D3D12
             // Or just remove the kTexIndicesCB and let each shader itself pass in the correct handle/index using their CBV?
             SetConstantShaderData(kRenderResourceMapCB, &indices, sizeof(RenderResourceMap));
         }
+        else
+        {
+            m_RenderState.cbvAddresses[kRenderResourceMapCB] = 0;
+        }
 
         // Bind the CBV's
         uint32_t root_index = 0;

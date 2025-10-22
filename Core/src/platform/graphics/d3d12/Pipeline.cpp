@@ -410,7 +410,7 @@ namespace RB::Graphics::D3D12
                 case 1: elements[i].Format = DXGI_FORMAT_R32_FLOAT; break;
                 case 2: elements[i].Format = DXGI_FORMAT_R32G32_FLOAT; break;
                 case 3: elements[i].Format = DXGI_FORMAT_R32G32B32_FLOAT; break;
-                case 4:
+                case 4: elements[i].Format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
                 default:
                     RB_LOG_ERROR(LOGTAG_GRAPHICS, "Format not recognized");
                     return elements;

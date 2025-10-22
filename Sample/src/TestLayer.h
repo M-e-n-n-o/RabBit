@@ -91,7 +91,7 @@ public:
         // UI
         {
             auto ui = scene->CreateGameObject();
-            ui->AddComponent<Rect2D>(200.0f, 200.0f);
+            ui->AddComponent<Rect2D>(200.0f, 200.0f, Math::Float4(1.0f, 0.0f, 0.0f, 0.4f), 0);
             auto ui_t = ui->AddComponent<Transform>();
             ui_t->position.x = 100.0f;
             ui_t->position.y = 100.0f;
@@ -102,9 +102,9 @@ public:
             m_Font = new Font("Cool Font", font);
 
             auto text = scene->CreateGameObject();
-            text->AddComponent<Text2D>(m_Font, "Hoi Sylvia! (dit zie je niet)", 200.0f, 50.0f);
+            text->AddComponent<Text2D>(m_Font, "Hoi Sylvia! (dit zie je niet)", 1.0f, 200.0f, 50.0f, 0);
             auto text_t = text->AddComponent<Transform>();
-            text_t->position.x = 0.0f;
+            text_t->position.x = 50.0f;
             text_t->position.y = 0.0f;
         }
 

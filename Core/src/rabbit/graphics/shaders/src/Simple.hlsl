@@ -11,13 +11,13 @@ cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
 struct VI_Simple
 {
     float2 position : POSITION;
-    float3 color    : TEXCOORD0;
+    float4 color    : TEXCOORD0;
 };
 
 struct PI_Simple
 {
     float4 position : SV_POSITION;
-    float3 color    : TEXCOORD0;
+    float4 color    : TEXCOORD0;
 };
 
 PI_Simple VS_Simple2D(VI_Simple input)
@@ -31,7 +31,7 @@ PI_Simple VS_Simple2D(VI_Simple input)
 
 float4 PS_Simple2D(PI_Simple input) : SV_Target0
 {
-    return float4(input.color, 1.0f);
+    return input.color;
 }
 
 // Simple texture
