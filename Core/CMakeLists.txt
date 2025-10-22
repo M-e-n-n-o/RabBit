@@ -75,7 +75,7 @@ target_include_directories(RabBit PRIVATE
 
 target_link_libraries(RabBit PRIVATE
     # FreeType
-    "${EXTERNAL_PATH}/freetype/bin/x64/freetype.lib"
+    "${EXTERNAL_PATH}/freetype/lib/x64/freetype.lib"
 )
 
 # DX12 specific includes and libraries
