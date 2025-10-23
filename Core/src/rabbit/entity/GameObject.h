@@ -19,16 +19,18 @@ namespace RB::Entity
 		T* AddComponent(Args... args);
 
 		template<class T>
-		bool HasComponent(uint32_t index = 0);
+		bool HasComponent(uint32_t index = 0) const;
 
 		template<class T>
-		T* GetComponent(uint32_t index = 0);
+		T* GetComponent(uint32_t index = 0) const;
 
 		void AppendComponentsWithTypeOf(ComponentID comp_id, List<const ObjectComponent*>& list) const;
 		
 		// Pass in nullptr to detach the parent
-		void SetParent(GameObject* obj);
-		GameObject* GetParent();
+		void SetParent(GameObject* new_parent);
+		GameObject* GetParent() const;
+
+		const UnorderedSet<GameObject*>& GetChildren() const;
 
 	private:
 		void OnNewChildAttached(GameObject* obj);
@@ -67,7 +69,7 @@ namespace RB::Entity
 	}
 
 	template<class T>
-	bool GameObject::HasComponent(uint32_t index)
+	bool GameObject::HasComponent(uint32_t index) const
 	{
 		ComponentID id = m_Register->GetComponentID<T>();
 
@@ -82,7 +84,7 @@ namespace RB::Entity
 	}
 
 	template<class T>
-	T* GameObject::GetComponent(uint32_t index)
+	T* GameObject::GetComponent(uint32_t index) const
 	{
 		ComponentID id = m_Register->GetComponentID<T>();
 
@@ -99,7 +101,10 @@ namespace RB::Entity
 			return nullptr;
 		}
 
-		index = Math::Min(index, (uint32_t)(itr->second.size() - 1));
+		if (index >= itr->second.size())
+		{
+			return nullptr;
+		}
 
 		return (T*) itr->second[index];
 	}

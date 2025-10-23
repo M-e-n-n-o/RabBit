@@ -14,6 +14,8 @@ namespace RB::Entity
         virtual ~ObjectComponent() = default;
 
         virtual void Update() {}
+        virtual void OnChildAttached(GameObject* obj) {}
+        virtual void OnChildDettached(GameObject* obj) {}
 
         GameObject* GetGameObject() const { return m_GameObject; }
 

@@ -35,41 +35,72 @@ namespace RB::Entity
     //                             UI Components
     // ---------------------------------------------------------------------------
 
-    class UIComponent : public ObjectComponent
+    // A ListView only organizes direct children!
+    class ListView : public ObjectComponent
     {
     public:
-        UIComponent(uint32_t render_order = 0)
+        DEFINE_COMP_TAG("ListView");
+
+        ListView(bool vertical, uint32_t padding);
+
+        void Update() override;
+        void OnChildAttached(GameObject* obj) override;
+        void OnChildDettached(GameObject* obj) override;
+
+    private:
+        void UpdateItemPositions();
+
+        bool     m_Vertical;
+        uint32_t m_Padding;
+        uint32_t m_LastWindowWidth;
+        uint32_t m_LastWindowHeight;
+    };
+
+    // UIRenderComponent:
+    // - Always requires a Transform component as well
+    //     - x, y should tell top left starting position of the UI component
+    // - Sizes and positions of the UI component are specified in screen pixels
+    class UIRenderComponent : public ObjectComponent
+    {
+    public:
+        DEFINE_COMP_TAG("UIRenderComponent");
+
+        UIRenderComponent(uint32_t render_order = 0)
             : m_RenderOrder(render_order)
         {
         }
 
         int GetRenderOrder() const { return m_RenderOrder; }
 
+        virtual const Math::Float2& GetBounds() const = 0;
+
     private:
         uint32_t m_RenderOrder;
     };
 
-    class Rect2D : public UIComponent
+    class Rect2D : public UIRenderComponent
     {
     public:
-        DEFINE_COMP_TAG("Rect2D");
 
         Rect2D(float width, float height, Math::Float4 color, float render_order = 0)
-            : UIComponent(render_order)
-            , width(width)
-            , height(height)
-            , color(color)
-        {}
+            : UIRenderComponent(render_order)
+            , m_Color(color)
+        {
+            m_Bounds = Math::Float2(width, height);
+        }
 
-        float width;
-        float height;
-        Math::Float4 color;
+        Math::Float4 GetColor() const { return m_Color; }
+        const Math::Float2& GetBounds() const override { return m_Bounds; }
+
+    private:
+        Math::Float2 m_Bounds;
+        Math::Float4 m_Color;
     };
 
-    class Text2D : public UIComponent
+    class Text2D : public UIRenderComponent
     {
     public:
-        DEFINE_COMP_TAG("Text2D");
+        //DEFINE_COMP_TAG("Text2D");
 
         Text2D(Font* font, const std::string& text, float scale = 1.0f, float width = -1, float height = -1, float render_order = 0);
 
@@ -77,23 +108,22 @@ namespace RB::Entity
 
         const Font* GetFont()   const { return m_Font; }
         std::string GetText()   const { return m_Text; }
-        float       GetWidth()  const { return m_Width; }
-        float       GetHeight() const { return m_Height; }
         float       GetScale()  const { return m_Scale; }
         
         float       GetTextBoundsWidth()     const { return m_TextBoundsWidth; }
         float       GetTextBoundsHeight()    const { return m_TextBoundsHeight; }
         float       GetTextMaxBearingUpper() const { return m_TextMaxBearingUpper; }
 
-    private:
-        Font*       m_Font;
-        std::string m_Text;
-        float       m_Width;
-        float       m_Height;
-        float       m_Scale;
+        const Math::Float2& GetBounds() const override { return m_Bounds; }
 
-        float       m_TextBoundsWidth;
-        float       m_TextBoundsHeight;
-        float       m_TextMaxBearingUpper;
+    private:
+        Font*        m_Font;
+        std::string  m_Text;
+        Math::Float2 m_Bounds;
+        float        m_Scale;
+                     
+        float        m_TextBoundsWidth;
+        float        m_TextBoundsHeight;
+        float        m_TextMaxBearingUpper;
     };
 }
