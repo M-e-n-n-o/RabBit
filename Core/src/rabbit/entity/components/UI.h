@@ -43,7 +43,6 @@ namespace RB::Entity
 
         ListView(bool vertical, uint32_t padding);
 
-        void Update() override;
         void OnChildAttached(GameObject* obj) override;
         void OnChildDettached(GameObject* obj) override;
 
@@ -52,8 +51,27 @@ namespace RB::Entity
 
         bool     m_Vertical;
         uint32_t m_Padding;
-        uint32_t m_LastWindowWidth;
-        uint32_t m_LastWindowHeight;
+    };
+
+    class UIMagnet : public ObjectComponent
+    {
+    public:
+        DEFINE_COMP_TAG("UIMagnet");
+
+        UIMagnet(bool left, bool right, bool top, bool bottom, uint32_t padding);
+
+        void Update() override;
+
+    private:
+        void UpdateItemPositions();
+
+        bool      m_Left;
+        bool      m_Right;
+        bool      m_Top;
+        bool      m_Bottom;
+        uint32_t  m_Padding;
+        uint32_t  m_LastWindowWidth;
+        uint32_t  m_LastWindowHeight;
     };
 
     // UIRenderComponent:

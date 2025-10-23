@@ -86,18 +86,27 @@ public:
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
         Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 70.0f, window_handle0);
-        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
+        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
         // UI
         {
+            static_assert(false);
+            // - The UIMagnet + ListView breaks
+            //      - Maybe every UI thing needs to inherit from a class that can return the bounding box (instead of having the bounding box inside only UIRenderComponents)
+            //  - You should also be able to scale UI elements (based on the resolution) (so maybe don't do everything in pixels?)
+
             auto list = scene->CreateGameObject();
-            list->AddComponent<ListView>(false, 10);
+            list->AddComponent<UIMagnet>(false, true, true, true, 10);
+            list->AddComponent<ListView>(true, 15);
+            auto list_t = list->AddComponent<Transform>();
+            list_t->position.x = 0.0f;
+            list_t->position.y = 0.0f;
 
             auto ui = scene->CreateGameObject();
-            ui->AddComponent<Rect2D>(200.0f, 200.0f, Math::Float4(1.0f, 0.0f, 0.0f, 0.4f), 0);
+            ui->AddComponent<Rect2D>(200.0f, 200.0f, Math::Float4(0.0f, 1.0f, 0.0f, 0.4f), 0);
             auto ui_t = ui->AddComponent<Transform>();
-            ui_t->position.x = 0.0f;
-            ui_t->position.y = 0.0f;
+            ui_t->position.x = 50.0f;
+            ui_t->position.y = 50.0f;
             ui->SetParent(list);
 
             LoadedFont font;

@@ -96,13 +96,14 @@ namespace RB::Graphics
             if (auto rect = dynamic_cast<const Rect2D*>(components[i]); rect != nullptr)
             {
                 const Transform* transform = rect->GetGameObject()->GetComponent<Transform>();
+                const Math::Float3& pos = transform->GetWorldPosition();
 
                 const Math::Float2& bounds = rect->GetBounds();
 
-                float x0 = transform->position.x - bounds.x;
-                float x1 = transform->position.x + bounds.x;
-                float y0 = transform->position.y - bounds.y;
-                float y1 = transform->position.y + bounds.y;
+                float x0 = pos.x;
+                float x1 = pos.x + bounds.x;
+                float y0 = pos.y;
+                float y1 = pos.y + bounds.y;
 
                 Overlay2DEntry::Rectangle out_rect;
                 out_rect.color  = rect->GetColor();
@@ -129,17 +130,19 @@ namespace RB::Graphics
             else if (auto text = dynamic_cast<const Text2D*>(components[i]); text != nullptr)
             {
                 const Transform* transform = text->GetGameObject()->GetComponent<Transform>();
+                const Math::Float3& pos = transform->GetWorldPosition();
+
                 const float scale = text->GetScale();
 
                 // Calculate the baseline start position
-                float start_x = transform->position.x;
-                float start_y = transform->position.y + (text->GetTextMaxBearingUpper() * scale);
+                float start_x = pos.x;
+                float start_y = pos.y + (text->GetTextMaxBearingUpper() * scale);
 
                 const Math::Float2& bounds = text->GetBounds();
 
                 Overlay2DEntry::Text out_text;
                 out_text.fontTex    = text->GetFont()->GetFontTexture();
-                out_text.scissor    = { (uint32_t)transform->position.x, (uint32_t)transform->position.y, uint32_t(bounds.x * scale), uint32_t(bounds.y * scale) };
+                out_text.scissor    = { (uint32_t)pos.x, (uint32_t)pos.y, uint32_t(bounds.x * scale), uint32_t(bounds.y * scale) };
 
                 auto char_map = text->GetFont()->GetCharacterMap();
                 for (char c : text->GetText())
