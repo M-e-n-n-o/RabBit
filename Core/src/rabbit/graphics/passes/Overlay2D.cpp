@@ -45,7 +45,7 @@ namespace RB::Graphics
 
             Texture2D* fontTex;
             Viewport scissor;
-            List<CharacterVB> characters;
+            List<CharacterVB> vertices;
         };
 
         struct Element
@@ -151,35 +151,50 @@ namespace RB::Graphics
                 float h = ch.size.y * scale;
 
                 // Top left
-                Overlay2DEntry::Text::CharacterVB vertex0;
-                vertex0.x = xpos;
-                vertex0.y = ypos - h;
-                vertex0.u = ch.imageUV.x;
-                vertex0.v = ch.imageUV.w;
+                Overlay2DEntry::Text::CharacterVB t0v0;
+                t0v0.x = xpos;
+                t0v0.y = ypos - h;
+                t0v0.u = ch.imageUV.x;
+                t0v0.v = ch.imageUV.w;
                 // Top right
-                Overlay2DEntry::Text::CharacterVB vertex1;
-                vertex1.x = xpos + w;
-                vertex1.y = ypos - h;
-                vertex1.u = ch.imageUV.z;
-                vertex1.v = ch.imageUV.w;
+                Overlay2DEntry::Text::CharacterVB t0v1;
+                t0v1.x = xpos + w;
+                t0v1.y = ypos - h;
+                t0v1.u = ch.imageUV.z;
+                t0v1.v = ch.imageUV.w;
                 // Bottom left
-                Overlay2DEntry::Text::CharacterVB vertex2;
-                vertex2.x = xpos;
-                vertex2.y = ypos;
-                vertex2.u = ch.imageUV.x;
-                vertex2.v = ch.imageUV.y;
+                Overlay2DEntry::Text::CharacterVB t0v2;
+                t0v2.x = xpos;
+                t0v2.y = ypos;
+                t0v2.u = ch.imageUV.x;
+                t0v2.v = ch.imageUV.y;
+
+                // Top right
+                Overlay2DEntry::Text::CharacterVB t1v0;
+                t1v0.x = xpos + w;
+                t1v0.y = ypos - h;
+                t1v0.u = ch.imageUV.z;
+                t1v0.v = ch.imageUV.w;
                 // Bottom right
-                Overlay2DEntry::Text::CharacterVB vertex3;
-                vertex3.x = xpos + w;
-                vertex3.y = ypos;
-                vertex3.u = ch.imageUV.z;
-                vertex3.v = ch.imageUV.y;
+                Overlay2DEntry::Text::CharacterVB t1v1;
+                t1v1.x = xpos + w;
+                t1v1.y = ypos;
+                t1v1.u = ch.imageUV.z;
+                t1v1.v = ch.imageUV.y;
+                // Bottom left
+                Overlay2DEntry::Text::CharacterVB t1v2;
+                t1v2.x = xpos;
+                t1v2.y = ypos;
+                t1v2.u = ch.imageUV.x;
+                t1v2.v = ch.imageUV.y;
 
                 start_x += ch.advance * scale;
-                out_text.characters.push_back(vertex0);
-                out_text.characters.push_back(vertex1);
-                out_text.characters.push_back(vertex2);
-                out_text.characters.push_back(vertex3);
+                out_text.vertices.push_back(t0v0);
+                out_text.vertices.push_back(t0v1);
+                out_text.vertices.push_back(t0v2);
+                out_text.vertices.push_back(t1v0);
+                out_text.vertices.push_back(t1v1);
+                out_text.vertices.push_back(t1v2);
             }
 
             Overlay2DEntry::Element element = {};
@@ -255,32 +270,28 @@ namespace RB::Graphics
             in.ri->SetPixelShader(PS_Font2D);
             in.ri->SetScissor(text.scissor);
 
-            for (int i = 0; i < text.characters.size(); i += 4)
+            uint32_t vertex_size = sizeof(float) * 4;
+            uint32_t data_size = vertex_size * text.vertices.size();
+            float* vertex_data = (float*)ALLOC_STACK(data_size);
+
+            for (int v_idx = 0; v_idx < text.vertices.size(); v_idx++)
             {
-                const auto& vertex0 = text.characters[i + 0];
-                const auto& vertex1 = text.characters[i + 1];
-                const auto& vertex2 = text.characters[i + 2];
-                const auto& vertex3 = text.characters[i + 3];
-
-                float vertex_data[] =
-                {
-                    vertex0.x, vertex0.y, vertex0.u, vertex0.v,
-                    vertex1.x, vertex1.y, vertex1.u, vertex1.v,
-                    vertex2.x, vertex2.y, vertex2.u, vertex2.v,
-                    vertex3.x, vertex3.y, vertex3.u, vertex3.v,
-                };
-
-                // Transient buffer
-                auto vb = VertexBuffer::Create("Text Element", TopologyType::TriangleStrip, vertex_data, 4 * sizeof(float), sizeof(vertex_data), true);
-
-                in.ri->SetVertexBuffer(vb);
-
-                in.ri->SetShaderResourceInput(text.fontTex, 0);
-
-                in.ri->Draw();
-
-                SAFE_DELETE(vb);
+                const auto& vertex = text.vertices[v_idx];
+                vertex_data[v_idx * 4 + 0] = vertex.x;
+                vertex_data[v_idx * 4 + 1] = vertex.y;
+                vertex_data[v_idx * 4 + 2] = vertex.u;
+                vertex_data[v_idx * 4 + 3] = vertex.v;
             }
+
+            // Transient buffer
+            auto vb = VertexBuffer::Create("Text Element", TopologyType::TriangleList, vertex_data, vertex_size, data_size, true);
+            in.ri->SetVertexBuffer(vb);
+
+            in.ri->SetShaderResourceInput(text.fontTex, 0);
+
+            in.ri->Draw();
+
+            SAFE_DELETE(vb);
         };
 
         Overlay2DEntry* entry = (Overlay2DEntry*)in.entryContext;
