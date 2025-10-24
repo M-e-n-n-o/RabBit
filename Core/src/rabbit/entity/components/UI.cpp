@@ -36,24 +36,12 @@ namespace RB::Entity
 
         for (const auto& child : children)
         {
-            // Check all UI render components in this child and calculate the total bounding box
-            Math::Float2 biggest_bounds;
-            uint32_t comp_idx = 0;
-            while (true)
-            {
-                const auto* render_comp = child->GetComponent<UIRenderComponent>(comp_idx);
-                if (render_comp == nullptr)
-                    break;
+            const auto* render_comp = child->GetComponent<UIRenderComponent>();
 
-                const Math::Float2& bounds = render_comp->GetBounds();
-                biggest_bounds.x = Math::Max(bounds.x, biggest_bounds.x);
-                biggest_bounds.y = Math::Max(bounds.x, biggest_bounds.y);
-                ++comp_idx;
-            }
-
-            // Found any UIRenderComponents?
-            if (comp_idx == 0)
+            if (render_comp == nullptr)
                 continue;
+
+            const Math::Float2& bounds = render_comp->GetBounds();
 
             auto* child_transform = child->GetComponent<Transform>();
 
@@ -61,9 +49,9 @@ namespace RB::Entity
             child_transform->position.y = start_y;
 
             if (m_Vertical)
-                start_y += biggest_bounds.y + m_Padding;
+                start_y += bounds.y + m_Padding;
             else
-                start_x += biggest_bounds.x + m_Padding;
+                start_x += bounds.x + m_Padding;
         }
     }
 
@@ -105,18 +93,13 @@ namespace RB::Entity
         const auto& children = m_GameObject->GetChildren();
         for (const auto& child : children)
         {
-            uint32_t comp_idx = 0;
-            while (true)
-            {
-                const auto* render_comp = child->GetComponent<UIRenderComponent>(comp_idx);
-                if (render_comp == nullptr)
-                    break;
+            const auto* render_comp = child->GetComponent<UIRenderComponent>();
+            if (render_comp == nullptr)
+                continue;
 
-                const Math::Float2& bounds = render_comp->GetBounds();
-                biggest_bounds.x = Math::Max(bounds.x, biggest_bounds.x);
-                biggest_bounds.y = Math::Max(bounds.x, biggest_bounds.y);
-                ++comp_idx;
-            }
+            const Math::Float2& bounds = render_comp->GetBounds();
+            biggest_bounds.x = Math::Max(bounds.x, biggest_bounds.x);
+            biggest_bounds.y = Math::Max(bounds.x, biggest_bounds.y);
         }
 
         uint32_t x = transform->position.x;

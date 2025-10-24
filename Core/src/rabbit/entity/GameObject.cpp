@@ -4,9 +4,8 @@
 
 namespace RB::Entity
 {
-    GameObject::GameObject(ComponentRegister* reg)
-        : m_Register(reg)
-        , m_Parent(nullptr)
+    GameObject::GameObject()
+        : m_Parent(nullptr)
     {
     }
 
@@ -14,35 +13,18 @@ namespace RB::Entity
     {
         SetParent(nullptr);
 
-        for (auto itr = m_Components.begin(); itr != m_Components.end(); ++itr)
+        for (ObjectComponent* comp : m_Components)
         {
-            for (int i = 0; i < itr->second.size(); ++i)
-            {
-                delete itr->second[i];
-            }
+            delete comp;
         }
     }
 
     void GameObject::Update()
     {
-        for (auto itr = m_Components.begin(); itr != m_Components.end(); ++itr)
+        for (ObjectComponent* comp : m_Components)
         {
-            for (ObjectComponent* comp : itr->second)
-            {
-                comp->Update();
-            }
+            comp->Update();
         }
-    }
-
-    void GameObject::AppendComponentsWithTypeOf(ComponentID comp_id, List<const ObjectComponent*>& list) const
-    {
-        auto itr = m_Components.find(comp_id);
-        if (itr == m_Components.end())
-        {
-            return;
-        }
-
-        list.insert(list.end(), itr->second.begin(), itr->second.end());
     }
 
     void GameObject::SetParent(GameObject* new_parent)
@@ -76,12 +58,9 @@ namespace RB::Entity
     {
         m_Children.insert(obj);
 
-        for (auto itr = m_Components.begin(); itr != m_Components.end(); ++itr)
+        for (ObjectComponent* comp : m_Components)
         {
-            for (ObjectComponent* comp : itr->second)
-            {
-                comp->OnChildAttached(obj);
-            }
+            comp->OnChildAttached(obj);
         }
     }
 
@@ -89,12 +68,9 @@ namespace RB::Entity
     {
         m_Children.erase(obj);
 
-        for (auto itr = m_Components.begin(); itr != m_Components.end(); ++itr)
+        for (ObjectComponent* comp : m_Components)
         {
-            for (ObjectComponent* comp : itr->second)
-            {
-                comp->OnChildDettached(obj);
-            }
+            comp->OnChildDettached(obj);
         }
     }
 }

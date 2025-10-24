@@ -35,12 +35,15 @@ namespace RB::Entity
     //                             UI Components
     // ---------------------------------------------------------------------------
 
+    class UIComponent
+    {
+
+    };
+
     // A ListView only organizes direct children!
     class ListView : public ObjectComponent
     {
     public:
-        DEFINE_COMP_TAG("ListView");
-
         ListView(bool vertical, uint32_t padding);
 
         void OnChildAttached(GameObject* obj) override;
@@ -56,8 +59,6 @@ namespace RB::Entity
     class UIMagnet : public ObjectComponent
     {
     public:
-        DEFINE_COMP_TAG("UIMagnet");
-
         UIMagnet(bool left, bool right, bool top, bool bottom, uint32_t padding);
 
         void Update() override;
@@ -81,8 +82,6 @@ namespace RB::Entity
     class UIRenderComponent : public ObjectComponent
     {
     public:
-        DEFINE_COMP_TAG("UIRenderComponent");
-
         UIRenderComponent(uint32_t render_order = 0)
             : m_RenderOrder(render_order)
         {
@@ -114,12 +113,11 @@ namespace RB::Entity
         Math::Float2 m_Bounds;
         Math::Float4 m_Color;
     };
+    REGISTER_COMP_BASES(Rect2D, UIRenderComponent);
 
     class Text2D : public UIRenderComponent
     {
     public:
-        //DEFINE_COMP_TAG("Text2D");
-
         Text2D(Font* font, const std::string& text, float scale = 1.0f, float width = -1, float height = -1, float render_order = 0);
 
         void UpdateText(const std::string& text);
@@ -144,4 +142,5 @@ namespace RB::Entity
         float        m_TextBoundsHeight;
         float        m_TextMaxBearingUpper;
     };
+    REGISTER_COMP_BASES(Text2D, UIRenderComponent);
 }

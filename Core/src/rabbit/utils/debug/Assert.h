@@ -21,6 +21,8 @@ namespace RB::Utils::Debug
             #define RB_ASSERT_FATAL(check, ...)             { if(!(check)) { RB_LOG_ERROR(__VA_ARGS__); throw std::exception(); } }
         #endif
         
+        #define RB_STATIC_ASSERT(check, ...)                static_assert(check, __VA_ARGS__)
+
     #else
         
         #define RB_ASSERT(tag, check, ...)
@@ -29,6 +31,8 @@ namespace RB::Utils::Debug
         #define RB_ASSERT_FATAL_D3D(check, ...)
         #define RB_ASSERT_FATAL_VK(check, ...)
         
+        #define RB_STATIC_ASSERT(check, ...)
+
     #endif
         
     #ifdef RB_CORE_ACCESS

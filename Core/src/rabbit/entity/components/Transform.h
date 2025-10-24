@@ -7,8 +7,6 @@ namespace RB::Entity
     class Transform : public ObjectComponent
     {
     public:
-        DEFINE_COMP_TAG("Transform");
-
         Transform()
             : position(0.0f)
             , rotation(0.0f)

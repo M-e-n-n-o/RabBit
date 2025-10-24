@@ -10,8 +10,6 @@ namespace RB::Entity
     class Camera : public ObjectComponent
     {
     public:
-        DEFINE_COMP_TAG("Camera");
-
         // FOV in degrees
         Camera(float near_plane, float far_plane, float vfov, void* target_window_handle)
             : m_Near(near_plane)

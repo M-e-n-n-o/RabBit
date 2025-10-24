@@ -1,11 +1,13 @@
 #pragma once
 #include "RabBitCommon.h"
+#include "BaseClasses.h"
 
 namespace RB::Entity
 {
-    #define DEFINE_COMP_TAG(name) static char* GetComponentTag() { return (name); }
-
     class GameObject;
+
+    // Macro to declare base classes for derived components.
+    #define REGISTER_COMP_BASES(Derived, ...) template<> struct BaseClasses<Derived> { using type = std::tuple<__VA_ARGS__>; }
 
     class ObjectComponent
     {

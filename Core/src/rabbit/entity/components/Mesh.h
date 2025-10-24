@@ -62,8 +62,6 @@ namespace RB::Entity
     class MeshRenderer : public ObjectComponent
     {
     public:
-        DEFINE_COMP_TAG("MeshRenderer");
-
         MeshRenderer(Mesh* mesh, Material* material)
         {
             m_Mesh = mesh;
