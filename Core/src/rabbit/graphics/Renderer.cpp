@@ -314,6 +314,7 @@ namespace RB::Graphics
             }
 
             contexts[context_index].enabled = true;
+            contexts[context_index].camera = camera;
 
             contexts[context_index].viewport.left = 0; // TODO Add DRS support
             contexts[context_index].viewport.top = 0;

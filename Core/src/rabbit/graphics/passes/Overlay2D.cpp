@@ -88,128 +88,152 @@ namespace RB::Graphics
 
     RenderPassEntry* Overlay2DPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
     {
+        uint32_t window_width  = view_context->viewport.width;
+        uint32_t window_height = view_context->viewport.height;
+
         List<Overlay2DEntry::Element> elements;
 
-        auto components = scene->GetComponentsWithTypeOf<UIRenderComponent>();
-        for (int i = 0; i < components.size(); ++i)
+        auto canvases = scene->GetComponentsWithTypeOf<UICanvas>();
+        for (const ObjectComponent* obj : canvases)
         {
-            if (auto rect = dynamic_cast<const Rect2D*>(components[i]); rect != nullptr)
+            const UICanvas* canvas = (const UICanvas*)obj;
+            if (canvas->GetTargetCamera() != view_context->camera || !canvas->IsEnabled())
             {
-                const Transform* transform = rect->GetGameObject()->GetComponent<Transform>();
-                const Math::Float3& pos = transform->GetWorldPosition();
-
-                const Math::Float2& bounds = rect->GetBounds();
-
-                float x0 = pos.x;
-                float x1 = pos.x + bounds.x;
-                float y0 = pos.y;
-                float y1 = pos.y + bounds.y;
-
-                Overlay2DEntry::Rectangle out_rect;
-                out_rect.color  = rect->GetColor();
-                // Top left
-                out_rect.triangleData[0] = x0;
-                out_rect.triangleData[1] = y0;
-                // Top right
-                out_rect.triangleData[2] = x1;
-                out_rect.triangleData[3] = y0;
-                // Bottom left
-                out_rect.triangleData[4] = x0;
-                out_rect.triangleData[5] = y1;
-                // Bottom right
-                out_rect.triangleData[6] = x1;
-                out_rect.triangleData[7] = y1;
-
-                Overlay2DEntry::Element element = {};
-                element.type        = OverlayEntryType::Rectangle;
-                element.renderOrder = rect->GetRenderOrder();
-                element.data        = out_rect;
-
-                elements.push_back(element);
+                continue;
             }
-            else if (auto text = dynamic_cast<const Text2D*>(components[i]); text != nullptr)
+
+            List<UIRenderComponent*> render_comps;
+            canvas->GetGameObject()->GetComponentsInChildren<UIRenderComponent>(render_comps);
+
+            for (int i = 0; i < render_comps.size(); ++i)
             {
-                const Transform* transform = text->GetGameObject()->GetComponent<Transform>();
-                const Math::Float3& pos = transform->GetWorldPosition();
-
-                const float scale = text->GetScale();
-
-                // Calculate the baseline start position
-                float start_x = pos.x;
-                float start_y = pos.y + (text->GetTextMaxBearingUpper() * scale);
-
-                const Math::Float2& bounds = text->GetBounds();
-
-                Overlay2DEntry::Text out_text;
-                out_text.fontTex    = text->GetFont()->GetFontTexture();
-                out_text.scissor    = { (uint32_t)pos.x, (uint32_t)pos.y, uint32_t(bounds.x * scale), uint32_t(bounds.y * scale) };
-
-                auto char_map = text->GetFont()->GetCharacterMap();
-                for (char c : text->GetText())
+                if (!render_comps[i]->IsEnabled())
                 {
-                    const auto& ch = char_map->at(c);
-        
-                    float xpos = start_x + ch.bearing.x * scale;
-                    float ypos = start_y + (ch.size.y - ch.bearing.y) * scale;
-        
-                    float w = ch.size.x * scale;
-                    float h = ch.size.y * scale;
-
-                    // Top left
-                    Overlay2DEntry::Text::CharacterVB t0v0;
-                    t0v0.x = xpos;
-                    t0v0.y = ypos - h;
-                    t0v0.u = ch.imageUV.x;
-                    t0v0.v = ch.imageUV.w;
-                    // Top right
-                    Overlay2DEntry::Text::CharacterVB t0v1;
-                    t0v1.x = xpos + w;
-                    t0v1.y = ypos - h;
-                    t0v1.u = ch.imageUV.z;
-                    t0v1.v = ch.imageUV.w;
-                    // Bottom left
-                    Overlay2DEntry::Text::CharacterVB t0v2;
-                    t0v2.x = xpos;
-                    t0v2.y = ypos;
-                    t0v2.u = ch.imageUV.x;
-                    t0v2.v = ch.imageUV.y;
-
-                    // Top right
-                    Overlay2DEntry::Text::CharacterVB t1v0;
-                    t1v0.x = xpos + w;
-                    t1v0.y = ypos - h;
-                    t1v0.u = ch.imageUV.z;
-                    t1v0.v = ch.imageUV.w;
-                    // Bottom right
-                    Overlay2DEntry::Text::CharacterVB t1v1;
-                    t1v1.x = xpos + w;
-                    t1v1.y = ypos;
-                    t1v1.u = ch.imageUV.z;
-                    t1v1.v = ch.imageUV.y;
-                    // Bottom left
-                    Overlay2DEntry::Text::CharacterVB t1v2;
-                    t1v2.x = xpos;
-                    t1v2.y = ypos;
-                    t1v2.u = ch.imageUV.x;
-                    t1v2.v = ch.imageUV.y;
-
-                    start_x += ch.advance * scale;
-                    out_text.vertices.push_back(t0v0);
-                    out_text.vertices.push_back(t0v1);
-                    out_text.vertices.push_back(t0v2);
-                    out_text.vertices.push_back(t1v0);
-                    out_text.vertices.push_back(t1v1);
-                    out_text.vertices.push_back(t1v2);
+                    continue;
                 }
 
-                Overlay2DEntry::Element element = {};
-                element.type        = OverlayEntryType::Text;
-                element.renderOrder = text->GetRenderOrder();
-                element.data        = out_text;  
+                const UIBox* box = render_comps[i]->GetGameObject()->GetComponent<UIBox>();
+                if (box == nullptr)
+                {
+                    RB_LOG_WARN(LOGTAG_ENTITY, "Every UI object should have a UIBox");
+                    continue;
+                }
 
-                elements.push_back(element);
+                const auto [pos_x, pos_y] = box->GetWorldStartPos();
+                const auto [bounds_x, bounds_y] = box->GetWorldSize();
+
+                if (auto rect = dynamic_cast<const Rect2D*>(render_comps[i]); rect != nullptr)
+                {
+
+                    float x0 = pos_x;
+                    float x1 = pos_x + bounds_x;
+                    float y0 = pos_y;
+                    float y1 = pos_y + bounds_y;
+
+                    Overlay2DEntry::Rectangle out_rect;
+                    out_rect.color  = rect->GetColor();
+                    // Top left
+                    out_rect.triangleData[0] = x0;
+                    out_rect.triangleData[1] = y0;
+                    // Top right
+                    out_rect.triangleData[2] = x1;
+                    out_rect.triangleData[3] = y0;
+                    // Bottom left
+                    out_rect.triangleData[4] = x0;
+                    out_rect.triangleData[5] = y1;
+                    // Bottom right
+                    out_rect.triangleData[6] = x1;
+                    out_rect.triangleData[7] = y1;
+
+                    Overlay2DEntry::Element element = {};
+                    element.type        = OverlayEntryType::Rectangle;
+                    element.renderOrder = rect->GetRenderOrder();
+                    element.data        = out_rect;
+
+                    elements.push_back(element);
+                }
+                else if (auto text = dynamic_cast<const Text2D*>(render_comps[i]); text != nullptr)
+                {
+                    const float scale = text->GetScale();
+
+                    // Calculate the baseline start position
+                    float start_x = pos_x;
+                    float start_y = pos_y + (text->GetTextMaxBearingUpper() * scale);
+
+                    Overlay2DEntry::Text out_text;
+                    out_text.fontTex    = text->GetFont()->GetFontTexture();
+                    out_text.scissor    = { (uint32_t)pos_x, (uint32_t)pos_y, uint32_t(bounds_x * scale), uint32_t(bounds_y * scale) };
+
+                    auto char_map = text->GetFont()->GetCharacterMap();
+                    for (char c : text->GetText())
+                    {
+                        const auto& ch = char_map->at(c);
+        
+                        float xpos = start_x + ch.bearing.x * scale;
+                        float ypos = start_y + (ch.size.y - ch.bearing.y) * scale;
+        
+                        float w = ch.size.x * scale;
+                        float h = ch.size.y * scale;
+
+                        // Top left
+                        Overlay2DEntry::Text::CharacterVB t0v0;
+                        t0v0.x = xpos;
+                        t0v0.y = ypos - h;
+                        t0v0.u = ch.imageUV.x;
+                        t0v0.v = ch.imageUV.w;
+                        // Top right
+                        Overlay2DEntry::Text::CharacterVB t0v1;
+                        t0v1.x = xpos + w;
+                        t0v1.y = ypos - h;
+                        t0v1.u = ch.imageUV.z;
+                        t0v1.v = ch.imageUV.w;
+                        // Bottom left
+                        Overlay2DEntry::Text::CharacterVB t0v2;
+                        t0v2.x = xpos;
+                        t0v2.y = ypos;
+                        t0v2.u = ch.imageUV.x;
+                        t0v2.v = ch.imageUV.y;
+
+                        // Top right
+                        Overlay2DEntry::Text::CharacterVB t1v0;
+                        t1v0.x = xpos + w;
+                        t1v0.y = ypos - h;
+                        t1v0.u = ch.imageUV.z;
+                        t1v0.v = ch.imageUV.w;
+                        // Bottom right
+                        Overlay2DEntry::Text::CharacterVB t1v1;
+                        t1v1.x = xpos + w;
+                        t1v1.y = ypos;
+                        t1v1.u = ch.imageUV.z;
+                        t1v1.v = ch.imageUV.y;
+                        // Bottom left
+                        Overlay2DEntry::Text::CharacterVB t1v2;
+                        t1v2.x = xpos;
+                        t1v2.y = ypos;
+                        t1v2.u = ch.imageUV.x;
+                        t1v2.v = ch.imageUV.y;
+
+                        start_x += ch.advance * scale;
+                        out_text.vertices.push_back(t0v0);
+                        out_text.vertices.push_back(t0v1);
+                        out_text.vertices.push_back(t0v2);
+                        out_text.vertices.push_back(t1v0);
+                        out_text.vertices.push_back(t1v1);
+                        out_text.vertices.push_back(t1v2);
+                    }
+
+                    Overlay2DEntry::Element element = {};
+                    element.type        = OverlayEntryType::Text;
+                    element.renderOrder = text->GetRenderOrder();
+                    element.data        = out_text;  
+
+                    elements.push_back(element);
+                }
             }
         }
+
+
+        auto components = scene->GetComponentsWithTypeOf<UIRenderComponent>();
         
         if (elements.empty())
         {

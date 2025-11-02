@@ -202,7 +202,7 @@ namespace RB::Graphics
         
 
         // Map outputs to linked consumers
-        UnorderedMap<RenderPassType, UnorderedMap<uint32_t, List<std::pair<RenderPassType, uint32_t>>>> downstream_map;
+        UnorderedMap<RenderPassType, UnorderedMap<uint32_t, List<Pair<RenderPassType, uint32_t>>>> downstream_map;
         for (auto& conn : m_Connections)
         {
             RenderPassType consumer = conn.first;

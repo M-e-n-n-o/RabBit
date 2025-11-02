@@ -36,6 +36,9 @@ namespace RB::Entity
 
 		template<class T>
 		T* GetComponent() const;
+
+		template<class T>
+		void GetComponentsInChildren(List<T*>& components) const;
 		
 		template<typename T>
 		bool RemoveComponent();
@@ -109,16 +112,28 @@ namespace RB::Entity
 		auto it = m_Map.find(std::type_index(typeid(T)));
 		if (it == m_Map.end())
 		{
-			if constexpr (std::is_same<T, Transform>::value)
-			{
-				// A gameobject should always have a transform
-				return (T*)GetDefaultTransform();
-			}
+			//if constexpr (std::is_same<T, Transform>::value)
+			//{
+			//	// A gameobject should always have a transform
+			//	return (T*)GetDefaultTransform();
+			//}
 
 			return nullptr;
 		}
 
 		return static_cast<T*>(it->second);
+	}
+
+	template<class T>
+	void GameObject::GetComponentsInChildren(List<T*>& components) const
+	{
+		RB_STATIC_ASSERT(std::is_base_of_v<ObjectComponent, T>, "T must derive from ObjectComponent");
+
+		if (auto comp = GetComponent<T>())
+			components.push_back(comp);
+
+		for (auto* child : m_Children)
+			child->GetComponentsInChildren<T>(components);
 	}
 
 	template<typename T>

@@ -38,6 +38,9 @@ namespace RB::Entity
 
         void* GetTargetWindowHandle()	const { return m_TargetWindowHandle; }
         Graphics::Texture2D* GetRenderTexture() const { return m_RenderTexture; }
+        
+        uint32_t GetRenderTargetWidth() const;
+        uint32_t GetRenderTargetHeight() const;
 
         void SetClearColor(const Math::Float4& color) { m_ClearColor = color; }
         Math::Float4 GetClearColor() const { return m_ClearColor; }

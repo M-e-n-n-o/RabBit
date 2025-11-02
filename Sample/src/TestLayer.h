@@ -90,36 +90,45 @@ public:
 
         // UI
         {
-            static_assert(false);
-            // - The UIMagnet + ListView breaks
-            //      - Maybe every UI thing needs to inherit from a class that can return the bounding box (instead of having the bounding box inside only UIRenderComponents)
-            //  - You should also be able to scale UI elements (based on the resolution) (so maybe don't do everything in pixels?)
+            auto canvas = scene->CreateGameObject();
+            canvas->AddComponent<UICanvas>(cam_comp);
+
+
+
 
             auto list = scene->CreateGameObject();
-            list->AddComponent<UIMagnet>(false, true, true, true, 10);
+            auto* list_box = list->AddComponent<UIBox>();
+            list_box->SetSize(UIUnit::IPCT, 10, 50);
             list->AddComponent<ListView>(true, 15);
-            auto list_t = list->AddComponent<Transform>();
-            list_t->position.x = 0.0f;
-            list_t->position.y = 0.0f;
+            //auto list_t = list->AddComponent<Transform>();
+            //list_t->position.x = 0.0f;
+            //list_t->position.y = 0.0f;
+            list->SetParent(canvas);
 
-            auto ui = scene->CreateGameObject();
-            ui->AddComponent<Rect2D>(200.0f, 200.0f, Math::Float4(0.0f, 1.0f, 0.0f, 0.4f), 0);
-            auto ui_t = ui->AddComponent<Transform>();
-            ui_t->position.x = 50.0f;
-            ui_t->position.y = 50.0f;
-            ui->SetParent(list);
+
+
+            auto rect_obj = scene->CreateGameObject();
+            auto* rect_box = rect_obj->AddComponent<UIBox>();
+            //rect_box->SetStartPos(UIUnit::PX, 5, 5);
+            rect_box->SetPadding(UIUnit::PX, 5);
+            //rect_box->AddConstraint(UIConstraintType::Left);
+            //rect_box->AddConstraint(UIConstraintType::Right);
+            //rect_box->AddConstraint(UIConstraintType::Up);
+            //rect_box->AddConstraint(UIConstraintType::Down);
+            rect_box->SetSize(UIUnit::IPCT, 25, 25);
+            rect_obj->AddComponent<Rect2D>(Math::Float4(0.0f, 1.0f, 0.0f, 0.4f), 0);
+            rect_obj->SetParent(list);
 
             LoadedFont font;
             AssetManager::LoadFont("TypoGraphica.otf", &font, 48);
-
+            
             m_Font = new Font("Cool Font", font);
-
-            auto text = scene->CreateGameObject();
-            text->AddComponent<Text2D>(m_Font, "Hoi Sylvia! (dit zie je niet)", 1.0f, 200.0f, 50.0f, 0);
-            auto text_t = text->AddComponent<Transform>();
-            text_t->position.x = 50.0f;
-            text_t->position.y = 0.0f;
-            text->SetParent(list);
+            
+            auto text_obj = scene->CreateGameObject();
+            auto* text_box = text_obj->AddComponent<UIBox>();
+            text_box->SetSize(UIUnit::IPCT, 30, 10);
+            text_obj->AddComponent<Text2D>(m_Font, "Hoi Sylvia! (dit zie je niet)", 1.0f, 0);
+            text_obj->SetParent(list);
         }
 
         //m_Obj2 = scene->CreateGameObject();

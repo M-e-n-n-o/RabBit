@@ -3,6 +3,11 @@
 #include "Frustum.h"
 #include "math/Vector.h"
 
+namespace RB::Entity
+{
+    class Camera;
+}
+
 namespace RB::Graphics
 {
     class RenderInterface;
@@ -30,6 +35,9 @@ namespace RB::Graphics
         // RenderPasses can change the properties of the viewport if needed
         Viewport        viewport;
         Frustum			viewFrustum;
+
+        // The camera this ViewContext is linked to
+        const Entity::Camera* camera;
 
         void SetFrameConstants(RenderInterface* render_interface) const;
     };

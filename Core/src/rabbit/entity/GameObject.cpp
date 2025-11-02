@@ -35,13 +35,14 @@ namespace RB::Entity
             {
                 m_Parent->OnChildDetached(this);
             }
+
+            m_Parent = nullptr;
         }
         else
         {
+            m_Parent = new_parent;
             new_parent->OnNewChildAttached(this);
         }
-
-        m_Parent = new_parent;
     }
 
     GameObject* GameObject::GetParent() const
