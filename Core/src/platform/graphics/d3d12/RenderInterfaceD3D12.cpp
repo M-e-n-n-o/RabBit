@@ -242,9 +242,7 @@ namespace RB::Graphics::D3D12
             RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.tex2DsrvHandles), "Shader resource input slot out of range");
 
             Texture2DD3D12* tex = (Texture2DD3D12*)resource;
-
             m_RenderState.tex2DsrvHandles[slot] = tex->GetSrvHandle();
-            m_RenderState.tex2DSRGBs[slot] = IsSRGBFormat(tex->GetFormat());
         }
         break;
 
@@ -285,7 +283,6 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
     {
         m_RenderState.tex2DsrvHandles[slot] = DescriptorIndex{};
-        m_RenderState.tex2DSRGBs[slot] = false;
     }
 
     void RenderInterfaceD3D12::ClearRandomReadWriteInput(uint32_t slot)
@@ -945,18 +942,15 @@ namespace RB::Graphics::D3D12
             for (int i = 0; i < _countof(indices.tex2D); ++i)
             {
                 uint32_t& index = indices.tex2D[i].handle;
-                uint32_t& isSRGB = indices.tex2D[i].isSrgb;
 
                 if (m_RenderState.tex2DsrvHandles[i].isValid())
                 {
                     index  = (uint32_t)m_RenderState.tex2DsrvHandles[i].heapIndex;
-                    isSRGB = m_RenderState.tex2DSRGBs[i];
                 }
                 else
                 {
                     // Error texture
                     index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetSrvHandle().heapIndex;
-                    isSRGB = false;
                 }
             }
 

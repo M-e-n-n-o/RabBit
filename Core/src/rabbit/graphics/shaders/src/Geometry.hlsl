@@ -53,13 +53,6 @@ PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input)
     gbuf.normal = input.normal;
     gbuf.depth = LinearizeDepth(input.position.z);
 
-    if (tex.IsSRGB())
-    {
-        // Convert from sRGB to linear space (apply inverted gamma)
-        const float gamma = 2.2f; // Hardcoded gamma value, TODO is this always correct?
-        gbuf.color.rgb = pow(gbuf.color.rgb, gamma);
-    }
-
     GBufferEncoded enc = EncodeGBuffer(gbuf);
 
     PO_GBufferEncodedOutput output;

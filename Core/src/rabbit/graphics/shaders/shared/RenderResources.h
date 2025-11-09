@@ -27,16 +27,11 @@ struct Tex2D
 public:
 #endif
     RenderResourceHandle handle;
-    uint isSrgb;
     uint pad0;
     uint pad1;
+    uint pad2;
 
 #if SHADER
-    bool IsSRGB()
-    {
-        return isSrgb;
-    }
-
     template<typename TextureValueType>
     TextureValueType Sample(SamplerState ss, float2 uv)
     {
