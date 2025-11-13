@@ -34,7 +34,7 @@ namespace RB::Graphics::D3D12
         uint32_t GetHeight() override { return m_Height; }
         uint32_t GetBackBufferCount() override { return m_BackBufferCount; }
         uint32_t GetCurrentBackBufferIndex() override { return m_CurrentBackBufferIndex; }
-        Graphics::Texture2D* GetCurrentBackBuffer() override;
+        Shared<Graphics::Texture2D> GetCurrentBackBuffer() override;
 
     private:
         void UpdateRenderTargetViews();
@@ -42,7 +42,7 @@ namespace RB::Graphics::D3D12
 
         GPtr<IDXGISwapChain4>       m_NativeSwapChain;
         GPtr<ID3D12Resource>*       m_BackBuffers;
-        Graphics::Texture2D*        m_WrappedBackBuffers[BACK_BUFFER_COUNT];
+        Shared<Graphics::Texture2D> m_WrappedBackBuffers[BACK_BUFFER_COUNT];
         DescriptorIndex             m_BufferDescriptors[BACK_BUFFER_COUNT];
 
         bool                        m_UseComposition;

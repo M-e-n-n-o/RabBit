@@ -4,7 +4,7 @@
 
 namespace RB::Graphics
 {
-    extern Texture2D* g_TexDefaultError;
+    extern Shared<Texture2D> g_TexDefaultError;
 
     void InitResourceDefaults();
     void DeleteResourceDefaults();

@@ -206,7 +206,7 @@ namespace RB::Graphics::VK
         m_CurrentBackBufferIndex = 0;
         m_UpdatedBackBufferIndex = true;
 
-        m_WrappedBackBuffers = ALLOC_HEAPC(Texture2D*, m_BackBufferCount);
+        m_WrappedBackBuffers = ALLOC_HEAPC(Shared<Texture2D>, m_BackBufferCount);
         for (int i = 0; i < m_BackBufferCount; ++i)
         {
             m_WrappedBackBuffers[i] = nullptr;
@@ -245,7 +245,7 @@ namespace RB::Graphics::VK
     {
         for (int i = 0; i < m_BackBufferCount; ++i)
         {
-            SAFE_DELETE(m_WrappedBackBuffers[i]);
+            m_WrappedBackBuffers[i].reset();
             
             vkDestroyImageView(g_GraphicsDevice->Get(), m_ImageViews[i], nullptr);
         }
@@ -291,13 +291,13 @@ namespace RB::Graphics::VK
         // Release wrapped backbuffer references
         for (int i = 0; i < m_BackBufferCount; ++i)
         {
-            SAFE_DELETE(m_WrappedBackBuffers[i]);
+            m_WrappedBackBuffers[i].reset();
         }
 
         RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "TODO: implement resize for VK swapchain");
     }
 
-    Graphics::Texture2D* SwapChainVK::GetCurrentBackBuffer()
+    Shared<Graphics::Texture2D> SwapChainVK::GetCurrentBackBuffer()
     {
         UpdateBackBufferIndex();
 
@@ -315,7 +315,7 @@ namespace RB::Graphics::VK
                 false
             );
 
-            ((Texture2DVK*)m_WrappedBackBuffers[m_CurrentBackBufferIndex])->SetView(m_ImageViews[m_CurrentBackBufferIndex]);
+            ((Texture2DVK*)m_WrappedBackBuffers[m_CurrentBackBufferIndex].get())->SetView(m_ImageViews[m_CurrentBackBufferIndex]);
         }
 
         return m_WrappedBackBuffers[m_CurrentBackBufferIndex];

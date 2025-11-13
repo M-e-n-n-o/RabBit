@@ -28,26 +28,26 @@ namespace RB::Graphics::VK
         uint32_t GetHeight() override { return m_Height; }
         uint32_t GetBackBufferCount() override { return m_BackBufferCount; }
         uint32_t GetCurrentBackBufferIndex() override { return m_CurrentBackBufferIndex; }
-        Graphics::Texture2D* GetCurrentBackBuffer() override;
+        Shared<Graphics::Texture2D> GetCurrentBackBuffer() override;
 
     private:
         void Init(uint32_t width, uint32_t height, bool vsync, uint32_t buffer_count, RenderResourceFormat format, bool transparency_support);
         void UpdateBackBufferIndex();
 
-        VkSurfaceKHR            m_Surface;
-        VkSwapchainKHR          m_Swapchain;
+        VkSurfaceKHR                   m_Surface;
+        VkSwapchainKHR                 m_Swapchain;
 
-        uint32_t                m_Width;
-        uint32_t                m_Height;
-        RenderResourceFormat    m_EngineFormat;
+        uint32_t                       m_Width;
+        uint32_t                       m_Height;
+        RenderResourceFormat           m_EngineFormat;
 
-        uint32_t                m_CurrentBackBufferIndex;
-        uint32_t                m_BackBufferCount;
-        bool                    m_UpdatedBackBufferIndex;
+        uint32_t                       m_CurrentBackBufferIndex;
+        uint32_t                       m_BackBufferCount;
+        bool                           m_UpdatedBackBufferIndex;
 
-        VkImage*                m_SwapChainImages;
-        VkImageView*            m_ImageViews;
-        Graphics::Texture2D**   m_WrappedBackBuffers;
+        VkImage*                       m_SwapChainImages;
+        VkImageView*                   m_ImageViews;
+        Shared<Graphics::Texture2D>*   m_WrappedBackBuffers;
     };
 }
 #endif

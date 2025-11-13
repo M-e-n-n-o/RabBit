@@ -175,7 +175,7 @@ namespace RB::Graphics::LinuxES
         return m_SwapChain->GetCurrentBackBufferIndex();
     }
 
-    Graphics::Texture2D* WindowLinuxES::GetCurrentBackBuffer()
+    Shared<Graphics::Texture2D> WindowLinuxES::GetCurrentBackBuffer()
     {
         if (!m_IsValid)
         {

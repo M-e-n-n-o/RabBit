@@ -119,18 +119,18 @@ namespace RB::Graphics
         return (RenderResourceType)primitive_type;
     }
 
-    VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
+    Shared<VertexBuffer> VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::VertexBufferD3D12(name, type, data, vertex_size, data_size, transient);
+            return CreateShared<D3D12::VertexBufferD3D12>(name, type, data, vertex_size, data_size, transient);
 #endif
 
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
-            return new VK::VertexBufferVK(name, type, data, vertex_size, data_size, transient);
+            return CreateShared<VK::VertexBufferVK>(name, type, data, vertex_size, data_size, transient);
 #endif
 
         default:
@@ -141,18 +141,18 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    IndexBuffer* IndexBuffer::Create(const char* name, uint16_t* data, uint64_t elements)
+    Shared<IndexBuffer> IndexBuffer::Create(const char* name, uint16_t* data, uint64_t elements)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::IndexBufferD3D12(name, data, elements);
+            return CreateShared<D3D12::IndexBufferD3D12>(name, data, elements);
 #endif
 
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
-            return new VK::IndexBufferVK(name, data, elements);
+            return CreateShared<VK::IndexBufferVK>(name, data, elements);
 #endif
 
         default:
@@ -163,18 +163,18 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    Shared<Texture2D> Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::Texture2DD3D12(name, format, width, height, is_render_target, random_read_write_access);
+            return CreateShared<D3D12::Texture2DD3D12>(name, format, width, height, is_render_target, random_read_write_access);
 #endif
 
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
-            return new VK::Texture2DVK(name, format, width, height, is_render_target, random_read_write_access);
+            return CreateShared<VK::Texture2DVK>(name, format, width, height, is_render_target, random_read_write_access);
 #endif
 
         default:
@@ -185,13 +185,13 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    Shared<Texture2D> Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::Texture2DD3D12(name, data, data_size, format, width, height, is_render_target, random_read_write_access);
+            return CreateShared<D3D12::Texture2DD3D12>(name, data, data_size, format, width, height, is_render_target, random_read_write_access);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
@@ -201,18 +201,18 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    Shared<Texture2D> Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
+            return CreateShared<D3D12::Texture2DD3D12>(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
 #endif
 
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
-            return new VK::Texture2DVK(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
+            return CreateShared<VK::Texture2DVK>(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
 #endif
 
         default:

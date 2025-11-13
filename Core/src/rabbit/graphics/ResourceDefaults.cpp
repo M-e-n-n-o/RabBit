@@ -7,7 +7,7 @@ namespace RB::Graphics
     //							Texture Defines
     // ---------------------------------------------------------------------------
 
-    Texture2D* g_TexDefaultError = nullptr;
+    Shared<Texture2D> g_TexDefaultError = nullptr;
 
     // ---------------------------------------------------------------------------
     //							 Texture Data
@@ -34,6 +34,6 @@ namespace RB::Graphics
 
     void DeleteResourceDefaults()
     {
-        delete g_TexDefaultError;
+        g_TexDefaultError.reset();
     }
 }

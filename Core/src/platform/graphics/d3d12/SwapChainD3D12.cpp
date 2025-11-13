@@ -87,7 +87,7 @@ namespace RB::Graphics::D3D12
     {
         for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
         {
-            SAFE_DELETE(m_WrappedBackBuffers[i]);
+            m_WrappedBackBuffers[i].reset();
         }
 
         delete[] m_BackBuffers;
@@ -112,7 +112,7 @@ namespace RB::Graphics::D3D12
         // Release wrapped backbuffer references
         for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
         {
-            SAFE_DELETE(m_WrappedBackBuffers[i]);
+            m_WrappedBackBuffers[i].reset();
         }
 
         m_Width = width;
@@ -133,7 +133,7 @@ namespace RB::Graphics::D3D12
         UpdateRenderTargetViews();
     }
 
-    Graphics::Texture2D* SwapChainD3D12::GetCurrentBackBuffer()
+    Shared<Graphics::Texture2D> SwapChainD3D12::GetCurrentBackBuffer()
     {
         if (m_WrappedBackBuffers[m_CurrentBackBufferIndex] == nullptr)
         {
@@ -141,7 +141,7 @@ namespace RB::Graphics::D3D12
             m_WrappedBackBuffers[m_CurrentBackBufferIndex] = Texture2D::Create(name.c_str(),
                 new GpuResource(m_BackBuffers[m_CurrentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, false), m_EngineFormat, m_Width, m_Height, true, false);
         
-            ((Texture2DD3D12*)m_WrappedBackBuffers[m_CurrentBackBufferIndex])->SetRenderTargetHandle(g_DescriptorManager->GetCpuHandle(m_BufferDescriptors[m_CurrentBackBufferIndex]));
+            ((Texture2DD3D12*)m_WrappedBackBuffers[m_CurrentBackBufferIndex].get())->SetRenderTargetHandle(g_DescriptorManager->GetCpuHandle(m_BufferDescriptors[m_CurrentBackBufferIndex]));
         }
 
         return m_WrappedBackBuffers[m_CurrentBackBufferIndex];

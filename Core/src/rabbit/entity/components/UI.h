@@ -19,17 +19,12 @@ namespace RB::Entity
             m_Characters = loaded_font.characters;
         }
 
-        ~Font()
-        {
-            SAFE_DELETE(m_FontTexture);
-        }
-
-        Graphics::Texture2D* GetFontTexture() const { return m_FontTexture; }
+        Shared<Graphics::Texture2D> GetFontTexture() const { return m_FontTexture; }
 
         const Map<char, LoadedFont::Character>* GetCharacterMap() const { return &m_Characters; }
 
     private:
-        Graphics::Texture2D* m_FontTexture;
+        Shared<Graphics::Texture2D> m_FontTexture;
         Map<char, LoadedFont::Character> m_Characters;
     };
 

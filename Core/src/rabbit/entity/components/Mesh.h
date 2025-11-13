@@ -11,18 +11,12 @@ namespace RB::Entity
     public:
         struct VertexPair
         {
-            Graphics::VertexBuffer* vertexBuffer = nullptr;
-            Graphics::IndexBuffer*  indexBuffer = nullptr;
+            Shared<Graphics::VertexBuffer> vertexBuffer = nullptr;
+            Shared<Graphics::IndexBuffer>  indexBuffer = nullptr;
         };
 
         Mesh(const char* name, LoadedMesh::Submodel& submodel);
         Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count);
-
-        ~Mesh()
-        {
-            SAFE_DELETE(m_VertexPair.vertexBuffer);
-            SAFE_DELETE(m_VertexPair.indexBuffer);
-        }
 
         const VertexPair& GetVertexPair() const
         {
@@ -45,18 +39,13 @@ namespace RB::Entity
 
         Material(const char* file_name, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
-        ~Material()
-        {
-            delete m_Texture;
-        }
-
-        Graphics::Texture2D* GetTexture() const
+        Shared<Graphics::Texture2D> GetTexture() const
         {
             return m_Texture;
         }
 
     private:
-        Graphics::Texture2D* m_Texture;
+        Shared<Graphics::Texture2D> m_Texture;
     };
 
     class MeshRenderer : public ObjectComponent

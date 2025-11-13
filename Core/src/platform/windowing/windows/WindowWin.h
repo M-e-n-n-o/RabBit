@@ -58,7 +58,7 @@ namespace RB::Graphics::Windows
 
         RenderResourceFormat GetBackBufferFormat() override;
         uint32_t GetCurrentBackBufferIndex() override;
-        Graphics::Texture2D* GetCurrentBackBuffer() override;
+        Shared<Graphics::Texture2D> GetCurrentBackBuffer() override;
 
         HWND GetHandle() const { return m_WindowHandle; }
 

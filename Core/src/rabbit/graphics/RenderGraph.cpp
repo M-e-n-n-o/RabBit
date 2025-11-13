@@ -59,7 +59,7 @@ namespace RB::Graphics
             {
                 if (graph_context->RequiresClear(id))
                 {
-                    render_interface->Clear(graph_context->GetResource(id));
+                    render_interface->Clear(graph_context->GetResource(id).get());
                 }
             }
 
@@ -85,9 +85,9 @@ namespace RB::Graphics
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].parameterIDs[j] == VIEWCONTEXT_OUTPUT_ID)
-                    parameters[j] = view_context->finalColorTarget;
+                    parameters[j] = view_context->finalColorTarget.get();
                 else if (m_RenderFlow[i].parameterIDs[j] != -1)
-                    parameters[j] = graph_context->GetResource(m_RenderFlow[i].parameterIDs[j]);
+                    parameters[j] = graph_context->GetResource(m_RenderFlow[i].parameterIDs[j]).get();
                 else
                     parameters[j] = nullptr;
             }
@@ -95,7 +95,7 @@ namespace RB::Graphics
             for (int j = 0; j < MAX_WORKING_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].workingIDs[j] != -1)
-                    intermediates[j] = graph_context->GetResource(m_RenderFlow[i].workingIDs[j]);
+                    intermediates[j] = graph_context->GetResource(m_RenderFlow[i].workingIDs[j]).get();
                 else
                     intermediates[j] = nullptr;
             }
@@ -103,9 +103,9 @@ namespace RB::Graphics
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].outputIDs[j] == VIEWCONTEXT_OUTPUT_ID)
-                    outputs[j] = view_context->finalColorTarget;
+                    outputs[j] = view_context->finalColorTarget.get();
                 else if (m_RenderFlow[i].outputIDs[j] != -1)
-                    outputs[j] = graph_context->GetResource(m_RenderFlow[i].outputIDs[j]);
+                    outputs[j] = graph_context->GetResource(m_RenderFlow[i].outputIDs[j]).get();
                 else
                     outputs[j] = nullptr;
             }

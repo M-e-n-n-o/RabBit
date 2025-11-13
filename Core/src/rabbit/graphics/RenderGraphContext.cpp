@@ -10,7 +10,7 @@ namespace RB::Graphics
         DeleteGraphResources();
     }
 
-    RenderResource* RenderGraphContext::GetResource(ResourceID id)
+    Shared<RenderResource> RenderGraphContext::GetResource(ResourceID id)
     {
         if (id < 0)
         {
@@ -193,11 +193,6 @@ namespace RB::Graphics
 
     void RenderGraphContext::DeleteGraphResources()
     {
-        for (RenderResource* res : m_Resources)
-        {
-            delete res;
-        }
-
         m_Resources.clear();
         m_Clears.clear();
         SAFE_FREE(m_ResourcePointers);

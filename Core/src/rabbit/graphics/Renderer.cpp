@@ -180,7 +180,7 @@ namespace RB::Graphics
         }
         SAFE_DELETE(m_RenderGraphContext);
 
-        SAFE_DELETE(m_BackBufferCopyVB);
+        m_BackBufferCopyVB.reset();
 
         // Delete default resources
         DeleteResourceDefaults();
@@ -223,7 +223,7 @@ namespace RB::Graphics
             context->renderPassEntries              = entries;
             context->graphicsInterface              = m_GraphicsInterface;
             context->renderFrameIndex               = &m_RenderFrameIndex;
-            context->backBufferCopyVB               = m_BackBufferCopyVB;
+            context->backBufferCopyVB               = m_BackBufferCopyVB.get();
             context->frameAllocator                 = m_RenderAllocator;
             context->OnRenderFrameStart             = std::bind(&Renderer::OnFrameStart, this);
             context->OnRenderFrameEnd               = std::bind(&Renderer::OnFrameEnd, this);
@@ -279,7 +279,9 @@ namespace RB::Graphics
         out_context_count = camera_components.size();
 
         // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)?
-        ViewContext* contexts = (ViewContext*)ALLOC_HEAP(sizeof(ViewContext) * out_context_count);
+        uint32_t size = sizeof(ViewContext) * out_context_count;
+        ViewContext* contexts = (ViewContext*)ALLOC_HEAP(size);
+        memset(contexts, 0, size);
 
         uint32_t context_index = 0;
 
@@ -303,8 +305,6 @@ namespace RB::Graphics
                 continue;
             }
 
-            contexts[context_index] = {};
-
             if (!camera->IsEnabled())
             {
                 // Still keep this ViewContext around, just not render it for now
@@ -320,10 +320,10 @@ namespace RB::Graphics
             contexts[context_index].viewport.top = 0;
 
             // TODO: Enable for proper rendering
-            //Texture2D* render_texture = camera->GetRenderTexture();
+            //Shared<Texture2D> render_texture = camera->GetRenderTexture();
             //if (render_texture == nullptr)
             //{
-            //    Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
+            //    Shared<Texture2D> virtual_back_buffer = window->GetVirtualBackBuffer();
             //
             //    if (virtual_back_buffer == nullptr)
             //    {
@@ -618,7 +618,7 @@ namespace RB::Graphics
 
                 RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "ViewContext");
 
-                RenderResource* final_color_target = view_context.finalColorTarget;
+                RenderResource* final_color_target = view_context.finalColorTarget.get();
 
                 if (final_color_target == nullptr)
                 {
@@ -688,7 +688,7 @@ namespace RB::Graphics
                 }
             }
 
-            Texture2D* back_buffer = window->GetCurrentBackBuffer();
+            Shared<Texture2D> back_buffer = window->GetCurrentBackBuffer();
             RenderRect rect = window->GetVirtualWindowRect();
 
             // TODO: Enable for proper rendering
@@ -700,8 +700,8 @@ namespace RB::Graphics
 
             //context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
 
-            //context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
-            //context->graphicsInterface->PushRenderTarget(back_buffer, 0);
+            //context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget.get(), 0);
+            //context->graphicsInterface->PushRenderTarget(back_buffer.get(), 0);
 
             //if (window->IsSemiTransparent())
             //{
@@ -709,7 +709,7 @@ namespace RB::Graphics
             //    context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
 
             //    // Clear the backbuffer as we don't want to see the data of a previous frame
-            //    context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
+            //    context->graphicsInterface->Clear(back_buffer.get(), Math::Float4(0));
             //}
             //else
             //{
@@ -718,11 +718,12 @@ namespace RB::Graphics
 
             //// Backbuffer copy
             //context->graphicsInterface->Draw();
+            
 
-            context->graphicsInterface->Clear(back_buffer, context->viewContexts[0].clearColor);
+            context->graphicsInterface->Clear(back_buffer.get(), context->viewContexts[0].clearColor);
 
             // Prepare for present
-            context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);
+            context->graphicsInterface->TransitionResource(back_buffer.get(), ResourceState::PRESENT);
             context->graphicsInterface->FlushResourceBarriers();
 
             window_pairs[total_pairs].window = window;

@@ -969,7 +969,7 @@ namespace RB::Graphics::D3D12
                 else
                 {
                     // Error texture
-                    index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetSrvHandle().heapIndex;
+                    index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError.get())->GetSrvHandle().heapIndex;
                 }
             }
 

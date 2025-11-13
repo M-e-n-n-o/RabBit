@@ -25,16 +25,16 @@ namespace RB::Graphics
     class ViewContext
     {
     public:
-        bool            enabled;
-        bool			isOffscreenContext;
-        uint32_t		windowIndex;
-        Texture2D*      finalColorTarget;
-        Math::Float4	clearColor;
-        uint32_t        renderGraphType;
+        bool              enabled;
+        bool              isOffscreenContext;
+        uint32_t          windowIndex;
+        Shared<Texture2D> finalColorTarget;
+        Math::Float4      clearColor;
+        uint32_t          renderGraphType;
 
         // RenderPasses can change the properties of the viewport if needed
         Viewport        viewport;
-        Frustum			viewFrustum;
+        Frustum         viewFrustum;
 
         // The camera this ViewContext is linked to
         const Entity::Camera* camera;

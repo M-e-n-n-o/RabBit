@@ -237,7 +237,7 @@ namespace RB::Graphics::Windows
         return m_SwapChain->GetCurrentBackBufferIndex();
     }
 
-    Graphics::Texture2D* WindowWin::GetCurrentBackBuffer()
+    Shared<Graphics::Texture2D> WindowWin::GetCurrentBackBuffer()
     {
         if (!m_IsValid)
         {

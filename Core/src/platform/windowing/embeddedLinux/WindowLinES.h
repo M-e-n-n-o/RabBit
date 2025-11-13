@@ -47,7 +47,7 @@ namespace RB::Graphics::LinuxES
 
         RenderResourceFormat GetBackBufferFormat() override;
         uint32_t GetCurrentBackBufferIndex() override;
-        Graphics::Texture2D* GetCurrentBackBuffer() override;
+        Shared<Graphics::Texture2D> GetCurrentBackBuffer() override;
 
     private:
         void ResizeWindow(uint32_t width, uint32_t height, int32_t x, int32_t y) override;

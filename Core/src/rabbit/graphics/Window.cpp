@@ -33,7 +33,7 @@ namespace RB::Graphics
         // Destroy window in implementation class!
     }
 
-    Graphics::Texture2D* Window::GetVirtualBackBuffer()
+    Shared<Graphics::Texture2D> Window::GetVirtualBackBuffer()
     {
         if (!IsValid())
         {
@@ -255,7 +255,7 @@ namespace RB::Graphics
                 ResizeBackBuffers(width, height);
 
                 // Delete the virtual backbuffer
-                SAFE_DELETE(m_VirtualBackBuffer);
+                m_VirtualBackBuffer.reset();
             }
             else
             {
@@ -280,7 +280,7 @@ namespace RB::Graphics
         case EventType::WindowCloseRequest:
         {
             DestroyWindow();
-            SAFE_DELETE(m_VirtualBackBuffer);
+            m_VirtualBackBuffer.reset();
         }
         break;
 

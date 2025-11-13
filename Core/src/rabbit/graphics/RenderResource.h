@@ -124,7 +124,7 @@ namespace RB::Graphics
         virtual uint32_t GetVertexElementCount() const = 0;
         virtual TopologyType GetTopologyType() const = 0;
 
-        static VertexBuffer* Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false);
+        static Shared<VertexBuffer> Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false);
 
     protected:
         VertexBuffer() : Buffer(RenderResourceType::VertexBuffer) {}
@@ -139,7 +139,7 @@ namespace RB::Graphics
 
         virtual uint64_t GetIndexCount() const = 0;
 
-        static IndexBuffer* Create(const char* name, uint16_t* data, uint64_t elements);
+        static Shared<IndexBuffer> Create(const char* name, uint16_t* data, uint64_t elements);
 
     protected:
         IndexBuffer() : Buffer(RenderResourceType::IndexBuffer) {}
@@ -189,9 +189,9 @@ namespace RB::Graphics
         void SetArraySize(uint32_t size) {}
         void SetFirstArraySlice(uint32_t slice) {}
 
-        static Texture2D* Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
-        static Texture2D* Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
-        static Texture2D* Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2D> Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2D> Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
 
     protected:
         Texture2D() : Texture(RenderResourceType::Texture2D) {}

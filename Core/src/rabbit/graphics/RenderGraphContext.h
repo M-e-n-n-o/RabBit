@@ -22,7 +22,7 @@ namespace RB::Graphics
         RenderGraphContext() = default;
         ~RenderGraphContext();
 
-        RenderResource* GetResource(ResourceID id);
+        Shared<RenderResource> GetResource(ResourceID id);
         bool            RequiresClear(ResourceID id);
 
         void AddGraphSize(uint32_t graph_id, const RenderGraphSize& size);
@@ -41,16 +41,16 @@ namespace RB::Graphics
 
     private:
         // All the resources used by all graphs
-        List<RenderResource*>       m_Resources;
-        List<bool>                  m_Clears;
+        List<Shared<RenderResource>> m_Resources;
+        List<bool>                   m_Clears;
         // Points to the actual resources in the list above
-        uint32_t*                   m_ResourcePointers;
+        uint32_t*                    m_ResourcePointers;
         
         // The rendertexture sizes for each graph
-        List<List<RenderGraphSize>> m_GraphSizes;
+        List<List<RenderGraphSize>>  m_GraphSizes;
         // The scheduled resources for all graphs
-        List<RenderTextureDesc>     m_Descriptions;
+        List<RenderTextureDesc>      m_Descriptions;
         // All the resources stored with the graph they are used in
-        List<List<ResourceID>>      m_GraphDescriptions;
+        List<List<ResourceID>>       m_GraphDescriptions;
     };
 }

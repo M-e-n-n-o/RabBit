@@ -89,12 +89,12 @@ namespace RB::Graphics
         RenderGraphContext*         m_RenderGraphContext;
         uint32_t                    m_CurrentValidRenderGraphSizes;
 
-        ThreadedVariable<uint64_t>	m_RenderFrameIndex;
-        ThreadedVariable<uint32_t>	m_ForceSync;
+        ThreadedVariable<uint64_t>  m_RenderFrameIndex;
+        ThreadedVariable<uint32_t>  m_ForceSync;
 
-        VertexBuffer*               m_BackBufferCopyVB;
+        Shared<VertexBuffer>        m_BackBufferCopyVB;
 
-        bool						m_MultiThreadingSupport;
+        bool                        m_MultiThreadingSupport;
 
         ResourceStreamer*           m_ResourceStreamer;
 

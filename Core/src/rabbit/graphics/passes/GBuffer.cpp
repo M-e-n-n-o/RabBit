@@ -20,10 +20,10 @@ namespace RB::Graphics
     {
         struct ModelEntry
         {
-            VertexBuffer*   vb;
-            IndexBuffer*    ib;
-            Texture*        texture;
-            Math::Float4x4	modelMatrix;
+            Shared<VertexBuffer> vb;
+            Shared<IndexBuffer>  ib;
+            Shared<Texture>      texture;
+            Math::Float4x4	     modelMatrix;
         };
 
         ModelEntry*         entries;
@@ -65,7 +65,9 @@ namespace RB::Graphics
     {
         auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
 
-        GBufferEntry::ModelEntry* entries = ALLOC_HEAPC(GBufferEntry::ModelEntry, mesh_renderers.size());
+        uint32_t size = sizeof(GBufferEntry::ModelEntry) * mesh_renderers.size();
+        GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*)ALLOC_HEAP(size);
+        memset(entries, 0, size);
 
         uint32_t total_entries = 0;
 
@@ -135,16 +137,16 @@ namespace RB::Graphics
         {
             GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 
-            in.ri->SetVertexBuffer(model_entry.vb);
+            in.ri->SetVertexBuffer(model_entry.vb.get());
 
             if (model_entry.ib)
             {
-                in.ri->SetIndexBuffer(model_entry.ib);
+                in.ri->SetIndexBuffer(model_entry.ib.get());
             }
 
             in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-            in.ri->SetShaderResourceInput(model_entry.texture, 1);
+            in.ri->SetShaderResourceInput(model_entry.texture.get(), 1);
 
             in.ri->Draw();
         }

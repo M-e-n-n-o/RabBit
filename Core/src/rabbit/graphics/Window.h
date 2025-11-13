@@ -67,10 +67,10 @@ namespace RB::Graphics
         virtual bool            IsSameWindow(void* window_handle)   const = 0;
         virtual void*           GetNativeWindowHandle()             const = 0;
 
-        virtual RenderResourceFormat	GetBackBufferFormat() = 0;
-        virtual uint32_t                GetCurrentBackBufferIndex() = 0;
-        virtual Graphics::Texture2D*    GetCurrentBackBuffer() = 0;
-        Graphics::Texture2D*            GetVirtualBackBuffer();
+        virtual RenderResourceFormat	     GetBackBufferFormat() = 0;
+        virtual uint32_t                     GetCurrentBackBufferIndex() = 0;
+        virtual Shared<Graphics::Texture2D>  GetCurrentBackBuffer() = 0;
+        Shared<Graphics::Texture2D>          GetVirtualBackBuffer();
 
         void           Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1);
 
@@ -92,21 +92,21 @@ namespace RB::Graphics
 
         void CalculateVirtualSize();
 
-        bool                    m_InFocus;
-
-        float                   m_GammaCorrection;
-        float                   m_Brightness;
-
-        bool                    m_IsFullscreen;
-        Math::Float4            m_OriginalRect;
-
-        uint32_t                m_VirtualWidth;
-        uint32_t                m_VirtualHeight;
-        uint32_t                m_VirtualTop;
-        uint32_t                m_VirtualLeft;
-        float                   m_CurrentVirtualResScale;
-        float                   m_NewVirtualResScale;
-        float                   m_NewVirtualAspect;
-        Graphics::Texture2D*    m_VirtualBackBuffer;
+        bool                         m_InFocus;
+                                     
+        float                        m_GammaCorrection;
+        float                        m_Brightness;
+                                     
+        bool                         m_IsFullscreen;
+        Math::Float4                 m_OriginalRect;
+                                     
+        uint32_t                     m_VirtualWidth;
+        uint32_t                     m_VirtualHeight;
+        uint32_t                     m_VirtualTop;
+        uint32_t                     m_VirtualLeft;
+        float                        m_CurrentVirtualResScale;
+        float                        m_NewVirtualResScale;
+        float                        m_NewVirtualAspect;
+        Shared<Graphics::Texture2D>  m_VirtualBackBuffer;
     };
 }

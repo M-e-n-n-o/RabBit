@@ -43,7 +43,7 @@ namespace RB::Graphics
                 float v;
             };
 
-            Texture2D* fontTex;
+            Shared<Texture2D> fontTex;
             Viewport scissor;
             List<CharacterVB> vertices;
         };
@@ -287,11 +287,9 @@ namespace RB::Graphics
             // Transient buffer
             auto vb = VertexBuffer::Create("Overlay Element", TopologyType::TriangleStrip, vertex_data, 6 * sizeof(float), sizeof(vertex_data), true);
 
-            in.ri->SetVertexBuffer(vb);
+            in.ri->SetVertexBuffer(vb.get());
 
             in.ri->Draw();
-
-            SAFE_DELETE(vb);
         };
 
         auto RenderText = [&](const Overlay2DEntry::Text& text)
@@ -315,13 +313,11 @@ namespace RB::Graphics
 
             // Transient buffer
             auto vb = VertexBuffer::Create("Text Element", TopologyType::TriangleList, vertex_data, vertex_size, data_size, true);
-            in.ri->SetVertexBuffer(vb);
+            in.ri->SetVertexBuffer(vb.get());
 
-            in.ri->SetShaderResourceInput(text.fontTex, 0);
+            in.ri->SetShaderResourceInput(text.fontTex.get(), 0);
 
             in.ri->Draw();
-
-            SAFE_DELETE(vb);
         };
 
         Overlay2DEntry* entry = (Overlay2DEntry*)in.entryContext;

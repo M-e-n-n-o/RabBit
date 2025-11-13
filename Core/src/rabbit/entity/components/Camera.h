@@ -22,7 +22,7 @@ namespace RB::Entity
         {
         }
 
-        Camera(float near_plane, float far_plane, float vfov, Graphics::Texture2D* render_texture)
+        Camera(float near_plane, float far_plane, float vfov, const Shared<Graphics::Texture2D>& render_texture)
             : m_Near(near_plane)
             , m_Far(far_plane)
             , m_VFovDegrees(vfov)
@@ -37,7 +37,7 @@ namespace RB::Entity
         uint32_t GetRenderGraphType() const { return m_RenderGraphType; }
 
         void* GetTargetWindowHandle()	const { return m_TargetWindowHandle; }
-        Graphics::Texture2D* GetRenderTexture() const { return m_RenderTexture; }
+        Shared<Graphics::Texture2D> GetRenderTexture() const { return m_RenderTexture; }
         
         uint32_t GetRenderTargetWidth() const;
         uint32_t GetRenderTargetHeight() const;
@@ -45,19 +45,19 @@ namespace RB::Entity
         void SetClearColor(const Math::Float4& color) { m_ClearColor = color; }
         Math::Float4 GetClearColor() const { return m_ClearColor; }
 
-        float GetNearPlane()			const { return m_Near; }
-        float GetFarPlane()				const { return m_Far; }
-        float GetVerticalFovInDegrees()	const { return m_VFovDegrees; }
-        float GetVerticalFovInRadians()	const { return Math::DegreesToRadians(m_VFovDegrees); }
+        float GetNearPlane()            const { return m_Near; }
+        float GetFarPlane()             const { return m_Far; }
+        float GetVerticalFovInDegrees() const { return m_VFovDegrees; }
+        float GetVerticalFovInRadians() const { return Math::DegreesToRadians(m_VFovDegrees); }
 
     private:
-        float					    m_Near;
-        float					    m_Far;
-        float					    m_VFovDegrees;
-
-        Math::Float4			    m_ClearColor;
-        void*                       m_TargetWindowHandle;
-        Graphics::Texture2D*        m_RenderTexture;
-        Graphics::RenderGraphType   m_RenderGraphType;
+        float                        m_Near;
+        float                        m_Far;
+        float                        m_VFovDegrees;
+                                     
+        Math::Float4                 m_ClearColor;
+        void*                        m_TargetWindowHandle;
+        Shared<Graphics::Texture2D>  m_RenderTexture;
+        Graphics::RenderGraphType    m_RenderGraphType;
     };
 }
