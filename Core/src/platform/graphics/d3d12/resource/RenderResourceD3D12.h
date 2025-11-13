@@ -71,7 +71,7 @@ namespace RB::Graphics::D3D12
         Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         ~Texture2DD3D12();
 
-        const char* GetName() const override { return m_Name; }
+        const char* GetName() const override { return m_Name.c_str(); }
 
         void* GetNativeResource() const override { return m_Resource; }
 
@@ -100,7 +100,7 @@ namespace RB::Graphics::D3D12
     private:
         void CreateViews(GpuResource* resource);
 
-        const char*                     m_Name;
+        std::string                     m_Name;
         GpuResource*                    m_Resource;
         uint32_t                        m_Width;
         uint32_t                        m_Height;

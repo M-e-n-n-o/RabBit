@@ -34,7 +34,7 @@ namespace RB::Graphics::D3D12
         uint32_t GetHeight() override { return m_Height; }
         uint32_t GetBackBufferCount() override { return m_BackBufferCount; }
         uint32_t GetCurrentBackBufferIndex() override { return m_CurrentBackBufferIndex; }
-        Shared<Graphics::Texture2D> GetCurrentBackBuffer() override;
+        Graphics::Texture2D* GetCurrentBackBuffer() override;
 
     private:
         void UpdateRenderTargetViews();

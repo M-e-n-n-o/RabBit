@@ -33,7 +33,7 @@ namespace RB::Graphics
         // Destroy window in implementation class!
     }
 
-    Shared<Graphics::Texture2D> Window::GetVirtualBackBuffer()
+    Graphics::Texture2D* Window::GetVirtualBackBuffer()
     {
         if (!IsValid())
         {
@@ -47,7 +47,7 @@ namespace RB::Graphics
             m_VirtualBackBuffer = Texture2D::Create("Virtual backbuffer", GetBackBufferFormat(), GetVirtualWidth(), GetVirtualHeight(), true, true);
         }
 
-        return m_VirtualBackBuffer;
+        return m_VirtualBackBuffer.get();
     }
 
     void Window::Resize(uint32_t width, uint32_t height, int32_t x, int32_t y)

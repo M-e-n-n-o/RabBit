@@ -133,7 +133,7 @@ namespace RB::Graphics::D3D12
         UpdateRenderTargetViews();
     }
 
-    Shared<Graphics::Texture2D> SwapChainD3D12::GetCurrentBackBuffer()
+    Graphics::Texture2D* SwapChainD3D12::GetCurrentBackBuffer()
     {
         if (m_WrappedBackBuffers[m_CurrentBackBufferIndex] == nullptr)
         {
@@ -144,7 +144,7 @@ namespace RB::Graphics::D3D12
             ((Texture2DD3D12*)m_WrappedBackBuffers[m_CurrentBackBufferIndex].get())->SetRenderTargetHandle(g_DescriptorManager->GetCpuHandle(m_BufferDescriptors[m_CurrentBackBufferIndex]));
         }
 
-        return m_WrappedBackBuffers[m_CurrentBackBufferIndex];
+        return m_WrappedBackBuffers[m_CurrentBackBufferIndex].get();
     }
 
     void SwapChainD3D12::UpdateRenderTargetViews()

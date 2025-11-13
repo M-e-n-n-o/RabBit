@@ -85,7 +85,7 @@ namespace RB::Graphics
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].parameterIDs[j] == VIEWCONTEXT_OUTPUT_ID)
-                    parameters[j] = view_context->finalColorTarget.get();
+                    parameters[j] = view_context->finalColorTarget;
                 else if (m_RenderFlow[i].parameterIDs[j] != -1)
                     parameters[j] = graph_context->GetResource(m_RenderFlow[i].parameterIDs[j]).get();
                 else
@@ -103,7 +103,7 @@ namespace RB::Graphics
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].outputIDs[j] == VIEWCONTEXT_OUTPUT_ID)
-                    outputs[j] = view_context->finalColorTarget.get();
+                    outputs[j] = view_context->finalColorTarget;
                 else if (m_RenderFlow[i].outputIDs[j] != -1)
                     outputs[j] = graph_context->GetResource(m_RenderFlow[i].outputIDs[j]).get();
                 else

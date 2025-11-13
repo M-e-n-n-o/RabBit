@@ -19,7 +19,7 @@ namespace RB::Graphics
 
         virtual uint32_t GetBackBufferCount() = 0;
         virtual uint32_t GetCurrentBackBufferIndex() = 0;
-        virtual Shared<Graphics::Texture2D> GetCurrentBackBuffer() = 0;
+        virtual Graphics::Texture2D* GetCurrentBackBuffer() = 0;
 
         virtual void* GetNativeSwapChain() const = 0;
     };

@@ -323,7 +323,7 @@ namespace RB::Graphics
             //Shared<Texture2D> render_texture = camera->GetRenderTexture();
             //if (render_texture == nullptr)
             //{
-            //    Shared<Texture2D> virtual_back_buffer = window->GetVirtualBackBuffer();
+            //    Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
             //
             //    if (virtual_back_buffer == nullptr)
             //    {
@@ -342,7 +342,7 @@ namespace RB::Graphics
             //else
             //{
             //    contexts[context_index].isOffscreenContext  = true;
-            //    contexts[context_index].finalColorTarget    = render_texture;
+            //    contexts[context_index].finalColorTarget    = render_texture.get();
             //    contexts[context_index].viewport.width      = render_texture->GetWidth();
             //    contexts[context_index].viewport.height     = render_texture->GetHeight();
             //}
@@ -618,7 +618,7 @@ namespace RB::Graphics
 
                 RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "ViewContext");
 
-                RenderResource* final_color_target = view_context.finalColorTarget.get();
+                RenderResource* final_color_target = view_context.finalColorTarget;
 
                 if (final_color_target == nullptr)
                 {
@@ -688,7 +688,7 @@ namespace RB::Graphics
                 }
             }
 
-            Shared<Texture2D> back_buffer = window->GetCurrentBackBuffer();
+            Texture2D* back_buffer = window->GetCurrentBackBuffer();
             RenderRect rect = window->GetVirtualWindowRect();
 
             // TODO: Enable for proper rendering
@@ -700,8 +700,8 @@ namespace RB::Graphics
 
             //context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
 
-            //context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget.get(), 0);
-            //context->graphicsInterface->PushRenderTarget(back_buffer.get(), 0);
+            //context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
+            //context->graphicsInterface->PushRenderTarget(back_buffer, 0);
 
             //if (window->IsSemiTransparent())
             //{
@@ -709,7 +709,7 @@ namespace RB::Graphics
             //    context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
 
             //    // Clear the backbuffer as we don't want to see the data of a previous frame
-            //    context->graphicsInterface->Clear(back_buffer.get(), Math::Float4(0));
+            //    context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
             //}
             //else
             //{
@@ -720,10 +720,10 @@ namespace RB::Graphics
             //context->graphicsInterface->Draw();
             
 
-            context->graphicsInterface->Clear(back_buffer.get(), context->viewContexts[0].clearColor);
+            context->graphicsInterface->Clear(back_buffer, context->viewContexts[0].clearColor);
 
             // Prepare for present
-            context->graphicsInterface->TransitionResource(back_buffer.get(), ResourceState::PRESENT);
+            context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);
             context->graphicsInterface->FlushResourceBarriers();
 
             window_pairs[total_pairs].window = window;

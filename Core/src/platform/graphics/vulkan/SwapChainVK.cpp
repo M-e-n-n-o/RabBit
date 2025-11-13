@@ -297,7 +297,7 @@ namespace RB::Graphics::VK
         RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "TODO: implement resize for VK swapchain");
     }
 
-    Shared<Graphics::Texture2D> SwapChainVK::GetCurrentBackBuffer()
+    Graphics::Texture2D* SwapChainVK::GetCurrentBackBuffer()
     {
         UpdateBackBufferIndex();
 
@@ -318,7 +318,7 @@ namespace RB::Graphics::VK
             ((Texture2DVK*)m_WrappedBackBuffers[m_CurrentBackBufferIndex].get())->SetView(m_ImageViews[m_CurrentBackBufferIndex]);
         }
 
-        return m_WrappedBackBuffers[m_CurrentBackBufferIndex];
+        return m_WrappedBackBuffers[m_CurrentBackBufferIndex].get();
     }
 
     void SwapChainVK::UpdateBackBufferIndex()
