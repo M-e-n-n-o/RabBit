@@ -32,6 +32,16 @@ namespace RB::Graphics
         }
     }
 
+    void RenderInterface::DrawInstanced(uint32_t instances)
+    {
+        DrawInstancedInternal(instances);
+
+        if (NeedsIntermediateExecute())
+        {
+            ExecuteOnGpu();
+        }
+    }
+
     void RenderInterface::Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
         DispatchInternal(thread_groups_x, thread_groups_y, thread_groups_z);

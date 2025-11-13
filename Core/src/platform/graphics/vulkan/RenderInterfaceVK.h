@@ -78,6 +78,7 @@ namespace RB::Graphics::VK
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
         void DrawInternal() override {}
+        void DrawInstancedInternal(uint32_t instances) override {}
         void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) override {}
 
         void ProfileMarkerBegin(uint64_t color, const char* name) override {}

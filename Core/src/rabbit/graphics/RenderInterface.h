@@ -109,6 +109,7 @@ namespace RB::Graphics
         virtual void CopyResource(RenderResource* src, RenderResource* dest) = 0;
 
         void Draw();
+        void DrawInstanced(uint32_t instances);
         void Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z);
 
         virtual void ProfileMarkerBegin(uint64_t color, const char* name) = 0;
@@ -123,6 +124,7 @@ namespace RB::Graphics
 
         virtual Shared<GpuGuard> ExecuteInternal() = 0;
         virtual void DrawInternal() = 0;
+        virtual void DrawInstancedInternal(uint32_t instances) = 0;
         virtual void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) = 0;
     };
 

@@ -83,6 +83,7 @@ namespace RB::Graphics::D3D12
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
         void DrawInternal() override;
+        void DrawInstancedInternal(uint32_t instances) override;
         void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) override;
 
         void ProfileMarkerBegin(uint64_t color, const char* name) override;
@@ -91,6 +92,8 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
 
     private:
+        void PrepareDraw();
+
         void HandlePendingClears();
         void InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type);
         void MarkResourceUsed(RenderResource* resource);

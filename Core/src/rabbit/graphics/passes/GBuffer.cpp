@@ -71,6 +71,11 @@ namespace RB::Graphics
 
         for (int i = 0; i < mesh_renderers.size(); ++i)
         {
+            // TODO: GameObjects that use the same static Mesh & Material should be instanced.
+            // It would be a good idea to add a SetInstancedData method to the ViewContext and macro's
+            // in the shaders so that it, for examply, automatically picks the correct instanced model matrix
+            // in the Transform helper functions.
+
             const MeshRenderer*     mesh_renderer   = (const MeshRenderer*)mesh_renderers[i];
             const Mesh*             mesh            = mesh_renderer->GetMesh();
             const Material*         mat             = mesh_renderer->GetMaterial();

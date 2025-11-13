@@ -755,7 +755,7 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::DrawInternal()
+    void RenderInterfaceD3D12::PrepareDraw()
     {
         HandlePendingClears();
         FlushResourceBarriers();
@@ -771,6 +771,11 @@ namespace RB::Graphics::D3D12
         }
 
         BindResources(false);
+    }
+
+    void RenderInterfaceD3D12::DrawInternal()
+    {
+        PrepareDraw();
 
         if (m_RenderState.indexCountPerInstance > 0)
         {
@@ -779,6 +784,20 @@ namespace RB::Graphics::D3D12
         else
         {
             m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, 0, 0);
+        }
+    }
+
+    void RenderInterfaceD3D12::DrawInstancedInternal(uint32_t instances)
+    {
+        PrepareDraw();
+
+        if (m_RenderState.indexCountPerInstance > 0)
+        {
+            m_CommandList->DrawIndexedInstanced(m_RenderState.indexCountPerInstance, 1, instances, 0, 0);
+        }
+        else
+        {
+            m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, instances, 0);
         }
     }
 
