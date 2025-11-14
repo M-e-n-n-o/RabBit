@@ -16,7 +16,7 @@ namespace RB::Graphics::D3D12
     {
     }
 
-    GpuResource::GpuResource(GPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES state, bool transfer_ownership)
+    GpuResource::GpuResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES state, bool transfer_ownership)
         : m_Resource(resource)
         , m_State(state)
         , m_OwnsResource(transfer_ownership)
@@ -27,24 +27,15 @@ namespace RB::Graphics::D3D12
 
     GpuResource::~GpuResource()
     {
-        if (IsValid() && m_OwnsResource)
+        if (m_OwnsResource)
         {
             g_ResourceManager->MarkForDelete(this);
         }
     }
 
-    GPtr<ID3D12Resource> GpuResource::GetResource()
+    ID3D12Resource* GpuResource::GetResource()
     {
-        if (!IsValid())
-        {
-            if (!g_ResourceManager->WaitUntilResourceValid(this))
-            {
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Resource failed to get valid");
-            }
-
-            RB_ASSERT(LOGTAG_GRAPHICS, m_Resource != nullptr, "Resource somehow still not valid");
-        }
-
+        AwaitValidation();
         return m_Resource;
     }
 
@@ -53,27 +44,40 @@ namespace RB::Graphics::D3D12
         return m_IsValid;
     }
 
-    void GpuResource::MarkAsUsed(DeviceQueue* queue)
-    {
-        g_ResourceManager->MarkUsed(this, queue);
-    }
-
     void GpuResource::UpdateState(D3D12_RESOURCE_STATES state)
     {
+        AwaitValidation();
         m_State = state;
     }
 
     D3D12_RESOURCE_STATES GpuResource::GetState() const
     {
+        AwaitValidation();
         return m_State;
     }
 
     bool GpuResource::IsInState(D3D12_RESOURCE_STATES state) const
     {
+        AwaitValidation();
         return m_State == state;
     }
 
-    void GpuResource::SetResource(GPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES state)
+    void GpuResource::AwaitValidation() const
+    {
+        if (IsValid())
+        {
+            return;
+        }
+
+        if (!g_ResourceManager->WaitUntilResourceValid(this))
+        {
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Resource failed to get valid");
+        }
+
+        RB_ASSERT(LOGTAG_GRAPHICS, m_Resource != nullptr, "Resource somehow still not valid");
+    }
+
+    void GpuResource::SetResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES state)
     {
         m_Resource = resource;
         m_State = state;

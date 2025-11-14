@@ -91,8 +91,6 @@ namespace RB::Graphics::D3D12
         // TODO Maybe do the ExecuteCommandLists on a separate thread in the future?
         uint64_t fence_value = m_Queue->ExecuteCommandList(m_CommandList);
 
-        g_ResourceManager->OnCommandListExecute(m_Queue, fence_value);
-
         SetNewCommandList();
         InvalidateState(true);
 
@@ -107,8 +105,6 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::TransitionResource(RenderResource* resource, ResourceState state)
     {
-        MarkResourceUsed(resource);
-
         g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), ConvertToD3D12ResourceState(state));
     }
 
@@ -557,8 +553,6 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetIndexBuffer(RenderResource* index_resource)
     {
-        MarkResourceUsed(index_resource);
-
         IndexBufferD3D12* ib = (IndexBufferD3D12*)index_resource;
 
         m_CommandList->IASetIndexBuffer(&ib->GetView());
@@ -587,8 +581,6 @@ namespace RB::Graphics::D3D12
             }
 
             VertexBufferD3D12* vbo = (VertexBufferD3D12*)vertex_resources[res_idx];
-
-            MarkResourceUsed(vbo);
 
             views[res_idx] = vbo->GetView();
 
@@ -729,21 +721,18 @@ namespace RB::Graphics::D3D12
             for (int sub_resource_index = 0; sub_resource_index < num_sub_resources; ++sub_resource_index)
             {
                 D3D12_TEXTURE_COPY_LOCATION src_loc = {};
-                src_loc.pResource               = upload_res->GetResource().Get();
+                src_loc.pResource               = upload_res->GetResource();
                 src_loc.Type                    = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
                 src_loc.PlacedFootprint         = layouts[sub_resource_index];
                 src_loc.PlacedFootprint.Offset  = 0;
 
                 D3D12_TEXTURE_COPY_LOCATION dest_loc = {};
-                dest_loc.pResource          = ((GpuResource*)resource->GetNativeResource())->GetResource().Get();
+                dest_loc.pResource          = ((GpuResource*)resource->GetNativeResource())->GetResource();
                 dest_loc.Type               = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dest_loc.SubresourceIndex   = sub_resource_index;
 
                 m_CommandList->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, nullptr);
             }
-
-            MarkResourceUsed(resource);
-            MarkResourceUsed(upload_res);
 
             delete upload_res;
         }
@@ -862,9 +851,6 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type)
     {
-        MarkResourceUsed(src);
-        MarkResourceUsed(dst);
-
         if (!m_CopyOperationsOnly)
         {
             g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -883,7 +869,7 @@ namespace RB::Graphics::D3D12
         {
         case RenderResourceType::Buffer: // Buffer -> Buffer copy
         {
-            m_CommandList->CopyResource(dst->GetResource().Get(), src->GetResource().Get());
+            m_CommandList->CopyResource(dst->GetResource(), src->GetResource());
         }
         break;
 
@@ -891,19 +877,6 @@ namespace RB::Graphics::D3D12
             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
         }
-    }
-
-    void RenderInterfaceD3D12::MarkResourceUsed(RenderResource* resource)
-    {
-        MarkResourceUsed((GpuResource*)resource->GetNativeResource());
-    }
-
-    void RenderInterfaceD3D12::MarkResourceUsed(GpuResource* resource)
-    {
-        // Wait until the resource is created
-        resource->GetResource();
-
-        resource->MarkAsUsed(m_Queue);
     }
 
     void RenderInterfaceD3D12::SetRenderTargets()

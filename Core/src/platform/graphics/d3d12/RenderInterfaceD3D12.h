@@ -96,8 +96,6 @@ namespace RB::Graphics::D3D12
 
         void HandlePendingClears();
         void InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type);
-        void MarkResourceUsed(RenderResource* resource);
-        void MarkResourceUsed(GpuResource* resource);
 
         void SetRenderTargets();
 

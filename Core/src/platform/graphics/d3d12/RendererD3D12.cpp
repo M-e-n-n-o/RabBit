@@ -52,7 +52,7 @@ namespace RB::Graphics::D3D12
     void RendererD3D12::SyncWithGpu()
     {
         g_GraphicsDevice->WaitUntilIdle();
-        g_ResourceManager->UpdateBookkeeping();
+        g_ResourceManager->FlushBookkeeping();
     }
 }
 #endif

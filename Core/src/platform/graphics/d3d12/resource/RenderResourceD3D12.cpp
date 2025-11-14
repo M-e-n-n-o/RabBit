@@ -244,7 +244,7 @@ namespace RB::Graphics::D3D12
             desc.Texture2D.PlaneSlice           = 0;
             desc.Texture2D.ResourceMinLODClamp  = 0.0f;
 
-            m_ReadHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+            m_ReadHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
         }
 
         // UAV
@@ -258,7 +258,7 @@ namespace RB::Graphics::D3D12
             desc.Texture2D.MipSlice     = 0;
             desc.Texture2D.PlaneSlice   = 0;
 
-            m_WriteHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+            m_WriteHandle = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
         }
 
         if (m_IsRenderTarget)
@@ -271,7 +271,7 @@ namespace RB::Graphics::D3D12
             desc.Texture2D.MipSlice     = 0;
             desc.Texture2D.PlaneSlice   = 0;
 
-            m_RenderTargetHandle     = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+            m_RenderTargetHandle     = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
             m_RenderTargetDescriptor = g_DescriptorManager->GetCpuHandle(m_RenderTargetHandle);
         }
 
@@ -285,7 +285,7 @@ namespace RB::Graphics::D3D12
             desc.Flags              = D3D12_DSV_FLAG_NONE;
             desc.Texture2D.MipSlice = 0;
 
-            m_DepthStencilHandle     = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource().Get(), desc);
+            m_DepthStencilHandle     = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
             m_DepthStencilDescriptor = g_DescriptorManager->GetCpuHandle(m_DepthStencilHandle);
         }
     }

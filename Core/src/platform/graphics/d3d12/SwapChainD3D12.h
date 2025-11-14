@@ -41,7 +41,7 @@ namespace RB::Graphics::D3D12
         void CreateCompositionObjects(HWND window_handle);
 
         GPtr<IDXGISwapChain4>       m_NativeSwapChain;
-        GPtr<ID3D12Resource>*       m_BackBuffers;
+        ID3D12Resource*             m_BackBuffers[BACK_BUFFER_COUNT];
         Shared<Graphics::Texture2D> m_WrappedBackBuffers[BACK_BUFFER_COUNT];
         DescriptorIndex             m_BufferDescriptors[BACK_BUFFER_COUNT];
 

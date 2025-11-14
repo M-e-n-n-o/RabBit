@@ -69,13 +69,13 @@ namespace RB::Graphics::D3D12
 
         m_CurrentBackBufferIndex = m_NativeSwapChain->GetCurrentBackBufferIndex();
 
-        m_BackBuffers = new GPtr<ID3D12Resource>[m_BackBufferCount];
-        UpdateRenderTargetViews();
-
         for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
         {
+            m_BackBuffers[i] = nullptr;
             m_WrappedBackBuffers[i] = nullptr;
         }
+
+        UpdateRenderTargetViews();
 
         if (m_UseComposition)
         {
@@ -88,9 +88,8 @@ namespace RB::Graphics::D3D12
         for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
         {
             m_WrappedBackBuffers[i].reset();
+            m_BackBuffers[i]->Release();
         }
-
-        delete[] m_BackBuffers;
     }
 
     void SwapChainD3D12::Present()
@@ -113,15 +112,11 @@ namespace RB::Graphics::D3D12
         for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
         {
             m_WrappedBackBuffers[i].reset();
+            m_BackBuffers[i]->Release();
         }
 
         m_Width = width;
         m_Height = height;
-
-        for (uint32_t back_buffer_index = 0; back_buffer_index < m_BackBufferCount; ++back_buffer_index)
-        {
-            m_BackBuffers[back_buffer_index].Reset();
-        }
 
         DXGI_SWAP_CHAIN_DESC swap_chain_desc = {};
         RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->GetDesc(&swap_chain_desc), "Could not retrieve swap chain description");
@@ -151,11 +146,11 @@ namespace RB::Graphics::D3D12
     {
         for (uint32_t back_buffer_index = 0; back_buffer_index < m_BackBufferCount; ++back_buffer_index)
         {
-            GPtr<ID3D12Resource> back_buffer;
+            ID3D12Resource* back_buffer;
             RB_ASSERT_FATAL_RELEASE_D3D(m_NativeSwapChain->GetBuffer(back_buffer_index, IID_PPV_ARGS(&back_buffer)), "Could not retrieve back buffer from swap chain");
 
             g_DescriptorManager->InvalidateDescriptor(m_BufferDescriptors[back_buffer_index]);
-            m_BufferDescriptors[back_buffer_index] = g_DescriptorManager->CreateDescriptor(back_buffer.Get());
+            m_BufferDescriptors[back_buffer_index] = g_DescriptorManager->CreateDescriptor(back_buffer);
 
             m_BackBuffers[back_buffer_index] = back_buffer;
 
