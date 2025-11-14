@@ -123,6 +123,45 @@ namespace RB::Math
         a22 *= z;
     }
 
+    // Specialized, faster invert for projection matrices
+    void Float4x4::InvertProjection()
+    {
+        Float4x4 inv = {};
+
+        // Top-left diagonal (always invert)
+        inv.a[0] = 1.0f / a[0];
+        inv.a[5] = 1.0f / a[5];
+
+        float m22 = a[10];
+        float m23 = a[11];
+        float m32 = a[14];
+        float m33 = a[15];
+
+        const float epsilon = 1e-6f;
+
+        if (fabs(m32) > epsilon)
+        {
+            // Perspective projection
+            float inv_m32 = 1.0f / m32;
+
+            inv.a[10] = -m33 * inv_m32;
+            inv.a[11] = 1.0f;         
+            inv.a[14] = m22 * inv_m32;
+            inv.a[15] = -m23 * inv_m32;
+        }
+        else
+        {
+            // Orthographic projection
+            inv.a[10] = 1.0f / m22;
+            inv.a[11] = 0.0f;      
+            inv.a[14] = -m23 / m22;
+            inv.a[15] = 1.0f;      
+        }
+
+        // Copy back
+        memcpy(a, inv.a, sizeof(float) * 16);
+    }
+
     bool Float4x4::Invert()
     {
         float det = GetDeterminant();

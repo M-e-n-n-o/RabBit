@@ -78,6 +78,7 @@ namespace RB::Math
         void Scale(float x, float y, float z);
 
         bool Invert();
+        void InvertProjection();
         float GetDeterminant() const;
         void GetCofactor(Float3x3& temp, int p, int q) const;
         Float4x4 GetAdjugate() const;

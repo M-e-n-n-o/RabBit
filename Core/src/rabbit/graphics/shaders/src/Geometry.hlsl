@@ -35,8 +35,7 @@ PI_SIMPLE VS_Gbuffer(VI_Simple input)
         
     PI_SIMPLE output;
     output.position = clip_pos;
-    output.normal   = mul((float3x3)localToWorldMat, input.normal);
-    output.normal   = normalize(output.normal);
+    output.normal   = normalize(mul((float3x3)localToWorldMat, input.normal));
     output.uv       = input.uv;
 
     return output;
@@ -51,7 +50,7 @@ PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input)
 
     gbuf.color  = float4(color.rgb, 1.0f);
     gbuf.normal = input.normal;
-    gbuf.depth = LinearizeDepth(input.position.z);
+    gbuf.depth  = LinearizeDepth(input.position.z);
 
     GBufferEncoded enc = EncodeGBuffer(gbuf);
 

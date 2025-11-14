@@ -9,11 +9,11 @@ namespace RB::Entity
         const Math::Float3& world_rot = GetWorldRotation();
 
         Math::Float4x4 m;
+        m.Scale(GetWorldScale());
         m.RotateAroundX(Math::DegreesToRadians(world_rot.x));
         m.RotateAroundY(Math::DegreesToRadians(world_rot.y));
         m.RotateAroundZ(Math::DegreesToRadians(world_rot.z));
         m.SetPosition(GetWorldPosition());
-        m.Scale(GetWorldScale());
 
         return m;
     }

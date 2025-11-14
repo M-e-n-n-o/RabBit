@@ -21,17 +21,18 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     }
 
     Light light;
-    light.worldPos = GetCameraPos();
+    light.worldPos = float3(0, 0, 50);//GetCameraPos();
     light.color    = float3(1, 0, 0);
 
     float3 diffuse;
     float3 specular;
-    GetBlinnPhongDiffSpec( GetCameraPos(),
-                           TransformScreenUVsToWorld(uv, gbuf.depth),
-                           gbuf.normal,
-                           light,
-                           diffuse,
-                           specular);
+    GetBlinnPhongDiffSpec(GetCameraPos(),
+                          TransformScreenUVsToWorld(uv, gbuf.depth, false),
+                          gbuf.normal,
+                          69.0f,
+                          light,
+                          diffuse,
+                          specular);
     float3 ambient = gbuf.color.rgb * 0.05f;
     float4 final_color = float4(ambient + diffuse + specular, 1.0f);
 

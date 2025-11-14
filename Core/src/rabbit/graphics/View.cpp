@@ -19,7 +19,7 @@ namespace RB::Graphics
         Float4x4 view_to_clip = viewFrustum.GetViewToClipMatrix();
 
         Float4x4 clip_to_view = viewFrustum.GetViewToClipMatrix();
-        clip_to_view.Invert();
+        clip_to_view.InvertProjection();
 
         FrameConstants constants;
         constants.worldToViewMat    = world_to_view;

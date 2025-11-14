@@ -48,21 +48,31 @@ float4 TransformViewToClip(float3 view_pos)
 }
 
 // --------------------------------------------------------------
-float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth)
+float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth, bool orthographic)
 {
     float2 ndc = screen_uvs * 2.0f - 1.0f;
 
-    float4 clip_pos = float4(ndc.x, ndc.y, 1.0f, 1.0f);
+    float3 view_pos;
+    if (orthographic)
+    {
+        float ortho_width = 2.0f / g_FC.viewToClipMat[0][0];
+        float ortho_height = 2.0f / g_FC.viewToClipMat[1][1];
 
-    // Transform to view space
-    float4 view_dir = mul(g_FC.clipToViewMat, clip_pos);
-    view_dir.xyz /= view_dir.w;
+        view_pos = float3(ndc.x * ortho_width * 0.5f,
+                          -ndc.y * ortho_height * 0.5f,
+                          linear_depth);
+    }
+    else
+    {
+        float fx = g_FC.viewToClipMat[0][0];
+        float fy = g_FC.viewToClipMat[1][1];
 
-    float3 view_pos = normalize(view_dir.xyz) * linear_depth;
+        view_pos = float3(ndc.x * linear_depth / fx,
+                          -ndc.y * linear_depth / fy,
+                          linear_depth);
+    }
 
-    // Transform to world space
-    float4 world_pos = mul(g_FC.viewToWorldMat, float4(view_pos, 1.0f));
-
+    float4 world_pos = mul(float4(view_pos, 1.0f), g_FC.viewToWorldMat);
     return world_pos.xyz;
 }
 
@@ -88,7 +98,7 @@ float2 ExtractNearFar()
 float LinearizeDepth(float depth, float near, float far)
 {
     if (near > far)
-        return near * far / (far + depth * (near - far));
+        return (near * far) / (near - depth * (near - far));
     else
         return (near * far) / (far - depth * (far - near));
 }
