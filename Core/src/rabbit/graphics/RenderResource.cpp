@@ -141,7 +141,7 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Shared<IndexBuffer> IndexBuffer::Create(const char* name, uint16_t* data, uint64_t elements)
+    Shared<IndexBuffer> IndexBuffer::Create(const char* name, uint32_t* data, uint64_t elements)
     {
         switch (Renderer::GetAPI())
         {

@@ -54,7 +54,9 @@ namespace RB
         struct Submodel
         {
             List<Vertex>    vertices;
-            List<uint16_t>  indices;
+            List<uint32_t>  indices;
+            Math::Float3    position;
+            Math::Float3    rotation;
         };
 
         List<Submodel>      models;

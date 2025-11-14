@@ -124,7 +124,6 @@ namespace RB::Graphics
 
                 if (auto rect = dynamic_cast<const Rect2D*>(render_comps[i]); rect != nullptr)
                 {
-
                     float x0 = pos_x;
                     float x1 = pos_x + bounds_x;
                     float y0 = pos_y;

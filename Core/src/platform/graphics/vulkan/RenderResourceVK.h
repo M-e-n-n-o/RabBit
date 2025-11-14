@@ -37,7 +37,7 @@ namespace RB::Graphics::VK
     class IndexBufferVK : public IndexBuffer
     {
     public:
-        IndexBufferVK(const char* name, uint16_t* data, uint64_t elements);
+        IndexBufferVK(const char* name, uint32_t* data, uint64_t elements);
         ~IndexBufferVK();
 
         const char* GetName() const override { return m_Name; }

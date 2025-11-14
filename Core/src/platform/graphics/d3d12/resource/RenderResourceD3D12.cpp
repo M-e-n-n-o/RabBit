@@ -71,7 +71,7 @@ namespace RB::Graphics::D3D12
     //								IndexBuffer
     // ---------------------------------------------------------------------------
 
-    IndexBufferD3D12::IndexBufferD3D12(const char* name, uint16_t* data, uint64_t elements)
+    IndexBufferD3D12::IndexBufferD3D12(const char* name, uint32_t* data, uint64_t elements)
         : m_Name(name)
         , m_Elements(elements)
         , m_Data(data)
@@ -99,7 +99,7 @@ namespace RB::Graphics::D3D12
         if (m_View.SizeInBytes == 0)
         {
             m_View.BufferLocation = m_Resource->GetResource()->GetGPUVirtualAddress();
-            m_View.SizeInBytes    = m_Elements * sizeof(uint16_t);
+            m_View.SizeInBytes    = m_Elements * sizeof(uint32_t);
             m_View.Format         = ConvertToDXGIFormat(GetFormat());
         }
 

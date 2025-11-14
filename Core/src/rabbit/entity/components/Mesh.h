@@ -16,7 +16,7 @@ namespace RB::Entity
         };
 
         Mesh(const char* name, LoadedMesh::Submodel& submodel);
-        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count);
+        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data, uint64_t index_data_count);
 
         const VertexPair& GetVertexPair() const
         {

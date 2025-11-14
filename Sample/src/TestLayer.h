@@ -71,9 +71,9 @@ public:
             GameObject* object = scene->CreateGameObject();
             object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
             Transform* t = object->AddComponent<Transform>();
-            t->position = Float3(0.0f, 0.0f, 600.0f);
-            t->rotation = Float3(0.0f, 180.0f, 0.0f);
-            t->scale = Float3(1.0f);
+            t->position = mesh.models[i].position;
+            t->rotation = mesh.models[i].rotation;
+            t->scale = Float3(0.1f);
             
             m_Transform = t;
         }
@@ -181,21 +181,21 @@ public:
 
         // Move forward/backward
         if (IsKeyDown(KeyCode::W))
-            m_Camera->position = m_Camera->position + (forward * (250 * delta));
+            m_Camera->position = m_Camera->position + (forward * (100 * delta));
         if (IsKeyDown(KeyCode::S))
-            m_Camera->position = m_Camera->position - (forward * (250 * delta));
+            m_Camera->position = m_Camera->position - (forward * (100 * delta));
         
         // Strafe left/right
         if (IsKeyDown(KeyCode::A))
-            m_Camera->position = m_Camera->position - (right * (250 * delta));
+            m_Camera->position = m_Camera->position - (right * (100 * delta));
         if (IsKeyDown(KeyCode::D))
-            m_Camera->position = m_Camera->position + (right * (250 * delta));
+            m_Camera->position = m_Camera->position + (right * (100 * delta));
 
         // Move up/down
         if (IsKeyDown(KeyCode::Space))
-            m_Camera->position = m_Camera->position + (up * (250 * delta));
+            m_Camera->position = m_Camera->position + (up * (100 * delta));
         if (IsKeyDown(KeyCode::LeftShift))
-            m_Camera->position = m_Camera->position - (up * (250 * delta));
+            m_Camera->position = m_Camera->position - (up * (100 * delta));
 
 
         //RB_LOG("Pos: %f, %f, %f", m_Camera->position.x, m_Camera->position.y, m_Camera->position.z);

@@ -56,37 +56,34 @@ namespace RB::Entity
             return MakePair(x, y);
         }
 
-        float parent_x, parent_y, parent_w, parent_h;
-        GetParentBounds(parent_x, parent_y, parent_w, parent_h);
-
         if (target == UIUnit::PX)
         {
             if (current == UIUnit::PCT)
-                return MakePair(x / 100.0f * parent_w, y / 100.0f * parent_h);
+                return MakePair(x / 100.0f * m_LastParentWidth, y / 100.0f * m_LastParentHeight);
             else if (current == UIUnit::IPCT)
             {
-                float smallest = Math::Min(parent_w, parent_h);
+                float smallest = Math::Min(m_LastParentWidth, m_LastParentHeight);
                 return MakePair(x / 100.0f * smallest, y / 100.0f * smallest);
             }
         }
         else if (target == UIUnit::PCT)
         {
             if (current == UIUnit::PX)
-                return MakePair(x / parent_w * 100.0f, y / parent_h * 100.0f);
+                return MakePair(x / m_LastParentWidth * 100.0f, y / m_LastParentHeight * 100.0f);
             else if (current == UIUnit::IPCT)
             {
-                float smallest = Math::Min(parent_w, parent_h);
-                return MakePair(x * smallest / parent_w, y * smallest / parent_h);
+                float smallest = Math::Min(m_LastParentWidth, m_LastParentHeight);
+                return MakePair(x * smallest / m_LastParentWidth, y * smallest / m_LastParentHeight);
             }
         }
         else if (target == UIUnit::IPCT)
         {
-            float smallest = Math::Min(parent_w, parent_h);
+            float smallest = Math::Min(m_LastParentWidth, m_LastParentHeight);
 
             if (current == UIUnit::PX)
                 return MakePair(x / smallest * 100.0f, y / smallest * 100.0f);
             else if (current == UIUnit::PCT)
-                return MakePair(x * parent_w / smallest, y * parent_h / smallest);
+                return MakePair(x * m_LastParentWidth / smallest, y * m_LastParentHeight / smallest);
         }
 
         RB_LOG_ERROR(LOGTAG_ENTITY, "Unit conversion not yet implemented");

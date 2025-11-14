@@ -36,7 +36,7 @@ namespace RB::Graphics::VK
     //								IndexBuffer
     // ---------------------------------------------------------------------------
 
-    IndexBufferVK::IndexBufferVK(const char* name, uint16_t* data, uint64_t elements)
+    IndexBufferVK::IndexBufferVK(const char* name, uint32_t* data, uint64_t elements)
         : m_Name(name)
         , m_Elements(elements)
     {

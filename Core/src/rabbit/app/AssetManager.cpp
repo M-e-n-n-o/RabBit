@@ -86,7 +86,7 @@ namespace RB
             if (out_image->data == NULL)
             {
                 const char* error_msg = stbi_failure_reason();
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
                 return false;
             }
 
@@ -110,7 +110,7 @@ namespace RB
             case 2:
             case 3:
             default:
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "This many channels for an 8 bit image is not supported");
+                RB_LOG_ERROR(LOGTAG_MAIN, "This many channels for an 8 bit image is not supported");
                 out_image->format = RenderResourceFormat::Unkown;
                 break;
             }
@@ -124,7 +124,7 @@ namespace RB
         //								    Meshes
         // ---------------------------------------------------------------------------
 
-        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part);
+        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node);
 
         bool LoadMesh(const char* path, LoadedMesh* out_mesh)
         {
@@ -147,7 +147,7 @@ namespace RB
 
             if (out_mesh->internalScene == nullptr)
             {
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load model \"%s\" with ufbx, error message: %s", final_path.c_str(), error.description.data);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load model \"%s\" with ufbx, error message: %s", final_path.c_str(), error.description.data);
                 return false;
             }
 
@@ -168,11 +168,9 @@ namespace RB
                 if (mesh == nullptr)
                     continue;
 
-                //node->local_transform
-
                 for (const ufbx_mesh_part& mesh_part : mesh->material_parts)
                 {
-                    LoadedMesh::Submodel submodel = ConvertMeshPart(mesh, &mesh_part);
+                    LoadedMesh::Submodel submodel = ConvertMeshPart(mesh, &mesh_part, node);
                     out_mesh->models.push_back(submodel);
                 }
             }
@@ -187,7 +185,7 @@ namespace RB
             return true;
         }
         
-        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part)
+        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node)
         {
             List<Math::Float3> vertices;
             List<Math::Float3> normals;
@@ -207,7 +205,8 @@ namespace RB
                 ufbx_face face = mesh->faces.data[mesh_part->face_indices.data[fi]];
                 size_t num_tris = ufbx_triangulate_face(tri_indices, num_tri_indices, mesh, face);
 
-                ufbx_vec2 default_uv = { 0 };
+                ufbx_vec3 default_normal = { 0, 0, 1 };
+                ufbx_vec2 default_uv = { 0, 0 };
 
                 // Iterate through every vertex of every triangle in the triangulated result
                 for (size_t vi = 0; vi < num_tris * 3; vi++) 
@@ -215,7 +214,7 @@ namespace RB
                     uint32_t ix = tri_indices[vi];
 
                     ufbx_vec3 pos    = ufbx_get_vertex_vec3(&mesh->vertex_position, ix);
-                    ufbx_vec3 normal = ufbx_get_vertex_vec3(&mesh->vertex_normal, ix);
+                    ufbx_vec3 normal = mesh->vertex_normal.exists ? ufbx_get_vertex_vec3(&mesh->vertex_normal, ix) : default_normal;
                     ufbx_vec2 uv     = mesh->vertex_uv.exists ? ufbx_get_vertex_vec2(&mesh->vertex_uv, ix) : default_uv;
 
                     vertices.push_back(Math::Float3(pos.x, pos.y, pos.z));
@@ -227,34 +226,10 @@ namespace RB
             SAFE_FREE(tri_indices);
             RB_ASSERT(LOGTAG_MAIN, vertices.size() == num_vertices, "The amount of loaded vertices does not match what was expected");
 
-            List<ufbx_vertex_stream> streams;
-
-            {
-                ufbx_vertex_stream vertex_stream;
-                vertex_stream.data         = vertices.data();
-                vertex_stream.vertex_count = vertices.size();
-                vertex_stream.vertex_size  = sizeof(Math::Float3);
-
-                streams.push_back(vertex_stream);
-            }
-
-            {
-                ufbx_vertex_stream normal_stream;
-                normal_stream.data         = normals.data();
-                normal_stream.vertex_count = normals.size();
-                normal_stream.vertex_size  = sizeof(Math::Float3);
-
-                streams.push_back(normal_stream);
-            }
-
-            {
-                ufbx_vertex_stream uv_stream;
-                uv_stream.data         = uvs.data();
-                uv_stream.vertex_count = uvs.size();
-                uv_stream.vertex_size  = sizeof(Math::Float2);
-
-                streams.push_back(uv_stream);
-            }
+            List<ufbx_vertex_stream> streams(3);
+            streams[0].data = vertices.data();  streams[0].vertex_count = vertices.size();  streams[0].vertex_size = sizeof(Math::Float3);
+            streams[1].data = normals.data();   streams[1].vertex_count = normals.size();   streams[1].vertex_size = sizeof(Math::Float3);
+            streams[2].data = uvs.data();       streams[2].vertex_count = uvs.size();       streams[2].vertex_size = sizeof(Math::Float2);
 
             LoadedMesh::Submodel out_submodel = {};
 
@@ -285,7 +260,7 @@ namespace RB
             }
             else
             {
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to generate index buffer with ufbx, error message: %s", error.description.data);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to generate index buffer with ufbx, error message: %s", error.description.data);
 
                 // Return just without the indices
                 out_submodel.vertices.resize(num_vertices);
@@ -296,6 +271,17 @@ namespace RB
                     out_submodel.vertices[i].uv = uvs[i];
                 }
             }
+
+            // Store per-submodel position/rotation (local to node, not baked into vertices)
+            out_submodel.position.x = (float)node->geometry_to_world.m03;
+            out_submodel.position.y = (float)node->geometry_to_world.m13;
+            out_submodel.position.z = (float)node->geometry_to_world.m23;
+
+            // Simple Euler extraction (XYZ)
+            const ufbx_matrix& m = node->geometry_to_world;
+            out_submodel.rotation.y = atan2f((float)m.m02, (float)m.m22);
+            out_submodel.rotation.x = atan2f(-(float)m.m12, sqrtf((float)m.m02 * m.m02 + (float)m.m22 * m.m22));
+            out_submodel.rotation.z = atan2f((float)m.m01, (float)m.m00);
 
             return out_submodel;
         }

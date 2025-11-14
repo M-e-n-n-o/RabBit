@@ -135,11 +135,11 @@ namespace RB::Graphics
     public:
         virtual ~IndexBuffer() = default;
 
-        RenderResourceFormat GetFormat() const override { return RenderResourceFormat::R16_UINT; }
+        RenderResourceFormat GetFormat() const override { return RenderResourceFormat::R32_UINT; }
 
         virtual uint64_t GetIndexCount() const = 0;
 
-        static Shared<IndexBuffer> Create(const char* name, uint16_t* data, uint64_t elements);
+        static Shared<IndexBuffer> Create(const char* name, uint32_t* data, uint64_t elements);
 
     protected:
         IndexBuffer() : Buffer(RenderResourceType::IndexBuffer) {}
