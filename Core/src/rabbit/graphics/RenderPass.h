@@ -117,6 +117,15 @@ namespace RB::Graphics
         RenderResource** outputTextures;
     };
 
+    // TODO: Instead of each RenderPass having its own SubmitEntry and collecting partly overlapping scene data,
+    // its probably better to have separate RenderDataScrapers that RenderPasses can share or have their own.
+    // This way we reduce the amount of overlapping data between, for example, a GBuffer and DirectionalShadow pass.
+    //class RenderDataScraper
+    //{
+    //public:
+    //
+    //};
+
     class RenderPass
     {
     public:

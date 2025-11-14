@@ -2,6 +2,9 @@
 #include "Log.h"
 
 #ifdef RB_ENABLE_LOGS
+
+#include <iomanip>
+
 namespace RB::Utils::Debug
 {
     void Logger::OpenConsole()
@@ -42,6 +45,20 @@ namespace RB::Utils::Debug
         printf("\033[1;31m");
     }
 
+    void Logger::LogTime()
+    {
+        auto now = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+        std::tm tm = *std::localtime(&t);
+
+        std::ostringstream oss;
+        oss << std::put_time(&tm, "%H:%M:%S") << '.' << std::setw(3) << std::setfill('0') << ms.count();
+
+        printf("[%s] ", oss.str().c_str());
+    }
+
     void Logger::LogCore(const char* tag, const char* format, ...)
     {
         if (strlen(format) == 0)
@@ -49,8 +66,6 @@ namespace RB::Utils::Debug
             printf("\n");
             return;
         }
-
-        // TODO Also print out the timestamp
 
         va_list args;
         va_start(args, format);
