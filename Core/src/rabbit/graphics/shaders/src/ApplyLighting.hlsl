@@ -21,8 +21,8 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     }
 
     Light light;
-    light.worldPos = float3(0, 0, 50);//GetCameraPos();
-    light.color    = float3(1, 0, 0);
+    light.direction = -GetCameraDir();//GetCameraPos();
+    light.color     = float3(0.99f, 0.97f, 0.76f);
 
     float3 diffuse;
     float3 specular;

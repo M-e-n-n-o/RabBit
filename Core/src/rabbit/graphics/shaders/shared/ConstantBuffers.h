@@ -15,7 +15,7 @@ ALIGN_CHECK(PresentCB);
 
 struct Light
 {
-    float3 worldPos;
+    float3 direction;
     float3 color;
 };
 

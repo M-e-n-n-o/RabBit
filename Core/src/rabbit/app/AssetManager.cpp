@@ -192,13 +192,16 @@ namespace RB
             List<Math::Float2> uvs;
 
             const size_t num_vertices = mesh_part->num_triangles * 3;
-            vertices.reserve(num_vertices);
-            normals.reserve(num_vertices);
-            uvs.reserve(num_vertices);
+            vertices.resize(num_vertices);
+            normals.resize(num_vertices);
+            uvs.resize(num_vertices);
 
             const size_t num_tri_indices = mesh->max_face_triangles * 3;
-            uint32_t* tri_indices = ALLOC_HEAPC(uint32_t, num_tri_indices);
+            if (num_tri_indices > 1000.0f)
+                RB_LOG_WARN(LOGTAG_MAIN, "Triange indices might overflow, maybe need to use ALLOC_HEAP");
+            uint32_t* tri_indices = ALLOC_STACKC(uint32_t, num_tri_indices);
 
+            uint32_t vi_global = 0;
             // First fetch all vertices into a flat non-indexed buffer, we also need to triangulate the faces
             for (size_t fi = 0; fi < mesh_part->num_faces; fi++)
             {
@@ -217,13 +220,13 @@ namespace RB
                     ufbx_vec3 normal = mesh->vertex_normal.exists ? ufbx_get_vertex_vec3(&mesh->vertex_normal, ix) : default_normal;
                     ufbx_vec2 uv     = mesh->vertex_uv.exists ? ufbx_get_vertex_vec2(&mesh->vertex_uv, ix) : default_uv;
 
-                    vertices.push_back(Math::Float3(pos.x, pos.y, pos.z));
-                    normals.push_back(Math::Float3(normal.x, normal.y, normal.z));
-                    uvs.push_back(Math::Float2(uv.x, uv.y));
+                    vertices[vi_global] = Math::Float3(pos.x, pos.y, pos.z);
+                    normals[vi_global]  = Math::Float3(normal.x, normal.y, normal.z);
+                    uvs[vi_global]      = Math::Float2(uv.x, uv.y);
+                    vi_global++;
                 }
             }
 
-            SAFE_FREE(tri_indices);
             RB_ASSERT(LOGTAG_MAIN, vertices.size() == num_vertices, "The amount of loaded vertices does not match what was expected");
 
             List<ufbx_vertex_stream> streams(3);
@@ -267,8 +270,8 @@ namespace RB
                 for (int i = 0; i < num_vertices; i++)
                 {
                     out_submodel.vertices[i].position = vertices[i];
-                    out_submodel.vertices[i].normal = normals[i];
-                    out_submodel.vertices[i].uv = uvs[i];
+                    out_submodel.vertices[i].normal   = normals[i];
+                    out_submodel.vertices[i].uv       = uvs[i];
                 }
             }
 
