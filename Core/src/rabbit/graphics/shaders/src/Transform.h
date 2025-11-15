@@ -72,7 +72,7 @@ float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth, bool ort
                           linear_depth);
     }
 
-    float4 world_pos = mul(float4(view_pos, 1.0f), g_FC.viewToWorldMat);
+    float4 world_pos = mul(g_FC.viewToWorldMat, float4(view_pos, 1.0f));
     return world_pos.xyz;
 }
 
@@ -83,22 +83,28 @@ float2 TransformPixelCoordsToScreenUVs(uint2 coords)
 }
 
 // --------------------------------------------------------------
-float2 ExtractNearFar()
+bool IsReversedZ()
 {
-    float C = g_FC.viewToClipMat._33;
-    float D = g_FC.viewToClipMat._43;
+    return g_FC.viewToClipMat[2][2] < 0.0f;
+}
+
+// --------------------------------------------------------------
+float2 ExtractNearFar(bool reversed_z)
+{
+    float C = g_FC.viewToClipMat[2][2];
+    float D = g_FC.viewToClipMat[2][3];
 
     float near = -D / C;
     float far = (C * near) / (C - 1.0f);
 
-    return float2(near, far);
+    return reversed_z ? float2(far, near) : float2(near, far);
 }
 
 // --------------------------------------------------------------
-float LinearizeDepth(float depth, float near, float far)
+float LinearizeDepth(float depth, float near, float far, bool reversed_z)
 {
-    if (near > far)
-        return (near * far) / (near - depth * (near - far));
+    if (reversed_z)
+        return (near * far) / (depth * (far - near) + near);
     else
         return (near * far) / (far - depth * (far - near));
 }
@@ -106,8 +112,9 @@ float LinearizeDepth(float depth, float near, float far)
 // --------------------------------------------------------------
 float LinearizeDepth(float depth)
 {
-    float2 nf = ExtractNearFar();
-    return LinearizeDepth(depth, nf.x, nf.y);
+    bool reversed_z = IsReversedZ();
+    float2 nf = ExtractNearFar(reversed_z);
+    return LinearizeDepth(depth, nf.x, nf.y, reversed_z);
 }
 
 #endif

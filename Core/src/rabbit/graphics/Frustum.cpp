@@ -98,13 +98,13 @@ namespace RB::Graphics
         if (reverse_depth)
         {
             m_ViewToClipMat.a22 = 1 / (near - far);
-            m_ViewToClipMat.a32 = far / (far - near);
+            m_ViewToClipMat.a32 = near / (far - near);
         }
 
         m_HFov = 0.0f;
         m_VFov = 0.0f;
 
-        m_AspectRatio = (right - left) / (bottom - top);
+        m_AspectRatio = (right - left) / (top - bottom);
         m_ViewLength = far - near;
 
         m_ReversedDepth = reverse_depth;
