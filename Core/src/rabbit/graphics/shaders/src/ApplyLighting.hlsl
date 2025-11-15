@@ -3,6 +3,11 @@
 #include "Lighting.h"
 #include "GBuffer.h"
 
+cbuffer LightCB : CBUFFER_REG(kInstanceCB)
+{
+    LightCB g_Light;
+}
+
 [numthreads(8, 8, 1)]
 void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
 {
@@ -20,17 +25,13 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
         return;
     }
 
-    Light light;
-    light.direction = -GetCameraDir();//GetCameraPos();
-    light.color     = float3(0.99f, 0.97f, 0.76f);
-
     float3 diffuse;
     float3 specular;
     GetBlinnPhongDiffSpec(GetCameraPos(),
                           TransformScreenUVsToWorld(uv, gbuf.depth, false),
                           gbuf.normal,
                           69.0f,
-                          light,
+                          g_Light,
                           diffuse,
                           specular);
     float3 ambient = gbuf.color.rgb * 0.05f;

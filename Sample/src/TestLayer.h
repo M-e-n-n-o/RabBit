@@ -56,10 +56,10 @@ public:
         //};
 
         LoadedMesh mesh;
+        //bool success = AssetManager::LoadMesh("Sponza/source/Sponza.fbx", &mesh);
         bool success = AssetManager::LoadMesh("Bunny.fbx", &mesh);
 
         //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        //m_Mesh = new Mesh("Bunny.fbx");
         m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
@@ -71,7 +71,7 @@ public:
             GameObject* object = scene->CreateGameObject();
             object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
             Transform* t = object->AddComponent<Transform>();
-            t->position = mesh.models[i].position;
+            t->position = mesh.models[i].position + Math::Float3(0, 0, 50);
             t->rotation = mesh.models[i].rotation;
             t->scale = Float3(0.1f);
             
@@ -88,14 +88,17 @@ public:
         Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 70.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
+        auto* sun = scene->CreateGameObject();
+        sun->AddComponent<DirectionalLight>(Math::Float3(-0.2f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
+
         // UI
         {
             auto canvas = scene->CreateGameObject();
             canvas->AddComponent<UICanvas>(cam_comp);
-
-
-
-
+        
+        
+        
+        
             auto list = scene->CreateGameObject();
             auto* list_box = list->AddComponent<UIBox>();
             list_box->SetSize(UIUnit::IPCT, 10, 50);
@@ -104,9 +107,9 @@ public:
             //list_t->position.x = 0.0f;
             //list_t->position.y = 0.0f;
             list->SetParent(canvas);
-
-
-
+        
+        
+        
             auto rect_obj = scene->CreateGameObject();
             auto* rect_box = rect_obj->AddComponent<UIBox>();
             //rect_box->SetStartPos(UIUnit::PX, 5, 5);
@@ -118,7 +121,7 @@ public:
             rect_box->SetSize(UIUnit::IPCT, 25, 25);
             rect_obj->AddComponent<Rect2D>(Math::Float4(0.0f, 1.0f, 0.0f, 0.4f), 0);
             rect_obj->SetParent(list);
-
+        
             LoadedFont font;
             AssetManager::LoadFont("TypoGraphica.otf", &font, 48);
             
@@ -199,6 +202,7 @@ public:
 
 
         //RB_LOG("Pos: %f, %f, %f", m_Camera->position.x, m_Camera->position.y, m_Camera->position.z);
+        //RB_LOG("Rot: %f, %f, %f", m_Camera->rotation.x, m_Camera->rotation.y, m_Camera->rotation.z);
     }
 
     bool OnEvent(const Event& event) override

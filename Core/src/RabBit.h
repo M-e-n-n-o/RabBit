@@ -66,6 +66,7 @@
 #include "rabbit/entity/components/Camera.h"
 #include "rabbit/entity/components/Mesh.h"
 #include "rabbit/entity/components/UI.h"
+#include "rabbit/entity/components/Light.h"
 
 #include "rabbit/events/input/Input.h"
 #include "rabbit/events/input/KeyCodes.h"

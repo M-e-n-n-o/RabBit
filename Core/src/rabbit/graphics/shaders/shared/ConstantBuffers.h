@@ -13,10 +13,13 @@ struct PresentCB
 };
 ALIGN_CHECK(PresentCB);
 
-struct Light
+struct LightCB
 {
     float3 direction;
+    float  pad0;
     float3 color;
+    float  pad1;
 };
+ALIGN_CHECK(LightCB);
 
 #endif

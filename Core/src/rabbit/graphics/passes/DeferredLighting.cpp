@@ -6,16 +6,17 @@
 #include "graphics/View.h"
 
 #include "entity/Scene.h"
-#include "entity/components/Mesh.h"
-#include "entity/components/Transform.h"
-
+#include "entity/components/Light.h"
 #include "graphics/shaders/shared/Common.h"
+#include "graphics/shaders/shared/ConstantBuffers.h"
 #include "graphics/codeGen/ShaderDefines.h"
 
 namespace RB::Graphics
 {
     struct DeferredLightingEntry : public RenderPassEntry
     {
+        Math::Float3 direction;
+        Math::Float3 color;
     };
 
     RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings& setting)
@@ -47,8 +48,23 @@ namespace RB::Graphics
     {
         // TODO: Collect lighting information
 
-        // Just create an empty entry
+        const auto& list = scene->GetComponentsWithTypeOf<Entity::DirectionalLight>();
+
         DeferredLightingEntry* entry = new DeferredLightingEntry();
+
+        if (list.empty())
+        {
+            entry->direction = Math::Float3(0, -1, 0);
+            entry->color     = Math::Float3(0, 0, 0);
+        }
+        else
+        {
+            const auto* light = (Entity::DirectionalLight*)list[0];
+
+            entry->direction = light->GetDirection();
+            entry->color     = light->GetColor();
+        }
+
         return entry;
     }
 
@@ -62,6 +78,14 @@ namespace RB::Graphics
         inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[1], 1);
 
         inputs.ri->SetRandomReadWriteInput(inputs.outputTextures[0], 0);
+
+        DeferredLightingEntry* entry = (DeferredLightingEntry*)inputs.entryContext;
+
+        LightCB cb = {};
+        cb.direction = entry->direction;
+        cb.color     = entry->color;
+
+        inputs.ri->SetConstantShaderData(kInstanceCB, &cb, sizeof(LightCB));
 
         // TODO: Make this a dispatch indirect per BRDF type if the code paths start to diverge
         inputs.ri->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);

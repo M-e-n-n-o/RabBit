@@ -10,12 +10,12 @@ void GetBlinnPhongDiffSpec(in float3  view_world_pos,
                            in float3  world_pos,
                            in float3  world_nrm,
                            in float   shininess,
-                           in Light   light,
+                           in LightCB light,
                            out float3 diffuse,
                            out float3 specular)
 {
     //float3 light_dir = normalize(light.worldPos - world_pos);
-    float3 light_dir = light.direction; // Directional light
+    float3 light_dir = normalize(-light.direction); // Directional light
 
     // diffuse
     float  diff      = max(dot(world_nrm, light_dir), 0.0f);
