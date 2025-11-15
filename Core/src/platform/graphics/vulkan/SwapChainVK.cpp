@@ -206,11 +206,9 @@ namespace RB::Graphics::VK
         m_CurrentBackBufferIndex = 0;
         m_UpdatedBackBufferIndex = true;
 
-        m_WrappedBackBuffers = ALLOC_HEAPC(Shared<Texture2D>, m_BackBufferCount);
-        for (int i = 0; i < m_BackBufferCount; ++i)
-        {
-            m_WrappedBackBuffers[i] = nullptr;
-        }
+        uint32_t back_buffers_size = sizeof(Shared<Texture2D>) * m_BackBufferCount;
+        m_WrappedBackBuffers = (Shared<Texture2D>*)ALLOC_HEAP(back_buffers_size);
+        memset(m_WrappedBackBuffers, 0, back_buffers_size);
 
         m_SwapChainImages = new VkImage[m_BackBufferCount];
         m_ImageViews = new VkImageView[m_BackBufferCount];

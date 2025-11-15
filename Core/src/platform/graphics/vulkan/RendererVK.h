@@ -3,11 +3,14 @@
 #pragma once
 #include "RabBitCommon.h"
 #include "graphics/Renderer.h"
+#include "graphics/Window.h"
 
 #include <vulkan/vulkan.h>
 
 namespace RB::Graphics::VK
 {
+    #define TRANSIENT_CYCLES (BACK_BUFFER_COUNT + 1)
+
     class RendererVK : public Renderer
     {
     public:

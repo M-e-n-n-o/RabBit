@@ -4,6 +4,9 @@
 #include "RenderResourceVK.h"
 #include "GpuResource.h"
 #include "UtilsVK.h"
+#include "app/Application.h"
+#include "graphics/Renderer.h"
+#include "graphics/ResourceStreamer.h"
 
 namespace RB::Graphics::VK
 {
@@ -25,6 +28,12 @@ namespace RB::Graphics::VK
         info.sharingMode    = VK_SHARING_MODE_EXCLUSIVE;
 
         m_Resource = new GpuResource(name, info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResourceState::COMMON);
+
+        Streamable streamable = {};
+        streamable.resource   = this;
+        streamable.uploadData = data;
+        streamable.uploadSize = data_size;
+        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
     }
     
     VertexBufferVK::~VertexBufferVK()

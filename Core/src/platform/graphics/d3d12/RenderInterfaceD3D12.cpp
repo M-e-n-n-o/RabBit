@@ -620,18 +620,18 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dest)
+    void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dst)
     {
-        if (src->GetType() != dest->GetType())
+        if (src->GetType() != dst->GetType())
         {
             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Can not copy resource as the typed do not match");
             return;
         }
 
         GpuResource* src_res = (GpuResource*)src->GetNativeResource();
-        GpuResource* dest_res = (GpuResource*)dest->GetNativeResource();
+        GpuResource* dst_res = (GpuResource*)dst->GetNativeResource();
 
-        InternalCopy(src_res, dest_res, src->GetPrimitiveType());
+        InternalCopy(src_res, dst_res, src->GetPrimitiveType());
     }
 
     void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)

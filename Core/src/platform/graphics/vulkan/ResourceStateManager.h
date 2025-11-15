@@ -21,11 +21,6 @@ namespace RB::Graphics::VK
         void FlushPendingTransitions(VkCommandBuffer cmd);
 
     private:
-        static void GetAccessMasksForState(ResourceState state,
-                                           VkAccessFlags& access_mask,
-                                           VkPipelineStageFlags& stage_mask,
-                                           VkImageLayout& layout);
-
         struct PendingImageBarrier
         {
             VkPipelineStageFlags srcStageMask;

@@ -10,6 +10,7 @@
 namespace RB::Graphics::VK
 {
     class DeviceQueue;
+    class GpuResource;
 
     class GpuGuardVK : public GpuGuard
     {
@@ -73,7 +74,7 @@ namespace RB::Graphics::VK
         void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot) override {}
         void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot) override {}
 
-        void CopyResource(RenderResource* src, RenderResource* dest) override {}
+        void CopyResource(RenderResource* src, RenderResource* dst) override;
 
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
@@ -86,6 +87,7 @@ namespace RB::Graphics::VK
 
     private:
         void SetNewCommandBuffer();
+        void InternalCopy(GpuResource* src, GpuResource* dst, uint64_t size);
 
         bool            m_CopyOperationsOnly;
         DeviceQueue*    m_Queue;

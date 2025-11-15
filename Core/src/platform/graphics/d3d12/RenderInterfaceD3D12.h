@@ -78,7 +78,7 @@ namespace RB::Graphics::D3D12
         void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot) override;
         void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot) override;
 
-        void CopyResource(RenderResource* src, RenderResource* dest) override;
+        void CopyResource(RenderResource* src, RenderResource* dst) override;
 
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 

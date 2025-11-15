@@ -15,6 +15,8 @@ namespace RB::Graphics::VK
         Buffer
     };
 
+    // TODO: Its probably better to split the GpuResource up in 2 separate classes: ImageResource & BufferResource
+
     class GpuResource
     {
     public:
@@ -36,6 +38,8 @@ namespace RB::Graphics::VK
 
         VkBuffer GetNativeBuffer() const;
         VkImage GetNativeImage() const;
+
+        VkDeviceMemory GetMemory() const { return m_Memory; }
 
     private:
         union

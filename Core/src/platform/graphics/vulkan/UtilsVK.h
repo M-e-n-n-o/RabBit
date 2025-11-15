@@ -108,5 +108,73 @@ namespace RB::Graphics::VK
         }
 #endif
     }
+
+    static inline void GetAccessMasksForState(ResourceState state,
+                                              VkAccessFlags& access_mask,
+                                              VkPipelineStageFlags& stage_mask,
+                                              VkImageLayout& layout)
+    {
+        switch (state)
+        {
+        case ResourceState::COMMON:
+            access_mask = 0;
+            stage_mask  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            layout      = VK_IMAGE_LAYOUT_UNDEFINED;
+            break;
+
+        case ResourceState::RENDER_TARGET:
+            access_mask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            layout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            break;
+
+        case ResourceState::DEPTH_WRITE:
+            access_mask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                          VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            layout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            break;
+
+        case ResourceState::PIXEL_SHADER_RESOURCE:
+            access_mask = VK_ACCESS_SHADER_READ_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            layout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            break;
+
+        case ResourceState::ALL_SHADER_RESOURCE:
+            access_mask = VK_ACCESS_SHADER_READ_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            layout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            break;
+
+        case ResourceState::UNORDERED_ACCESS:
+            access_mask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            layout      = VK_IMAGE_LAYOUT_GENERAL;
+            break;
+
+        case ResourceState::COPY_DEST:
+            access_mask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            layout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            break;
+
+        case ResourceState::COPY_SOURCE:
+            access_mask = VK_ACCESS_TRANSFER_READ_BIT;
+            stage_mask  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            layout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            break;
+
+        case ResourceState::PRESENT:
+            access_mask = 0;
+            stage_mask  = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            layout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            break;
+
+        default:
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Resource state not yet implemented");
+        }
+    }
 }
 #endif

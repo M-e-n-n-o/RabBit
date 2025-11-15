@@ -3,6 +3,7 @@
 #include "RabBitCommon.h"
 #include "GpuResource.h"
 #include "GraphicsDevice.h"
+#include "ResourceLifetimeManager.h"
 #include "UtilsVK.h"
 
 namespace RB::Graphics::VK
@@ -87,14 +88,12 @@ namespace RB::Graphics::VK
 
         if (m_ResourceType == (uint8_t)GpuResourceType::Image)
         {
-            vkDestroyImage(g_GraphicsDevice->Get(), m_Image, nullptr);
+            g_ResourceLifetimeManager->DeferReleaseImage(m_Image, m_Memory);
         }
         else
         {
-            vkDestroyBuffer(g_GraphicsDevice->Get(), m_Buffer, nullptr);
+            g_ResourceLifetimeManager->DeferReleaseBuffer(m_Buffer, m_Memory);
         }
-
-        vkFreeMemory(g_GraphicsDevice->Get(), m_Memory, nullptr);
     }
 
     void GpuResource::UpdateState(ResourceState new_state)

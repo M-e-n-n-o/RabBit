@@ -121,14 +121,87 @@ namespace RB::Graphics::VK
         }
     }
     
+    void RenderInterfaceVK::CopyResource(RenderResource* src, RenderResource* dst)
+    {
+        //TransitionResource();
+    }
+
     void RenderInterfaceVK::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
     {
+        switch (resource->GetPrimitiveType())
+        {
+        case RenderResourceType::Buffer:
+        {
+            VkBufferCreateInfo info = {};
+            info.sType          = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            info.flags          = 0;
+            info.size           = data_size;
+            info.usage          = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            info.sharingMode    = VK_SHARING_MODE_EXCLUSIVE;
 
+            GpuResource* upload_res = new GpuResource("Upload resource", info, 
+                VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), ResourceState::COPY_SOURCE);
+
+            char* mapped;
+            vkMapMemory(g_GraphicsDevice->Get(), upload_res->GetMemory(), 0, data_size, 0, reinterpret_cast<void**>(&mapped));
+            memcpy(mapped, data, data_size);
+            vkUnmapMemory(g_GraphicsDevice->Get(), upload_res->GetMemory());
+
+            TransitionResource(resource, ResourceState::COPY_DEST);
+            FlushResourceBarriers();
+
+            InternalCopy(upload_res, (GpuResource*)resource->GetNativeResource(), data_size);
+
+            delete upload_res;
+        }
+        break;
+
+        case RenderResourceType::Texture:
+        {
+
+        }
+        break;
+
+        default:
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Upload not possible for this type");
+            break;
+        }
     }
 
     void RenderInterfaceVK::SetNewCommandBuffer()
     {
         m_CommandBuffer = m_Queue->GetCommandBuffer();
+    }
+    
+    void RenderInterfaceVK::InternalCopy(GpuResource* src, GpuResource* dst, uint64_t size)
+    {
+        if (src->GetType() == GpuResourceType::Image)
+        {
+            //VkAccessFlags src_access, dst_access;
+            //VkPipelineStageFlags src_stage, dst_stage;
+            //VkImageLayout src_layout, dst_layout;
+            //
+            //GetAccessMasksForState(src->GetState(), src_access, src_stage, src_layout);
+            //GetAccessMasksForState(dst->GetState(), src_access, src_stage, dst_layout);
+            //
+            //VkImageCopy copy = {};
+            //copy.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+            //copy.srcOffset      = { 0, 0, 0 };
+            //copy.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+            //copy.dstOffset      = { 0, 0, 0 };
+            //copy.extent         = {  };
+            //
+            //vkCmdCopyImage(m_CommandBuffer, src->GetNativeImage(), src_layout, dst->GetNativeImage(), dst_layout, 1, )
+        }
+        else
+        {
+            VkBufferCopy copy = {};
+            copy.srcOffset  = 0;
+            copy.dstOffset  = 0;
+            copy.size       = size;
+
+            vkCmdCopyBuffer(m_CommandBuffer, src->GetNativeBuffer(), dst->GetNativeBuffer(), 1, &copy);
+        }
     }
 }
 #endif
