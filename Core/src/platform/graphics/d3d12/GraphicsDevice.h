@@ -56,20 +56,23 @@ namespace RB::Graphics::D3D12
         void CreateAdapter();
         void CreateDevice(bool enable_debug_messages);
 
-        GPtr<ID3D12Device2>			m_NativeDevice;
-        GPtr<IDXGIAdapter4>			m_NativeAdapter;
+        GPtr<ID3D12Device2>         m_NativeDevice;
+        GPtr<IDXGIAdapter4>         m_NativeAdapter;
 
         // Only created when required
-        GPtr<ID3D11On12Device>		m_11On12Device;
-        GPtr<ID3D11DeviceContext>	m_11DeviceContext;
+        GPtr<ID3D11On12Device>      m_11On12Device;
+        GPtr<ID3D11DeviceContext>   m_11DeviceContext;
 
-        GPtr<IDXGIFactory4>			m_Factory;
+        GPtr<IDXGIFactory4>         m_Factory;
+
+        GPtr<ID3D12InfoQueue1>      m_InfoQueue;
+        DWORD                       m_CallbackCookie;
 
         DeviceQueue*                m_CopyQueue;
         DeviceQueue*                m_ComputeQueue;
         DeviceQueue*                m_GraphicsQueue;
 
-        GraphicsCardInfo			m_GpuInfo;
+        GraphicsCardInfo            m_GpuInfo;
     };
 
     extern GraphicsDevice* g_GraphicsDevice;
