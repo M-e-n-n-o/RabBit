@@ -28,11 +28,6 @@ namespace RB::Graphics
 
         ModelEntry*         entries;
         uint32_t            entryCount;
-
-        ~GBufferEntry()
-        {
-            SAFE_FREE(entries);
-        }
     };
 
     RenderPassConfig GBufferPass::GetConfiguration(const RenderPassSettings& setting)
@@ -61,12 +56,12 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene)
+    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
 
         uint32_t size = sizeof(GBufferEntry::ModelEntry) * mesh_renderers.size();
-        GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*)ALLOC_HEAP(size);
+        GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*)allocator->Allocate(size);
         memset(entries, 0, size);
 
         uint32_t total_entries = 0;
@@ -100,12 +95,6 @@ namespace RB::Graphics
 
             entries[total_entries] = entry;
             total_entries++;
-        }
-
-        if (total_entries == 0)
-        {
-            SAFE_FREE(entries);
-            return nullptr;
         }
 
         GBufferEntry* entry = new GBufferEntry();

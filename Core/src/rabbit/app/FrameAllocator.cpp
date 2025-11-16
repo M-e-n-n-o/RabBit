@@ -10,7 +10,7 @@ namespace RB
         , m_PageSize(page_size)
     {
         RB_ASSERT(LOGTAG_MAIN, frame_cycles > 0, "Frame Cycles should be greater than 0");
-        m_UsedPages.resize(frame_cycles);
+        m_UsedPageSets.resize(frame_cycles);
     }
 
     FrameAllocator::~FrameAllocator()
@@ -20,12 +20,16 @@ namespace RB
 
     void* FrameAllocator::Allocate(uint64_t size, uint64_t align)
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, m_FrameCycles > 0, "Cannot allocate, there are no free pages left");
+
         uint64_t final_size = Math::AlignUp(size, align);
 
         RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, final_size <= m_PageSize, "Trying to allocate %d, which is more than the page size, increase the page size!", final_size);
 
         FrameAllocationPage* to_use = nullptr;
-        for (FrameAllocationPage* page : m_UsedPages[m_CurrentPage].pages)
+        for (FrameAllocationPage* page : m_UsedPageSets[m_CurrentPage])
         {
             if (page->HasSpace(final_size))
             {
@@ -51,7 +55,7 @@ namespace RB
                 to_use = &m_AllPages.back();
             }
             
-            m_UsedPages[m_CurrentPage].pages.push_back(to_use);
+            m_UsedPageSets[m_CurrentPage].push_back(to_use);
         }
 
         return to_use->Allocate(final_size);
@@ -59,15 +63,46 @@ namespace RB
 
     void FrameAllocator::Cycle()
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         m_CurrentPage = (m_CurrentPage + 1) % m_FrameCycles;
 
         // Free all the previously used pages of the new frame
-        for (FrameAllocationPage* page : m_UsedPages[m_CurrentPage].pages)
+        for (FrameAllocationPage* page : m_UsedPageSets[m_CurrentPage])
         {
             page->Reset();
             m_FreePages.push(page);
         }
-        m_UsedPages[m_CurrentPage].pages.clear();
+        m_UsedPageSets[m_CurrentPage].clear();
+    }
+
+    FrameAllocationPageSet FrameAllocator::LockCurrentPageSet()
+    {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, m_FrameCycles > 0, "Could not lock any pages, there are none left");
+
+        auto set = m_UsedPageSets[m_CurrentPage];
+        m_UsedPageSets.erase(m_UsedPageSets.begin() + m_CurrentPage);
+
+        m_FrameCycles--;
+        m_CurrentPage = (m_CurrentPage + 1) % Math::Max(m_FrameCycles, 1u);
+
+        return set;
+    }
+
+    void FrameAllocator::UnlockPageSet(FrameAllocationPageSet set)
+    {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
+        m_FrameCycles++;
+        for (FrameAllocationPage* page : set)
+        {
+            page->Reset();
+            m_FreePages.push(page);
+        }
+
+        m_UsedPageSets.push_back(set);
     }
 
     FrameAllocationPage::FrameAllocationPage(uint64_t size)

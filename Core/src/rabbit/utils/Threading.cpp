@@ -148,6 +148,7 @@ namespace RB
             else
             {
                 // Job data is overwritten
+                itr->data->OnDestroy(true);
                 SAFE_DELETE(itr->data);
                 itr->data = data;
                 job.id = itr->id;
@@ -281,6 +282,7 @@ namespace RB
             return;
         }
 
+        itr->data->OnDestroy(false);
         SAFE_DELETE(itr->data);
         m_SharedContext->pendingJobs.erase(itr);
     }
@@ -291,6 +293,7 @@ namespace RB
 
         for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
         {
+            m_SharedContext->pendingJobs[i].data->OnDestroy(false);
             SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
         }
         m_SharedContext->pendingJobs.clear();
@@ -373,6 +376,7 @@ namespace RB
             // Do the job
             {
                 (*current_job.function)(current_job.data);
+                current_job.data->OnDestroy(false);
                 SAFE_DELETE(current_job.data);
             }
 

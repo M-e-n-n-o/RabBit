@@ -42,6 +42,9 @@ namespace RB::Graphics
 
     struct RenderContext : public JobData
     {
+        FrameAllocator*                     frameAllocator;
+        FrameAllocationPageSet              lockedPageSet; // Filled in automatically when needed
+
         ViewContext*                        viewContexts;
         uint32_t                            totalViewContexts;
 
@@ -57,22 +60,28 @@ namespace RB::Graphics
 
         VertexBuffer*                       backBufferCopyVB;
 
-        FrameAllocator*                     frameAllocator;
-
         std::function<void()>               OnRenderFrameStart;
         std::function<void()>               OnRenderFrameEnd;
         std::function<void()>               SyncWithGpu;
         std::function<void()>               ProcessEvents;
 
-        ~RenderContext()
+        RenderContext(FrameAllocator* allocator)
+            : frameAllocator(allocator)
+        {
+            // Lock the frame data so it doesn't get overwritten.
+            // This gets unlocked again at the end of a job/when it is overwritten
+            lockedPageSet = frameAllocator->LockCurrentPageSet();
+        }
+
+        void OnDestroy(bool overwritten) override
         {
             // TODO: Enable for proper rendering
             //for (int i = 0; i < totalViewContexts; ++i)
             //{
             //    renderGraphs[viewContexts[i].renderGraphType]->DestroyEntries(renderPassEntries[i]);
             //}
-            SAFE_FREE(renderPassEntries);
-            SAFE_FREE(viewContexts);
+
+            frameAllocator->UnlockPageSet(lockedPageSet);
         }
     };
 
@@ -98,7 +107,7 @@ namespace RB::Graphics
     {
         m_IsShutdown = false;
 
-        m_RenderAllocator = new FrameAllocator("Rendering", 2, k1MB);
+        m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k2MB);
 
         m_ResourceStreamer = new ResourceStreamer();
 
@@ -202,19 +211,15 @@ namespace RB::Graphics
 
             UpdateRenderGraphSizes(view_contexts, total_view_contexts);
 
-            // TODO: Start making better use of the m_RenderAllocator in the Renderer and RenderGraph itself!
-            // TODO: We need to add a specific frame allocator for the flow between the SubmitEntry and Render calls,
-            // cause currently this can cause reading invalid data!!!
-
             // Gather the entries from all render passes for every view context
-            RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
+            RenderPassEntry*** entries = (RenderPassEntry***) m_RenderAllocator->Allocate(sizeof(RenderPassEntry***) * total_view_contexts);
             // TODO: Enable for proper rendering
             //for (int i = 0; i < total_view_contexts; ++i)
             //{
-            //    entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], scene);
+            //    entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], scene, m_RenderAllocator);
             //}
 
-            RenderContext* context                  = new RenderContext();
+            RenderContext* context                  = new RenderContext(m_RenderAllocator);
             context->viewContexts                   = view_contexts;
             context->totalViewContexts              = total_view_contexts;
             context->backBufferAvailabilityGuards   = &m_BackBufferAvailabilityGuards;
@@ -224,7 +229,6 @@ namespace RB::Graphics
             context->graphicsInterface              = m_GraphicsInterface;
             context->renderFrameIndex               = &m_RenderFrameIndex;
             context->backBufferCopyVB               = m_BackBufferCopyVB.get();
-            context->frameAllocator                 = m_RenderAllocator;
             context->OnRenderFrameStart             = std::bind(&Renderer::OnFrameStart, this);
             context->OnRenderFrameEnd               = std::bind(&Renderer::OnFrameEnd, this);
             context->SyncWithGpu                    = std::bind(&Renderer::SyncWithGpu, this);
@@ -280,7 +284,7 @@ namespace RB::Graphics
 
         // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)?
         uint32_t size = sizeof(ViewContext) * out_context_count;
-        ViewContext* contexts = (ViewContext*)ALLOC_HEAP(size);
+        ViewContext* contexts = (ViewContext*)m_RenderAllocator->Allocate(size);
         memset(contexts, 0, size);
 
         uint32_t context_index = 0;
@@ -630,7 +634,7 @@ namespace RB::Graphics
                 context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
 
                 // Render the different passes
-                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->frameAllocator, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
+                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
             }
         }
         */

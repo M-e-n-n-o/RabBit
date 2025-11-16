@@ -36,7 +36,11 @@ namespace RB
     // Make sure to do all your deletes and free's in the destructor!
     struct JobData
     {
+    public:
         virtual ~JobData() = default;
+
+        // Thread safe way to do some things on the data
+        virtual void OnDestroy(bool overwritten) {};
     };
 
     using JobTypeID     = uint32_t;

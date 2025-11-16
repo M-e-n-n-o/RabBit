@@ -44,10 +44,8 @@ namespace RB::Graphics
             });
     }
 
-    RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene)
+    RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
     {
-        // TODO: Collect lighting information
-
         const auto& list = scene->GetComponentsWithTypeOf<Entity::DirectionalLight>();
 
         DeferredLightingEntry* entry = new DeferredLightingEntry();

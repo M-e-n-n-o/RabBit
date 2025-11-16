@@ -97,6 +97,8 @@ namespace RB
 
         m_GraphicsSettings.Print();
 
+        m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
+
         m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
         m_Renderer->Init();
 
@@ -186,6 +188,9 @@ namespace RB
 
             // Submit the scene as context for rendering the next frame
             m_Renderer->SubmitFrame(m_Scene);
+            
+            // Cycle the allocated scene data for re-use
+            m_FrameAllocator->Cycle();
 
             // Check if there are any windows that should be closed/removed
             if (m_CheckWindows)
@@ -269,6 +274,8 @@ namespace RB
 
         m_Renderer->Shutdown();
         delete m_Renderer;
+
+        delete m_FrameAllocator;
 
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");

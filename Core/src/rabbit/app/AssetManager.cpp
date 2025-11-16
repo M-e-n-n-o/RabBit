@@ -187,14 +187,9 @@ namespace RB
         
         LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node)
         {
-            List<Math::Float3> vertices;
-            List<Math::Float3> normals;
-            List<Math::Float2> uvs;
-
             const size_t num_vertices = mesh_part->num_triangles * 3;
+            List<LoadedMesh::Vertex> vertices;
             vertices.resize(num_vertices);
-            normals.resize(num_vertices);
-            uvs.resize(num_vertices);
 
             const size_t num_tri_indices = mesh->max_face_triangles * 3;
             if (num_tri_indices > 1000.0f)
@@ -220,19 +215,20 @@ namespace RB
                     ufbx_vec3 normal = mesh->vertex_normal.exists ? ufbx_get_vertex_vec3(&mesh->vertex_normal, ix) : default_normal;
                     ufbx_vec2 uv     = mesh->vertex_uv.exists ? ufbx_get_vertex_vec2(&mesh->vertex_uv, ix) : default_uv;
 
-                    vertices[vi_global] = Math::Float3(pos.x, pos.y, pos.z);
-                    normals[vi_global]  = Math::Float3(normal.x, normal.y, normal.z);
-                    uvs[vi_global]      = Math::Float2(uv.x, uv.y);
+                    vertices[vi_global] = {};
+                    vertices[vi_global].position = Math::Float3(pos.x, pos.y, pos.z);
+                    vertices[vi_global].normal   = Math::Float3(normal.x, normal.y, normal.z);
+                    vertices[vi_global].uv       = Math::Float2(uv.x, uv.y);
                     vi_global++;
                 }
             }
 
             RB_ASSERT(LOGTAG_MAIN, vertices.size() == num_vertices, "The amount of loaded vertices does not match what was expected");
 
-            List<ufbx_vertex_stream> streams(3);
-            streams[0].data = vertices.data();  streams[0].vertex_count = vertices.size();  streams[0].vertex_size = sizeof(Math::Float3);
-            streams[1].data = normals.data();   streams[1].vertex_count = normals.size();   streams[1].vertex_size = sizeof(Math::Float3);
-            streams[2].data = uvs.data();       streams[2].vertex_count = uvs.size();       streams[2].vertex_size = sizeof(Math::Float2);
+            ufbx_vertex_stream stream = {};
+            stream.data         = vertices.data();  
+            stream.vertex_count = vertices.size();  
+            stream.vertex_size  = sizeof(LoadedMesh::Vertex);
 
             LoadedMesh::Submodel out_submodel = {};
 
@@ -244,35 +240,20 @@ namespace RB
             // Optimize the flat vertex buffer into an indexed one. `ufbx_generate_indices()`
             // compacts the vertex buffer and returns the number of used vertices.
             ufbx_error error;
-            const size_t num_compacted_vertices = ufbx_generate_indices(streams.data(), streams.size(), indices.data(), num_indices, nullptr, &error);
-            if (error.type == UFBX_ERROR_NONE) 
+            const size_t num_compacted_vertices = ufbx_generate_indices(&stream, 1, indices.data(), num_indices, nullptr, &error);
+            if (error.type == UFBX_ERROR_NONE)
             {
                 out_submodel.indices.resize(num_indices);
-                for (int i = 0; i < num_indices; i++)
-                {
-                    out_submodel.indices[i] = indices[i];
-                }
+                memcpy(out_submodel.indices.data(), indices.data(), sizeof(uint32_t) * num_indices);
             
                 out_submodel.vertices.resize(num_compacted_vertices);
-                for (int i = 0; i < num_compacted_vertices; i++)
-                {
-                    out_submodel.vertices[i].position = vertices[i];
-                    out_submodel.vertices[i].normal   = normals[i];
-                    out_submodel.vertices[i].uv       = uvs[i];
-                }
+                memcpy(out_submodel.vertices.data(), vertices.data(), sizeof(LoadedMesh::Vertex) * num_compacted_vertices);
             }
             else
             {
                 RB_LOG_ERROR(LOGTAG_MAIN, "Failed to generate index buffer with ufbx, error message: %s", error.description.data);
-
-                // Return just without the indices
-                out_submodel.vertices.resize(num_vertices);
-                for (int i = 0; i < num_vertices; i++)
-                {
-                    out_submodel.vertices[i].position = vertices[i];
-                    out_submodel.vertices[i].normal   = normals[i];
-                    out_submodel.vertices[i].uv       = uvs[i];
-                }
+                // Return empty submodel
+                return out_submodel;
             }
 
             // Store per-submodel position/rotation (local to node, not baked into vertices)

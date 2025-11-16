@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "Settings.h"
 #include "ApplicationLayer.h"
+#include "FrameAllocator.h"
 #include "events/Event.h"
 
 #include <cstdint>
@@ -77,6 +78,8 @@ namespace RB
 
         uint64_t GetFrameIndex() const { return m_FrameIndex; }
 
+        FrameAllocator* GetAllocator() const { return m_FrameAllocator; }
+
         static Application* GetInstance() { return s_Instance; }
 
     private:
@@ -88,27 +91,29 @@ namespace RB
         void OnNewLayerPushed(ApplicationLayer* layer);
         bool OnEvent(Events::Event& event) override;
 
-        const AppInfo				m_StartAppInfo;
+        const AppInfo               m_StartAppInfo;
 
-        bool						m_Initialized;
-        bool						m_ShouldStop;
+        bool                        m_Initialized;
+        bool                        m_ShouldStop;
 
-        uint64_t					m_FrameIndex;
+        uint64_t                    m_FrameIndex;
 
-        List<Graphics::Display*>	m_Displays;
+        List<Graphics::Display*>    m_Displays;
 
-        List<Graphics::Window*>		m_Windows;
-        int32_t						m_PrimaryWindowIndex;
-        bool						m_CheckWindows;
+        List<Graphics::Window*>     m_Windows;
+        int32_t                     m_PrimaryWindowIndex;
+        bool                        m_CheckWindows;
 
         GraphicsSettings            m_GraphicsSettings;
-        Graphics::Renderer*			m_Renderer;
+        Graphics::Renderer*         m_Renderer;
 
-        Entity::Scene*				m_Scene;
+        Entity::Scene*              m_Scene;
+
+        FrameAllocator*             m_FrameAllocator;
 
         LayerStack                  m_LayerStack;
 
-        static Application*			s_Instance;
+        static Application*         s_Instance;
     };
 
     template<class Layer, typename... Args>
