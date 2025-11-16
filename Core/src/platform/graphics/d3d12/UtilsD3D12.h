@@ -67,7 +67,8 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    static DXGI_FORMAT ConvertToDXGIFormat(const RenderResourceFormat& format)
+    // When convert_typeless is true, the an actual usable format will be returned
+    static DXGI_FORMAT ConvertToDXGIFormat(const RenderResourceFormat& format, bool convert_typeless = true, bool depth = false)
     {
         switch (format)
         {
@@ -107,55 +108,19 @@ namespace RB::Graphics::D3D12
             return DXGI_FORMAT_D32_FLOAT;
         case(RenderResourceFormat::D16_UNORM):
             return DXGI_FORMAT_D16_UNORM;
+
+        // Typeless formats
+        case(RenderResourceFormat::R32_TYPELESS):
+        {
+            if (convert_typeless)
+                return depth ? DXGI_FORMAT_D32_FLOAT : DXGI_FORMAT_R32_FLOAT;
+            else
+                return DXGI_FORMAT_R32_TYPELESS;
+        }
+
         default:
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
             return DXGI_FORMAT_UNKNOWN;
-        }
-    }
-
-    static RenderResourceFormat ConvertToEngineFormat(const DXGI_FORMAT& format)
-    {
-        switch (format)
-        {
-        case(DXGI_FORMAT_R32G32B32A32_FLOAT):
-            return RenderResourceFormat::R32G32B32A32_FLOAT;
-        case(DXGI_FORMAT_R16G16B16A16_FLOAT):
-            return RenderResourceFormat::R16G16B16A16_FLOAT;
-        case(DXGI_FORMAT_R32G32_FLOAT):
-            return RenderResourceFormat::R32G32_FLOAT;
-        case(DXGI_FORMAT_R32_UINT):
-            return RenderResourceFormat::R32_UINT;
-        case(DXGI_FORMAT_R32_FLOAT):
-            return RenderResourceFormat::R32_FLOAT;
-        case(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB):
-            return RenderResourceFormat::R8G8B8A8_SRGB;
-        case(DXGI_FORMAT_B8G8R8A8_UNORM):
-            return RenderResourceFormat::B8G8R8A8_UNORM;
-        case(DXGI_FORMAT_R8G8B8A8_UNORM):
-            return RenderResourceFormat::R8G8B8A8_UNORM;
-        case(DXGI_FORMAT_R16G16_FLOAT):
-            return RenderResourceFormat::R16G16_FLOAT;
-        case(DXGI_FORMAT_R16G16_UINT):
-            return RenderResourceFormat::R16G16_UINT;
-        case(DXGI_FORMAT_R16_FLOAT):
-            return RenderResourceFormat::R16_FLOAT;
-        case(DXGI_FORMAT_R16_UINT):
-            return RenderResourceFormat::R16_UINT;
-        case(DXGI_FORMAT_R16_UNORM):
-            return RenderResourceFormat::R16_UNORM;
-        case(DXGI_FORMAT_R16_SNORM):
-            return RenderResourceFormat::R16_SNORM;
-        case(DXGI_FORMAT_R8_UNORM):
-            return RenderResourceFormat::R8_UNORM;
-        case(DXGI_FORMAT_R8_UINT):
-            return RenderResourceFormat::R8_UINT;
-        case(DXGI_FORMAT_D32_FLOAT):
-            return RenderResourceFormat::D32_FLOAT;
-        case(DXGI_FORMAT_D16_UNORM):
-            return RenderResourceFormat::D16_UNORM;
-        default:
-            RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
-            return RenderResourceFormat::Unkown;
         }
     }
 }

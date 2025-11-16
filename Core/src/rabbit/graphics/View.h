@@ -6,6 +6,7 @@
 namespace RB::Entity
 {
     class Camera;
+    class Transform;
 }
 
 namespace RB::Graphics
@@ -38,7 +39,9 @@ namespace RB::Graphics
 
         // The camera this ViewContext is linked to
         const Entity::Camera* camera;
+        const Entity::Transform* cameraTransform;
 
         void SetFrameConstants(RenderInterface* render_interface) const;
+        void SetFrameConstants(RenderInterface* render_interface, Viewport vp, Frustum frustum) const;
     };
 }

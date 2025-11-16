@@ -18,6 +18,7 @@ namespace RB::Graphics
     {
         None,
         GBuffer,
+        CascadedShadow,
         DeferredLighting,
         Overlay2D,
 

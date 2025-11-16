@@ -22,6 +22,7 @@
 #include "entity/components/Transform.h"
 
 #include "passes/GBuffer.h"
+#include "passes/CascadedShadow.h"
 #include "passes/DeferredLighting.h"
 #include "passes/Overlay2D.h"
 
@@ -317,8 +318,9 @@ namespace RB::Graphics
                 continue;
             }
 
-            contexts[context_index].enabled = true;
-            contexts[context_index].camera = camera;
+            contexts[context_index].enabled         = true;
+            contexts[context_index].camera          = camera;
+            contexts[context_index].cameraTransform = transform;
 
             contexts[context_index].viewport.left = 0; // TODO Add DRS support
             contexts[context_index].viewport.top = 0;
@@ -378,6 +380,7 @@ namespace RB::Graphics
         m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
             // Passes
             .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
+            .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
             .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
             .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
 
@@ -385,6 +388,9 @@ namespace RB::Graphics
             .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
                                      0u,                0u,
                                      1u,                1u)
+
+            .AddLink(RenderPassType::CascadedShadow,    RenderPassType::DeferredLighting,
+                                     0u,                2u)
 
             .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
                                      0u,                0u)
@@ -603,7 +609,6 @@ namespace RB::Graphics
 
         uint64_t frame_index = context->renderFrameIndex->GetValue();
 
-        context->frameAllocator->Cycle();
         context->OnRenderFrameStart();
 
         // TODO: Enable for proper rendering

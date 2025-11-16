@@ -23,7 +23,7 @@ namespace RB::Graphics
         ~RenderGraphContext();
 
         Shared<RenderResource> GetResource(ResourceID id);
-        bool            RequiresClear(ResourceID id);
+        bool RequiresClear(ResourceID id);
 
         void AddGraphSize(uint32_t graph_id, const RenderGraphSize& size);
         void DeleteSizes();
@@ -38,6 +38,8 @@ namespace RB::Graphics
 
         RenderTextureDesc GetScheduledResource(ResourceID id);
         List<ResourceID> GetScheduledGraphResources(uint32_t graph_id);
+
+        uint32_t GetTotalCreatedResources() const { return m_Resources.size(); }
 
     private:
         // All the resources used by all graphs

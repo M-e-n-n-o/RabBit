@@ -102,6 +102,7 @@ namespace RB
             m_FreePages.push(page);
         }
 
+        set.clear();
         m_UsedPageSets.push_back(set);
     }
 

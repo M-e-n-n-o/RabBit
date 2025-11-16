@@ -46,12 +46,16 @@ namespace RB::Graphics
 
         // Depth formats
         D32_FLOAT,
-        D16_UNORM
+        D16_UNORM,
+
+        // Typeless formats (for example for both depth & regular read/write)
+        R32_TYPELESS,
     };
 
     uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
     bool IsDepthFormat(const RenderResourceFormat& format);
     bool IsSRGBFormat(const RenderResourceFormat& format);
+    bool IsTypelessFormat(const RenderResourceFormat& format);
 
     enum class RenderResourceType : uint32_t
     {

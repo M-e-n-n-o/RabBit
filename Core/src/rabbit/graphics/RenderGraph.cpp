@@ -66,6 +66,22 @@ namespace RB::Graphics
             render_interface->FlushAllPending();
         }
 
+        const uint32_t disabled_max = graph_context->GetTotalCreatedResources();
+        const uint32_t size = sizeof(uint32_t) * disabled_max;
+        uint32_t disabled_idx = 0;
+        int32_t* disabled_inputs = (int32_t*)ALLOC_STACK(size);
+        memset(disabled_inputs, -1, size);
+
+        auto ValidateInputID = [&disabled_inputs, &disabled_max](ResourceID id) -> bool
+        {
+            for (int i = 0; i < disabled_max; ++i)
+            {
+                if (disabled_inputs[i] == id)
+                    return false;
+            }
+            return true;
+        };
+
         // Then actually execute the graph
         for (int i = 0; i < m_RenderFlow.size(); ++i)
         {
@@ -75,6 +91,16 @@ namespace RB::Graphics
             // Do not render the pass if it did not submit an entry
             if (entry == nullptr)
             {
+                // Disable the outputs of these passes so that next passes will not receive these as inputs
+                for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
+                {
+                    int32_t id = m_RenderFlow[i].outputIDs[j];
+                    if (id != VIEWCONTEXT_OUTPUT_ID && id != -1)
+                    {
+                        disabled_inputs[disabled_idx] = id;
+                        disabled_idx++;
+                    }
+                }
                 continue;
             }
 
@@ -84,10 +110,12 @@ namespace RB::Graphics
 
             for (int j = 0; j < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++j)
             {
-                if (m_RenderFlow[i].parameterIDs[j] == VIEWCONTEXT_OUTPUT_ID)
+                ResourceID id = m_RenderFlow[i].parameterIDs[j];
+
+                if (id == VIEWCONTEXT_OUTPUT_ID)
                     parameters[j] = view_context->finalColorTarget;
-                else if (m_RenderFlow[i].parameterIDs[j] != -1)
-                    parameters[j] = graph_context->GetResource(m_RenderFlow[i].parameterIDs[j]).get();
+                else if (id != -1)
+                    parameters[j] = ValidateInputID(id) ? graph_context->GetResource(id).get() : nullptr;
                 else
                     parameters[j] = nullptr;
             }

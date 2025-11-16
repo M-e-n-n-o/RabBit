@@ -29,6 +29,7 @@ namespace RB::Graphics
         case(RenderResourceFormat::R16G16_UINT):
         case(RenderResourceFormat::R32_FLOAT):
         case(RenderResourceFormat::D32_FLOAT):
+        case(RenderResourceFormat::R32_TYPELESS):
             return 4;
         case(RenderResourceFormat::R16_FLOAT):
         case(RenderResourceFormat::R16_UINT):
@@ -51,25 +52,8 @@ namespace RB::Graphics
         {
         case RenderResourceFormat::D32_FLOAT:
         case RenderResourceFormat::D16_UNORM:
+        case RenderResourceFormat::R32_TYPELESS:
             return true;
-
-        case RenderResourceFormat::R32G32B32A32_FLOAT:
-        case RenderResourceFormat::R16G16B16A16_FLOAT:
-        case RenderResourceFormat::R32G32_FLOAT:
-        case RenderResourceFormat::R8_UINT:
-        case RenderResourceFormat::R32_UINT:
-        case RenderResourceFormat::B8G8R8A8_UNORM:
-        case RenderResourceFormat::R8G8B8A8_UNORM:
-        case RenderResourceFormat::R8G8B8A8_SRGB:
-        case RenderResourceFormat::R16G16_FLOAT:
-        case RenderResourceFormat::R16G16_UINT:
-        case RenderResourceFormat::R16_FLOAT:
-        case RenderResourceFormat::R16_UINT:
-        case RenderResourceFormat::R16_UNORM:
-        case RenderResourceFormat::R16_SNORM:
-        case RenderResourceFormat::R8_UNORM:
-        case RenderResourceFormat::R32_FLOAT:
-            return false;
         default:
             return false;
         }
@@ -81,24 +65,17 @@ namespace RB::Graphics
         {
         case RenderResourceFormat::R8G8B8A8_SRGB:
             return true;
-        case RenderResourceFormat::D32_FLOAT:
-        case RenderResourceFormat::D16_UNORM:
-        case RenderResourceFormat::R32G32B32A32_FLOAT:
-        case RenderResourceFormat::R16G16B16A16_FLOAT:
-        case RenderResourceFormat::R32G32_FLOAT:
-        case RenderResourceFormat::R8_UINT:
-        case RenderResourceFormat::R32_UINT:
-        case RenderResourceFormat::B8G8R8A8_UNORM:
-        case RenderResourceFormat::R8G8B8A8_UNORM:
-        case RenderResourceFormat::R16G16_FLOAT:
-        case RenderResourceFormat::R16G16_UINT:
-        case RenderResourceFormat::R16_FLOAT:
-        case RenderResourceFormat::R16_UINT:
-        case RenderResourceFormat::R16_UNORM:
-        case RenderResourceFormat::R16_SNORM:
-        case RenderResourceFormat::R8_UNORM:
-        case RenderResourceFormat::R32_FLOAT:
+        default:
             return false;
+        }
+    }
+
+    bool IsTypelessFormat(const RenderResourceFormat& format)
+    {
+        switch (format)
+        {
+        case RenderResourceFormat::R32_TYPELESS:
+            return true;
         default:
             return false;
         }

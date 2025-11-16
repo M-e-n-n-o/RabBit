@@ -71,7 +71,7 @@ public:
             GameObject* object = scene->CreateGameObject();
             object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
             Transform* t = object->AddComponent<Transform>();
-            t->position = mesh.models[i].position + Math::Float3(0, 0, 50);
+            t->position = mesh.models[i].position;
             t->rotation = mesh.models[i].rotation;
             t->scale = Float3(0.1f);
             
@@ -85,11 +85,11 @@ public:
 
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
-        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 70.0f, window_handle0);
+        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
         auto* sun = scene->CreateGameObject();
-        sun->AddComponent<DirectionalLight>(Math::Float3(-0.2f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
+        sun->AddComponent<DirectionalLight>(Math::Float3(-0.0f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
 
         // UI
         {

@@ -109,6 +109,7 @@ namespace RB::Graphics::D3D12
         bool                            m_IsRenderTarget;
         bool                            m_IsDepthStencil;
         bool                            m_AllowUAV;
+        bool                            m_Typeless;
 
         DescriptorIndex                 m_ReadHandle;
         DescriptorIndex                 m_WriteHandle;

@@ -49,6 +49,8 @@ namespace RB::Graphics::VK
             return VK_FORMAT_D32_SFLOAT;
         case(RenderResourceFormat::D16_UNORM):
             return VK_FORMAT_D16_UNORM;
+        case(RenderResourceFormat::R32_TYPELESS):
+            return VK_FORMAT_D32_SFLOAT; // D32_SFLOAT can be used for both depth & SRV
         default:
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
             return VK_FORMAT_UNDEFINED;

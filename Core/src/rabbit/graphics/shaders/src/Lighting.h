@@ -6,11 +6,11 @@
 // Blinn-Phong
 // ---------------------------------------------------------------
 
-void GetBlinnPhongDiffSpec(in float3  view_world_pos,
-                           in float3  world_pos,
-                           in float3  world_nrm,
-                           in float   shininess,
-                           in LightCB light,
+void GetBlinnPhongDiffSpec(in  float3 view_world_pos,
+                           in  float3 world_pos,
+                           in  float3 world_nrm,
+                           in  float  shininess,
+                           in  Light  light,
                            out float3 diffuse,
                            out float3 specular)
 {

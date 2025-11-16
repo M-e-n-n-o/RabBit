@@ -143,7 +143,7 @@ namespace RB::Graphics::D3D12
         TransitionResource(tex, ResourceState::RENDER_TARGET);
 
         m_RenderState.rtvHandles[index].push(tex->GetRenderTargetHandle());
-        m_RenderState.rtvFormats[index].push(ConvertToDXGIFormat(tex->GetFormat()));
+        m_RenderState.rtvFormats[index].push(ConvertToDXGIFormat(tex->GetFormat(), true, false));
 
         m_RenderState.numRenderTargets = Math::Max(m_RenderState.numRenderTargets, index + 1);
 
@@ -198,7 +198,7 @@ namespace RB::Graphics::D3D12
             TransitionResource(depth_stencil, ResourceState::DEPTH_WRITE);
 
             m_RenderState.dsvHandle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
-            m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
+            m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat(), true, true);
 
             m_RenderState.renderTargetDirty = true;
             m_RenderState.psoDirty = true;
@@ -1027,7 +1027,6 @@ namespace RB::Graphics::D3D12
         #define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
 
         CHECK_SET(m_RenderState.vertexBufferType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,    "Cannot draw, vertex buffer was not set")
-        CHECK_SET(m_RenderState.numRenderTargets > 0,                                           "Cannot draw, vertex buffer was not set")
         CHECK_SET(m_RenderState.scissorSet,                                                     "Cannot draw, scissor was not set")
         CHECK_SET(m_RenderState.viewportSet,                                                    "Cannot draw, viewport was not set")
         CHECK_SET(m_RenderState.vsShader >= 0 && m_RenderState.psShader >= 0,                   "Cannot draw, vertex or pixel shader was not set yet")

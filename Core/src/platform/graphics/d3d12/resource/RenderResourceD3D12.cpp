@@ -129,6 +129,7 @@ namespace RB::Graphics::D3D12
         m_Resource = new GpuResource(std::bind(&Texture2DD3D12::CreateViews, this, std::placeholders::_1));
 
         m_IsDepthStencil = IsDepthFormat(format);
+        m_Typeless = IsTypelessFormat(format);
 
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
         if (m_IsRenderTarget)
@@ -138,13 +139,14 @@ namespace RB::Graphics::D3D12
         if (m_IsDepthStencil)
         {
             flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE; // Should we have this here? What if you want to read from a depth texture in a compute shader?
+            if (!m_Typeless)
+                flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
         }
 
         // TODO Add mip support
 
         ResourceManager::Texture2DDesc desc = {};
-        desc.format     = ConvertToDXGIFormat(m_Format);
+        desc.format     = ConvertToDXGIFormat(m_Format, false);
         desc.width      = m_Width;
         desc.height     = m_Height;
         desc.arraySize  = 1;
@@ -231,7 +233,7 @@ namespace RB::Graphics::D3D12
     void Texture2DD3D12::CreateViews(GpuResource* /*resource*/)
     {
         // SRV
-        if (!m_IsDepthStencil)
+        if (!m_IsDepthStencil || m_Typeless)
         {
             // TODO Add mip support
 
@@ -280,7 +282,7 @@ namespace RB::Graphics::D3D12
             // TODO Add mip support
 
             D3D12_DEPTH_STENCIL_VIEW_DESC desc = {};
-            desc.Format             = ConvertToDXGIFormat(m_Format);
+            desc.Format             = ConvertToDXGIFormat(m_Format, true, true);
             desc.ViewDimension      = D3D12_DSV_DIMENSION_TEXTURE2D;
             desc.Flags              = D3D12_DSV_FLAG_NONE;
             desc.Texture2D.MipSlice = 0;

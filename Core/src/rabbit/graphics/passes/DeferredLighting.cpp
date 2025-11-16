@@ -4,6 +4,7 @@
 #include "graphics/RenderResource.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/View.h"
+#include "graphics/ResourceDefaults.h"
 
 #include "entity/Scene.h"
 #include "entity/components/Light.h"
@@ -15,8 +16,9 @@ namespace RB::Graphics
 {
     struct DeferredLightingEntry : public RenderPassEntry
     {
-        Math::Float3 direction;
-        Math::Float3 color;
+        Math::Float3   direction;
+        Math::Float3   color;
+        Math::Float4x4 shadowVP;
     };
 
     RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings& setting)
@@ -27,8 +29,9 @@ namespace RB::Graphics
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"GBuffer0", -1},
-                    RenderTextureInputDesc{"GBuffer1", -1}
+                    RenderTextureInputDesc{"GBuffer0",  -1},
+                    RenderTextureInputDesc{"GBuffer1",  -1},
+                    RenderTextureInputDesc{"ShadowMap", -1}
                 },
 
                 // Working textures
@@ -54,13 +57,17 @@ namespace RB::Graphics
         {
             entry->direction = Math::Float3(0, -1, 0);
             entry->color     = Math::Float3(0, 0, 0);
+            // TODO Fill in a shadowVP that causes the ndc.z te be smaller than 1
         }
         else
         {
             const auto* light = (Entity::DirectionalLight*)list[0];
 
+            auto frustum = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform);
+
             entry->direction = light->GetDirection();
             entry->color     = light->GetColor();
+            entry->shadowVP  = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
         }
 
         return entry;
@@ -75,15 +82,21 @@ namespace RB::Graphics
         inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[0], 0);
         inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[1], 1);
 
+        if (inputs.dependencyTextures[2])
+            inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[2], 2);
+        else
+            inputs.ri->SetShaderResourceInput(g_TexDefaultWhite.get(), 2);
+
         inputs.ri->SetRandomReadWriteInput(inputs.outputTextures[0], 0);
 
         DeferredLightingEntry* entry = (DeferredLightingEntry*)inputs.entryContext;
 
-        LightCB cb = {};
-        cb.direction = entry->direction;
-        cb.color     = entry->color;
+        ApplyLightingCB cb = {};
+        cb.light.direction = entry->direction;
+        cb.light.color     = entry->color;
+        cb.shadowVP        = entry->shadowVP;
 
-        inputs.ri->SetConstantShaderData(kInstanceCB, &cb, sizeof(LightCB));
+        inputs.ri->SetConstantShaderData(kInstanceCB, &cb, sizeof(ApplyLightingCB));
 
         // TODO: Make this a dispatch indirect per BRDF type if the code paths start to diverge
         inputs.ri->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);
