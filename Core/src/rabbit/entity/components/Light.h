@@ -61,12 +61,12 @@ namespace RB::Entity
 
 
             // TODO: Properly calculate the light-space bounding boxes of each CSM slice
-            float distance_back = 150.0f;
+            float distance_back = 250.0f;
             Math::Float3 light_pos = Math::Float3(0, 0, 0) - m_Direction * distance_back;
             
             //Graphics::Frustum frustum;
             frustum.SetTransform(light_pos, m_Direction);
-            frustum.SetOrthographicProjection(0.01f, 10000.0f, -250, 250, -250, 250, false);
+            frustum.SetOrthographicProjection(0.01f, 1000.0f, -250, 250, 250, -250, false);
 
             return frustum;
         }

@@ -92,19 +92,19 @@ namespace RB::Graphics
         m_ViewToClipMat = Math::Float4x4();
         m_ViewToClipMat.row0 = Math::Float4(2.0f / (right - left),              0,                                  0,                      0);
         m_ViewToClipMat.row1 = Math::Float4(0,                                  2.0f / (top - bottom),              0,                      0);
-        m_ViewToClipMat.row2 = Math::Float4(0,                                  0,                                  1 / (far - near),       0);
-        m_ViewToClipMat.row3 = Math::Float4((right + left) / (left - right),    (top + bottom) / (bottom - top),    near / (near - far),    1);
+        m_ViewToClipMat.row2 = Math::Float4(0,                                  0,                                  1.0f / (far - near),    0);
+        m_ViewToClipMat.row3 = Math::Float4((left + right) / (left - right),    (top + bottom) / (bottom - top),    -near / (far - near),   1);
 
         if (reverse_depth)
         {
-            m_ViewToClipMat.a22 = 1 / (near - far);
-            m_ViewToClipMat.a32 = near / (far - near);
+            m_ViewToClipMat.a22 = 1.0f / (near - far);
+            m_ViewToClipMat.a32 = near / (near - far);
         }
 
         m_HFov = 0.0f;
         m_VFov = 0.0f;
 
-        m_AspectRatio = (right - left) / (top - bottom);
+        m_AspectRatio = (right - left) / (bottom - top);
         m_ViewLength = far - near;
 
         m_ReversedDepth = reverse_depth;
