@@ -38,7 +38,7 @@ namespace RB::Graphics::D3D12
         return pso;
     }
 
-    GPtr<ID3D12PipelineState> PipelineManager::GetGraphicsPipeline(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint32_t vs_identifier, uint32_t ps_identifier)
+    GPtr<ID3D12PipelineState> PipelineManager::GetGraphicsPipeline(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint32_t vs_identifier, int32_t ps_identifier)
     {
         //	RB_ASSERT_FATAL(LOGTAG_GRAPHICS, (D3D12_SHADER_VERSION_TYPE)((vdesc.Version & 0xFFFF0000) >> 16) == D3D12_SHADER_VERSION_TYPE::D3D12_SHVER_VERTEX_SHADER,
         //		"Can not create pipeline from shader blob as the inputted vertex shader is not a vertex shader");
@@ -65,7 +65,7 @@ namespace RB::Graphics::D3D12
         return pso;
     }
 
-    GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(uint32_t vs_identifier, uint32_t ps_identifier)
+    GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(uint32_t vs_identifier, int32_t ps_identifier)
     {
         uint64_t hash = 0;
         HashCombine(hash, vs_identifier);

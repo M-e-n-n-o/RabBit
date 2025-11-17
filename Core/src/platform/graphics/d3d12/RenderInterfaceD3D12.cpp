@@ -1029,7 +1029,7 @@ namespace RB::Graphics::D3D12
         CHECK_SET(m_RenderState.vertexBufferType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,    "Cannot draw, vertex buffer was not set")
         CHECK_SET(m_RenderState.scissorSet,                                                     "Cannot draw, scissor was not set")
         CHECK_SET(m_RenderState.viewportSet,                                                    "Cannot draw, viewport was not set")
-        CHECK_SET(m_RenderState.vsShader >= 0 && m_RenderState.psShader >= 0,                   "Cannot draw, vertex or pixel shader was not set yet")
+        CHECK_SET(m_RenderState.vsShader >= 0,                                                  "Cannot draw, vertex shader was not set yet")
         CHECK_SET(m_RenderState.blendingSet,                                                    "Cannot draw, blend mode was not set")
         CHECK_SET(m_RenderState.rasterizerSet,                                                  "Cannot draw, rasterizer was not set")
         CHECK_SET(m_RenderState.depthStencilSet,                                                "Cannot draw, depth stencil was not set")
@@ -1060,24 +1060,24 @@ namespace RB::Graphics::D3D12
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
         pso_desc.pRootSignature         = m_RenderState.rootSignature.Get();
         pso_desc.VS                     = { vs_blob->shaderBlob, vs_blob->shaderBlobSize };
-        pso_desc.PS                     = { ps_blob->shaderBlob, ps_blob->shaderBlobSize };
-        //pso_desc.DS					= ;
-        //pso_desc.HS					= ;
-        //pso_desc.GS					= ;
-        //pso_desc.StreamOutput			= ;
+        pso_desc.PS                     = { ps_blob ? ps_blob->shaderBlob : nullptr, ps_blob ? ps_blob->shaderBlobSize : 0 };
+        //pso_desc.DS                   = ;
+        //pso_desc.HS                   = ;
+        //pso_desc.GS                   = ;
+        //pso_desc.StreamOutput         = ;
         pso_desc.BlendState             = m_RenderState.blendDesc;
         pso_desc.SampleMask             = UINT_MAX;
         pso_desc.RasterizerState        = m_RenderState.rasterizerDesc;
         pso_desc.DepthStencilState      = m_RenderState.depthStencilDesc;
         pso_desc.InputLayout            = { input_elements.data(), (UINT)input_elements.size() };
-        //pso_desc.IBStripCutValue		= ;
+        //pso_desc.IBStripCutValue      = ;
         pso_desc.PrimitiveTopologyType  = m_RenderState.vertexBufferType;
         pso_desc.NumRenderTargets       = m_RenderState.numRenderTargets;
-        /*pso_desc.RTVFormats */		  memcpy(pso_desc.RTVFormats, formats, sizeof(DXGI_FORMAT) * 8);
+        /*pso_desc.RTVFormats */          memcpy(pso_desc.RTVFormats, formats, sizeof(DXGI_FORMAT) * 8);
         pso_desc.DSVFormat              = m_RenderState.dsvFormat;
         pso_desc.SampleDesc             = { 1, 0 };
         pso_desc.NodeMask               = 0;
-        //pso_desc.CachedPSO			= NULL;
+        //pso_desc.CachedPSO            = NULL;
         pso_desc.Flags                  = D3D12_PIPELINE_STATE_FLAG_NONE;
 
         GPtr<ID3D12PipelineState> pso = g_PipelineManager->GetGraphicsPipeline(pso_desc, m_RenderState.vsShader, m_RenderState.psShader);

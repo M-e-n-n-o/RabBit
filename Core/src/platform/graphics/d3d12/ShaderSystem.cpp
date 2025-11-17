@@ -10,6 +10,8 @@ namespace RB::Graphics::D3D12
 
     ShaderSystem::ShaderSystem()
     {
+        m_EmptyMask = ShaderResourceMask();
+
         RB_ASSERT_FATAL_RELEASE_D3D(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_DxcUtils)), "Failed to create DXC Utils object");
 
         // Load the shader data from the binary file
@@ -75,13 +77,19 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    CompiledShaderBlob* ShaderSystem::GetCompilerShader(uint32_t shader_identifier)
+    CompiledShaderBlob* ShaderSystem::GetCompilerShader(int32_t shader_identifier)
     {
+        if (shader_identifier < 0)
+            return nullptr;
+
         return m_ShaderBlobs[shader_identifier];
     }
 
-    const ShaderResourceMask& ShaderSystem::GetShaderResourceMask(uint32_t shader_identifier)
+    const ShaderResourceMask& ShaderSystem::GetShaderResourceMask(int32_t shader_identifier)
     {
+        if (shader_identifier < 0)
+            return m_EmptyMask;
+
         return m_ShaderMasks[shader_identifier];
     }
 }

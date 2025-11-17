@@ -110,8 +110,8 @@ namespace RB::Graphics
     {
         in.ri->ClearDepth(in.outputTextures[0], false);
 
+        // Not using a pixel shader
         in.ri->SetVertexShader(VS_Simple3D);
-        in.ri->SetPixelShader(PS_SimpleDepth); // TODO: Use no pixel shader for the shadow rendering (this will also get rid of the validation warning)
 
         in.ri->SetBlendMode(BlendMode::None);
         in.ri->SetCullMode(CullMode::Back);

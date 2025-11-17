@@ -16,9 +16,9 @@ namespace RB::Graphics::D3D12
         PipelineManager();
 
         GPtr<ID3D12PipelineState> GetComputePipeline(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint32_t cs_identifier);
-        GPtr<ID3D12PipelineState> GetGraphicsPipeline(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint32_t vs_identifier, uint32_t ps_identifier);
+        GPtr<ID3D12PipelineState> GetGraphicsPipeline(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint32_t vs_identifier, int32_t ps_identifier);
 
-        GPtr<ID3D12RootSignature> GetRootSignature(uint32_t vs_identifier, uint32_t ps_identifier);
+        GPtr<ID3D12RootSignature> GetRootSignature(uint32_t vs_identifier, int32_t ps_identifier);
         GPtr<ID3D12RootSignature> GetRootSignature(uint32_t cs_identifier);
 
         List<D3D12_INPUT_ELEMENT_DESC> GetInputElementDesc(uint32_t vs_identifier);
