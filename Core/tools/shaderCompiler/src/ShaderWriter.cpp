@@ -93,9 +93,15 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 		{
 			std::wstring path = shader.pdbPath->GetStringPointer();
 			std::ofstream pdb_file(path, std::ios::binary);
-			EXIT_ON_FAIL(pdb_file.is_open(), "Could not open pdb directory/file");
-			pdb_file.write((const char*)shader.pdb->GetBufferPointer(), shader.pdb->GetBufferSize());
-			pdb_file.close();
+			if (pdb_file.is_open())
+			{
+				pdb_file.write((const char*)shader.pdb->GetBufferPointer(), shader.pdb->GetBufferSize());
+				pdb_file.close();
+			}
+			else
+			{
+				LOG("Could not open pdb directory/file: " << path.c_str());
+			}
 		}
 	}
 
