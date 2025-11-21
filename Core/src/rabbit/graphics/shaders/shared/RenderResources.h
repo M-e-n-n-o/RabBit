@@ -47,6 +47,17 @@ public:
     }
 
     template<typename TextureValueType>
+    float2 GetDimensions()
+    {
+        Texture2D<TextureValueType> texture = GetResource<TextureValueType>();
+
+        float width, height;
+        texture.GetDimensions(width, height);
+
+        return float2(width, height);
+    }
+
+    template<typename TextureValueType>
     Texture2D<TextureValueType> GetResource()
     {
         return TEXTURE_DESCRIPTOR_HEAP(Texture2D, TextureValueType, handle);

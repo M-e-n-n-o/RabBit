@@ -8,6 +8,32 @@ cbuffer ApplyLightingCB : CBUFFER_REG(kInstanceCB)
     ApplyLightingCB g_ApplyLighting;
 }
 
+float SampleShadowPCF(float2 uv, float depth, float bias)
+{
+    Tex2D shadow_map = FetchTex2D(2);
+
+    float2 size = shadow_map.GetDimensions<float>();
+    float2 texel_size = 1.0f / size;
+
+    // 3x3 kernel around UV
+    float sum = 0.0f;
+    [unroll]
+    for (int y = -1; y <= 1; y++)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; x++)
+        {
+            float2 offset = float2(x, y) * texel_size;
+            float sample_depth = shadow_map.Sample<float>(g_ClampPointSampler, uv + offset);
+
+            // Standard depth test with bias
+            sum += (sample_depth > (depth - bias)) ? 1.0f : 0.0f;
+        }
+    }
+
+    return sum / 9.0f; // normalize to [0,1]
+}
+
 [numthreads(8, 8, 1)]
 void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
 {
@@ -36,8 +62,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
                               1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
     // Sample shadow map
-    float map_depth = FetchTex2D(2).Sample<float>(g_ClampPointSampler, shadow_uv);
-    float out_shadow = map_depth > (shadow_ndc.z - 0.0005f);
+    float shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, 0.0005f);
 
     // Calculate lighting
     float3 diffuse;
@@ -51,8 +76,8 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
                           diffuse,
                           specular);
 
-    diffuse  *= out_shadow;
-    specular *= out_shadow;
+    diffuse  *= shadow;
+    specular *= shadow;
 
     float4 final_color = float4(ambient + diffuse + specular, 1.0f);
     FetchRWTex2D(0).Store<float4>(screen_coord, final_color);
