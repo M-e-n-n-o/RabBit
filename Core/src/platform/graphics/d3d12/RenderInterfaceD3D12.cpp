@@ -601,7 +601,10 @@ namespace RB::Graphics::D3D12
 
         m_RenderState.vertexCountPerInstance = base_vbo->GetVertexElementCount();
 
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE current_type = m_RenderState.vertexBufferType;
+        uint32_t last_count = m_RenderState.vertexBufferCount;
+        m_RenderState.vertexBufferCount = resource_count;
+
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE last_type = m_RenderState.vertexBufferType;
 
         switch (base_vbo->GetTopologyType())
         {
@@ -614,7 +617,8 @@ namespace RB::Graphics::D3D12
             break;
         }
 
-        if (current_type != m_RenderState.vertexBufferType)
+        if (last_type != m_RenderState.vertexBufferType ||
+            last_count != m_RenderState.vertexBufferCount)
         {
             m_RenderState.psoDirty = true;
         }
@@ -1043,7 +1047,7 @@ namespace RB::Graphics::D3D12
             m_RenderState.rootSignatureDirty = false;
         }
 
-        List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader);
+        List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader, m_RenderState.vertexBufferCount);
 
         CompiledShaderBlob* vs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.vsShader);
         CompiledShaderBlob* ps_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.psShader);

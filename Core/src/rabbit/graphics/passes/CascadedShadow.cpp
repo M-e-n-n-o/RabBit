@@ -72,9 +72,9 @@ namespace RB::Graphics
         {
             const MeshRenderer*     mesh_renderer   = (const MeshRenderer*)mesh_renderers[i];
             const Mesh*             mesh            = mesh_renderer->GetMesh();
-            const Mesh::VertexPair& vp              = mesh->GetVertexPair();
+            const Mesh::VertexPack& vp              = mesh->GetVertexPack();
 
-            if (!vp.vertexBuffer || !vp.vertexBuffer->ReadyToRender() || 
+            if (!vp.primaryBuffer || !vp.primaryBuffer->ReadyToRender() ||
                 (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()))
             {
                 continue;
@@ -83,7 +83,7 @@ namespace RB::Graphics
             const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
 
             CascadedShadowEntry::ModelEntry entry = {};
-            entry.vb            = vp.vertexBuffer;
+            entry.vb            = vp.primaryBuffer;
             entry.ib            = vp.indexBuffer;
             entry.modelMatrix   = transform->GetLocalToWorldMatrix();
 

@@ -20,7 +20,8 @@ namespace RB::Graphics
     {
         struct ModelEntry
         {
-            Shared<VertexBuffer> vb;
+            Shared<VertexBuffer> vb_primary;
+            Shared<VertexBuffer> vb_secondary;
             Shared<IndexBuffer>  ib;
             Shared<Texture>      texture;
             Math::Float4x4	     modelMatrix;
@@ -76,9 +77,10 @@ namespace RB::Graphics
             const MeshRenderer*     mesh_renderer   = (const MeshRenderer*)mesh_renderers[i];
             const Mesh*             mesh            = mesh_renderer->GetMesh();
             const Material*         mat             = mesh_renderer->GetMaterial();
-            const Mesh::VertexPair& vp              = mesh->GetVertexPair();
+            const Mesh::VertexPack& vp              = mesh->GetVertexPack();
 
-            if (!vp.vertexBuffer || !vp.vertexBuffer->ReadyToRender() || 
+            if (!vp.primaryBuffer || !vp.primaryBuffer->ReadyToRender() ||
+                (vp.secondaryBuffer && !vp.secondaryBuffer->ReadyToRender()) ||
                 (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()) ||
                 !mat->GetTexture()->ReadyToRender())
             {
@@ -88,7 +90,8 @@ namespace RB::Graphics
             const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
 
             GBufferEntry::ModelEntry entry = {};
-            entry.vb            = vp.vertexBuffer;
+            entry.vb_primary    = vp.primaryBuffer;
+            entry.vb_secondary  = vp.secondaryBuffer;
             entry.ib            = vp.indexBuffer;
             entry.texture       = mat->GetTexture();
             entry.modelMatrix   = transform->GetLocalToWorldMatrix();
@@ -126,7 +129,12 @@ namespace RB::Graphics
         {
             GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 
-            in.ri->SetVertexBuffer(model_entry.vb.get());
+            RenderResource* vbos[2];
+            vbos[0] = model_entry.vb_primary.get();
+            if (model_entry.vb_secondary)
+                vbos[1] = model_entry.vb_secondary.get();
+
+            in.ri->SetVertexBuffers(vbos, model_entry.vb_secondary ? 2 : 1);
 
             if (model_entry.ib)
             {

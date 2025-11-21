@@ -110,7 +110,7 @@ namespace RB::Graphics::D3D12
 
         bool                                m_CopyOperationsOnly;
         DeviceQueue*                        m_Queue;
-        GPtr<ID3D12GraphicsCommandList2>	m_CommandList;
+        GPtr<ID3D12GraphicsCommandList2>    m_CommandList;
 
         struct PendingClear
         {
@@ -121,33 +121,34 @@ namespace RB::Graphics::D3D12
 
         struct RenderState
         {
-            bool							    psoDirty = true;
-            bool							    rootSignatureDirty = true;
+            bool                                psoDirty = true;
+            bool                                rootSignatureDirty = true;
 
-            GPtr<ID3D12RootSignature>		    rootSignature = nullptr;
-            D3D12_PRIMITIVE_TOPOLOGY_TYPE	    vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
-            uint32_t						    vertexCountPerInstance = 0;
-            uint32_t						    indexCountPerInstance = 0;
-            bool							    scissorSet = false;
-            bool							    viewportSet = false;
+            GPtr<ID3D12RootSignature>           rootSignature = nullptr;
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE       vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+            uint32_t                            vertexBufferCount = 0;
+            uint32_t                            vertexCountPerInstance = 0;
+            uint32_t                            indexCountPerInstance = 0;
+            bool                                scissorSet = false;
+            bool                                viewportSet = false;
             uint32_t                            width = 0;
             uint32_t                            height = 0;
             Stack<D3D12_CPU_DESCRIPTOR_HANDLE>  rtvHandles[8];
             Stack<DXGI_FORMAT>                  rtvFormats[8];
-            D3D12_CPU_DESCRIPTOR_HANDLE	        dsvHandle;
+            D3D12_CPU_DESCRIPTOR_HANDLE         dsvHandle;
             DXGI_FORMAT                         dsvFormat = DXGI_FORMAT_UNKNOWN;
-            uint32_t						    numRenderTargets = 0;
+            uint32_t                            numRenderTargets = 0;
             bool                                renderTargetDirty = true;
-            int32_t							    vsShader = -1;
-            int32_t							    psShader = -1;
+            int32_t                             vsShader = -1;
+            int32_t                             psShader = -1;
             int32_t                             csShader = -1;
-            bool							    blendingSet = false;
-            D3D12_BLEND_DESC				    blendDesc = {};
-            bool							    rasterizerSet = false;
-            D3D12_RASTERIZER_DESC			    rasterizerDesc = {};
-            bool							    depthStencilSet = false;
-            D3D12_DEPTH_STENCIL_DESC		    depthStencilDesc = {};
-            D3D12_GPU_VIRTUAL_ADDRESS		    cbvAddresses[16];
+            bool                                blendingSet = false;
+            D3D12_BLEND_DESC                    blendDesc = {};
+            bool                                rasterizerSet = false;
+            D3D12_RASTERIZER_DESC               rasterizerDesc = {};
+            bool                                depthStencilSet = false;
+            D3D12_DEPTH_STENCIL_DESC            depthStencilDesc = {};
+            D3D12_GPU_VIRTUAL_ADDRESS           cbvAddresses[16];
 
             DescriptorIndex                     tex2DsrvHandles[SHADER_TEX2D_SLOTS];
             DescriptorIndex                     rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];

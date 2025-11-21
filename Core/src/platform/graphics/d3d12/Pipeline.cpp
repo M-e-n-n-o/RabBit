@@ -262,14 +262,20 @@ namespace RB::Graphics::D3D12
         HashCombine(seed, (UINT)desc.DepthStencilState.BackFace.StencilDepthFailOp);
         HashCombine(seed, (UINT)desc.DepthStencilState.BackFace.StencilPassOp);
         HashCombine(seed, (UINT)desc.DepthStencilState.BackFace.StencilFunc);
-        HashCombine(seed, (UINT)desc.IBStripCutValue);
+        //HashCombine(seed, (UINT)desc.IBStripCutValue);
         HashCombine(seed, (UINT)desc.PrimitiveTopologyType);
         HashCombine(seed, desc.NumRenderTargets);
         HashCombine(seed, (UINT)desc.DSVFormat);
-        HashCombine(seed, desc.SampleDesc.Count);
-        HashCombine(seed, desc.SampleDesc.Quality);
-        HashCombine(seed, desc.NodeMask);
+        //HashCombine(seed, desc.SampleDesc.Count);
+        //HashCombine(seed, desc.SampleDesc.Quality);
+        //HashCombine(seed, desc.NodeMask);
         HashCombine(seed, (UINT)desc.Flags);
+
+        HashCombine(seed, desc.InputLayout.NumElements);
+        for (int i = 0; i < desc.InputLayout.NumElements; ++i)
+        {
+            HashCombine(seed, desc.InputLayout.pInputElementDescs[i].InputSlot);
+        }
 
         for (int i = 0; i < 8; ++i)
         {
@@ -283,7 +289,6 @@ namespace RB::Graphics::D3D12
             HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].BlendOpAlpha);
             HashCombine(seed, (UINT)desc.BlendState.RenderTarget[i].LogicOp);
             HashCombine(seed, desc.BlendState.RenderTarget[i].RenderTargetWriteMask);
-
             HashCombine(seed, (UINT)desc.RTVFormats[i]);
         }
 
@@ -333,9 +338,13 @@ namespace RB::Graphics::D3D12
         return static_samplers;
     }
 
-    List<D3D12_INPUT_ELEMENT_DESC> PipelineManager::GetInputElementDesc(uint32_t vs_identifier)
+    List<D3D12_INPUT_ELEMENT_DESC> PipelineManager::GetInputElementDesc(uint32_t vs_identifier, uint32_t vertex_buffers_count)
     {
-        auto found = m_InputElementDescriptions.find(vs_identifier);
+        uint64_t hash = 0;
+        HashCombine(hash, vs_identifier);
+        HashCombine(hash, vertex_buffers_count);
+
+        auto found = m_InputElementDescriptions.find(hash);
 
         if (found != m_InputElementDescriptions.end())
         {
@@ -349,6 +358,7 @@ namespace RB::Graphics::D3D12
 
         List<D3D12_INPUT_ELEMENT_DESC> elements(shader_desc.InputParameters);
 
+        int32_t prev_input_slot = -1;
         uint32_t element_offset = 0;
 
         for (int i = 0; i < shader_desc.InputParameters; ++i)
@@ -356,14 +366,21 @@ namespace RB::Graphics::D3D12
             D3D12_SIGNATURE_PARAMETER_DESC desc;
             reflection->GetInputParameterDesc(i, &desc);
 
+            uint32_t input_slot = Math::Min(uint32_t(prev_input_slot + 1), vertex_buffers_count - 1);
+            if (input_slot != prev_input_slot)
+            {
+                element_offset = 0;
+            }
+
             elements[i] = {};
-            elements[i].SemanticName = desc.SemanticName;
-            elements[i].SemanticIndex = desc.SemanticIndex;
-            elements[i].InstanceDataStepRate = 0;
-            // For now hardcode all VAO's to have interleaved data, TODO this should be made more flexible later
-            elements[i].InputSlot = 0;
-            elements[i].AlignedByteOffset = element_offset;
-            elements[i].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+            elements[i].SemanticName            = desc.SemanticName;
+            elements[i].SemanticIndex           = desc.SemanticIndex;
+            elements[i].InstanceDataStepRate    = 0;
+            elements[i].InputSlot               = input_slot;
+            elements[i].AlignedByteOffset       = element_offset;
+            elements[i].InputSlotClass          = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+
+            prev_input_slot = input_slot;
 
             uint32_t channel_count = NumberOfSetBits(desc.Mask);
 
@@ -474,7 +491,7 @@ namespace RB::Graphics::D3D12
             }
         }
 
-        m_InputElementDescriptions.insert({ vs_identifier, elements });
+        m_InputElementDescriptions.emplace(hash, elements);
 
         return elements;
     }

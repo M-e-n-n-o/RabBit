@@ -9,22 +9,26 @@ namespace RB::Entity
     class Mesh
     {
     public:
-        struct VertexPair
+        struct VertexPack
         {
-            Shared<Graphics::VertexBuffer> vertexBuffer = nullptr;
+            // The vertex buffers are split up in 2
+            // - The first one atleast contains all the position data (for shadow rendering)
+            // - The secondary one all the optional data (such as normals, UV, etc.)
+            Shared<Graphics::VertexBuffer> primaryBuffer = nullptr;
+            Shared<Graphics::VertexBuffer> secondaryBuffer = nullptr;
             Shared<Graphics::IndexBuffer>  indexBuffer = nullptr;
         };
 
         Mesh(const char* name, LoadedMesh::Submodel& submodel);
         Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data, uint64_t index_data_count);
 
-        const VertexPair& GetVertexPair() const
+        const VertexPack& GetVertexPack() const
         {
-            return m_VertexPair;
+            return m_VertexPack;
         }
 
     private:
-        VertexPair m_VertexPair;
+        VertexPack m_VertexPack;
     };
 
     enum class TextureColorSpace

@@ -188,6 +188,8 @@ namespace RB
         LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node)
         {
             const size_t num_vertices = mesh_part->num_triangles * 3;
+            List<Math::Float3> positions;
+            positions.resize(num_vertices);
             List<LoadedMesh::Vertex> vertices;
             vertices.resize(num_vertices);
 
@@ -215,8 +217,9 @@ namespace RB
                     ufbx_vec3 normal = mesh->vertex_normal.exists ? ufbx_get_vertex_vec3(&mesh->vertex_normal, ix) : default_normal;
                     ufbx_vec2 uv     = mesh->vertex_uv.exists ? ufbx_get_vertex_vec2(&mesh->vertex_uv, ix) : default_uv;
 
+                    positions[vi_global] = Math::Float3(pos.x, pos.y, pos.z);
+
                     vertices[vi_global] = {};
-                    vertices[vi_global].position = Math::Float3(pos.x, pos.y, pos.z);
                     vertices[vi_global].normal   = Math::Float3(normal.x, normal.y, normal.z);
                     vertices[vi_global].uv       = Math::Float2(uv.x, uv.y);
                     vi_global++;
@@ -225,10 +228,9 @@ namespace RB
 
             RB_ASSERT(LOGTAG_MAIN, vertices.size() == num_vertices, "The amount of loaded vertices does not match what was expected");
 
-            ufbx_vertex_stream stream = {};
-            stream.data         = vertices.data();  
-            stream.vertex_count = vertices.size();  
-            stream.vertex_size  = sizeof(LoadedMesh::Vertex);
+            List<ufbx_vertex_stream> streams(2);
+            streams[0].data = positions.data(); streams[0].vertex_count = positions.size(); streams[0].vertex_size = sizeof(Math::Float3);
+            streams[1].data = vertices.data();  streams[1].vertex_count = vertices.size();  streams[1].vertex_size = sizeof(LoadedMesh::Vertex);
 
             LoadedMesh::Submodel out_submodel = {};
 
@@ -240,12 +242,15 @@ namespace RB
             // Optimize the flat vertex buffer into an indexed one. `ufbx_generate_indices()`
             // compacts the vertex buffer and returns the number of used vertices.
             ufbx_error error;
-            const size_t num_compacted_vertices = ufbx_generate_indices(&stream, 1, indices.data(), num_indices, nullptr, &error);
+            const size_t num_compacted_vertices = ufbx_generate_indices(streams.data(), streams.size(), indices.data(), num_indices, nullptr, &error);
             if (error.type == UFBX_ERROR_NONE)
             {
                 out_submodel.indices.resize(num_indices);
                 memcpy(out_submodel.indices.data(), indices.data(), sizeof(uint32_t) * num_indices);
-            
+
+                out_submodel.positions.resize(num_compacted_vertices);
+                memcpy(out_submodel.positions.data(), positions.data(), sizeof(Math::Float3) * num_compacted_vertices);
+
                 out_submodel.vertices.resize(num_compacted_vertices);
                 memcpy(out_submodel.vertices.data(), vertices.data(), sizeof(LoadedMesh::Vertex) * num_compacted_vertices);
             }
