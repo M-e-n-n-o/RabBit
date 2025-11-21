@@ -27,26 +27,26 @@ public:
     {
         RB_LOG("Hoiii");
 
-        //float vertex_data[] = {
-        //    // Pos					Color				UV
-        //    -1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f,	0, 1,	// 0
-        //    -1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f,	0, 1,	// 1
-        //     1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f,	0, 1,	// 2
-        //     1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f,	0, 1,	// 3
-        //    -1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f,	0, 1,	// 4
-        //    -1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f,	0, 1,	// 5
-        //     1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	0, 1,	// 6
-        //     1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f,	0, 1,	// 7
-        //};
+        float vertex_data[] = {
+            // Pos					Color				UV
+            -1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f,	0, 1,	// 0
+            -1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f,	0, 1,	// 1
+             1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f,	0, 1,	// 2
+             1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f,	0, 1,	// 3
+            -1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f,	0, 1,	// 4
+            -1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f,	0, 1,	// 5
+             1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	0, 1,	// 6
+             1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f,	0, 1,	// 7
+        };
 
-        //uint32_t index_data[] = {
-        //    0, 1, 2, 0, 2, 3,
-        //    4, 6, 5, 4, 7, 6,
-        //    4, 5, 1, 4, 1, 0,
-        //    3, 2, 6, 3, 6, 7,
-        //    1, 5, 6, 1, 6, 2,
-        //    4, 0, 3, 4, 3, 7
-        //};
+        uint32_t index_data[] = {
+            0, 1, 2, 0, 2, 3,
+            4, 6, 5, 4, 7, 6,
+            4, 5, 1, 4, 1, 0,
+            3, 2, 6, 3, 6, 7,
+            1, 5, 6, 1, 6, 2,
+            4, 0, 3, 4, 3, 7
+        };
 
         //float vertex_data[] = {
         //	// Pos				Color
@@ -73,11 +73,18 @@ public:
             Transform* t = object->AddComponent<Transform>();
             t->position = mesh.models[i].position;
             t->rotation = mesh.models[i].rotation;
-            t->scale = Float3(0.1f);
+            t->scale = Float3(0.01f);
             
             m_Transform = t;
         }
 
+        Mesh* ground = new Mesh("Ground", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
+
+        GameObject* ground_obj = scene->CreateGameObject();
+        ground_obj->AddComponent<MeshRenderer>(ground, m_Material);
+        auto* ground_t = ground_obj->AddComponent<Transform>();
+        ground_t->position.y = -5;
+        ground_t->scale = Float3(5, 0.1f, 5);
 
         void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
         //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
@@ -89,7 +96,7 @@ public:
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
         auto* sun = scene->CreateGameObject();
-        sun->AddComponent<DirectionalLight>(Math::Float3(-0.0f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
+        sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
 
         // UI
         {

@@ -19,7 +19,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
 
     GBuffer gbuf = SampleGBuffer(indices, uv);
 
-    if (gbuf.depth <= 0.0001f)
+    if (gbuf.depth <= 0.00001f)
     {
         // Bail out, nothing to light up
         return;

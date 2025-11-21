@@ -40,11 +40,6 @@ float4 PS_Simple2D(PI_SimpleCol input) : SV_Target0
     return input.color;
 }
 
-float4 PS_SimpleDepth(PI_Simple input) : SV_Target0
-{
-    return input.position.zzzz;
-}
-
 // Simple texture
 // ---------------------------------------------------------------
 
@@ -80,8 +75,6 @@ float4 PS_SimpleTex2D(PI_SimpleTex input) : SV_Target0
 struct VI_Simple3D
 {
     float3 position : POSITION;
-    float3 normal   : NORMAL;
-    float2 uv       : TEXCOORD0;
 };
 
 PI_Simple VS_Simple3D(VI_Simple3D input)

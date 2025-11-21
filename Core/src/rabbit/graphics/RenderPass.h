@@ -138,8 +138,7 @@ namespace RB::Graphics
         // Executed on the main thread after the game logic update. This method just gives the needed context of the 
         // current frame' viewcontext to the renderpass (as the renderpass will run next frame as it is ~1 frame behind). 
         // It can also do some preprocessing before the actual Render() call to, for example, determine which RenderEntries 
-        // this pass needs, so the RenderThread does not need to do this. But it can maybe also determine if the pass needs 
-        // to run at all even.
+        // this pass needs, so the RenderThread does not need to do this. But it can also determine if the pass needs to run at all this frame.
         virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) = 0;
 
         // Executed on the render thread

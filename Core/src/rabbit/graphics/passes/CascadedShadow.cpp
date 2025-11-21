@@ -114,7 +114,7 @@ namespace RB::Graphics
         in.ri->SetVertexShader(VS_Simple3D);
 
         in.ri->SetBlendMode(BlendMode::None);
-        in.ri->SetCullMode(CullMode::Back);
+        in.ri->SetCullMode(CullMode::Back); // should this be front? (breaks on some meshes)
         in.ri->SetDepthMode(DepthMode::PassCloser, true, false);
 
         in.ri->SetDepthStencil(in.outputTextures[0]);

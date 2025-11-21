@@ -29,6 +29,8 @@ namespace RB::Graphics
 
         void SetOrthographicProjection(float near_plane, float far_plane, float left, float right, float top, float bottom, bool reverse_depth);
 
+        bool IsInFrustum(const Math::Float4& bounds, const Math::Float3 position, const Math::Float3 rotation, const Math::Float3 scale);
+
         bool IsReversedDepth() const { return m_ReversedDepth; }
 
     private:

@@ -16,9 +16,9 @@ namespace RB::Graphics
 {
     struct DeferredLightingEntry : public RenderPassEntry
     {
+        Math::Float4x4 shadowVP;
         Math::Float3   direction;
         Math::Float3   color;
-        Math::Float4x4 shadowVP;
     };
 
     RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings& setting)
@@ -65,9 +65,9 @@ namespace RB::Graphics
 
             auto frustum = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform);
 
+            entry->shadowVP  = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
             entry->direction = light->GetDirection();
             entry->color     = light->GetColor();
-            entry->shadowVP  = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
         }
 
         return entry;
