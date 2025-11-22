@@ -55,9 +55,11 @@ namespace RB::Graphics
 
         if (list.empty())
         {
-            entry->direction = Math::Float3(0, -1, 0);
+            const auto& frustum = view_context->viewFrustum;
+
+            entry->shadowVP  = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
+            entry->direction = Math::Float3(0, 0, 0);
             entry->color     = Math::Float3(0, 0, 0);
-            // TODO Fill in a shadowVP that causes the ndc.z te be smaller than 1
         }
         else
         {

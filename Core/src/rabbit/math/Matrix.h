@@ -55,6 +55,7 @@ namespace RB::Math
         };
 
         Float4x4();
+        Float4x4(float uniform_value);
         ~Float4x4() = default;
 
         void ToData(float* out);

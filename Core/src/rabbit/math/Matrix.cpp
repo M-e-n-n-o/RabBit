@@ -15,6 +15,14 @@ namespace RB::Math
         row3 = { 0, 0, 0, 1 };
     }
 
+    Float4x4::Float4x4(float v)
+    {
+        row0 = { v, v, v, v };
+        row1 = { v, v, v, v };
+        row2 = { v, v, v, v };
+        row3 = { v, v, v, v };
+    }
+
     void Float4x4::ToData(float* out)
     {
         memcpy(out, a, 16 * sizeof(float));
