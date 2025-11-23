@@ -49,8 +49,7 @@ namespace RB::Graphics::VK
 
         void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override {}
         void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) override {}
-        void ClearShaderResourceInput(uint32_t slot) override {}
-        void ClearRandomReadWriteInput(uint32_t slot) override {}
+        void ClearShaderResource(uint32_t slot) override {}
 
         void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) override {}
 

@@ -16,9 +16,11 @@ namespace RB::Graphics
 {
     struct DeferredLightingEntry : public RenderPassEntry
     {
-        Math::Float4x4 shadowVP;
-        Math::Float3   direction;
-        Math::Float3   color;
+        bool has_light;
+        Entity::DirectionalLight light;
+
+        Entity::Camera camera;
+        Entity::Transform cameraTransform;
     };
 
     RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings& setting)
@@ -39,7 +41,7 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRandomReadWrites},
+                    RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRandomReadWrites},
                 },
 
                 // Async compute compatible
@@ -51,25 +53,19 @@ namespace RB::Graphics
     {
         const auto& list = scene->GetComponentsWithTypeOf<Entity::DirectionalLight>();
 
-        DeferredLightingEntry* entry = new DeferredLightingEntry();
+        DeferredLightingEntry* entry = (DeferredLightingEntry*)allocator->Allocate(sizeof(DeferredLightingEntry));
+        entry->camera           = *view_context->camera;
+        entry->cameraTransform  = *view_context->cameraTransform;
 
         if (list.empty())
         {
-            const auto& frustum = view_context->viewFrustum;
-
-            entry->shadowVP  = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
-            entry->direction = Math::Float3(0, 0, 0);
-            entry->color     = Math::Float3(0, 0, 0);
+            entry->has_light = false;
+            entry->light     = Entity::DirectionalLight(Math::Float3(0), Math::Float3(0));
         }
         else
         {
-            const auto* light = (Entity::DirectionalLight*)list[0];
-
-            auto frustum = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform);
-
-            entry->shadowVP  = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
-            entry->direction = light->GetDirection();
-            entry->color     = light->GetColor();
+            entry->has_light = true;
+            entry->light     = *((Entity::DirectionalLight*)list[0]);
         }
 
         return entry;
@@ -84,21 +80,38 @@ namespace RB::Graphics
         inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[0], 0);
         inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[1], 1);
 
-        if (inputs.dependencyTextures[2])
-            inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[2], 2);
-        else
-            inputs.ri->SetShaderResourceInput(g_TexDefaultWhite.get(), 2);
-
-        inputs.ri->SetRandomReadWriteInput(inputs.outputTextures[0], 0);
-
         DeferredLightingEntry* entry = (DeferredLightingEntry*)inputs.entryContext;
 
         ApplyLightingCB cb = {};
-        cb.light.direction = entry->direction;
-        cb.light.color     = entry->color;
-        cb.shadowVP        = entry->shadowVP;
+        cb.light.direction = entry->light.GetDirection();
+        cb.light.color     = entry->light.GetColor();
+        cb.slices          = 0;
+
+        RenderResource* shadow_map = inputs.dependencyTextures[2];
+
+        if (shadow_map)
+        {
+            Texture* csm = (Texture*)shadow_map;
+            cb.slices = Math::Min(csm->GetArraySize(), (uint32_t)_countof(cb.shadowVPs));
+
+            RB_ASSERT(LOGTAG_GRAPHICS, csm->GetArraySize() <= _countof(cb.shadowVPs), "Need to increase the max shadow slices in ApplyLightingCB");
+
+            for (int i = 0; i < cb.slices; ++i)
+            {
+                const auto frustum = entry->light.CalculateFrustum(entry->camera, entry->cameraTransform, i, cb.slices);
+                cb.shadowVPs[i] = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
+            }
+
+            inputs.ri->SetShaderResourceInput(shadow_map, 2);
+        }
+        else
+        {
+            inputs.ri->SetShaderResourceInput(g_TexDefaultWhite.get(), 2);
+        }
 
         inputs.ri->SetConstantShaderData(kInstanceCB, &cb, sizeof(ApplyLightingCB));
+
+        inputs.ri->SetRandomReadWriteInput(inputs.outputTextures[0], 3);
 
         // TODO: Make this a dispatch indirect per BRDF type if the code paths start to diverge
         inputs.ri->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);

@@ -8,12 +8,13 @@ cbuffer ApplyLightingCB : CBUFFER_REG(kInstanceCB)
     ApplyLightingCB g_ApplyLighting;
 }
 
-float SampleShadowPCF(float2 uv, float depth, float bias)
+float SampleShadowPCF(float2 uv, float depth, float slice, float bias)
 {
-    Tex2D shadow_map = FetchTex2D(2);
+    Tex2DArray shadow_map = FetchTex2DArray(2);
 
-    float2 size = shadow_map.GetDimensions<float>();
-    float2 texel_size = 1.0f / size;
+    float width, height, elements;
+    shadow_map.GetDimensions<float>(width, height, elements);
+    float2 texel_size = 1.0f / float2(width, height);
 
     // 3x3 kernel around UV
     float sum = 0.0f;
@@ -24,7 +25,7 @@ float SampleShadowPCF(float2 uv, float depth, float bias)
         for (int x = -1; x <= 1; x++)
         {
             float2 offset = float2(x, y) * texel_size;
-            float sample_depth = shadow_map.Sample<float>(g_ClampPointSampler, uv + offset);
+            float sample_depth = shadow_map.Sample<float>(g_ClampAnisoSampler, float3(uv + offset, slice));
 
             // Standard depth test with bias
             sum += (sample_depth > (depth - bias)) ? 1.0f : 0.0f;
@@ -54,7 +55,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     float3 world_pos = TransformScreenUVsToWorld(uv, gbuf.depth, false);
 
     // shadow map coords
-    float4 shadow_clip = mul(g_ApplyLighting.shadowVP, float4(world_pos, 1.0f));
+    float4 shadow_clip = mul(g_ApplyLighting.shadowVPs[0], float4(world_pos, 1.0f));
     float3 shadow_ndc = shadow_clip.xyz / shadow_clip.w;
 
     // convert from NDC [-1,1] to UV [0,1]
@@ -62,7 +63,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
                               1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
     // Sample shadow map
-    float shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, 0.0005f);
+    float shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, 0, 0.0001f);
 
     // Calculate lighting
     float3 diffuse;
@@ -80,5 +81,5 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     specular *= shadow;
 
     float4 final_color = float4(ambient + diffuse + specular, 1.0f);
-    FetchRWTex2D(0).Store<float4>(screen_coord, final_color);
+    FetchRWTex2D(3).Store<float4>(screen_coord, final_color);
 }

@@ -71,7 +71,8 @@ namespace RB::Graphics
         StructuredBuffer    = (1 << 2) | Buffer,
         VertexBuffer        = (1 << 3) | Buffer,
         IndexBuffer         = (1 << 4) | Buffer,
-        Texture2D           = (1 << 5) | Texture
+        Texture2D           = (1 << 5) | Texture,
+        Texture2DArray      = (1 << 6) | Texture
     };
 
     class RenderResource
@@ -156,6 +157,11 @@ namespace RB::Graphics
     public:
         virtual ~Texture() = default;
 
+        virtual uint32_t GetWidth() const = 0;
+        virtual uint32_t GetHeight() const = 0;
+        virtual uint32_t GetDepth() const = 0;
+        float	         GetAspectRatio() const;
+
         virtual bool AllowedRenderTarget() const = 0;
         virtual bool AllowedRandomReadWrites() const = 0;
         virtual bool AllowedDepthStencil() const = 0;
@@ -172,6 +178,9 @@ namespace RB::Graphics
         virtual void SetArraySize(uint32_t size) = 0;
         virtual void SetFirstArraySlice(uint32_t slice) = 0;
 
+        // Resets all the overwritten mip/array properties
+        virtual void ResetView() = 0;
+
     protected:
         Texture(RenderResourceType type) 
             : RenderResource(type)
@@ -183,15 +192,13 @@ namespace RB::Graphics
     public:
         virtual ~Texture2D() = default;
 
-        virtual uint32_t GetWidth() const = 0;
-        virtual uint32_t GetHeight() const = 0;
-        float	         GetAspectRatio() const;
+        virtual uint32_t GetDepth() const { return 1; }
 
-        uint32_t GetArraySize() const { return 1; }
-        uint32_t GetFirstArraySlice() const { return 0; }
+        virtual uint32_t GetArraySize() const { return 1; }
+        virtual uint32_t GetFirstArraySlice() const { return 0; }
 
-        void SetArraySize(uint32_t size) {}
-        void SetFirstArraySlice(uint32_t slice) {}
+        virtual void SetArraySize(uint32_t size) {}
+        virtual void SetFirstArraySlice(uint32_t slice) {}
 
         static Shared<Texture2D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         static Shared<Texture2D> Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
@@ -199,6 +206,19 @@ namespace RB::Graphics
 
     protected:
         Texture2D() : Texture(RenderResourceType::Texture2D) {}
+    };
+
+    class Texture2DArray : public Texture
+    {
+    public:
+        virtual ~Texture2DArray() = default;
+
+        virtual uint32_t GetDepth() const { return 1; }
+
+        static Shared<Texture2DArray> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access);
+
+    protected:
+        Texture2DArray() : Texture(RenderResourceType::Texture2DArray) {}
     };
 
     struct RenderTargetBundle

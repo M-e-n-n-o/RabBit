@@ -143,6 +143,11 @@ namespace RB::Graphics::VK
         // TODO Add mip support
     }
 
+    void Texture2DVK::ResetView()
+    {
+        // TODO Add mip support
+    }
+
     void Texture2DVK::SetView(VkImageView image_view)
     {
         m_ImageView = image_view;

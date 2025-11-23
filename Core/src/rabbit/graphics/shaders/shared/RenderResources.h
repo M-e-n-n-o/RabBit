@@ -21,11 +21,17 @@
 
 typedef uint RenderResourceHandle;
 
+// This struct should be casted to the implementation structs
+struct ShaderResource
+{
+    RenderResourceHandle handle;
+    uint data0;
+    uint data1;
+    uint data2;
+};
+
 struct Tex2D
 {
-#if !SHADER
-public:
-#endif
     RenderResourceHandle handle;
     uint pad0;
     uint pad1;
@@ -38,7 +44,7 @@ public:
         Texture2D<TextureValueType> texture = GetResource<TextureValueType>();
         return texture.Sample(ss, uv);
     }
-    
+
     template<typename TextureValueType>
     TextureValueType SampleLevel(SamplerState ss, uint2 coord, float level)
     {
@@ -47,14 +53,10 @@ public:
     }
 
     template<typename TextureValueType>
-    float2 GetDimensions()
+    void GetDimensions(out float width, out float height)
     {
         Texture2D<TextureValueType> texture = GetResource<TextureValueType>();
-
-        float width, height;
         texture.GetDimensions(width, height);
-
-        return float2(width, height);
     }
 
     template<typename TextureValueType>
@@ -64,13 +66,41 @@ public:
     }
 #endif
 };
-ALIGN_CHECK(Tex2D);
+SIZE_EQUAL(Tex2D, ShaderResource);
+
+struct Tex2DArray
+{
+    RenderResourceHandle handle;
+    uint pad0;
+    uint pad1;
+    uint pad2;
+
+#if SHADER    
+    template<typename TextureValueType>
+    TextureValueType Sample(SamplerState ss, float3 uv)
+    {
+        Texture2DArray<TextureValueType> texture = GetResource<TextureValueType>();
+        return texture.Sample(ss, uv);
+    }
+
+    template<typename TextureValueType>
+    void GetDimensions(out float width, out float height, out float elements)
+    {
+        Texture2DArray<TextureValueType> texture = GetResource<TextureValueType>();
+        texture.GetDimensions(width, height, elements);
+    }
+
+    template<typename TextureValueType>
+    Texture2DArray<TextureValueType> GetResource()
+    {
+        return TEXTURE_DESCRIPTOR_HEAP(Texture2DArray, TextureValueType, handle);
+    }
+#endif
+};
+SIZE_EQUAL(Tex2DArray, ShaderResource);
 
 struct RwTex2D
 {
-#if !SHADER
-public:
-#endif
     RenderResourceHandle handle;
     uint pad0;
     uint pad1;
@@ -98,6 +128,6 @@ public:
     }
 #endif
 };
-ALIGN_CHECK(RwTex2D);
+SIZE_EQUAL(RwTex2D, ShaderResource);
 
 #endif

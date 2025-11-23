@@ -78,7 +78,7 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"ColorOverlay",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget},
+                    RenderTextureDesc{"ColorOverlay",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRenderTarget},
                 },
 
             // Async compute compatible
@@ -245,7 +245,7 @@ namespace RB::Graphics
             return a.renderOrder < b.renderOrder;
         });
 
-        Overlay2DEntry* entry = new Overlay2DEntry();
+        Overlay2DEntry* entry = (Overlay2DEntry*)allocator->Allocate(sizeof(Overlay2DEntry));
         entry->elements = elements;
 
         return entry;

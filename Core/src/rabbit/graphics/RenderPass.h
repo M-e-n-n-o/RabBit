@@ -51,7 +51,16 @@ namespace RB::Graphics
         RenderResourceFormat    format;
         uint32_t                width;  // RenderTextureSize
         uint32_t                height; // RenderTextureSize
+        uint32_t                slices;
         uint32_t                flags = UINT32_MAX; // UINT32_MAX means this texture is invalid!
+
+        static_assert(false);
+        /*
+            TODO:
+            - Add clear value (clear shadowmap instead of doing it manually in the pass) & reorganize RenderTextureDesc (should not only be texture)
+            - Cleanup DeferredLighting pass (it now copies over the entire camera & transform, do I want this?
+            - Actually sample all the different shadow slices
+        */
 
         bool IsAliasableWith(const RenderTextureDesc& other) const
         {
@@ -62,7 +71,8 @@ namespace RB::Graphics
                     ((flags & kRTFlag_UpscaledSized) == (other.flags & kRTFlag_UpscaledSized)) &&
                     format == other.format &&
                     width == other.width &&
-                    height == other.height);
+                    height == other.height &&
+                    slices == other.slices);
         }
 
         bool HasFlag(RenderTextureFlag flag) const

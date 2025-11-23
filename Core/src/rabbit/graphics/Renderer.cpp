@@ -76,12 +76,6 @@ namespace RB::Graphics
 
         void OnDestroy(bool overwritten) override
         {
-            // TODO: Enable for proper rendering
-            //for (int i = 0; i < totalViewContexts; ++i)
-            //{
-            //    renderGraphs[viewContexts[i].renderGraphType]->DestroyEntries(renderPassEntries[i]);
-            //}
-
             frameAllocator->UnlockPageSet(lockedPageSet);
         }
     };
@@ -286,7 +280,6 @@ namespace RB::Graphics
         // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)?
         uint32_t size = sizeof(ViewContext) * out_context_count;
         ViewContext* contexts = (ViewContext*)m_RenderAllocator->Allocate(size);
-        memset(contexts, 0, size);
 
         uint32_t context_index = 0;
 

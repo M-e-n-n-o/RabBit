@@ -171,12 +171,25 @@ namespace RB::Graphics
 
             std::string name = "GraphResouce " + std::to_string(i);
 
-            m_Resources.push_back(Texture2D::Create(name.c_str(),
-                                                    aliased_desc.desc.format, 
-                                                    aliased_desc.desc.width, 
-                                                    aliased_desc.desc.height, 
-                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
-                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+            if (aliased_desc.desc.slices > 1)
+            {
+                m_Resources.push_back(Texture2DArray::Create(name.c_str(),
+                                                             aliased_desc.desc.format, 
+                                                             aliased_desc.desc.width, 
+                                                             aliased_desc.desc.height,
+                                                             aliased_desc.desc.slices,
+                                                             aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
+                                                             aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+            }
+            else
+            {
+                m_Resources.push_back(Texture2D::Create(name.c_str(),
+                                                        aliased_desc.desc.format, 
+                                                        aliased_desc.desc.width, 
+                                                        aliased_desc.desc.height, 
+                                                        aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
+                                                        aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+            }
 
             m_Clears.push_back(aliased_desc.desc.HasFlag(kRTFlag_ClearBeforeGraph));
 

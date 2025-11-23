@@ -47,9 +47,9 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
-                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
-                    RenderTextureDesc{"Hyper Depth",    RenderResourceFormat::D32_FLOAT,          kRTSize_Full, kRTSize_Full, kRTFlag_ClearBeforeGraph  },
+                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
+                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
+                    RenderTextureDesc{"Hyper Depth",    RenderResourceFormat::D32_FLOAT,          kRTSize_Full, kRTSize_Full, 1, kRTFlag_ClearBeforeGraph  },
                 },
 
                 // Async compute compatible
@@ -63,7 +63,6 @@ namespace RB::Graphics
 
         uint32_t size = sizeof(GBufferEntry::ModelEntry) * mesh_renderers.size();
         GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*)allocator->Allocate(size);
-        memset(entries, 0, size);
 
         uint32_t total_entries = 0;
 
@@ -100,7 +99,7 @@ namespace RB::Graphics
             total_entries++;
         }
 
-        GBufferEntry* entry = new GBufferEntry();
+        GBufferEntry* entry = (GBufferEntry*)allocator->Allocate(sizeof(GBufferEntry));
         entry->entries      = entries;
         entry->entryCount   = total_entries;
 
@@ -143,7 +142,7 @@ namespace RB::Graphics
 
             in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-            in.ri->SetShaderResourceInput(model_entry.texture.get(), 1);
+            in.ri->SetShaderResourceInput(model_entry.texture.get(), 0);
 
             in.ri->Draw();
         }

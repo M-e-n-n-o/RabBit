@@ -27,7 +27,8 @@ namespace RB::Graphics
 
         ModelEntry* modelEntries;
         uint32_t    entryCount;
-        Frustum     frustum;
+        Frustum*    frustums;
+        uint32_t    totalSlices;
     };
 
     RenderPassConfig CascadedShadowPass::GetConfiguration(const RenderPassSettings& setting)
@@ -44,7 +45,7 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"CascadedShadowMap", RenderResourceFormat::R32_TYPELESS, 1024, 1024, kRTFlag_CustomSized},
+                    RenderTextureDesc{"CascadedShadowMap", RenderResourceFormat::R32_TYPELESS, 1024, 1024, m_ShadowSlices, kRTFlag_CustomSized},
                 },
 
                 // Async compute compatible
@@ -64,7 +65,6 @@ namespace RB::Graphics
 
         uint32_t size = sizeof(CascadedShadowEntry::ModelEntry) * mesh_renderers.size();
         CascadedShadowEntry::ModelEntry* entries = (CascadedShadowEntry::ModelEntry*)allocator->Allocate(size);
-        memset(entries, 0, size);
 
         uint32_t total_entries = 0;
 
@@ -98,10 +98,19 @@ namespace RB::Graphics
 
         const auto* light = (DirectionalLight*)list[0];
 
-        CascadedShadowEntry* entry = new CascadedShadowEntry();
-        entry->frustum      = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform);
+        uint32_t fsize = sizeof(Frustum) * m_ShadowSlices;
+        Frustum* frustums = (Frustum*)allocator->Allocate(fsize);
+
+        for (int i = 0; i < m_ShadowSlices; ++i)
+        {
+            frustums[i] = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform, i, m_ShadowSlices);
+        }
+
+        CascadedShadowEntry* entry = (CascadedShadowEntry*)allocator->Allocate(sizeof(CascadedShadowEntry));
         entry->modelEntries = entries;
         entry->entryCount   = total_entries;
+        entry->frustums     = frustums;
+        entry->totalSlices  = m_ShadowSlices;
 
         return entry;
     }
@@ -117,27 +126,38 @@ namespace RB::Graphics
         in.ri->SetCullMode(CullMode::Back); // should this be front? (breaks on some meshes)
         in.ri->SetDepthMode(DepthMode::PassCloser, true, false);
 
-        in.ri->SetDepthStencil(in.outputTextures[0]);
+        Texture2DArray* csm = (Texture2DArray*)in.outputTextures[0];
 
         CascadedShadowEntry* entry = (CascadedShadowEntry*)in.entryContext;
 
-        // Use the custom frustum
-        in.viewContext->SetFrameConstants(in.ri, in.viewContext->viewport, entry->frustum);
-
-        for (int i = 0; i < entry->entryCount; ++i)
+        for (int slice = 0; slice < entry->totalSlices; ++slice)
         {
-            CascadedShadowEntry::ModelEntry& model_entry = entry->modelEntries[i];
+            RB_PROFILE_GPU_SCOPED(in.ri, "Slice");
 
-            in.ri->SetVertexBuffer(model_entry.vb.get());
+            csm->SetFirstArraySlice(slice);
+            in.ri->SetDepthStencil(csm);
 
-            if (model_entry.ib)
+            // Use the custom frustum
+            in.viewContext->SetFrameConstants(in.ri, in.viewContext->viewport, entry->frustums[slice]);
+
+            for (int i = 0; i < entry->entryCount; ++i)
             {
-                in.ri->SetIndexBuffer(model_entry.ib.get());
+                CascadedShadowEntry::ModelEntry& model_entry = entry->modelEntries[i];
+
+                in.ri->SetVertexBuffer(model_entry.vb.get());
+
+                if (model_entry.ib)
+                {
+                    in.ri->SetIndexBuffer(model_entry.ib.get());
+                }
+
+                in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+
+                in.ri->Draw();
             }
-
-            in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
-
-            in.ri->Draw();
         }
+
+        // Reset the overwritten properties
+        csm->ResetView();
     }
 }

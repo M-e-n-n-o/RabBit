@@ -5,7 +5,7 @@ namespace RB::Graphics
 {
     struct CascadedShadowSettings : public RenderPassSettings
     {
-        // Resolution settings
+        // Resolution & shadow slices settings
     };
 
     class CascadedShadowPass : public RenderPass
@@ -18,5 +18,8 @@ namespace RB::Graphics
         RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) override;
 
         void Render(RenderPassInput& inputs) override;
+
+    private:
+        const uint32_t m_ShadowSlices = 4;
     };
 }

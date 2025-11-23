@@ -28,7 +28,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
 
     AppInfo::Window window1 = {};
     window1.windowName          = "Window 1";
-    window1.fullscreen          = true;
+    window1.fullscreen          = false;
     window1.windowIndex         = 0;
     //window1.windowWidth         = 1280;
     //window1.windowHeight        = 720;

@@ -88,8 +88,7 @@ namespace RB::Graphics
 
         virtual void SetShaderResourceInput(RenderResource* resource, uint32_t slot) = 0;
         virtual void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) = 0;
-        virtual void ClearShaderResourceInput(uint32_t slot) = 0;
-        virtual void ClearRandomReadWriteInput(uint32_t slot) = 0;
+        virtual void ClearShaderResource(uint32_t slot) = 0;
 
         virtual void SetViewport(const Viewport& viewport) = 0;
         virtual void SetViewports(const Viewport* viewports, uint32_t total_viewports) = 0;

@@ -126,6 +126,8 @@ namespace RB
         void* space = (void*)(m_MemoryBlock + m_Offset);
         m_Offset += size;
 
+        memset(space, 0, size); // Is this going to hurt performance a lot?
+
         return space;
     }
 

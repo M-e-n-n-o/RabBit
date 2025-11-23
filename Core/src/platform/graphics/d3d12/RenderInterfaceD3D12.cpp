@@ -75,8 +75,7 @@ namespace RB::Graphics::D3D12
             BindDescriptorHeaps();
         }
 
-        ClearSrvResources();
-        ClearUavResources();
+        ClearResources();
         ClearRenderTargets();
     }
 
@@ -121,7 +120,7 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::PushRenderTarget(RenderResource* color_target, uint32_t index)
     {
-        Texture2DD3D12* tex = (Texture2DD3D12*)color_target;
+        Texture* tex = (Texture*)color_target;
         if (!tex->AllowedRenderTarget())
         {
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a render target");
@@ -142,7 +141,13 @@ namespace RB::Graphics::D3D12
         // This also waits until the resource has been created
         TransitionResource(tex, ResourceState::RENDER_TARGET);
 
-        m_RenderState.rtvHandles[index].push(tex->GetRenderTargetHandle());
+        if (tex->GetType() == RenderResourceType::Texture2D)
+            m_RenderState.rtvHandles[index].push(((Texture2DD3D12*)tex)->GetRenderTargetHandle());
+        else if (tex->GetType() == RenderResourceType::Texture2DArray)
+            m_RenderState.rtvHandles[index].push(((Texture2DArrayD3D12*)tex)->GetRenderTargetHandle());
+        else
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as rendertarget");
+
         m_RenderState.rtvFormats[index].push(ConvertToDXGIFormat(tex->GetFormat(), true, false));
 
         m_RenderState.numRenderTargets = Math::Max(m_RenderState.numRenderTargets, index + 1);
@@ -174,13 +179,13 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetDepthStencil(RenderResource* ds_target)
     {
-        if (ds_target->GetType() != RenderResourceType::Texture2D)
+        if (ds_target->GetPrimitiveType() != RenderResourceType::Texture)
         {
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Depth Stencil should be a Texture2D");
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Depth Stencil should be a Texture");
             return;
         }
 
-        Texture2D* depth_stencil = (Texture2D*)ds_target;
+        Texture* depth_stencil = (Texture*)ds_target;
         if (depth_stencil->AllowedDepthStencil())
         {
             if (m_RenderState.width != depth_stencil->GetWidth() || m_RenderState.height != depth_stencil->GetHeight())
@@ -197,7 +202,13 @@ namespace RB::Graphics::D3D12
             // This also waits until the resource has been created
             TransitionResource(depth_stencil, ResourceState::DEPTH_WRITE);
 
-            m_RenderState.dsvHandle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
+            if (depth_stencil->GetType() == RenderResourceType::Texture2D)
+                m_RenderState.dsvHandle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
+            else if (depth_stencil->GetType() == RenderResourceType::Texture2DArray)
+                m_RenderState.dsvHandle = ((Texture2DArrayD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as depth stencil");
+
             m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat(), true, true);
 
             m_RenderState.renderTargetDirty = true;
@@ -235,10 +246,15 @@ namespace RB::Graphics::D3D12
         {
         case RenderResourceType::Texture2D:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.tex2DsrvHandles), "Shader resource input slot out of range");
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.shaderResourceHandles), "Shader resource input slot out of range");
+            m_RenderState.shaderResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle();
+        }
+        break;
 
-            Texture2DD3D12* tex = (Texture2DD3D12*)resource;
-            m_RenderState.tex2DsrvHandles[slot] = tex->GetSrvHandle();
+        case RenderResourceType::Texture2DArray:
+        {
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.shaderResourceHandles), "Shader resource input slot out of range");
+            m_RenderState.shaderResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle();
         }
         break;
 
@@ -256,9 +272,9 @@ namespace RB::Graphics::D3D12
         {
         case RenderResourceType::Texture2D:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.rwTex2DsrvHandles), "UAV input slot out of range");
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.shaderResourceHandles), "UAV input slot out of range");
 
-            Texture2DD3D12* tex = (Texture2DD3D12*)resource;
+            Texture* tex = (Texture*)resource;
 
             if (!tex->AllowedRandomReadWrites())
             {
@@ -266,7 +282,12 @@ namespace RB::Graphics::D3D12
                 return;
             }
 
-            m_RenderState.rwTex2DsrvHandles[slot] = tex->GetUavHandle();
+            if (tex->GetType() == RenderResourceType::Texture2D)
+                m_RenderState.shaderResourceHandles[slot] = ((Texture2DD3D12*)tex)->GetUavHandle();
+            else if (tex->GetType() == RenderResourceType::Texture2DArray)
+                m_RenderState.shaderResourceHandles[slot] = ((Texture2DArrayD3D12*)tex)->GetUavHandle();
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as random read write input");
         }
         break;
 
@@ -276,14 +297,9 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
+    void RenderInterfaceD3D12::ClearShaderResource(uint32_t slot)
     {
-        m_RenderState.tex2DsrvHandles[slot] = DescriptorIndex{};
-    }
-
-    void RenderInterfaceD3D12::ClearRandomReadWriteInput(uint32_t slot)
-    {
-        m_RenderState.rwTex2DsrvHandles[slot] = DescriptorIndex{};
+        m_RenderState.shaderResourceHandles[slot] = DescriptorIndex{};
     }
 
     void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
@@ -344,8 +360,14 @@ namespace RB::Graphics::D3D12
 
             PendingClear clear = {};
             clear.renderTarget = true;
-            clear.handle       = ((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle();
             clear.color        = color;
+
+            if (tex->GetType() == RenderResourceType::Texture2D)
+                clear.handle = ((Texture2DD3D12*)tex)->GetRenderTargetHandle();
+            else if (tex->GetType() == RenderResourceType::Texture2DArray)
+                clear.handle = ((Texture2DArrayD3D12*)tex)->GetRenderTargetHandle();
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported for a clear");
 
             m_RenderState.pendingClears.push_back(clear);
         }
@@ -355,8 +377,14 @@ namespace RB::Graphics::D3D12
 
             PendingClear clear = {};
             clear.renderTarget = false;
-            clear.handle       = ((D3D12::Texture2DD3D12*)resource)->GetDepthStencilTargetHandle();
             clear.color        = color;
+
+            if (tex->GetType() == RenderResourceType::Texture2D)
+                clear.handle = ((Texture2DD3D12*)tex)->GetDepthStencilTargetHandle();
+            else if (tex->GetType() == RenderResourceType::Texture2DArray)
+                clear.handle = ((Texture2DArrayD3D12*)tex)->GetDepthStencilTargetHandle();
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported for a clear");
 
             m_RenderState.pendingClears.push_back(clear);
         }
@@ -846,7 +874,7 @@ namespace RB::Graphics::D3D12
             }
             else
             {
-                m_CommandList->ClearDepthStencilView(clear.handle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_DEPTH, clear.color.r, clear.color.g, 0, nullptr);
+                m_CommandList->ClearDepthStencilView(clear.handle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, clear.color.r, clear.color.g, 0, nullptr);
             }
         }
 
@@ -934,35 +962,18 @@ namespace RB::Graphics::D3D12
         {
             RenderResourceMap indices = {};
 
-            // Set the Texture2D's
-            for (int i = 0; i < _countof(indices.tex2D); ++i)
+            for (int i = 0; i < _countof(indices.resources); ++i)
             {
-                uint32_t& index = indices.tex2D[i].handle;
+                uint32_t& index = indices.resources[i].handle;
 
-                if (m_RenderState.tex2DsrvHandles[i].isValid())
+                if (m_RenderState.shaderResourceHandles[i].isValid())
                 {
-                    index  = (uint32_t)m_RenderState.tex2DsrvHandles[i].heapIndex;
+                    index  = (uint32_t)m_RenderState.shaderResourceHandles[i].heapIndex;
                 }
                 else
                 {
                     // Error texture
                     index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError.get())->GetSrvHandle().heapIndex;
-                }
-            }
-
-            // Set the RwTexture2D's
-            for (int i = 0; i < _countof(indices.rwTex2D); ++i)
-            {
-                uint32_t& index = indices.rwTex2D[i].handle;
-
-                if (m_RenderState.rwTex2DsrvHandles[i].isValid())
-                {
-                    index  = (uint32_t)m_RenderState.rwTex2DsrvHandles[i].heapIndex;
-                }
-                else
-                {
-                    // Dummy
-                    index  = (uint32_t)g_DescriptorManager->GetDummyRwTex2DHandle().heapIndex;
                 }
             }
 
@@ -1010,19 +1021,11 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::ClearSrvResources()
+    void RenderInterfaceD3D12::ClearResources()
     {
-        for (int i = 0; i < _countof(m_RenderState.tex2DsrvHandles); ++i)
+        for (int i = 0; i < _countof(m_RenderState.shaderResourceHandles); ++i)
         {
-            ClearShaderResourceInput(i);
-        }
-    }
-
-    void RenderInterfaceD3D12::ClearUavResources()
-    {
-        for (int i = 0; i < _countof(m_RenderState.rwTex2DsrvHandles); ++i)
-        {
-            ClearRandomReadWriteInput(i);
+            ClearShaderResource(i);
         }
     }
 

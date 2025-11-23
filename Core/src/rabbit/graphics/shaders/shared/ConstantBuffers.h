@@ -23,7 +23,11 @@ struct Light
 
 struct ApplyLightingCB
 {
-    float4x4 shadowVP;
+    float4x4 shadowVPs[5];
+
+    uint32_t slices;
+    float3   padding;
+
     Light    light;
 };
 ALIGN_CHECK(ApplyLightingCB);

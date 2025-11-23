@@ -53,8 +53,7 @@ namespace RB::Graphics::D3D12
 
         void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override;
         void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) override;
-        void ClearShaderResourceInput(uint32_t slot) override;
-        void ClearRandomReadWriteInput(uint32_t slot) override;
+        void ClearShaderResource(uint32_t slot) override;
 
         void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) override;
 
@@ -101,8 +100,7 @@ namespace RB::Graphics::D3D12
 
         void BindDescriptorHeaps();
         void BindResources(bool compute);
-        void ClearSrvResources();
-        void ClearUavResources();
+        void ClearResources();
 
         void SetGraphicsPipelineState();
         void SetComputePipelineState();
@@ -150,8 +148,7 @@ namespace RB::Graphics::D3D12
             D3D12_DEPTH_STENCIL_DESC            depthStencilDesc = {};
             D3D12_GPU_VIRTUAL_ADDRESS           cbvAddresses[16];
 
-            DescriptorIndex                     tex2DsrvHandles[SHADER_TEX2D_SLOTS];
-            DescriptorIndex                     rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];
+            DescriptorIndex                     shaderResourceHandles[SHADER_RESOURCE_SLOTS];
 
             List<PendingClear>                  pendingClears;
         };

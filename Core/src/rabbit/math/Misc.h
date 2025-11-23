@@ -111,6 +111,18 @@ namespace RB::Math
     }
 
     template<typename T>
+    inline T Pow(T x, T y)
+    {
+        return pow(x, y);
+    }
+
+    template<>
+    inline float Pow<float>(float x, float y)
+    {
+        return powf(x, y);
+    }
+
+    template<typename T>
     inline T DegreesToRadians(T value)
     {
         return value * (kPI / 180.0f);

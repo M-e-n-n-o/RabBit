@@ -73,11 +73,13 @@ namespace RB::Graphics::VK
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
 
-        uint32_t GetMipCount() const;
-        uint32_t GetBaseMip() const;
+        uint32_t GetMipCount() const override;
+        uint32_t GetBaseMip() const override;
 
-        void SetBaseMip(uint32_t mip);
-        void SetMipCount(uint32_t mips);
+        void SetBaseMip(uint32_t mip) override;
+        void SetMipCount(uint32_t mips) override;
+
+        void ResetView() override;
 
         void SetView(VkImageView image_view);
 

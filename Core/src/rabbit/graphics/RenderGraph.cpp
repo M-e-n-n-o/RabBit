@@ -25,7 +25,6 @@ namespace RB::Graphics
     {
         size_t size = sizeof(RenderPassEntry*) * m_RenderFlow.size();
         RenderPassEntry** entries = (RenderPassEntry**)allocator->Allocate(size);
-        memset(&entries[0], 0, size);
 
         bool* submitted = (bool*)ALLOC_STACK(((uint32_t)RenderPassType::Count) * sizeof(bool));
         memset(&submitted[0], false, ((uint32_t)RenderPassType::Count) * sizeof(bool));
@@ -152,14 +151,6 @@ namespace RB::Graphics
             input.outputTextures        = outputs;
 
             pass->Render(input);
-        }
-    }
-
-    void RenderGraph::DestroyEntries(RenderPassEntry** entries)
-    {
-        for (int i = 0; i < m_RenderFlow.size(); ++i)
-        {
-            SAFE_DELETE(entries[i]);
         }
     }
 

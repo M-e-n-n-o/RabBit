@@ -12,9 +12,11 @@ typedef RB::Math::Float3    float3;
 typedef RB::Math::Float4    float4;
 typedef RB::Math::Float4x4  float4x4;
 
-#define ALIGN_CHECK(type) static_assert(sizeof(type) % 16 == 0);
+#define ALIGN_CHECK(type)           static_assert(sizeof(type) % 16 == 0)
+#define SIZE_EQUAL(type1, type2)    static_assert(sizeof(type1) == sizeof(type2))
 #else
 #define ALIGN_CHECK(type)
+#define SIZE_EQUAL(type1, type2)
 #endif
 
 
@@ -36,12 +38,11 @@ typedef RB::Math::Float4x4  float4x4;
 
 #include "RenderResources.h"
 
-#define SHADER_TEX2D_SLOTS          8
+#define SHADER_RESOURCE_SLOTS 16
 
 struct RenderResourceMap
 {
-    Tex2D   tex2D[SHADER_TEX2D_SLOTS];
-    RwTex2D rwTex2D[SHADER_TEX2D_SLOTS];
+    ShaderResource resources[SHADER_RESOURCE_SLOTS];
 };
 
 struct FrameConstants
@@ -50,7 +51,6 @@ struct FrameConstants
     float4x4 viewToWorldMat;    // Inverse view matrix
     float4x4 viewToClipMat;     // Projection matrix
     float4x4 clipToViewMat;     // Inverse projection matrix
-
     float4   dimensions;        // width, height, 1/width, 1/height
 };
 
@@ -72,8 +72,9 @@ cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
     FrameConstants g_FC;
 }
 
-#define FetchTex2D(index)   g_RenderResourceMap.tex2D[index]
-#define FetchRWTex2D(index) g_RenderResourceMap.rwTex2D[index]
+#define FetchTex2D(index)        ((Tex2D)g_RenderResourceMap.resources[index])
+#define FetchTex2DArray(index)   ((Tex2DArray)g_RenderResourceMap.resources[index])
+#define FetchRWTex2D(index)      ((RwTex2D)g_RenderResourceMap.resources[index])
 
 // Static samplers
 // ---------------------------------------------------------------
