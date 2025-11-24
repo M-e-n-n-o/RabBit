@@ -20,6 +20,6 @@ namespace RB::Graphics
         void Render(RenderPassInput& inputs) override;
 
     private:
-        const uint32_t m_ShadowSlices = 4;
+        const uint32_t m_ShadowSlices = 3;
     };
 }

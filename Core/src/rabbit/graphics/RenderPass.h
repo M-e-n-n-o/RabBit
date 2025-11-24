@@ -72,12 +72,6 @@ namespace RB::Graphics
         float                   clearValue = 0; // (optional) For when the ClearBeforeGraph flag has been set
 
 
-        static_assert(false);
-        /*
-            TODO:
-            - Actually sample all the different shadow slices
-        */
-
         bool IsAliasableWith(const RenderResourceDesc& other) const
         {
             return ((flags & kRTFlag_DenyAliasing) == 0 &&

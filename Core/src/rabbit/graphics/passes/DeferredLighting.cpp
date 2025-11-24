@@ -92,21 +92,24 @@ namespace RB::Graphics
         ApplyLightingCB cb = {};
         cb.light.direction = entry->light.GetDirection();
         cb.light.color     = entry->light.GetColor();
-        cb.slices          = 0;
+        cb.cascades        = 0;
 
         RenderResource* shadow_map = inputs.dependencyRes[2];
 
         if (shadow_map)
         {
             Texture* csm = (Texture*)shadow_map;
-            cb.slices = Math::Min(csm->GetArraySize(), (uint32_t)_countof(cb.shadowVPs));
+            cb.cascades = Math::Min(csm->GetArraySize(), (uint32_t)_countof(cb.shadowVPs));
 
             RB_ASSERT(LOGTAG_GRAPHICS, csm->GetArraySize() <= _countof(cb.shadowVPs), "Need to increase the max shadow slices in ApplyLightingCB");
 
-            for (int i = 0; i < cb.slices; ++i)
+            for (int i = 0; i < cb.cascades; ++i)
             {
-                const auto frustum = entry->light.CalculateFrustum(entry->camera, entry->cameraTransform, i, cb.slices);
-                cb.shadowVPs[i] = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
+                float split;
+                const auto frustum = entry->light.CalculateFrustum(entry->camera, entry->cameraTransform, i, cb.cascades, &split);
+
+                cb.shadowVPs[i]         = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
+                cb.cascadeSplits.arr[i] = split;
             }
 
             inputs.ri->SetShaderResourceInput(shadow_map, 2);

@@ -110,7 +110,8 @@ namespace RB::Graphics
 
         for (int i = 0; i < m_ShadowSlices; ++i)
         {
-            frustums[i] = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform, i, m_ShadowSlices);
+            float split;
+            frustums[i] = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform, i, m_ShadowSlices, &split);
         }
 
         CascadedShadowEntry* entry = (CascadedShadowEntry*)allocator->Allocate(sizeof(CascadedShadowEntry));

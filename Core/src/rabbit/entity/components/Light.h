@@ -20,8 +20,10 @@ namespace RB::Entity
         Math::Float3 GetDirection() const { return m_Direction; }
         Math::Float3 GetColor() const { return m_Color; }
 
-        Graphics::Frustum CalculateFrustum(const Camera& camera, const Transform& cam_transform, uint32_t slice, uint32_t total_slices) const
+        Graphics::Frustum CalculateFrustum(const Camera& camera, const Transform& cam_transform, uint32_t slice, uint32_t total_slices, float* out_split) const
         {
+            // TODO This slice calculation is still FAR from optimal! There is a lot of overlap between the slices, have to fix this
+
             Math::Float3 dir = m_Direction;
 
             dir.y = Math::Clamp(dir.y, -1.0f, 1.0f);
@@ -43,12 +45,15 @@ namespace RB::Entity
                 Math::Cos(cam_pitch) * Math::Cos(cam_yaw)
             );
 
-            const float frustum_distance = (camera.GetFarPlane() * m_ShadowDistanceCoverage) * Math::Pow((float)(slice + 1) / (float)total_slices, m_SliceSteepness);
+            const float frustum_distance = Math::Min(camera.GetFarPlane(), m_ShadowDistance) * Math::Pow((float)(slice + 1) / (float)total_slices, m_SliceSteepness);
             const float frustum_far = 5000.0f; // Just use a big value so we don't clip into any big objects
 
             Math::Float3 light_pos = cam_transform.position;
             // Nudge the position forward with quarter the frustum distance
             light_pos = light_pos + cam_forward * (frustum_distance * 0.25f);
+            
+            *out_split = (cam_transform.position - light_pos).GetLength() + frustum_distance;
+
             // Move the light up by 80% of the far distance
             light_pos = light_pos + dir * (frustum_far * -0.8f);
             
@@ -63,7 +68,7 @@ namespace RB::Entity
         Math::Float3        m_Direction;
         Math::Float3        m_Color;
 
-        float               m_SliceSteepness         = 2.8f; // How fast do we transition to the next shadow slice? (the higher the less distance the first few slices will cover) 
-        float               m_ShadowDistanceCoverage = 0.7f; // The percentage of the camera frustum the shadow maps will cover
+        float               m_SliceSteepness = 2.8f;   // How fast do we transition to the next shadow slice? (the higher the less distance the first few slices will cover) 
+        float               m_ShadowDistance = 250.0f; // The max shadow coverage
     };
 }

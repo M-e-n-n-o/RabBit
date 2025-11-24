@@ -21,11 +21,14 @@ struct Light
     float  pad1;
 };
 
+#define MAX_NUM_CASCADES 4
+
 struct ApplyLightingCB
 {
-    float4x4 shadowVPs[5];
+    float4x4 shadowVPs[MAX_NUM_CASCADES];
+    float4   cascadeSplits; // As float4 cause array's cause padding in HLSL
 
-    uint32_t slices;
+    uint32_t cascades;
     float3   padding;
 
     Light    light;

@@ -277,10 +277,21 @@ namespace RB::Math
     struct Float4
     {
     public:
-        union { float x, r; };
-        union { float y, g; };
-        union { float z, b; };
-        union { float w, a; };
+        union
+        {
+            struct
+            {
+                float arr[4];
+            };
+
+            struct
+            {
+                union { float x, r; };
+                union { float y, g; };
+                union { float z, b; };
+                union { float w, a; };
+            };
+        };
 
         Float4();
         Float4(float xyzw);

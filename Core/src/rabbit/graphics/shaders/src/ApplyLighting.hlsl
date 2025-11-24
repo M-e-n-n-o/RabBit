@@ -32,7 +32,7 @@ float SampleShadowPCF(float2 uv, float depth, float slice, float bias)
         }
     }
 
-    return sum / 9.0f; // normalize to [0,1]
+    return sum / 9.0f; // Normalize to [0,1]
 }
 
 [numthreads(8, 8, 1)]
@@ -46,24 +46,35 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
 
     GBuffer gbuf = SampleGBuffer(indices, uv);
 
-    if (gbuf.depth <= 0.00001f)
+    float view_depth = gbuf.depth;
+
+    if (view_depth <= 0.00001f)
     {
         // Bail out, nothing to light up
         return;
     }
 
-    float3 world_pos = TransformScreenUVsToWorld(uv, gbuf.depth, false);
+    float3 world_pos = TransformScreenUVsToWorld(uv, view_depth, false);
+   
 
-    // shadow map coords
-    float4 shadow_clip = mul(g_ApplyLighting.shadowVPs[0], float4(world_pos, 1.0f));
+    // Find cascade
+    uint cascade_idx = 0;
+    for (uint i = 0; i < min(g_ApplyLighting.cascades, MAX_NUM_CASCADES) - 1; i++)
+    {
+        if (view_depth > g_ApplyLighting.cascadeSplits[i])
+            cascade_idx = i + 1;
+    }
+
+    // Shadow map coords
+    float4 shadow_clip = mul(g_ApplyLighting.shadowVPs[cascade_idx], float4(world_pos, 1.0f));
     float3 shadow_ndc = shadow_clip.xyz / shadow_clip.w;
 
-    // convert from NDC [-1,1] to UV [0,1]
+    // Convert from NDC [-1,1] to UV [0,1]
     float2 shadow_uv = float2(shadow_ndc.x * 0.5f + 0.5f,
                               1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
     // Sample shadow map
-    float shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, 0, 0.0001f);
+    float shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, cascade_idx, 0.0001f);
 
     // Calculate lighting
     float3 diffuse;
