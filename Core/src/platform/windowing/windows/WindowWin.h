@@ -19,7 +19,7 @@ namespace RB::Graphics::Windows
     struct WindowArgs
     {
         HINSTANCE               instance;
-        wchar_t*                className;
+        std::wstring            className;
         const char*             windowName;
         bool                    fullscreen;
         uint32_t                width;

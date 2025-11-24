@@ -60,7 +60,7 @@ namespace RB::Math
 
         void ToData(float* out);
 
-        Float4x4 operator*(const Float4x4& other);
+        Float4x4 operator*(const Float4x4& other) const;
 
         // Note, all methods after calling this will not work anymore!
         void Transpose();
@@ -129,7 +129,7 @@ namespace RB::Math
         Float3x3();
         ~Float3x3() = default;
 
-        Float3x3 operator*(const Float3x3& other);
+        Float3x3 operator*(const Float3x3& other) const;
 
         float GetDeterminant() const;
     };

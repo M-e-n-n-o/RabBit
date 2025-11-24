@@ -16,9 +16,10 @@ namespace RB::Graphics
 {
     struct DeferredLightingEntry : public RenderPassEntry
     {
+        // Just copy over all the entity info for now.
+        // In future do most processing/calculations in SubmitEntry instead of Render method
         bool has_light;
         Entity::DirectionalLight light;
-
         Entity::Camera camera;
         Entity::Transform cameraTransform;
     };
@@ -27,7 +28,7 @@ namespace RB::Graphics
     {
         const DeferredLightingSettings& s = (const DeferredLightingSettings&)setting;
 
-        return RenderPassConfig(
+        return RenderPassConfig
             {
                 // Dependencies
                 {
@@ -41,12 +42,18 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"Lit",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRandomReadWrites},
+                    RenderResourceDesc {
+                        .name   = "Lit",
+                        .format = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type   = RenderResourcePassType::Tex2D,
+                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags  = kRTFlag_AllowRandomReadWrites
+                    }
                 },
 
                 // Async compute compatible
                 false
-            });
+            };
     }
 
     RenderPassEntry* DeferredLightingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
@@ -77,8 +84,8 @@ namespace RB::Graphics
 
         inputs.ri->SetComputeShader(CS_ApplyLightingDeferred);
         
-        inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[0], 0);
-        inputs.ri->SetShaderResourceInput(inputs.dependencyTextures[1], 1);
+        inputs.ri->SetShaderResourceInput(inputs.dependencyRes[0], 0);
+        inputs.ri->SetShaderResourceInput(inputs.dependencyRes[1], 1);
 
         DeferredLightingEntry* entry = (DeferredLightingEntry*)inputs.entryContext;
 
@@ -87,7 +94,7 @@ namespace RB::Graphics
         cb.light.color     = entry->light.GetColor();
         cb.slices          = 0;
 
-        RenderResource* shadow_map = inputs.dependencyTextures[2];
+        RenderResource* shadow_map = inputs.dependencyRes[2];
 
         if (shadow_map)
         {
@@ -111,9 +118,10 @@ namespace RB::Graphics
 
         inputs.ri->SetConstantShaderData(kInstanceCB, &cb, sizeof(ApplyLightingCB));
 
-        inputs.ri->SetRandomReadWriteInput(inputs.outputTextures[0], 3);
+        inputs.ri->SetRandomReadWriteInput(inputs.outputRes[0], 3);
 
-        // TODO: Make this a dispatch indirect per BRDF type if the code paths start to diverge
+        // TODO: Make this a dispatch indirect per BRDF type so that the shader doesn't diverge as much 
+        // (cause it currently early outs if it doesn't have to shader)
         inputs.ri->Dispatch(ALIGN_8(inputs.viewContext->viewport.width) / 8, ALIGN_8(inputs.viewContext->viewport.height) / 8, 1);
     }
 }

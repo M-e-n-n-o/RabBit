@@ -55,7 +55,7 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    D3D12_VERTEX_BUFFER_VIEW VertexBufferD3D12::GetView()
+    const D3D12_VERTEX_BUFFER_VIEW& VertexBufferD3D12::GetView()
     {
         if (m_View.SizeInBytes == 0)
         {
@@ -94,7 +94,7 @@ namespace RB::Graphics::D3D12
         SAFE_DELETE(m_Resource);
     }
 
-    D3D12_INDEX_BUFFER_VIEW IndexBufferD3D12::GetView()
+    const D3D12_INDEX_BUFFER_VIEW& IndexBufferD3D12::GetView()
     {
         if (m_View.SizeInBytes == 0)
         {

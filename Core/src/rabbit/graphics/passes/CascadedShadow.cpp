@@ -35,7 +35,7 @@ namespace RB::Graphics
     {
         const CascadedShadowSettings& s = (const CascadedShadowSettings&)setting;
 
-        return RenderPassConfig(
+        return RenderPassConfig
             {
                 // Dependencies
                 {},
@@ -45,12 +45,19 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"CascadedShadowMap", RenderResourceFormat::R32_TYPELESS, 1024, 1024, m_ShadowSlices, kRTFlag_CustomSized},
+                    RenderResourceDesc {
+                        .name       = "CascadedShadowMap",
+                        .format     = RenderResourceFormat::R32_TYPELESS,
+                        .type       = RenderResourcePassType::Tex2D,
+                        .tex2D      = { 1024, 1024, m_ShadowSlices },
+                        .flags      = kRTFlag_CustomSized | kRTFlag_ClearBeforeGraph,
+                        .clearValue = 1.0f
+                    }
                 },
 
                 // Async compute compatible
                 false
-            });
+            };
     }
 
     RenderPassEntry* CascadedShadowPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
@@ -117,8 +124,6 @@ namespace RB::Graphics
 
     void CascadedShadowPass::Render(RenderPassInput& in)
     {
-        in.ri->ClearDepth(in.outputTextures[0], false);
-
         // Not using a pixel shader
         in.ri->SetVertexShader(VS_Simple3D);
 
@@ -126,7 +131,7 @@ namespace RB::Graphics
         in.ri->SetCullMode(CullMode::Back); // should this be front? (breaks on some meshes)
         in.ri->SetDepthMode(DepthMode::PassCloser, true, false);
 
-        Texture2DArray* csm = (Texture2DArray*)in.outputTextures[0];
+        Texture2DArray* csm = (Texture2DArray*)in.outputRes[0];
 
         CascadedShadowEntry* entry = (CascadedShadowEntry*)in.entryContext;
 

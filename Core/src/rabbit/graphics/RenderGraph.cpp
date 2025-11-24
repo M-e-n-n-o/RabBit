@@ -56,9 +56,10 @@ namespace RB::Graphics
             const List<ResourceID>& all_resources = graph_context->GetScheduledGraphResources(m_ID);
             for (const ResourceID& id : all_resources)
             {
-                if (graph_context->RequiresClear(id))
+                float clear = graph_context->RequiresClear(id);
+                if (clear >= 0)
                 {
-                    render_interface->Clear(graph_context->GetResource(id).get());
+                    render_interface->Clear(graph_context->GetResource(id).get(), Math::Float4(clear));
                 }
             }
 
@@ -143,12 +144,12 @@ namespace RB::Graphics
             render_interface->InvalidateState(false);
 
             RenderPassInput input;
-            input.viewContext           = view_context;
-            input.ri                    = render_interface;
-            input.entryContext          = entry;
-            input.dependencyTextures    = parameters;
-            input.workingTextures       = intermediates;
-            input.outputTextures        = outputs;
+            input.viewContext      = view_context;
+            input.ri               = render_interface;
+            input.entryContext     = entry;
+            input.dependencyRes    = parameters;
+            input.workingRes       = intermediates;
+            input.outputRes        = outputs;
 
             pass->Render(input);
         }
@@ -285,7 +286,7 @@ namespace RB::Graphics
 
         // Initial propagation from final pass
         const RenderPassConfig& final_cfg = configs[m_FinalPassType];
-        for (uint32_t i = 0; i < _countof(final_cfg.outputTextures); ++i)
+        for (uint32_t i = 0; i < _countof(final_cfg.outputResources); ++i)
         {
             if (i == (uint32_t)m_FinalResourceId)
             {
@@ -298,14 +299,14 @@ namespace RB::Graphics
         List<RenderGraph::FlowNode> render_flow;
         UnorderedMap<uint32_t, RenderPass*> used_passes;
 
-        auto GetAlias = [&](const RenderTextureDesc& desc, ResourceID* parameter_ids, ResourceID* working_ids, ResourceID* output_ids, bool check_lifetime) -> ResourceID
+        auto GetAlias = [&](const RenderResourceDesc& desc, ResourceID* parameter_ids, ResourceID* working_ids, ResourceID* output_ids, bool check_lifetime) -> ResourceID
         {
             ResourceID id = -1;
             const List<ResourceID>& resources = context->GetScheduledGraphResources(graph_id);
 
             for (ResourceID other_id : resources)
             {
-                const RenderTextureDesc& other = context->GetScheduledResource(other_id);
+                const RenderResourceDesc& other = context->GetScheduledResource(other_id);
 
                 if (!desc.IsAliasableWith(other)) 
                     continue;
@@ -351,9 +352,9 @@ namespace RB::Graphics
             const RenderPassConfig& config = configs[pass_type];
 
             // Create outputs
-            for (uint32_t i = 0; i < _countof(config.outputTextures); ++i)
+            for (uint32_t i = 0; i < _countof(config.outputResources); ++i)
             {
-                if (config.outputTextures[i].flags == UINT32_MAX)
+                if (config.outputResources[i].flags == UINT32_MAX)
                     break; // No more output textures
 
                 if (IsViewOutput(pass_type, i))
@@ -362,13 +363,13 @@ namespace RB::Graphics
                     continue;
                 }
 
-                ResourceID alias = GetAlias(config.outputTextures[i], parameter_ids, working_ids, output_ids, true);
+                ResourceID alias = GetAlias(config.outputResources[i], parameter_ids, working_ids, output_ids, true);
                 if (alias == -1)
-                    output_ids[i] = context->ScheduleNewResource(config.outputTextures[i], graph_id);
+                    output_ids[i] = context->ScheduleNewResource(config.outputResources[i], graph_id);
                 else
                 {
                     output_ids[i] = alias;
-                    context->GetScheduledResource(alias).CombineFlags(config.outputTextures[i].flags);
+                    context->GetScheduledResource(alias).CombineFlags(config.outputResources[i].flags);
                 }
             }
 
@@ -410,18 +411,18 @@ namespace RB::Graphics
             }
 
             // Working textures
-            for (uint32_t i = 0; i < _countof(config.workingTextures); ++i)
+            for (uint32_t i = 0; i < _countof(config.workingResources); ++i)
             {
-                if (config.workingTextures[i].flags == UINT32_MAX)
+                if (config.workingResources[i].flags == UINT32_MAX)
                     break; // No more working textures
 
-                ResourceID alias = GetAlias(config.workingTextures[i], parameter_ids, working_ids, output_ids, false);
+                ResourceID alias = GetAlias(config.workingResources[i], parameter_ids, working_ids, output_ids, false);
                 if (alias == -1)
-                    working_ids[i] = context->ScheduleNewResource(config.workingTextures[i], graph_id);
+                    working_ids[i] = context->ScheduleNewResource(config.workingResources[i], graph_id);
                 else
                 {
                     working_ids[i] = alias;
-                    context->GetScheduledResource(alias).CombineFlags(config.workingTextures[i].flags);
+                    context->GetScheduledResource(alias).CombineFlags(config.workingResources[i].flags);
                 }
             }
 

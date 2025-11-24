@@ -45,24 +45,40 @@ namespace RB::Graphics
         kRTFlag_ClearBeforeGraph            = (1 << 6)  // Clears the resource to 0 before it enters the first RenderPass
     };
 
-    struct RenderTextureDesc
+    enum class RenderResourcePassType
+    {
+        Tex2D
+    };
+
+    struct RenderResourceDesc
     {
         const char*             name;
         RenderResourceFormat    format;
-        uint32_t                width;  // RenderTextureSize
-        uint32_t                height; // RenderTextureSize
-        uint32_t                slices;
+        RenderResourcePassType  type;
+
+        union
+        {
+            struct RenderTexture2DDesc
+            {
+                uint32_t        width;  // RenderTextureSize
+                uint32_t        height; // RenderTextureSize
+                uint32_t        slices;
+
+            } tex2D;
+        };
+
         uint32_t                flags = UINT32_MAX; // UINT32_MAX means this texture is invalid!
+
+        float                   clearValue = 0; // (optional) For when the ClearBeforeGraph flag has been set
+
 
         static_assert(false);
         /*
             TODO:
-            - Add clear value (clear shadowmap instead of doing it manually in the pass) & reorganize RenderTextureDesc (should not only be texture)
-            - Cleanup DeferredLighting pass (it now copies over the entire camera & transform, do I want this?
             - Actually sample all the different shadow slices
         */
 
-        bool IsAliasableWith(const RenderTextureDesc& other) const
+        bool IsAliasableWith(const RenderResourceDesc& other) const
         {
             return ((flags & kRTFlag_DenyAliasing) == 0 &&
                     (other.flags & kRTFlag_DenyAliasing) == 0 &&
@@ -70,9 +86,12 @@ namespace RB::Graphics
                     ((flags & kRTFlag_UiSized) == (other.flags & kRTFlag_UiSized)) &&
                     ((flags & kRTFlag_UpscaledSized) == (other.flags & kRTFlag_UpscaledSized)) &&
                     format == other.format &&
-                    width == other.width &&
-                    height == other.height &&
-                    slices == other.slices);
+                    type == other.type &&
+
+                    // Texture
+                    ( tex2D.width == other.tex2D.width &&
+                      tex2D.height == other.tex2D.height &&
+                      tex2D.slices == other.tex2D.slices));
         }
 
         bool HasFlag(RenderTextureFlag flag) const
@@ -101,8 +120,8 @@ namespace RB::Graphics
     struct RenderPassConfig
     {
         RenderTextureInputDesc	dependencies[MAX_INOUT_RESOURCES_PER_RENDERPASS];
-        RenderTextureDesc	    workingTextures[MAX_WORKING_RESOURCES_PER_RENDERPASS];
-        RenderTextureDesc	    outputTextures[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // Maybe it should be possible to not only output rendertextures, but also buffers?
+        RenderResourceDesc	    workingResources[MAX_WORKING_RESOURCES_PER_RENDERPASS];
+        RenderResourceDesc	    outputResources[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         bool                    asyncComputeCompatible  = false; // TODO Still unused
     };
 
@@ -122,9 +141,9 @@ namespace RB::Graphics
         ViewContext*     viewContext;
         RenderInterface* ri;
         RenderPassEntry* entryContext;
-        RenderResource** dependencyTextures;
-        RenderResource** workingTextures;
-        RenderResource** outputTextures;
+        RenderResource** dependencyRes;
+        RenderResource** workingRes;
+        RenderResource** outputRes;
     };
 
     // TODO: Instead of each RenderPass having its own SubmitEntry and collecting partly overlapping scene data,

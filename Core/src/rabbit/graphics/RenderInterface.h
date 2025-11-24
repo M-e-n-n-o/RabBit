@@ -84,7 +84,7 @@ namespace RB::Graphics
         virtual void SetDepthStencil(RenderResource* ds_target) = 0;
         virtual void ClearRenderTargets() = 0;
 
-        virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
+        virtual void SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size) = 0;
 
         virtual void SetShaderResourceInput(RenderResource* resource, uint32_t slot) = 0;
         virtual void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) = 0;

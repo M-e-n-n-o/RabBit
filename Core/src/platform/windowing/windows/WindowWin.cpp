@@ -31,7 +31,7 @@ namespace RB::Graphics::Windows
         , m_IsValid(true)
         , m_BackBufferFormat(args.format)
     {
-        RegisterWindowCLass(args.instance, args.className);
+        RegisterWindowCLass(args.instance, args.className.c_str());
 
         DWORD style = WS_OVERLAPPEDWINDOW;
         DWORD extended_style = NULL;
@@ -52,7 +52,7 @@ namespace RB::Graphics::Windows
             wchar_t* wchar_name = new wchar_t[strlen(args.windowName) + 1];
             CharToWchar(args.windowName, wchar_name);
 
-            CreateWindow(args.instance, args.className, wchar_name, width, height, extended_style, style);
+            CreateWindow(args.instance, args.className.c_str(), wchar_name, width, height, extended_style, style);
 
             delete[] wchar_name;
         }

@@ -21,7 +21,7 @@ namespace RB::Graphics
         return m_Resources[m_ResourcePointers[id]];
     }
 
-    bool RenderGraphContext::RequiresClear(ResourceID id)
+    float RenderGraphContext::RequiresClear(ResourceID id)
     {
         if (id < 0)
         {
@@ -63,7 +63,7 @@ namespace RB::Graphics
 
         struct LinkedDesc
         {
-            RenderTextureDesc desc;
+            RenderResourceDesc desc;
             uint64_t graphs; // Bitmask for in which graph this desc is used
             List<ResourceID> ids;
         };
@@ -92,7 +92,7 @@ namespace RB::Graphics
 
             for (const ResourceID& current_id : m_GraphDescriptions[current_graph_id])
             {
-                RenderTextureDesc current_desc = m_Descriptions[current_id];
+                RenderResourceDesc current_desc = m_Descriptions[current_id];
 
                 // First make sure to update the size of the description to the actual size
                 if (!current_desc.HasFlag(kRTFlag_CustomSized))
@@ -112,8 +112,20 @@ namespace RB::Graphics
                     }
 
                     // Divide the width & height to the desired size
-                    current_desc.width = (width >> current_desc.width);
-                    current_desc.height = (height >> current_desc.height);
+                    switch (current_desc.type)
+                    {
+                    case RenderResourcePassType::Tex2D:
+                    {
+                        current_desc.tex2D.width  = (width >> current_desc.tex2D.width);
+                        current_desc.tex2D.height = (height >> current_desc.tex2D.height);
+                    }
+                    break;
+
+                    default:
+                        RB_LOG_ERROR(LOGTAG_GRAPHICS, "RenderResourcePassType not yet supported");
+                        break;
+                    }
+
                     current_desc.CombineFlags(kRTFlag_CustomSized);
                 }
 
@@ -171,27 +183,38 @@ namespace RB::Graphics
 
             std::string name = "GraphResouce " + std::to_string(i);
 
-            if (aliased_desc.desc.slices > 1)
+            switch (aliased_desc.desc.type)
             {
-                m_Resources.push_back(Texture2DArray::Create(name.c_str(),
-                                                             aliased_desc.desc.format, 
-                                                             aliased_desc.desc.width, 
-                                                             aliased_desc.desc.height,
-                                                             aliased_desc.desc.slices,
-                                                             aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
-                                                             aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+            case RenderResourcePassType::Tex2D:
+            {
+                if (aliased_desc.desc.tex2D.slices > 1)
+                {
+                    m_Resources.push_back(Texture2DArray::Create(name.c_str(),
+                                                                 aliased_desc.desc.format, 
+                                                                 aliased_desc.desc.tex2D.width, 
+                                                                 aliased_desc.desc.tex2D.height,
+                                                                 aliased_desc.desc.tex2D.slices,
+                                                                 aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
+                                                                 aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+                }
+                else
+                {
+                    m_Resources.push_back(Texture2D::Create(name.c_str(),
+                                                            aliased_desc.desc.format, 
+                                                            aliased_desc.desc.tex2D.width,
+                                                            aliased_desc.desc.tex2D.height,
+                                                            aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
+                                                            aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+                }
             }
-            else
-            {
-                m_Resources.push_back(Texture2D::Create(name.c_str(),
-                                                        aliased_desc.desc.format, 
-                                                        aliased_desc.desc.width, 
-                                                        aliased_desc.desc.height, 
-                                                        aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
-                                                        aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+            break;
+
+            default:
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "RenderResourcePassType not yet supported");
+                break;
             }
 
-            m_Clears.push_back(aliased_desc.desc.HasFlag(kRTFlag_ClearBeforeGraph));
+            m_Clears.push_back(aliased_desc.desc.HasFlag(kRTFlag_ClearBeforeGraph) ? aliased_desc.desc.clearValue : -1.0f);
 
             // Make sure that the ResourceID's point to the correct resource in the m_Resources list
             uint32_t pointer_id = m_Resources.size() - 1;
@@ -217,7 +240,7 @@ namespace RB::Graphics
         m_GraphDescriptions.clear();
     }
 
-    ResourceID RenderGraphContext::ScheduleNewResource(const RenderTextureDesc& desc, uint32_t current_graph_id)
+    ResourceID RenderGraphContext::ScheduleNewResource(const RenderResourceDesc& desc, uint32_t current_graph_id)
     {
         if (current_graph_id >= m_GraphDescriptions.size())
         {
@@ -233,7 +256,7 @@ namespace RB::Graphics
         return new_id;
     }
 
-    RenderTextureDesc RenderGraphContext::GetScheduledResource(ResourceID id)
+    RenderResourceDesc RenderGraphContext::GetScheduledResource(ResourceID id)
     {
         if (id < 0 || id >= m_Descriptions.size())
         {

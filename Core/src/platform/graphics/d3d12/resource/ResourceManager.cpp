@@ -191,8 +191,10 @@ namespace RB::Graphics::D3D12
     {
         ID3D12Resource* resource = nullptr;
 
+        auto props = CD3DX12_HEAP_PROPERTIES(heap_type);
+
         RB_ASSERT_FATAL_D3D(g_GraphicsDevice->Get()->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(heap_type),
+            &props,
             heap_flags,
             &resource_desc,
             start_state,

@@ -66,7 +66,7 @@ namespace RB::Graphics
     {
         const Overlay2DSettings& s = (const Overlay2DSettings&)setting;
 
-        return RenderPassConfig(
+        return RenderPassConfig
             {
                 // Dependencies
                 {
@@ -78,12 +78,18 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"ColorOverlay",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRenderTarget},
+                    RenderResourceDesc {
+                        .name       = "ColorOverlay",
+                        .format     = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type       = RenderResourcePassType::Tex2D,
+                        .tex2D      = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags      = kRTFlag_AllowRenderTarget
+                    }
                 },
 
             // Async compute compatible
             false
-            });
+            };
     }
 
     RenderPassEntry* Overlay2DPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
@@ -257,7 +263,7 @@ namespace RB::Graphics
         in.ri->SetCullMode(CullMode::Back);
         in.ri->SetDepthMode(DepthMode::PassAll, false, false);
 
-        in.ri->PushRenderTarget(in.outputTextures[0]);
+        in.ri->PushRenderTarget(in.outputRes[0]);
 
         Frustum frustum;
         frustum.SetOrthographicProjection(0.0f, 1.0f, 0.0f, in.viewContext->viewport.width, 0.0f, in.viewContext->viewport.height, false);

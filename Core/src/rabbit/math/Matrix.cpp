@@ -28,7 +28,7 @@ namespace RB::Math
         memcpy(out, a, 16 * sizeof(float));
     }
 
-    Float4x4 Float4x4::operator*(const Float4x4& other)
+    Float4x4 Float4x4::operator*(const Float4x4& other) const
     {
         Float4x4 out;
         out.row0 = (other.row0 * row0.x) + (other.row1 * row0.y) + (other.row2 * row0.z) + (other.row3 * row0.w);
@@ -256,7 +256,7 @@ namespace RB::Math
         row2 = { 0, 0, 1 };
     }
 
-    Float3x3 Float3x3::operator*(const Float3x3& other)
+    Float3x3 Float3x3::operator*(const Float3x3& other) const
     {
         Float3x3 out;
         out.row0 = (other.row0 * row0.x) + (other.row1 * row0.y) + (other.row2 * row0.z);

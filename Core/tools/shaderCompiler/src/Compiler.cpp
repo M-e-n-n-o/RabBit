@@ -52,7 +52,7 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 		{
 			LOGW(L"Compiling: " << entry.entryName.c_str());
 
-			wchar_t* target;
+			std::wstring target;
 			switch (entry.stage)
 			{
 			case ShaderStage::kVertex:	target = L"vs_6_6"; break;
@@ -83,7 +83,7 @@ void Compiler::CompileFiles(std::vector<std::wstring>& files)
 			{
 				file.c_str(),											// Optional shader source file name for error reporting and for PIX shader source view.  
 				L"-E", entry.entryName.c_str(),							// Entry point.
-				L"-T", target,											// Target.
+				L"-T", target.c_str(),									// Target.
 				L"-Werror",												// Treat all warnings as errors
 				L"-DSHADER=(1)",										// Shader source define.
 

@@ -100,7 +100,7 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 			}
 			else
 			{
-				LOG("Could not open pdb directory/file: " << path.c_str());
+				LOGW("Could not open pdb directory/file: " << path.c_str());
 			}
 		}
 	}

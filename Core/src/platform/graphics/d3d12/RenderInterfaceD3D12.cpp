@@ -302,7 +302,7 @@ namespace RB::Graphics::D3D12
         m_RenderState.shaderResourceHandles[slot] = DescriptorIndex{};
     }
 
-    void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
+    void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size)
     {
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.cbvAddresses), "Up the amount of possible CBV addresses");
 

@@ -27,7 +27,7 @@ namespace RB::Graphics::D3D12
 
         TopologyType GetTopologyType() const override { return m_Type; }
 
-        D3D12_VERTEX_BUFFER_VIEW GetView();
+        const D3D12_VERTEX_BUFFER_VIEW& GetView();
 
     private:
         const char*                 m_Name;
@@ -53,7 +53,7 @@ namespace RB::Graphics::D3D12
 
         uint64_t GetIndexCount() const override { return m_Elements; }
 
-        D3D12_INDEX_BUFFER_VIEW GetView();
+        const D3D12_INDEX_BUFFER_VIEW& GetView();
 
     private:
         const char*                 m_Name;

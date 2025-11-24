@@ -35,7 +35,7 @@ namespace RB::Graphics
     {
         const GBufferSettings& s = (const GBufferSettings&) setting;
 
-        return RenderPassConfig(
+        return RenderPassConfig
             {
                 // Dependencies
                 {
@@ -47,14 +47,34 @@ namespace RB::Graphics
 
                 // Output textures
                 {
-                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
-                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, 1, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
-                    RenderTextureDesc{"Hyper Depth",    RenderResourceFormat::D32_FLOAT,          kRTSize_Full, kRTSize_Full, 1, kRTFlag_ClearBeforeGraph  },
+                    RenderResourceDesc {
+                        .name   = "GBuffer Color",
+                        .format = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type   = RenderResourcePassType::Tex2D,
+                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags  = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
+                    },
+
+                    RenderResourceDesc {
+                        .name   = "GBuffer Normal",
+                        .format = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type   = RenderResourcePassType::Tex2D,
+                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags  = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
+                    },
+
+                    RenderResourceDesc {
+                        .name   = "Hyper Depth",
+                        .format = RenderResourceFormat::D32_FLOAT,
+                        .type   = RenderResourcePassType::Tex2D,
+                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags  = kRTFlag_ClearBeforeGraph
+                    }
                 },
 
                 // Async compute compatible
                 false
-            });
+            };
     }
 
     RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
@@ -115,9 +135,9 @@ namespace RB::Graphics
         in.ri->SetCullMode(CullMode::Back);
         in.ri->SetDepthMode(DepthMode::PassCloser, true, in.viewContext->viewFrustum.IsReversedDepth());
 
-        in.ri->PushRenderTarget(in.outputTextures[0], 0);
-        in.ri->PushRenderTarget(in.outputTextures[1], 1);
-        in.ri->SetDepthStencil(in.outputTextures[2]);
+        in.ri->PushRenderTarget(in.outputRes[0], 0);
+        in.ri->PushRenderTarget(in.outputRes[1], 1);
+        in.ri->SetDepthStencil(in.outputRes[2]);
 
         GBufferEntry* entry = (GBufferEntry*)in.entryContext;
 

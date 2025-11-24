@@ -9,11 +9,11 @@
 
 namespace RB
 {
-    constexpr char* LOGTAG_MAIN      = "Main";
-    constexpr char* LOGTAG_EVENT     = "Event";
-    constexpr char* LOGTAG_ENTITY    = "Entity";
-    constexpr char* LOGTAG_GRAPHICS  = "Graphics";
-    constexpr char* LOGTAG_WINDOWING = "Windowing";
+    constexpr char LOGTAG_MAIN[]      = "Main";
+    constexpr char LOGTAG_EVENT[]     = "Event";
+    constexpr char LOGTAG_ENTITY[]    = "Entity";
+    constexpr char LOGTAG_GRAPHICS[]  = "Graphics";
+    constexpr char LOGTAG_WINDOWING[] = "Windowing";
 }
 
 namespace RB::Utils::Debug

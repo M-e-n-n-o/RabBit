@@ -16,13 +16,12 @@ namespace RB::Graphics
         Frustum();
 
         // View matrix
-        Math::Float4x4 GetWorldToViewMatrix() const { return m_WorldToViewMat; }
-        Math::Float4x4 GetViewToWorldMatrix() const { return m_ViewToWorldMat; }
+        const Math::Float4x4& GetWorldToViewMatrix() const { return m_WorldToViewMat; }
+        const Math::Float4x4& GetViewToWorldMatrix() const { return m_ViewToWorldMat; }
+        // Projection matrix
+        const Math::Float4x4& GetViewToClipMatrix() const { return m_ViewToClipMat; }
 
         void SetTransform(Math::Float3 position, Math::Float3 rotation);
-
-        // Projection matrix
-        Math::Float4x4 GetViewToClipMatrix() const { return m_ViewToClipMat; }
 
         void SetPerspectiveProjectionVFov(float near_plane, float far_plane, float vfov, float aspect, bool reverse_depth);
         void SetPerspectiveProjection(float near_plane, float far_plane, float left, float right, float top, float bottom, bool reverse_depth);
