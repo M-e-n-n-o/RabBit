@@ -68,7 +68,7 @@ namespace RB
         //								    Images
         // ---------------------------------------------------------------------------
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb, uint32_t force_channels)
+        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb)
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
@@ -76,11 +76,29 @@ namespace RB
 
             auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
+            if (!file_handle->IsValid())
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load texture file \"%s\" from disk", final_path.c_str());
+                return false;
+            }
+
             FileData data = file_handle->ReadFull();
 
+            int32_t actual_channels;
+            bool success = stbi_info_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &actual_channels);
+
+            if (!success)
+            {
+                const char* error_msg = stbi_failure_reason();
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load info of texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
+            }
+
+            if (actual_channels == 3)
+                actual_channels = 4; // We don't support 3 channel alpha textures
+
             // Note that this loads a 8 bit per channel image (use stbi_load_16_from_memory or stbi_loadf_from_memory for 16 or 32 bit)
-            int32_t channels;
-            out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &channels, force_channels);
+            int32_t original_channels;
+            out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &original_channels, actual_channels);
             out_image->loadedUsingStb = true;
 
             if (out_image->data == NULL)
@@ -90,13 +108,7 @@ namespace RB
                 return false;
             }
 
-            if (force_channels != 0)
-            {
-                // We forced to read only certain channels
-                channels = force_channels;
-            }
-
-            switch (channels)
+            switch (actual_channels)
             {
             case 1:
                 out_image->format = RenderResourceFormat::R8_UNORM; 
@@ -155,11 +167,14 @@ namespace RB
 
             ufbx_scene* scene = (ufbx_scene*)out_mesh->internalScene;
 
-            // TODO Convert materials
-            //for (const ufbx_material* node : scene->materials)
-            //{
-            //    printf("%s\n", node->name.data);
-            //}
+            for (const ufbx_material* material : scene->materials)
+            {
+                out_mesh->albedoTextures.push_back(material->fbx.diffuse_color.texture ? material->fbx.diffuse_color.texture->filename.data : material->name.data);
+
+                // Store the wrap type 
+                //material->fbx.diffuse_color.texture->wrap_u
+                //material->fbx.diffuse_color.texture->wrap_v
+            }
 
             for (const ufbx_node* node : scene->nodes) 
             {
@@ -168,19 +183,21 @@ namespace RB
                 if (mesh == nullptr)
                     continue;
 
-                for (const ufbx_mesh_part& mesh_part : mesh->material_parts)
+                for (uint32_t part_idx = 0; part_idx < mesh->material_parts.count; part_idx++)
                 {
-                    LoadedMesh::Submodel submodel = ConvertMeshPart(mesh, &mesh_part, node);
+                    LoadedMesh::Submodel submodel = ConvertMeshPart(mesh, &mesh->material_parts[part_idx], node);
+                    submodel.albedoIndex = part_idx;
                     out_mesh->models.push_back(submodel);
                 }
+
             }
 
             //static_assert(false);
-            // TODO 
-            // - With indices generating the data is sometimes still wrong
-            // - Every submodel probably also needs its own transform
-            // - Model loading op een andere thread doen?
-            //      - Je kan dan behaviour kiezen of je moet blocken of gwn kan skippen totdat hij is geladen
+            // TODO
+            // - Do proper parent/child relationships
+            // - Store more texture types (normals, roughness, etc.)
+            // - Do model loading on a different thread?
+            //      - You can then choose the behaviour when its not yet loaded. Need to block until loaded or just skip rendering until loaded?
 
             return true;
         }
@@ -221,7 +238,7 @@ namespace RB
 
                     vertices[vi_global] = {};
                     vertices[vi_global].normal   = Math::Float3(normal.x, normal.y, normal.z);
-                    vertices[vi_global].uv       = Math::Float2(uv.x, uv.y);
+                    vertices[vi_global].uv       = Math::Float2(uv.x, 1.0f - uv.y); // Flip the Y as UFBX uses bottom-left convention
                     vi_global++;
                 }
             }
@@ -261,16 +278,51 @@ namespace RB
                 return out_submodel;
             }
 
-            // Store per-submodel position/rotation (local to node, not baked into vertices)
-            out_submodel.position.x = (float)node->geometry_to_world.m03;
-            out_submodel.position.y = (float)node->geometry_to_world.m13;
-            out_submodel.position.z = (float)node->geometry_to_world.m23;
+            // Transform code
+            {
+                out_submodel.position.x = (float)node->node_to_world.m03;
+                out_submodel.position.y = (float)node->node_to_world.m13;
+                out_submodel.position.z = (float)node->node_to_world.m23;
 
-            // Simple Euler extraction (XYZ)
-            const ufbx_matrix& m = node->geometry_to_world;
-            out_submodel.rotation.y = atan2f((float)m.m02, (float)m.m22);
-            out_submodel.rotation.x = atan2f(-(float)m.m12, sqrtf((float)m.m02 * m.m02 + (float)m.m22 * m.m22));
-            out_submodel.rotation.z = atan2f((float)m.m01, (float)m.m00);
+                const ufbx_matrix& m = node->node_to_world;
+
+                Math::Float3 cx(m.m00, m.m10, m.m20);
+                Math::Float3 cy(m.m01, m.m11, m.m21);
+                Math::Float3 cz(m.m02, m.m12, m.m22);
+
+                // Remove scale
+                float sx = cx.GetLength();
+                float sy = cy.GetLength();
+                float sz = cz.GetLength();
+
+                out_submodel.scale = { sx, sy, sz };
+
+                if (sx == 0) sx = 1;
+                if (sy == 0) sy = 1;
+                if (sz == 0) sz = 1;
+
+                Math::Float3 rx = cx / sx;
+                Math::Float3 ry = cy / sy;
+                Math::Float3 rz = cz / sz;
+
+                float det = Math::Float3::Dot(Math::Float3::Cross(rx, ry), rz);
+                if (det < 0.0f) 
+                {
+                    rx = rx * -1.0f;
+                }
+
+                float r00 = rx.x, r01 = ry.x, r02 = rz.x;
+                float r10 = rx.y, r11 = ry.y, r12 = rz.y;
+                float r20 = rx.z, r21 = ry.z, r22 = rz.z;
+
+                float y = asinf(-Math::Clamp(r20, -1.0f, 1.0f));
+                float x = atan2f(r21, r22);
+                float z = atan2f(r10, r00);
+
+                out_submodel.rotation.x = Math::RadiansToDegrees(x);
+                out_submodel.rotation.y = Math::RadiansToDegrees(y);
+                out_submodel.rotation.z = Math::RadiansToDegrees(z);
+            }
 
             return out_submodel;
         }

@@ -335,6 +335,22 @@ namespace RB::Graphics::D3D12
         clamp_point.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
         static_samplers.push_back(clamp_point);
 
+        D3D12_STATIC_SAMPLER_DESC wrap = {};
+        clamp.ShaderRegister   = kWrapAnisoSamplerSlot;
+        clamp.RegisterSpace    = 0;
+        clamp.Filter           = D3D12_FILTER_ANISOTROPIC;
+        clamp.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        clamp.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        clamp.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        clamp.MipLODBias       = 0;
+        clamp.MaxAnisotropy    = 8;
+        clamp.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        clamp.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+        clamp.MinLOD           = 0.0f;
+        clamp.MaxLOD           = D3D12_FLOAT32_MAX;
+        clamp.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        static_samplers.push_back(clamp);
+
         return static_samplers;
     }
 

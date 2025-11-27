@@ -41,6 +41,7 @@ namespace RB::Entity
     {
     public:
 
+        Material(const char* name, LoadedImage* image);
         Material(const char* file_name, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
         Shared<Graphics::Texture2D> GetTexture() const

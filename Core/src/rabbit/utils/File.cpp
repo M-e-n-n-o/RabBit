@@ -27,8 +27,6 @@ namespace RB
         }
         else
         {
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not open file: %s", file_name);
-
             // Error handle
             handle = CreateUnique<FileHandle>();
         }
@@ -68,6 +66,11 @@ namespace RB
 
     FileData FileHandle::ReadFull()
     {
+        if (!m_IsValid)
+        {
+            return { nullptr, 0 };
+        }
+
         std::fstream* stream = (std::fstream*)m_Stream;
 
         stream->seekg(0, stream->end);

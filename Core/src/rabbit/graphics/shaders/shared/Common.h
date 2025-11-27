@@ -31,6 +31,7 @@ typedef RB::Math::Float4x4  float4x4;
 // Static samplers
 #define kClampAnisoSamplerSlot      0
 #define kClampPointSamplerSlot      1
+#define kWrapAnisoSamplerSlot       2
 
 
 // Global constant buffer structs
@@ -81,6 +82,7 @@ cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
 
 SamplerState g_ClampAnisoSampler : SAMPLER_REG(kClampAnisoSamplerSlot);
 SamplerState g_ClampPointSampler : SAMPLER_REG(kClampPointSamplerSlot);
+SamplerState g_WrapAnisoSampler  : SAMPLER_REG(kWrapAnisoSamplerSlot);
 
 #endif
 

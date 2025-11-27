@@ -46,7 +46,7 @@ PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input)
     GBuffer gbuf;
 
     Tex2D tex = FetchTex2D(0);
-    float4 color = tex.Sample<float4>(g_ClampAnisoSampler, input.uv);
+    float4 color = tex.Sample<float4>(g_WrapAnisoSampler, input.uv);
 
     gbuf.color  = float4(color.rgb, 1.0f);
     gbuf.normal = input.normal;

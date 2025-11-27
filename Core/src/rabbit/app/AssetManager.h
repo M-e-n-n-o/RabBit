@@ -17,7 +17,7 @@ namespace RB
     {
         void Init(const char* asset_base_path);
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb, uint32_t force_channels = 0);
+        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb);
 
         bool LoadMesh(const char* path, LoadedMesh* out_mesh);
 
@@ -38,7 +38,7 @@ namespace RB
     private:
         bool loadedUsingStb;
 
-        friend bool AssetManager::LoadImage8Bit(const char*, LoadedImage*, bool, uint32_t);
+        friend bool AssetManager::LoadImage8Bit(const char*, LoadedImage*, bool);
         friend bool AssetManager::LoadFont(const char*, LoadedFont*, uint32_t);
     };
 
@@ -57,8 +57,11 @@ namespace RB
             List<uint32_t>     indices;
             Math::Float3       position;
             Math::Float3       rotation;
+            Math::Float3       scale;
+            uint32_t           albedoIndex;
         };
 
+        List<std::string>   albedoTextures;
         List<Submodel>      models;
         void*               internalScene;
 

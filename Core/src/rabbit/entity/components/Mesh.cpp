@@ -1,6 +1,7 @@
 #include "RabBitCommon.h"
 #include "Mesh.h"
 #include "app/AssetManager.h"
+#include "graphics/ResourceDefaults.h"
 
 namespace RB::Entity
 {
@@ -40,6 +41,11 @@ namespace RB::Entity
         }
     }
 
+    Material::Material(const char* name, LoadedImage* image)
+    {
+        m_Texture = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
+    }
+
     Material::Material(const char* file_name, TextureColorSpace color_space)
         : m_Texture(nullptr)
     {
@@ -49,6 +55,10 @@ namespace RB::Entity
         if (success)
         {
             m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
+        }
+        else
+        {
+            m_Texture = Graphics::g_TexDefaultError;
         }
     }
 }

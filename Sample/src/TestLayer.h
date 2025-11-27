@@ -56,7 +56,7 @@ public:
         //};
 
         LoadedMesh mesh;
-        //bool success = AssetManager::LoadMesh("Sponza/source/Sponza.fbx", &mesh);
+        //bool success = AssetManager::LoadMesh("sponza/NewSponza_Main_Yup_003.fbx", &mesh);
         bool success = AssetManager::LoadMesh("Bunny.fbx", &mesh);
 
         //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
@@ -64,16 +64,27 @@ public:
 
         Scene* scene = Application::GetInstance()->GetScene();
 
+        List<Material*> materials;
+        for (int i = 0; i < mesh.albedoTextures.size(); i++)
+        {
+            materials.push_back(new Material(("sponza/" + mesh.albedoTextures[i]).c_str()));
+        }
+
         for (int i = 0; i < mesh.models.size(); i++)
         {
+            if (mesh.models[i].positions.empty())
+                continue;
+
             m_Mesh = new Mesh("Mesh", mesh.models[i]);
 
+            Material* mat = materials[mesh.models[i].albedoIndex];
+
             GameObject* object = scene->CreateGameObject();
-            object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
+            object->AddComponent<MeshRenderer>(m_Mesh, mat);
             Transform* t = object->AddComponent<Transform>();
             t->position = mesh.models[i].position;
             t->rotation = mesh.models[i].rotation;
-            t->scale = Float3(0.01f);
+            t->scale = mesh.models[i].scale; //* Float3(0.01f);
             
             m_Transform = t;
         }
@@ -191,21 +202,21 @@ public:
 
         // Move forward/backward
         if (IsKeyDown(KeyCode::W))
-            m_Camera->position = m_Camera->position + (forward * (100 * delta));
+            m_Camera->position = m_Camera->position + (forward * (50 * delta));
         if (IsKeyDown(KeyCode::S))
-            m_Camera->position = m_Camera->position - (forward * (100 * delta));
+            m_Camera->position = m_Camera->position - (forward * (50 * delta));
         
         // Strafe left/right
         if (IsKeyDown(KeyCode::A))
-            m_Camera->position = m_Camera->position - (right * (100 * delta));
+            m_Camera->position = m_Camera->position - (right * (50 * delta));
         if (IsKeyDown(KeyCode::D))
-            m_Camera->position = m_Camera->position + (right * (100 * delta));
+            m_Camera->position = m_Camera->position + (right * (50 * delta));
 
         // Move up/down
         if (IsKeyDown(KeyCode::Space))
-            m_Camera->position = m_Camera->position + (up * (100 * delta));
+            m_Camera->position = m_Camera->position + (up * (50 * delta));
         if (IsKeyDown(KeyCode::LeftShift))
-            m_Camera->position = m_Camera->position - (up * (100 * delta));
+            m_Camera->position = m_Camera->position - (up * (50 * delta));
 
 
         //RB_LOG("Pos: %f, %f, %f", m_Camera->position.x, m_Camera->position.y, m_Camera->position.z);
