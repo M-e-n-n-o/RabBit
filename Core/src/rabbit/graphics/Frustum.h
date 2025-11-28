@@ -28,9 +28,10 @@ namespace RB::Graphics
 
         void SetOrthographicProjection(float near_plane, float far_plane, float left, float right, float top, float bottom, bool reverse_depth);
 
-        bool IsInFrustum(const Math::Float4& bounds, const Math::Float3 position, const Math::Float3 rotation, const Math::Float3 scale);
-
         bool IsReversedDepth() const { return m_ReversedDepth; }
+
+        // AABB test
+        static bool IsInFrustum(const Math::AABB& world_aabb, const Math::Float4x4& view_proj);
 
     private:
         Math::Float4x4	m_WorldToViewMat;	// World space to view space matrix

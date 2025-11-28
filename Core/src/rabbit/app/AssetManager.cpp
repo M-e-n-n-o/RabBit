@@ -195,13 +195,14 @@ namespace RB
             //static_assert(false);
             // TODO
             // - Do proper parent/child relationships
+            // - Do some scale conversions in here so that we don't need really small scales when rendering (can cause floating point issues in for examply frustum culling)
             // - Store more texture types (normals, roughness, etc.)
             // - Do model loading on a different thread?
             //      - You can then choose the behaviour when its not yet loaded. Need to block until loaded or just skip rendering until loaded?
 
             return true;
         }
-        
+
         LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node)
         {
             const size_t num_vertices = mesh_part->num_triangles * 3;
@@ -214,6 +215,9 @@ namespace RB
             if (num_tri_indices > 1000.0f)
                 RB_LOG_WARN(LOGTAG_MAIN, "Triange indices might overflow, maybe need to use ALLOC_HEAP");
             uint32_t* tri_indices = ALLOC_STACKC(uint32_t, num_tri_indices);
+
+            Math::Float3 min_bounds(+FLT_MAX, +FLT_MAX, +FLT_MAX);
+            Math::Float3 max_bounds(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
             uint32_t vi_global = 0;
             // First fetch all vertices into a flat non-indexed buffer, we also need to triangulate the faces
@@ -240,6 +244,13 @@ namespace RB
                     vertices[vi_global].normal   = Math::Float3(normal.x, normal.y, normal.z);
                     vertices[vi_global].uv       = Math::Float2(uv.x, 1.0f - uv.y); // Flip the Y as UFBX uses bottom-left convention
                     vi_global++;
+
+                    if (pos.x < min_bounds.x) min_bounds.x = pos.x;
+                    if (pos.y < min_bounds.y) min_bounds.y = pos.y;
+                    if (pos.z < min_bounds.z) min_bounds.z = pos.z;
+                    if (pos.x > max_bounds.x) max_bounds.x = pos.x;
+                    if (pos.y > max_bounds.y) max_bounds.y = pos.y;
+                    if (pos.z > max_bounds.z) max_bounds.z = pos.z;
                 }
             }
 
@@ -270,6 +281,9 @@ namespace RB
 
                 out_submodel.vertices.resize(num_compacted_vertices);
                 memcpy(out_submodel.vertices.data(), vertices.data(), sizeof(LoadedMesh::Vertex) * num_compacted_vertices);
+
+                out_submodel.minBounds = min_bounds;
+                out_submodel.maxBounds = max_bounds;
             }
             else
             {

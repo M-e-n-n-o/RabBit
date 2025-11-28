@@ -106,14 +106,28 @@ namespace RB::Graphics
                 continue;
             }
 
-            const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Transform*     transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
+
+            if (mesh->HasValidAABB())
+            {
+                // We can do some frustum culling
+                const Math::AABB&    aabb       = mesh->GetAABB();
+                const Math::AABB     world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
+                const Math::Float4x4 vp         = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
+
+                if (!Frustum::IsInFrustum(world_aabb, vp))
+                {
+                    continue;
+                }
+            }
 
             GBufferEntry::ModelEntry entry = {};
             entry.vb_primary    = vp.primaryBuffer;
             entry.vb_secondary  = vp.secondaryBuffer;
             entry.ib            = vp.indexBuffer;
             entry.texture       = mat->GetTexture();
-            entry.modelMatrix   = transform->GetLocalToWorldMatrix();
+            entry.modelMatrix   = model_mat;
 
             entries[total_entries] = entry;
             total_entries++;

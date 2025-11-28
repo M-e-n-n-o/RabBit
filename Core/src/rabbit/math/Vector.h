@@ -238,6 +238,8 @@ namespace RB::Math
         static float Angle(const Float2& first, const Float2& second);
     };
 
+    struct Float4x4;
+
     struct Float3
     {
     public:
@@ -265,6 +267,11 @@ namespace RB::Math
 
         Float3 operator/(const Float3& other)  const;
         Float3 operator/(const float& other) const;
+
+        Float3 operator*(const Float4x4& other) const;
+
+        static Float3 Min(const Float3& first, const Float3& second);
+        static Float3 Max(const Float3& first, const Float3& second);
 
         static Float3 Cross(const Float3& first, const Float3& second);
 
@@ -311,8 +318,8 @@ namespace RB::Math
         Float4 operator*(const Float4& other)  const;
         Float4 operator*(const float& other) const;
 
-        //	Float4 operator/(const Float4& other)  const;
-        //	Float4 operator/(const float& other) const;
+        Float4 operator/(const Float4& other)  const;
+        Float4 operator/(const float& other) const;
 
         //	static Float4 Cross(const Float4& first, const Float4& second);
 

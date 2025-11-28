@@ -26,6 +26,10 @@ namespace RB::Entity
 
             m_VertexPack.indexBuffer = Graphics::IndexBuffer::Create(index_name, submodel.indices.data(), submodel.indices.size());
         }
+
+        m_ValidBounds = true;
+        m_Bounds.min = submodel.minBounds;
+        m_Bounds.max = submodel.maxBounds;
     }
 
     Mesh::Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data, uint64_t index_data_count)
@@ -39,6 +43,8 @@ namespace RB::Entity
 
             m_VertexPack.indexBuffer = Graphics::IndexBuffer::Create(index_name.c_str(), index_data, index_data_count);
         }
+
+        m_ValidBounds = false;
     }
 
     Material::Material(const char* name, LoadedImage* image)

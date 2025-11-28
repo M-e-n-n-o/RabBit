@@ -58,6 +58,8 @@ namespace RB
             Math::Float3       position;
             Math::Float3       rotation;
             Math::Float3       scale;
+            Math::Float3       minBounds;
+            Math::Float3       maxBounds;
             uint32_t           albedoIndex;
         };
 

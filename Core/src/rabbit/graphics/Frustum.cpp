@@ -109,4 +109,73 @@ namespace RB::Graphics
 
         m_ReversedDepth = reverse_depth;
     }
+
+    bool Frustum::IsInFrustum(const Math::AABB& aabb, const Math::Float4x4& view_proj)
+    {
+        const float* m = view_proj.a;
+
+        // For each plane, test the "positive vertex" of the AABB
+        for (int i = 0; i < 6; ++i)
+        {
+            // Compute plane coefficients a,b,c,d depending on plane
+            Math::Float3 plane;
+            float d_plane;
+            switch (i)
+            {
+            case 0: // Left
+                plane.x = m[3] + m[0];
+                plane.y = m[7] + m[4];
+                plane.z = m[11] + m[8];
+                d_plane = m[15] + m[12];
+                break;
+            case 1: // Right
+                plane.x = m[3] - m[0];
+                plane.y = m[7] - m[4];
+                plane.z = m[11] - m[8];
+                d_plane = m[15] - m[12];
+                break;
+            case 2: // Bottom
+                plane.x = m[3] + m[1];
+                plane.y = m[7] + m[5];
+                plane.z = m[11] + m[9];
+                d_plane = m[15] + m[13];
+                break;
+            case 3: // Top
+                plane.x = m[3] - m[1];
+                plane.y = m[7] - m[5];
+                plane.z = m[11] - m[9];
+                d_plane = m[15] - m[13];
+                break;
+            case 4: // Near
+                plane.x = m[3] + m[2];
+                plane.y = m[7] + m[6];
+                plane.z = m[11] + m[10];
+                d_plane = m[15] + m[14];
+                break;
+            case 5: // Far
+                plane.x = m[3] - m[2];
+                plane.y = m[7] - m[6];
+                plane.z = m[11] - m[10];
+                d_plane = m[15] - m[14];
+                break;
+            }
+
+            // Normalize
+            float length = plane.GetLength();
+            plane = plane / length;
+            d_plane /= length;
+
+            // Compute positive vertex of AABB for this plane
+            Math::Float3 p = aabb.min;
+            if (plane.x >= 0) p.x = aabb.max.x;
+            if (plane.y >= 0) p.y = aabb.max.y;
+            if (plane.z >= 0) p.z = aabb.max.z;
+
+            // If positive vertex is outside the plane, AABB is outside frustum
+            if ((plane.x * p.x + plane.y * p.y + plane.z * p.z + d_plane) < 0)
+                return false;
+        }
+
+        return true;
+    }
 }

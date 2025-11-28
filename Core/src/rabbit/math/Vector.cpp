@@ -246,6 +246,33 @@ Float3 Float3::operator/(const float& other) const
     );
 }
 
+Float3 Float3::operator*(const Float4x4& other) const
+{
+    return Float3(
+        x * other.a00 + y * other.a10 + z * other.a20 + other.a30,
+        x * other.a01 + y * other.a11 + z * other.a21 + other.a31,
+        x * other.a02 + y * other.a12 + z * other.a22 + other.a32
+    );
+}
+
+Float3 Float3::Min(const Float3& first, const Float3& second)
+{
+    return Float3(
+        first.x < second.x ? first.x : second.x,
+        first.y < second.y ? first.y : second.y,
+        first.z < second.z ? first.z : second.z 
+    );
+}
+
+Float3 Float3::Max(const Float3& first, const Float3& second)
+{
+    return Float3(
+        first.x > second.x ? first.x : second.x,
+        first.y > second.y ? first.y : second.y,
+        first.z > second.z ? first.z : second.z 
+    );
+}
+
 Float3 Float3::Cross(const Float3& first, const Float3& second)
 {
     return Float3(
@@ -261,7 +288,7 @@ float Float3::Dot(const Float3& first, const Float3& second)
         first.x * second.x +
         first.y * second.y +
         first.z * second.z
-        );
+    );
 }
 
 float Float3::Angle(const Float3& first, const Float3& second)
@@ -325,5 +352,25 @@ Float4 Float4::operator*(const float& other) const
         y * other,
         z * other,
         w * other
+    );
+}
+
+Float4 Float4::operator/(const Float4& other) const
+{
+    return Float4(
+        x / other.x,
+        y / other.y,
+        z / other.z,
+        w / other.w
+    );
+}
+
+Float4 Float4::operator/(const float& other) const
+{
+    return Float4(
+        x / other,
+        y / other,
+        z / other,
+        w / other
     );
 }

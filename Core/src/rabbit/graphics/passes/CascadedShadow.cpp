@@ -89,6 +89,8 @@ namespace RB::Graphics
 
             const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
 
+            // TODO: Do frustum culling on each shadow slice
+
             CascadedShadowEntry::ModelEntry entry = {};
             entry.vb            = vp.primaryBuffer;
             entry.ib            = vp.indexBuffer;

@@ -59,7 +59,7 @@ public:
         //bool success = AssetManager::LoadMesh("sponza/NewSponza_Main_Yup_003.fbx", &mesh);
         bool success = AssetManager::LoadMesh("Bunny.fbx", &mesh);
 
-        //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
+        m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
         m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
@@ -70,6 +70,7 @@ public:
             materials.push_back(new Material(("sponza/" + mesh.albedoTextures[i]).c_str()));
         }
 
+        List<MeshRenderer*> meshes;
         for (int i = 0; i < mesh.models.size(); i++)
         {
             if (mesh.models[i].positions.empty())
@@ -80,11 +81,11 @@ public:
             Material* mat = materials[mesh.models[i].albedoIndex];
 
             GameObject* object = scene->CreateGameObject();
-            object->AddComponent<MeshRenderer>(m_Mesh, mat);
+            meshes.push_back(object->AddComponent<MeshRenderer>(m_Mesh, mat));
             Transform* t = object->AddComponent<Transform>();
             t->position = mesh.models[i].position;
             t->rotation = mesh.models[i].rotation;
-            t->scale = mesh.models[i].scale; //* Float3(0.01f);
+            t->scale = mesh.models[i].scale;
             
             m_Transform = t;
         }

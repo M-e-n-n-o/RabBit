@@ -1,12 +1,22 @@
 #pragma once
 
 #include <cmath>
+#include "Vector.h"
+#include "Matrix.h"
 
 namespace RB::Math
 {
     #define kPI 3.14159265359
     
     #define ALIGN_8(x) Math::AlignUp((x), 8)
+
+    struct AABB
+    {
+        Float3 min;
+        Float3 max;
+    };
+
+    AABB TransformAABBToWorld(const AABB& local_aabb, const Float4x4& model_mat);
 
     template<typename T>
     inline T Abs(T value)

@@ -27,8 +27,13 @@ namespace RB::Entity
             return m_VertexPack;
         }
 
+        bool HasValidAABB() const { return m_ValidBounds; }
+        const Math::AABB& GetAABB() const { return m_Bounds; }
+
     private:
         VertexPack m_VertexPack;
+        Math::AABB m_Bounds;
+        bool       m_ValidBounds;
     };
 
     enum class TextureColorSpace
