@@ -65,9 +65,9 @@ public:
         Scene* scene = Application::GetInstance()->GetScene();
 
         List<Material*> materials;
-        for (int i = 0; i < mesh.albedoTextures.size(); i++)
+        for (int i = 0; i < mesh.diffuseColorTextures.size(); i++)
         {
-            materials.push_back(new Material(("sponza/" + mesh.albedoTextures[i]).c_str()));
+            materials.push_back(new Material(("sponza/" + mesh.diffuseColorTextures[i]).c_str()));
         }
 
         List<MeshRenderer*> meshes;
@@ -78,7 +78,7 @@ public:
 
             m_Mesh = new Mesh("Mesh", mesh.models[i]);
 
-            Material* mat = materials[mesh.models[i].albedoIndex];
+            Material* mat = materials[mesh.models[i].diffuseTexIndex];
 
             GameObject* object = scene->CreateGameObject();
             meshes.push_back(object->AddComponent<MeshRenderer>(m_Mesh, mat));

@@ -79,14 +79,14 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     // Calculate lighting
     float3 diffuse;
     float3 specular;
-    float3 ambient = gbuf.color.rgb * 0.05f;
-    GetBlinnPhongDiffSpec(GetCameraPos(),
-                          world_pos,
-                          gbuf.normal,
-                          69.0f,
-                          g_ApplyLighting.light,
-                          diffuse,
-                          specular);
+    float3 ambient = gbuf.diffColor.rgb * 0.05f;
+    GetBlinnPhongBRDF(GetCameraPos(),
+                      world_pos,
+                      gbuf.normal,
+                      69.0f,
+                      g_ApplyLighting.light,
+                      diffuse,
+                      specular);
 
     diffuse  *= shadow;
     specular *= shadow;

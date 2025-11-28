@@ -59,10 +59,10 @@ namespace RB
             Math::Float3       rotation;
             Math::Float3       minBounds;
             Math::Float3       maxBounds;
-            uint32_t           albedoIndex;
+            uint32_t           diffuseTexIndex;
         };
 
-        List<std::string>   albedoTextures;
+        List<std::string>   diffuseColorTextures;
         List<Submodel>      models;
         void*               internalScene;
 

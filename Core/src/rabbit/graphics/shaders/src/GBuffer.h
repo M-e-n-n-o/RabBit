@@ -3,7 +3,7 @@
 
 struct GBuffer
 {
-    float4 color;
+    float4 diffColor;
     float3 normal;
     float  depth;
 };
@@ -23,7 +23,7 @@ struct GBufferEncoded
 GBufferEncoded EncodeGBuffer(GBuffer gbuf)
 {
     GBufferEncoded enc;
-    enc.gbuf0 = gbuf.color;
+    enc.gbuf0 = gbuf.diffColor;
     enc.gbuf1 = float4(gbuf.normal.rgb, gbuf.depth);
     return enc;
 }
@@ -31,9 +31,9 @@ GBufferEncoded EncodeGBuffer(GBuffer gbuf)
 GBuffer DecodeGBuffer(GBufferEncoded enc)
 {
     GBuffer gbuf;
-    gbuf.color  = enc.gbuf0;
-    gbuf.normal = enc.gbuf1.xyz;
-    gbuf.depth  = enc.gbuf1.w;
+    gbuf.diffColor = enc.gbuf0;
+    gbuf.normal    = enc.gbuf1.xyz;
+    gbuf.depth     = enc.gbuf1.w;
     return gbuf;
 }
 

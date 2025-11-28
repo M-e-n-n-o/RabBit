@@ -143,7 +143,7 @@ namespace RB
             // TODO:
             // - Do proper parent/child relationships
             // - Store more texture types (normals, roughness, etc.)
-            // - Do model loading on a different thread?
+            // - Do model loading on a different thread? (+ use thread pool for each submodel)
             //      - You can then choose the behaviour when its not yet loaded. Need to block until loaded or just skip rendering until loaded?
 
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
@@ -175,7 +175,7 @@ namespace RB
 
             for (const ufbx_material* material : scene->materials)
             {
-                out_mesh->albedoTextures.push_back(material->fbx.diffuse_color.texture ? material->fbx.diffuse_color.texture->filename.data : material->name.data);
+                out_mesh->diffuseColorTextures.push_back(material->fbx.diffuse_color.texture ? material->fbx.diffuse_color.texture->filename.data : material->name.data);
 
                 // Store the wrap type 
                 //material->fbx.diffuse_color.texture->wrap_u
@@ -192,7 +192,7 @@ namespace RB
                 for (uint32_t part_idx = 0; part_idx < mesh->material_parts.count; part_idx++)
                 {
                     LoadedMesh::Submodel submodel = ConvertMeshPart(mesh, &mesh->material_parts[part_idx], node);
-                    submodel.albedoIndex = part_idx;
+                    submodel.diffuseTexIndex = part_idx;
                     out_mesh->models.push_back(submodel);
                 }
 
