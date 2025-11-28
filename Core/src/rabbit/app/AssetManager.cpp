@@ -140,6 +140,12 @@ namespace RB
 
         bool LoadMesh(const char* path, LoadedMesh* out_mesh)
         {
+            // TODO:
+            // - Do proper parent/child relationships
+            // - Store more texture types (normals, roughness, etc.)
+            // - Do model loading on a different thread?
+            //      - You can then choose the behaviour when its not yet loaded. Need to block until loaded or just skip rendering until loaded?
+
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
             RB_LOG(LOGTAG_MAIN, "Loading mesh: %s", final_path.c_str());
@@ -192,19 +198,60 @@ namespace RB
 
             }
 
-            //static_assert(false);
-            // TODO
-            // - Do proper parent/child relationships
-            // - Do some scale conversions in here so that we don't need really small scales when rendering (can cause floating point issues in for examply frustum culling)
-            // - Store more texture types (normals, roughness, etc.)
-            // - Do model loading on a different thread?
-            //      - You can then choose the behaviour when its not yet loaded. Need to block until loaded or just skip rendering until loaded?
-
             return true;
         }
 
         LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node)
         {
+            LoadedMesh::Submodel out_submodel = {};
+
+            // Transform code
+            Math::Float3 model_scale;
+            {
+                out_submodel.position.x = (float)node->node_to_world.m03;
+                out_submodel.position.y = (float)node->node_to_world.m13;
+                out_submodel.position.z = (float)node->node_to_world.m23;
+
+                const ufbx_matrix& m = node->node_to_world;
+
+                Math::Float3 cx(m.m00, m.m10, m.m20);
+                Math::Float3 cy(m.m01, m.m11, m.m21);
+                Math::Float3 cz(m.m02, m.m12, m.m22);
+
+                // Remove scale
+                float sx = cx.GetLength();
+                float sy = cy.GetLength();
+                float sz = cz.GetLength();
+
+                model_scale = { sx, sy, sz };
+
+                if (sx == 0) sx = 1;
+                if (sy == 0) sy = 1;
+                if (sz == 0) sz = 1;
+
+                Math::Float3 rx = cx / sx;
+                Math::Float3 ry = cy / sy;
+                Math::Float3 rz = cz / sz;
+
+                float det = Math::Float3::Dot(Math::Float3::Cross(rx, ry), rz);
+                if (det < 0.0f) 
+                {
+                    rx = rx * -1.0f;
+                }
+
+                float r00 = rx.x, r01 = ry.x, r02 = rz.x;
+                float r10 = rx.y, r11 = ry.y, r12 = rz.y;
+                float r20 = rx.z, r21 = ry.z, r22 = rz.z;
+
+                float y = asinf(-Math::Clamp(r20, -1.0f, 1.0f));
+                float x = atan2f(r21, r22);
+                float z = atan2f(r10, r00);
+
+                out_submodel.rotation.x = Math::RadiansToDegrees(x);
+                out_submodel.rotation.y = Math::RadiansToDegrees(y);
+                out_submodel.rotation.z = Math::RadiansToDegrees(z);
+            }
+
             const size_t num_vertices = mesh_part->num_triangles * 3;
             List<Math::Float3> positions;
             positions.resize(num_vertices);
@@ -238,19 +285,23 @@ namespace RB
                     ufbx_vec3 normal = mesh->vertex_normal.exists ? ufbx_get_vertex_vec3(&mesh->vertex_normal, ix) : default_normal;
                     ufbx_vec2 uv     = mesh->vertex_uv.exists ? ufbx_get_vertex_vec2(&mesh->vertex_uv, ix) : default_uv;
 
-                    positions[vi_global] = Math::Float3(pos.x, pos.y, pos.z);
+                    // Apply the model scale to the position so that we avoid really small/big scales during rendering
+                    // (which can cause floating point issues)
+                    Math::Float3 scaled_pos = Math::Float3(pos.x, pos.y, pos.z) * model_scale;
+
+                    positions[vi_global] = scaled_pos;
 
                     vertices[vi_global] = {};
                     vertices[vi_global].normal   = Math::Float3(normal.x, normal.y, normal.z);
                     vertices[vi_global].uv       = Math::Float2(uv.x, 1.0f - uv.y); // Flip the Y as UFBX uses bottom-left convention
                     vi_global++;
 
-                    if (pos.x < min_bounds.x) min_bounds.x = pos.x;
-                    if (pos.y < min_bounds.y) min_bounds.y = pos.y;
-                    if (pos.z < min_bounds.z) min_bounds.z = pos.z;
-                    if (pos.x > max_bounds.x) max_bounds.x = pos.x;
-                    if (pos.y > max_bounds.y) max_bounds.y = pos.y;
-                    if (pos.z > max_bounds.z) max_bounds.z = pos.z;
+                    if (scaled_pos.x < min_bounds.x) min_bounds.x = scaled_pos.x;
+                    if (scaled_pos.y < min_bounds.y) min_bounds.y = scaled_pos.y;
+                    if (scaled_pos.z < min_bounds.z) min_bounds.z = scaled_pos.z;
+                    if (scaled_pos.x > max_bounds.x) max_bounds.x = scaled_pos.x;
+                    if (scaled_pos.y > max_bounds.y) max_bounds.y = scaled_pos.y;
+                    if (scaled_pos.z > max_bounds.z) max_bounds.z = scaled_pos.z;
                 }
             }
 
@@ -259,8 +310,6 @@ namespace RB
             List<ufbx_vertex_stream> streams(2);
             streams[0].data = positions.data(); streams[0].vertex_count = positions.size(); streams[0].vertex_size = sizeof(Math::Float3);
             streams[1].data = vertices.data();  streams[1].vertex_count = vertices.size();  streams[1].vertex_size = sizeof(LoadedMesh::Vertex);
-
-            LoadedMesh::Submodel out_submodel = {};
 
             const size_t num_indices = num_vertices;
 
@@ -290,52 +339,6 @@ namespace RB
                 RB_LOG_ERROR(LOGTAG_MAIN, "Failed to generate index buffer with ufbx, error message: %s", error.description.data);
                 // Return empty submodel
                 return out_submodel;
-            }
-
-            // Transform code
-            {
-                out_submodel.position.x = (float)node->node_to_world.m03;
-                out_submodel.position.y = (float)node->node_to_world.m13;
-                out_submodel.position.z = (float)node->node_to_world.m23;
-
-                const ufbx_matrix& m = node->node_to_world;
-
-                Math::Float3 cx(m.m00, m.m10, m.m20);
-                Math::Float3 cy(m.m01, m.m11, m.m21);
-                Math::Float3 cz(m.m02, m.m12, m.m22);
-
-                // Remove scale
-                float sx = cx.GetLength();
-                float sy = cy.GetLength();
-                float sz = cz.GetLength();
-
-                out_submodel.scale = { sx, sy, sz };
-
-                if (sx == 0) sx = 1;
-                if (sy == 0) sy = 1;
-                if (sz == 0) sz = 1;
-
-                Math::Float3 rx = cx / sx;
-                Math::Float3 ry = cy / sy;
-                Math::Float3 rz = cz / sz;
-
-                float det = Math::Float3::Dot(Math::Float3::Cross(rx, ry), rz);
-                if (det < 0.0f) 
-                {
-                    rx = rx * -1.0f;
-                }
-
-                float r00 = rx.x, r01 = ry.x, r02 = rz.x;
-                float r10 = rx.y, r11 = ry.y, r12 = rz.y;
-                float r20 = rx.z, r21 = ry.z, r22 = rz.z;
-
-                float y = asinf(-Math::Clamp(r20, -1.0f, 1.0f));
-                float x = atan2f(r21, r22);
-                float z = atan2f(r10, r00);
-
-                out_submodel.rotation.x = Math::RadiansToDegrees(x);
-                out_submodel.rotation.y = Math::RadiansToDegrees(y);
-                out_submodel.rotation.z = Math::RadiansToDegrees(z);
             }
 
             return out_submodel;

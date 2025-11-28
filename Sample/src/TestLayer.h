@@ -85,7 +85,7 @@ public:
             Transform* t = object->AddComponent<Transform>();
             t->position = mesh.models[i].position;
             t->rotation = mesh.models[i].rotation;
-            t->scale = mesh.models[i].scale;
+            t->scale = Math::Float3(1);
             
             m_Transform = t;
         }

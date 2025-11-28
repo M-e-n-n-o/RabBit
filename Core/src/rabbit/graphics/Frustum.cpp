@@ -112,6 +112,11 @@ namespace RB::Graphics
 
     bool Frustum::IsInFrustum(const Math::AABB& aabb, const Math::Float4x4& view_proj)
     {
+        // Add "small" padding to fix early culling of small objects
+        float epsilon = 0.1f;
+        Math::Float3 padded_min = aabb.min - epsilon;
+        Math::Float3 padded_max = aabb.max + epsilon;
+        
         const float* m = view_proj.a;
 
         // For each plane, test the "positive vertex" of the AABB
@@ -166,10 +171,10 @@ namespace RB::Graphics
             d_plane /= length;
 
             // Compute positive vertex of AABB for this plane
-            Math::Float3 p = aabb.min;
-            if (plane.x >= 0) p.x = aabb.max.x;
-            if (plane.y >= 0) p.y = aabb.max.y;
-            if (plane.z >= 0) p.z = aabb.max.z;
+            Math::Float3 p = padded_min;
+            if (plane.x >= 0) p.x = padded_max.x;
+            if (plane.y >= 0) p.y = padded_max.y;
+            if (plane.z >= 0) p.z = padded_max.z;
 
             // If positive vertex is outside the plane, AABB is outside frustum
             if ((plane.x * p.x + plane.y * p.y + plane.z * p.z + d_plane) < 0)
