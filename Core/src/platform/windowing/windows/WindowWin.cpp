@@ -31,6 +31,10 @@ namespace RB::Graphics::Windows
         , m_IsValid(true)
         , m_BackBufferFormat(args.format)
     {
+        // Make sure windows doesn't change the scale of our window
+        // (Apart from standard windows UI elements, which is part of V2)
+        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
         RegisterWindowCLass(args.instance, args.className.c_str());
 
         DWORD style = WS_OVERLAPPEDWINDOW;
