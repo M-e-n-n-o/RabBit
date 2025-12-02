@@ -301,7 +301,6 @@ namespace RB::Graphics::D3D12
 
         // TODO Set the filter (and max anisotropy) based on texture filter setting (maybe to do this we would need non static samplers)
 
-        // Clamp sampler
         D3D12_STATIC_SAMPLER_DESC clamp = {};
         clamp.ShaderRegister   = kClampAnisoSamplerSlot;
         clamp.RegisterSpace    = 0;
@@ -318,7 +317,6 @@ namespace RB::Graphics::D3D12
         clamp.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
         static_samplers.push_back(clamp);
 
-        // Black border sampler
         D3D12_STATIC_SAMPLER_DESC clamp_point = {};
         clamp_point.ShaderRegister   = kClampPointSamplerSlot;
         clamp_point.RegisterSpace    = 0;
@@ -335,21 +333,37 @@ namespace RB::Graphics::D3D12
         clamp_point.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
         static_samplers.push_back(clamp_point);
 
+        D3D12_STATIC_SAMPLER_DESC clamp_linear = {};
+        clamp_linear.ShaderRegister   = kClampLinearSamplerSlot;
+        clamp_linear.RegisterSpace    = 0;
+        clamp_linear.Filter           = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+        clamp_linear.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp_linear.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp_linear.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        clamp_linear.MipLODBias       = 0;
+        clamp_linear.MaxAnisotropy    = 1;
+        clamp_linear.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        clamp_linear.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+        clamp_linear.MinLOD           = 0.0f;
+        clamp_linear.MaxLOD           = D3D12_FLOAT32_MAX;
+        clamp_linear.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        static_samplers.push_back(clamp_linear);
+
         D3D12_STATIC_SAMPLER_DESC wrap = {};
-        clamp.ShaderRegister   = kWrapAnisoSamplerSlot;
-        clamp.RegisterSpace    = 0;
-        clamp.Filter           = D3D12_FILTER_ANISOTROPIC;
-        clamp.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        clamp.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        clamp.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        clamp.MipLODBias       = 0;
-        clamp.MaxAnisotropy    = 8;
-        clamp.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        clamp.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-        clamp.MinLOD           = 0.0f;
-        clamp.MaxLOD           = D3D12_FLOAT32_MAX;
-        clamp.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        static_samplers.push_back(clamp);
+        wrap.ShaderRegister   = kWrapAnisoSamplerSlot;
+        wrap.RegisterSpace    = 0;
+        wrap.Filter           = D3D12_FILTER_ANISOTROPIC;
+        wrap.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        wrap.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        wrap.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        wrap.MipLODBias       = 0;
+        wrap.MaxAnisotropy    = 8;
+        wrap.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        wrap.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+        wrap.MinLOD           = 0.0f;
+        wrap.MaxLOD           = D3D12_FLOAT32_MAX;
+        wrap.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        static_samplers.push_back(wrap);
 
         return static_samplers;
     }
