@@ -57,7 +57,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
 
     // Find cascade
     uint cascade_idx = 0;
-    for (uint i = 0; i < min(g_ApplyLighting.cascades, MAX_NUM_CASCADES) - 1; i++)
+    for (int i = 0; i < min(g_ApplyLighting.cascades, MAX_NUM_CASCADES) - 1; i++)
     {
         if (view_depth > g_ApplyLighting.cascadeSplits[i])
             cascade_idx = i + 1;
@@ -77,7 +77,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     // Calculate lighting
     float3 diffuse;
     float3 specular;
-    float3 ambient = gbuf.diffColor.rgb * 0.05f;
+    float3 ambient = gbuf.diffColor.rgb * 0.01f;
     GetBlinnPhongBRDF(GetCameraPos(),
                       world_pos,
                       gbuf.normal,

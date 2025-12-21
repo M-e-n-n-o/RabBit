@@ -166,7 +166,14 @@ Float3::Float3(float x, float y, float z)
 
 void Float3::Normalize()
 {
-    *this = *this / GetLength();
+    float length = GetLength();
+
+    if (length == 0)
+    {
+        return;
+    }
+
+    *this = *this / length;
 }
 
 float Float3::GetLength() const

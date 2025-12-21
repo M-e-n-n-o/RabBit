@@ -34,6 +34,11 @@
 #include "platform/graphics/vulkan/RendererVK.h"
 #endif
 
+#ifdef RB_ENABLE_LOGS
+#define USE_PIX
+#include <pix3.h>
+#endif
+
 using namespace RB::Math;
 using namespace RB::Events;
 
@@ -586,8 +591,16 @@ namespace RB::Graphics
         return true;
     }
 
-    Renderer* Renderer::Create(bool enable_validation_layer)
+    Renderer* Renderer::Create(bool enable_validation_layer, bool load_pix_lib)
     {
+#ifdef RB_ENABLE_LOGS
+        if (load_pix_lib)
+        {
+            // Load PIX library so you can attach at runtime
+            PIXLoadLatestWinPixGpuCapturerLibrary();
+        }
+#endif
+
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12

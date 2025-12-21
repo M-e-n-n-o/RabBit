@@ -99,7 +99,7 @@ namespace RB
 
         m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
 
-        m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
+        m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
         m_Renderer->Init();
 
         m_Displays = Display::CreateDisplays();

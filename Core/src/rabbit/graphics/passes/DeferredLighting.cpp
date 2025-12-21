@@ -92,7 +92,6 @@ namespace RB::Graphics
         ApplyLightingCB cb = {};
         cb.light.direction = entry->light.GetDirection();
         cb.light.color     = entry->light.GetColor();
-        cb.cascades        = 0;
 
         RenderResource* shadow_map = inputs.dependencyRes[2];
 
@@ -116,6 +115,9 @@ namespace RB::Graphics
         }
         else
         {
+            cb.cascades = 0;
+            cb.shadowVPs[0] = Math::Float4x4();
+
             inputs.ri->SetShaderResourceInput(g_TexDefaultWhite.get(), 2);
         }
 

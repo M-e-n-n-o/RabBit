@@ -59,7 +59,7 @@ namespace RB::Graphics
         // Also syncs with the render thread and GPU
         void Shutdown();
 
-        static Renderer* Create(bool enable_validation_layer);
+        static Renderer* Create(bool enable_validation_layer, bool load_pix_lib);
 
     protected:
         Renderer(bool multi_threading_support);
