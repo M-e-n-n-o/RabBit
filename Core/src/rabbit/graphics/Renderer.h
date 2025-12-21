@@ -72,22 +72,23 @@ namespace RB::Graphics
     private:
         ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
         void CreateRenderGraphs(const GraphicsSettings& settings);
-        void UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count);
+        void UpdateRenderGraphSizes(const ViewContext* view_contexts, uint32_t context_count);
 
         // Should only be called from the render thread!
         bool OnEvent(Events::Event& event) override;
 
         inline static RenderAPI s_Api = RenderAPI::None;
 
-        bool						m_IsShutdown;
+        bool                        m_IsShutdown;
         WorkerThread*               m_RenderThread;
-        JobTypeID					m_RenderJobType;
+        JobTypeID                   m_RenderJobType;
 
         RenderInterface*            m_GraphicsInterface; // Used by the render graphs
         RenderInterface*            m_CopyInterface;	 // Used for resource streaming 
         RenderGraph*                m_RenderGraphs[kRenderGraphType_Count];
         RenderGraphContext*         m_RenderGraphContext;
         uint32_t                    m_CurrentValidRenderGraphSizes;
+        uint32_t*                   m_RenderGraphSizeIDs;
 
         ThreadedVariable<uint64_t>  m_RenderFrameIndex;
         ThreadedVariable<uint32_t>  m_ForceSync;

@@ -49,6 +49,8 @@ namespace RB::Graphics
         ViewContext*                        viewContexts;
         uint32_t                            totalViewContexts;
 
+        uint32_t*                           renderGraphSizeIDs;
+
         List<Renderer::BackBufferGuard>*    backBufferAvailabilityGuards;
 
         RenderGraphContext*                 graphContext;
@@ -125,15 +127,16 @@ namespace RB::Graphics
 
         m_RenderGraphContext = new RenderGraphContext();
         m_CurrentValidRenderGraphSizes = 0;
+        m_RenderGraphSizeIDs = nullptr;
 
         CreateRenderGraphs(Application::GetInstance()->GetGraphicsSettings());
 
         float vertices[] =
-        {	// Pos			UV
-            -1.0f,  1.0f,	0.0f, 0.0f,
-             1.0f,  1.0f,	1.0f, 0.0f,
-            -1.0f, -1.0f,	0.0f, 1.0f,
-             1.0f, -1.0f,	1.0f, 1.0f,
+        {   // Pos          UV
+            -1.0f,  1.0f,   0.0f, 0.0f,
+             1.0f,  1.0f,   1.0f, 0.0f,
+            -1.0f, -1.0f,   0.0f, 1.0f,
+             1.0f, -1.0f,   1.0f, 1.0f,
         };
 
         m_BackBufferCopyVB = VertexBuffer::Create("BackBuffer copy VB", TopologyType::TriangleStrip, vertices, 4 * sizeof(float), sizeof(vertices));
@@ -183,6 +186,7 @@ namespace RB::Graphics
             SAFE_DELETE(m_RenderGraphs[i]);
         }
         SAFE_DELETE(m_RenderGraphContext);
+        SAFE_DELETE(m_RenderGraphSizeIDs);
 
         m_BackBufferCopyVB.reset();
 
@@ -217,6 +221,7 @@ namespace RB::Graphics
             RenderContext* context                  = new RenderContext(m_RenderAllocator);
             context->viewContexts                   = view_contexts;
             context->totalViewContexts              = total_view_contexts;
+            context->renderGraphSizeIDs             = m_RenderGraphSizeIDs;
             context->backBufferAvailabilityGuards   = &m_BackBufferAvailabilityGuards;
             context->graphContext                   = m_RenderGraphContext;
             context->renderGraphs                   = m_RenderGraphs;
@@ -335,21 +340,21 @@ namespace RB::Graphics
             //    contexts[context_index].isOffscreenContext  = false;
             //    contexts[context_index].windowIndex         = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
             //    contexts[context_index].finalColorTarget    = virtual_back_buffer;
-            //    contexts[context_index].viewport.width      = virtual_back_buffer->GetWidth();
-            //    contexts[context_index].viewport.height     = virtual_back_buffer->GetHeight();
+            //    contexts[context_index].viewport.width      = virtual_back_buffer->GetViewportWidth();
+            //    contexts[context_index].viewport.height     = virtual_back_buffer->GetViewportHeight();
             //}
             //else
             //{
             //    contexts[context_index].isOffscreenContext  = true;
             //    contexts[context_index].finalColorTarget    = render_texture.get();
-            //    contexts[context_index].viewport.width      = render_texture->GetWidth();
-            //    contexts[context_index].viewport.height     = render_texture->GetHeight();
+            //    contexts[context_index].viewport.width      = render_texture->GetViewportWidth();
+            //    contexts[context_index].viewport.height     = render_texture->GetViewportHeight();
             //}
             //
             //contexts[context_index].viewFrustum = {};
             //contexts[context_index].viewFrustum.SetTransform(transform->position, transform->rotation);
-            //contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetAspectRatio(), true);
-            ////contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, true);
+            //contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetViewportAspectRatio(), true);
+            ////contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetViewportAspectRatio(), 1, -1, true);
 
             contexts[context_index].clearColor = camera->GetClearColor();
             contexts[context_index].renderGraphType = camera->GetRenderGraphType();
@@ -368,7 +373,11 @@ namespace RB::Graphics
             m_RenderGraphs[i] = nullptr;
         }
 
-        // TODO Later it would probably be better to set this rendergraph from user code (or atleast be able to)
+        // TODO 
+        // - Later it would probably be better to set this rendergraph from user code (or atleast be able to)
+        // - When implementing upscaling, we still want to render the UI at full res. 
+        //      Probably good to make a separate graph for the UI rendering and just use the output of regular rendering
+        //      as input to the UI graph.
 
         m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
             // Passes
@@ -393,7 +402,7 @@ namespace RB::Graphics
             .Build(kRenderGraphType_Normal, m_RenderGraphContext);
     }
 
-    void Renderer::UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count)
+    void Renderer::UpdateRenderGraphSizes(const ViewContext* view_contexts, uint32_t context_count)
     {
         if (m_CurrentValidRenderGraphSizes == context_count)
         {
@@ -407,14 +416,15 @@ namespace RB::Graphics
         m_RenderGraphContext->DeleteGraphResources();
         m_RenderGraphContext->DeleteSizes();
 
+        SAFE_DELETE(m_RenderGraphSizeIDs);
+        m_RenderGraphSizeIDs = ALLOC_HEAPC(uint32_t, context_count);
+
         for (uint32_t i = 0; i < context_count; ++i)
         {
             RenderGraphSize graph_size = {};
-            graph_size.size         = Math::Float2(view_contexts[i].viewport.width, view_contexts[i].viewport.height);
-            graph_size.uiSize       = graph_size.size; // TODO Add support for separate resolutions for UI (rendering the UI always at window resolution)
-            graph_size.upscaledSize = graph_size.size; // TODO Add support for upscalers
+            graph_size.size = Math::Float2(view_contexts[i].viewport.width, view_contexts[i].viewport.height);
 
-            m_RenderGraphContext->AddGraphSize(view_contexts[i].renderGraphType, graph_size);
+            m_RenderGraphSizeIDs[i] = m_RenderGraphContext->AddGraphSize(view_contexts[i].renderGraphType, graph_size);
         }
 
         // Make sure that the previous resources are done rendering and have been released before creating new ones
@@ -632,7 +642,11 @@ namespace RB::Graphics
                 context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
 
                 // Render the different passes
-                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
+                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, 
+                                                                              context->renderPassEntries[view_context_index], 
+                                                                              context->graphicsInterface, 
+                                                                              context->graphContext, 
+                                                                              context->renderGraphSizeIDs[view_context_index]);
             }
         }
         */
@@ -698,18 +712,18 @@ namespace RB::Graphics
             //present_data.currSize           = Math::Float2(window->GetWidth(), window->GetHeight());
             //present_data.texOffset          = Math::Float2(rect.left, rect.top);
             //present_data.gammaValue         = window->GetGammaCorrection();
-            //present_data.brightnessValue    = window->GetBrighness();
-
+            //present_data.brightnessValue    = window->GetBrightness();
+            //
             //context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
-
+            //
             //context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
             //context->graphicsInterface->PushRenderTarget(back_buffer, 0);
-
+            //
             //if (window->IsSemiTransparent())
             //{
             //    // Enable blending on a semi transparent window
             //    context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
-
+            //
             //    // Clear the backbuffer as we don't want to see the data of a previous frame
             //    context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
             //}
@@ -717,12 +731,13 @@ namespace RB::Graphics
             //{
             //    context->graphicsInterface->SetBlendMode(BlendMode::None);
             //}
-
+            //
             //// Backbuffer copy
             //context->graphicsInterface->Draw();
             
 
             context->graphicsInterface->Clear(back_buffer, context->viewContexts[0].clearColor);
+
 
             // Prepare for present
             context->graphicsInterface->TransitionResource(back_buffer, ResourceState::PRESENT);

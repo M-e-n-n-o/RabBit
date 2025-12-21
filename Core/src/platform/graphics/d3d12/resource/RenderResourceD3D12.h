@@ -69,6 +69,7 @@ namespace RB::Graphics::D3D12
         Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        Texture2DD3D12(const Texture2DD3D12* other);
         ~Texture2DD3D12();
 
         const char* GetName() const override { return m_Name.c_str(); }
@@ -83,6 +84,12 @@ namespace RB::Graphics::D3D12
 
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
+
+        uint32_t GetViewportWidth() const override { return m_VpWidth; }
+        uint32_t GetViewportHeight() const override { return m_VpHeight; }
+
+        void SetViewportWidth(uint32_t width) override;
+        void SetViewportHeight(uint32_t height) override;
 
         uint32_t GetMipCount() const override;
         uint32_t GetBaseMip() const override;
@@ -104,8 +111,11 @@ namespace RB::Graphics::D3D12
 
         std::string                     m_Name;
         GpuResource*                    m_Resource;
+        bool                            m_IsAlias;
         uint32_t                        m_Width;
         uint32_t                        m_Height;
+        uint32_t                        m_VpWidth;
+        uint32_t                        m_VpHeight;
         RenderResourceFormat            m_Format;
 
         bool                            m_IsRenderTarget;
@@ -125,6 +135,7 @@ namespace RB::Graphics::D3D12
     {
     public:
         Texture2DArrayD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access);
+        Texture2DArrayD3D12(const Texture2DArrayD3D12* other);
         ~Texture2DArrayD3D12();
 
         const char* GetName() const override { return m_Name.c_str(); }
@@ -139,6 +150,12 @@ namespace RB::Graphics::D3D12
 
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
+
+        uint32_t GetViewportWidth() const override { return m_VpWidth; }
+        uint32_t GetViewportHeight() const override { return m_VpHeight; }
+
+        void SetViewportWidth(uint32_t width) override;
+        void SetViewportHeight(uint32_t height) override;
 
         uint32_t GetMipCount() const override;
         uint32_t GetBaseMip() const override;
@@ -164,9 +181,12 @@ namespace RB::Graphics::D3D12
         void CreateViews(GpuResource* resource);
 
         std::string                     m_Name;
+        bool                            m_IsAlias;
         GpuResource*                    m_Resource;
         uint32_t                        m_Width;
         uint32_t                        m_Height;
+        uint32_t                        m_VpWidth;
+        uint32_t                        m_VpHeight;
         uint32_t                        m_Slices;
         uint32_t                        m_SetSlices;
         uint32_t                        m_BaseSlice;

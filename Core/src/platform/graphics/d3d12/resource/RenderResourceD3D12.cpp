@@ -258,9 +258,12 @@ namespace RB::Graphics::D3D12
 
     Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
         : m_Name(name)
+        , m_IsAlias(false)
         , m_Format(format)
         , m_Width(width)
         , m_Height(height)
+        , m_VpWidth(width)
+        , m_VpHeight(height)
         , m_IsRenderTarget(is_render_target)
         , m_AllowUAV(random_read_write_access)
         , m_ReadHandle({})
@@ -315,9 +318,12 @@ namespace RB::Graphics::D3D12
     Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
         : m_Name(name)
         , m_Resource((GpuResource*)internal_resource)
+        , m_IsAlias(false)
         , m_Format(format)
         , m_Width(width)
         , m_Height(height)
+        , m_VpWidth(width)
+        , m_VpHeight(height)
         , m_IsRenderTarget(is_render_target)
         , m_AllowUAV(random_read_write_access)
         , m_ReadHandle({})
@@ -330,8 +336,36 @@ namespace RB::Graphics::D3D12
         m_IsDepthStencil = IsDepthFormat(format);
     }
 
+    Texture2DD3D12::Texture2DD3D12(const Texture2DD3D12* other)
+        : m_Name(other->m_Name)
+        , m_Resource(other->m_Resource)
+        , m_Format(other->m_Format)
+        , m_Width(other->m_Width)
+        , m_Height(other->m_Height)
+        , m_VpWidth(other->m_VpWidth)
+        , m_VpHeight(other->m_VpHeight)
+        , m_IsRenderTarget(other->m_IsRenderTarget)
+        , m_IsDepthStencil(other->m_IsDepthStencil)
+        , m_AllowUAV(other->m_AllowUAV)
+        , m_Typeless(other->m_Typeless)
+    {
+        m_IsAlias = true;
+        other->m_Resource->AwaitValidation();
+
+        // Only after the underlying resource has become valid we can copy over the descriptor data
+        m_ReadHandle  = other->m_ReadHandle;
+        m_WriteHandle = other->m_WriteHandle;
+        m_RenderTargetHandle = other->m_RenderTargetHandle;
+        m_DepthStencilHandle = other->m_DepthStencilHandle;
+        m_RenderTargetDescriptor = other->m_RenderTargetDescriptor;
+        m_DepthStencilDescriptor = other->m_DepthStencilDescriptor;
+    }
+
     Texture2DD3D12::~Texture2DD3D12()
     {
+        if (m_IsAlias)
+            return;
+
         g_DescriptorManager->InvalidateDescriptor(m_ReadHandle);
         g_DescriptorManager->InvalidateDescriptor(m_WriteHandle);
         g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle);
@@ -340,6 +374,17 @@ namespace RB::Graphics::D3D12
         SAFE_DELETE(m_Resource);
     }
 
+    void Texture2DD3D12::SetViewportWidth(uint32_t width)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, width <= m_Width, "The viewport width cannot be bigger than the actual resource width");
+        m_VpWidth = width;
+    }
+
+    void Texture2DD3D12::SetViewportHeight(uint32_t height)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, height <= m_Height, "The viewport height cannot be bigger than the actual resource height");
+        m_VpHeight = height;
+    }
 
     // TODO: Setting any of the following methods will cause the GetXHandle methods
     // to return a transient view using the newly set amount of mips.
@@ -402,9 +447,12 @@ namespace RB::Graphics::D3D12
 
     Texture2DArrayD3D12::Texture2DArrayD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access)
         : m_Name(name)
+        , m_IsAlias(false)
         , m_Format(format)
         , m_Width(width)
         , m_Height(height)
+        , m_VpWidth(width)
+        , m_VpHeight(height)
         , m_Slices(slices)
         , m_SetSlices(slices)
         , m_BaseSlice(0)
@@ -449,14 +497,57 @@ namespace RB::Graphics::D3D12
         g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
     }
 
+    Texture2DArrayD3D12::Texture2DArrayD3D12(const Texture2DArrayD3D12* other)
+        : m_Name(other->m_Name)
+        , m_Resource(other->m_Resource)
+        , m_Format(other->m_Format)
+        , m_Width(other->m_Width)
+        , m_Height(other->m_Height)
+        , m_VpWidth(other->m_VpWidth)
+        , m_VpHeight(other->m_VpHeight)
+        , m_Slices(other->m_Slices)
+        , m_SetSlices(other->m_SetSlices)
+        , m_BaseSlice(other->m_BaseSlice)
+        , m_IsRenderTarget(other->m_IsRenderTarget)
+        , m_IsDepthStencil(other->m_IsDepthStencil)
+        , m_AllowUAV(other->m_AllowUAV)
+        , m_Typeless(other->m_Typeless)
+    {
+        m_IsAlias = true;
+        other->m_Resource->AwaitValidation();
+
+        // Only after the underlying resource has become valid we can copy over the descriptor data
+        m_ReadHandle  = other->m_ReadHandle;
+        m_WriteHandle = other->m_WriteHandle;
+        m_RenderTargetHandle = other->m_RenderTargetHandle;
+        m_DepthStencilHandle = other->m_DepthStencilHandle;
+        m_RenderTargetDescriptor = other->m_RenderTargetDescriptor;
+        m_DepthStencilDescriptor = other->m_DepthStencilDescriptor;
+    }
+
     Texture2DArrayD3D12::~Texture2DArrayD3D12()
     {
+        if (m_IsAlias)
+            return;
+
         g_DescriptorManager->InvalidateDescriptor(m_ReadHandle);
         g_DescriptorManager->InvalidateDescriptor(m_WriteHandle);
         g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle);
         g_DescriptorManager->InvalidateDescriptor(m_DepthStencilHandle);
 
         SAFE_DELETE(m_Resource);
+    }
+
+    void Texture2DArrayD3D12::SetViewportWidth(uint32_t width)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, width <= m_Width, "The viewport width cannot be bigger than the actual resource width");
+        m_VpWidth = width;
+    }
+
+    void Texture2DArrayD3D12::SetViewportHeight(uint32_t height)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, height <= m_Height, "The viewport height cannot be bigger than the actual resource height");
+        m_VpHeight = height;
     }
 
     uint32_t Texture2DArrayD3D12::GetMipCount() const

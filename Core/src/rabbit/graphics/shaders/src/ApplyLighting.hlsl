@@ -42,9 +42,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     indices.gbuf0 = 0;
     indices.gbuf1 = 1;
 
-    float2 uv = TransformPixelCoordsToScreenUVs(screen_coord);
-
-    GBuffer gbuf = SampleGBuffer(indices, uv);
+    GBuffer gbuf = SampleGBuffer(indices, screen_coord);
 
     float view_depth = gbuf.depth;
 
@@ -54,8 +52,8 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
         return;
     }
 
+    float2 uv = TransformPixelCoordsToScreenUVs(screen_coord);
     float3 world_pos = TransformScreenUVsToWorld(uv, view_depth, false);
-   
 
     // Find cascade
     uint cascade_idx = 0;

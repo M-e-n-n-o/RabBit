@@ -32,6 +32,7 @@ namespace RB::Graphics
         Texture2D*   finalColorTarget;
         Math::Float4 clearColor;
         uint32_t     renderGraphType;
+        uint32_t     renderGraphSizeID;
 
         // RenderPasses can change the properties of the viewport if needed
         Viewport     viewport;

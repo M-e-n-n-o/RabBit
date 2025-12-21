@@ -162,6 +162,15 @@ namespace RB::Graphics
         virtual uint32_t GetDepth() const = 0;
         float	         GetAspectRatio() const;
 
+        virtual uint32_t GetViewportWidth() const = 0;
+        virtual uint32_t GetViewportHeight() const = 0;
+        virtual uint32_t GetViewportDepth() const = 0;
+        float            GetViewportAspectRatio() const;
+
+        virtual void SetViewportWidth(uint32_t width) = 0;
+        virtual void SetViewportHeight(uint32_t height) = 0;
+        virtual void SetViewportDepth(uint32_t depth) = 0;
+
         virtual bool AllowedRenderTarget() const = 0;
         virtual bool AllowedRandomReadWrites() const = 0;
         virtual bool AllowedDepthStencil() const = 0;
@@ -192,17 +201,22 @@ namespace RB::Graphics
     public:
         virtual ~Texture2D() = default;
 
-        virtual uint32_t GetDepth() const { return 1; }
+        virtual uint32_t GetDepth() const override { return 1; }
+        virtual uint32_t GetViewportDepth() const override { return 1; }
+        
+        virtual void SetViewportDepth(uint32_t depth) override {}
 
-        virtual uint32_t GetArraySize() const { return 1; }
-        virtual uint32_t GetFirstArraySlice() const { return 0; }
+        virtual uint32_t GetArraySize() const override { return 1; }
+        virtual uint32_t GetFirstArraySlice() const override { return 0; }
 
-        virtual void SetArraySize(uint32_t size) {}
-        virtual void SetFirstArraySlice(uint32_t slice) {}
+        virtual void SetArraySize(uint32_t size) override {}
+        virtual void SetFirstArraySlice(uint32_t slice) override {}
 
         static Shared<Texture2D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         static Shared<Texture2D> Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         static Shared<Texture2D> Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        // Copies the view on the resource but will not own the underlying resource
+        static Shared<Texture2D> Alias(const Shared<Texture2D>& original);
 
     protected:
         Texture2D() : Texture(RenderResourceType::Texture2D) {}
@@ -213,9 +227,13 @@ namespace RB::Graphics
     public:
         virtual ~Texture2DArray() = default;
 
-        virtual uint32_t GetDepth() const { return 1; }
+        virtual uint32_t GetDepth() const override { return 1; }
+        virtual uint32_t GetViewportDepth() const override { return 1; }
+
+        virtual void SetViewportDepth(uint32_t depth) override {}
 
         static Shared<Texture2DArray> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2DArray> Alias(const Shared<Texture2DArray>& original);
 
     protected:
         Texture2DArray() : Texture(RenderResourceType::Texture2DArray) {}

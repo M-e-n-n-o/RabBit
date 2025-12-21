@@ -34,7 +34,7 @@ namespace RB::Graphics
                 {
                     RenderTextureInputDesc{"GBuffer0",  -1},
                     RenderTextureInputDesc{"GBuffer1",  -1},
-                    RenderTextureInputDesc{"ShadowMap", -1}
+                    RenderTextureInputDesc{"ShadowMap", -1}  // Optional
                 },
 
                 // Working textures
@@ -43,11 +43,11 @@ namespace RB::Graphics
                 // Output textures
                 {
                     RenderResourceDesc {
-                        .name   = "Lit",
-                        .format = RenderResourceFormat::R32G32B32A32_FLOAT,
-                        .type   = RenderResourcePassType::Tex2D,
-                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
-                        .flags  = kRTFlag_AllowRandomReadWrites
+                        .name     = "Lit",
+                        .format   = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_AllowRandomReadWrites
                     }
                 },
 

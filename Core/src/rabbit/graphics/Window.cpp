@@ -148,7 +148,7 @@ namespace RB::Graphics
         return m_GammaCorrection;
     }
 
-    float Window::GetBrighness() const
+    float Window::GetBrightness() const
     {
         return m_Brightness;
     }

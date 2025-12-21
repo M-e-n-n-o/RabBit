@@ -116,8 +116,6 @@ public:
             canvas->AddComponent<UICanvas>(cam_comp);
         
         
-        
-        
             auto list = scene->CreateGameObject();
             auto* list_box = list->AddComponent<UIBox>();
             list_box->SetSize(UIUnit::IPCT, 10, 50);
@@ -126,8 +124,6 @@ public:
             //list_t->position.x = 0.0f;
             //list_t->position.y = 0.0f;
             list->SetParent(canvas);
-        
-        
         
             auto rect_obj = scene->CreateGameObject();
             auto* rect_box = rect_obj->AddComponent<UIBox>();

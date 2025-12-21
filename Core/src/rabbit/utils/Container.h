@@ -28,8 +28,8 @@ namespace RB
     template<class T>
     using Stack = std::stack<T>;
 
-    template<class T>
-    using UnorderedSet = std::unordered_set<T>;
+    template<class T, class Hash = std::hash<T>>
+    using UnorderedSet = std::unordered_set<T, Hash>;
 
     template<class T0, class T1>
     using Pair = std::pair<T0, T1>;

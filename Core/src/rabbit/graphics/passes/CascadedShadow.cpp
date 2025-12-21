@@ -49,7 +49,7 @@ namespace RB::Graphics
                         .name       = "CascadedShadowMap",
                         .format     = RenderResourceFormat::R32_TYPELESS,
                         .type       = RenderResourcePassType::Tex2D,
-                        .tex2D      = { 1024, 1024, m_ShadowSlices },
+                        .typeDesc   = { 1024, 1024, m_ShadowSlices },
                         .flags      = kRTFlag_CustomSized | kRTFlag_ClearBeforeGraph,
                         .clearValue = 1.0f
                     }

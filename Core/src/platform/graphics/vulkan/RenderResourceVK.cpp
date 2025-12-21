@@ -73,6 +73,8 @@ namespace RB::Graphics::VK
         , m_Format(format)
         , m_Width(width)
         , m_Height(height)
+        , m_VpWidth(width)
+        , m_VpHeight(height)
         , m_IsRenderTarget(is_render_target)
         , m_AllowReadWrite(random_read_write_access)
     {
@@ -110,6 +112,8 @@ namespace RB::Graphics::VK
         , m_Format(format)
         , m_Width(width)
         , m_Height(height)
+        , m_VpWidth(width)
+        , m_VpHeight(height)
         , m_IsRenderTarget(is_render_target)
         , m_AllowReadWrite(random_read_write_access)
     {
@@ -121,6 +125,18 @@ namespace RB::Graphics::VK
         SAFE_DELETE(m_Resource);
     }
     
+    void Texture2DVK::SetViewportWidth(uint32_t width)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, width <= m_Width, "The viewport width cannot be bigger than the actual resource width");
+        m_VpWidth = width;
+    }
+
+    void Texture2DVK::SetViewportHeight(uint32_t height)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, height <= m_Height, "The viewport height cannot be bigger than the actual resource height");
+        m_VpHeight = height;
+    }
+
     uint32_t Texture2DVK::GetMipCount() const
     {
         // TODO Add mip support

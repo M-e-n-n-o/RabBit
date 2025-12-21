@@ -37,12 +37,10 @@ namespace RB::Graphics
     {
         kRTFlag_None                        = 0,
         kRTFlag_CustomSized                 = (1 << 0), // Are the width & height properties using custom sizes?
-        kRTFlag_UiSized                     = (1 << 1), // Are the width & height properties based on UI sizes?
-        kRTFlag_UpscaledSized               = (1 << 2), // Are the width & height properties based after the upscale?
-        kRTFlag_AllowRenderTarget           = (1 << 3), // Will not be used as a RenderTarget?
-        kRTFlag_AllowRandomReadWrites       = (1 << 4), // Is UAV allowed?
-        kRTFlag_DenyAliasing                = (1 << 5), // Makes sure this resource is not shared between passes (likely contains history data)
-        kRTFlag_ClearBeforeGraph            = (1 << 6)  // Clears the resource to 0 before it enters the first RenderPass
+        kRTFlag_AllowRenderTarget           = (1 << 1), // Will not be used as a RenderTarget?
+        kRTFlag_AllowRandomReadWrites       = (1 << 2), // Is UAV allowed?
+        kRTFlag_DenyAliasing                = (1 << 3), // Makes sure this resource is not shared between passes (likely contains history data)
+        kRTFlag_ClearBeforeGraph            = (1 << 4)  // Clears the resource to 0 before it enters the first RenderPass
     };
 
     enum class RenderResourcePassType
@@ -56,7 +54,7 @@ namespace RB::Graphics
         RenderResourceFormat    format;
         RenderResourcePassType  type;
 
-        union
+        union TypeDesc
         {
             struct RenderTexture2DDesc
             {
@@ -65,7 +63,7 @@ namespace RB::Graphics
                 uint32_t        slices;
 
             } tex2D;
-        };
+        } typeDesc;
 
         uint32_t                flags = UINT32_MAX; // UINT32_MAX means this texture is invalid!
 
@@ -77,15 +75,13 @@ namespace RB::Graphics
             return ((flags & kRTFlag_DenyAliasing) == 0 &&
                     (other.flags & kRTFlag_DenyAliasing) == 0 &&
                     ((flags & kRTFlag_CustomSized) == (other.flags & kRTFlag_CustomSized)) &&
-                    ((flags & kRTFlag_UiSized) == (other.flags & kRTFlag_UiSized)) &&
-                    ((flags & kRTFlag_UpscaledSized) == (other.flags & kRTFlag_UpscaledSized)) &&
                     format == other.format &&
                     type == other.type &&
 
                     // Texture
-                    ( tex2D.width == other.tex2D.width &&
-                      tex2D.height == other.tex2D.height &&
-                      tex2D.slices == other.tex2D.slices));
+                    ( typeDesc.tex2D.width == other.typeDesc.tex2D.width &&
+                      typeDesc.tex2D.height == other.typeDesc.tex2D.height &&
+                      typeDesc.tex2D.slices == other.typeDesc.tex2D.slices));
         }
 
         bool HasFlag(RenderTextureFlag flag) const

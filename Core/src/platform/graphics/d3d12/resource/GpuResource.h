@@ -29,9 +29,9 @@ namespace RB::Graphics::D3D12
         D3D12_RESOURCE_STATES GetState() const;
         bool IsInState(D3D12_RESOURCE_STATES state) const;
 
-    private:
         void AwaitValidation() const;
 
+    private:
         ID3D12Resource*                     m_Resource;
         D3D12_RESOURCE_STATES               m_State;
         bool                                m_OwnsResource;

@@ -47,7 +47,7 @@ namespace RB::Graphics
         return entries;
     }
 
-    void RenderGraph::RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context)
+    void RenderGraph::RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context, uint32_t size_id)
     {
         // First clear the necessary resources
         {
@@ -115,7 +115,7 @@ namespace RB::Graphics
                 if (id == VIEWCONTEXT_OUTPUT_ID)
                     parameters[j] = view_context->finalColorTarget;
                 else if (id != -1)
-                    parameters[j] = ValidateInputID(id) ? graph_context->GetResource(id).get() : nullptr;
+                    parameters[j] = ValidateInputID(id) ? graph_context->GetResource(id, m_ID, size_id).get() : nullptr;
                 else
                     parameters[j] = nullptr;
             }
@@ -123,7 +123,7 @@ namespace RB::Graphics
             for (int j = 0; j < MAX_WORKING_RESOURCES_PER_RENDERPASS; ++j)
             {
                 if (m_RenderFlow[i].workingIDs[j] != -1)
-                    intermediates[j] = graph_context->GetResource(m_RenderFlow[i].workingIDs[j]).get();
+                    intermediates[j] = graph_context->GetResource(m_RenderFlow[i].workingIDs[j], m_ID, size_id).get();
                 else
                     intermediates[j] = nullptr;
             }
@@ -133,7 +133,7 @@ namespace RB::Graphics
                 if (m_RenderFlow[i].outputIDs[j] == VIEWCONTEXT_OUTPUT_ID)
                     outputs[j] = view_context->finalColorTarget;
                 else if (m_RenderFlow[i].outputIDs[j] != -1)
-                    outputs[j] = graph_context->GetResource(m_RenderFlow[i].outputIDs[j]).get();
+                    outputs[j] = graph_context->GetResource(m_RenderFlow[i].outputIDs[j], m_ID, size_id).get();
                 else
                     outputs[j] = nullptr;
             }

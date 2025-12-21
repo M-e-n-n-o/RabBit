@@ -127,15 +127,13 @@ namespace RB::Graphics::D3D12
             return;
         }
 
-        if (m_RenderState.width != tex->GetWidth() || m_RenderState.height != tex->GetHeight())
+        if (m_RenderState.width != tex->GetViewportWidth() || m_RenderState.height != tex->GetViewportHeight())
         {
-            if (m_RenderState.width != 0 && m_RenderState.height != 0)
-            {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work for debugging though");
-            }
+            m_RenderState.width = tex->GetViewportWidth();
+            m_RenderState.height = tex->GetViewportHeight();
 
-            m_RenderState.width = tex->GetWidth();
-            m_RenderState.height = tex->GetHeight();
+            m_RenderState.viewportSet = false;
+            m_RenderState.scissorSet = false;
         }
 
         // This also waits until the resource has been created
@@ -188,15 +186,13 @@ namespace RB::Graphics::D3D12
         Texture* depth_stencil = (Texture*)ds_target;
         if (depth_stencil->AllowedDepthStencil())
         {
-            if (m_RenderState.width != depth_stencil->GetWidth() || m_RenderState.height != depth_stencil->GetHeight())
+            if (m_RenderState.width != depth_stencil->GetViewportWidth() || m_RenderState.height != depth_stencil->GetViewportHeight())
             {
-                if (m_RenderState.width != 0 && m_RenderState.height != 0)
-                {
-                    RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work for debugging though");
-                }
+                m_RenderState.width = depth_stencil->GetViewportWidth();
+                m_RenderState.height = depth_stencil->GetViewportHeight();
 
-                m_RenderState.width = depth_stencil->GetWidth();
-                m_RenderState.height = depth_stencil->GetHeight();
+                m_RenderState.viewportSet = false;
+                m_RenderState.scissorSet = false;
             }
 
             // This also waits until the resource has been created

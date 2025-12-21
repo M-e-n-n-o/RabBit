@@ -46,10 +46,17 @@ struct Tex2D
     }
 
     template<typename TextureValueType>
-    TextureValueType SampleLevel(SamplerState ss, uint2 coord, float level)
+    TextureValueType SampleLevel(SamplerState ss, float2 uv, float level)
     {
         Texture2D<TextureValueType> texture = GetResource<TextureValueType>();
-        return texture.SampleLevel(ss, coord, level);
+        return texture.SampleLevel(ss, uv, level);
+    }
+
+    template<typename TextureValueType>
+    TextureValueType Load(int3 coord)
+    {
+        Texture2D<TextureValueType> texture = GetResource<TextureValueType>();
+        return texture.Load(coord);
     }
 
     template<typename TextureValueType>

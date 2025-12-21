@@ -86,6 +86,11 @@ namespace RB::Graphics
         return (float)GetWidth() / (float)GetHeight();
     }
 
+    float Texture::GetViewportAspectRatio() const
+    {
+        return (float)GetViewportWidth() / (float)GetViewportHeight();
+    }
+
     RenderResourceType RenderResource::GetPrimitiveType() const
     {
         uint32_t last_primitive = (uint32_t)RenderResourceType::kLastPrimitiveType;
@@ -200,6 +205,22 @@ namespace RB::Graphics
         return nullptr;
     }
 
+    Shared<Texture2D> Texture2D::Alias(const Shared<Texture2D>& original)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DD3D12>((D3D12::Texture2DD3D12*)original.get());
+#endif
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
     Shared<Texture2DArray> Texture2DArray::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
@@ -209,6 +230,22 @@ namespace RB::Graphics
             return CreateShared<D3D12::Texture2DArrayD3D12>(name, format, width, height, slices, is_render_target, random_read_write_access);
 #endif
 
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<Texture2DArray> Texture2DArray::Alias(const Shared<Texture2DArray>& original)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DArrayD3D12>((D3D12::Texture2DArrayD3D12*)original.get());
+#endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;

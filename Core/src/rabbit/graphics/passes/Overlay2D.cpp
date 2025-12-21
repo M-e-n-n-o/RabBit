@@ -45,7 +45,8 @@ namespace RB::Graphics
 
             Shared<Texture2D> fontTex;
             Viewport scissor;
-            List<CharacterVB> vertices;
+            CharacterVB* vertices;
+            uint32_t vertexCount;
         };
 
         struct Element
@@ -55,7 +56,8 @@ namespace RB::Graphics
             std::variant<Rectangle, Text> data;
         };
 
-        List<Element> elements;
+        Element* elements;
+        uint32_t elementCount;
 
         ~Overlay2DEntry()
         {
@@ -79,11 +81,11 @@ namespace RB::Graphics
                 // Output textures
                 {
                     RenderResourceDesc {
-                        .name       = "ColorOverlay",
-                        .format     = RenderResourceFormat::R32G32B32A32_FLOAT,
-                        .type       = RenderResourcePassType::Tex2D,
-                        .tex2D      = { kRTSize_Full, kRTSize_Full, 1 },
-                        .flags      = kRTFlag_AllowRenderTarget
+                        .name     = "ColorOverlay",
+                        .format   = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_AllowRenderTarget
                     }
                 },
 
@@ -97,9 +99,23 @@ namespace RB::Graphics
         uint32_t window_width  = view_context->viewport.width;
         uint32_t window_height = view_context->viewport.height;
 
-        List<Overlay2DEntry::Element> elements;
-
         auto canvases = scene->GetComponentsWithTypeOf<UICanvas>();
+
+        uint32_t expected_components = 0;
+        for (const ObjectComponent* obj : canvases)
+        {
+            const UICanvas* canvas = (const UICanvas*)obj;
+            if (canvas->GetTargetCamera() != view_context->camera || !canvas->IsEnabled())
+            {
+                continue;
+            }
+
+            expected_components += canvas->GetGameObject()->GetNumComponentsInChildren<UIRenderComponent>();
+        }
+
+        Overlay2DEntry::Element* elements = allocator->Allocate<Overlay2DEntry::Element>(expected_components);
+        uint32_t element_count = 0;
+
         for (const ObjectComponent* obj : canvases)
         {
             const UICanvas* canvas = (const UICanvas*)obj;
@@ -155,7 +171,7 @@ namespace RB::Graphics
                     element.renderOrder = rect->GetRenderOrder();
                     element.data        = out_rect;
 
-                    elements.push_back(element);
+                    elements[element_count++] = element;
                 }
                 else if (auto text = dynamic_cast<const Text2D*>(render_comps[i]); text != nullptr)
                 {
@@ -170,6 +186,10 @@ namespace RB::Graphics
                     out_text.scissor    = { (uint32_t)pos_x, (uint32_t)pos_y, uint32_t(bounds_x * scale), uint32_t(bounds_y * scale) };
 
                     auto char_map = text->GetFont()->GetCharacterMap();
+
+                    out_text.vertices = allocator->Allocate<Overlay2DEntry::Text::CharacterVB>(text->GetText().length() * 6);
+                    out_text.vertexCount = 0;
+
                     for (char c : text->GetText())
                     {
                         const auto& ch = char_map->at(c);
@@ -219,12 +239,12 @@ namespace RB::Graphics
                         t1v2.v = ch.imageUV.y;
 
                         start_x += ch.advance * scale;
-                        out_text.vertices.push_back(t0v0);
-                        out_text.vertices.push_back(t0v1);
-                        out_text.vertices.push_back(t0v2);
-                        out_text.vertices.push_back(t1v0);
-                        out_text.vertices.push_back(t1v1);
-                        out_text.vertices.push_back(t1v2);
+                        out_text.vertices[out_text.vertexCount++] = t0v0;
+                        out_text.vertices[out_text.vertexCount++] = t0v1;
+                        out_text.vertices[out_text.vertexCount++] = t0v2;
+                        out_text.vertices[out_text.vertexCount++] = t1v0;
+                        out_text.vertices[out_text.vertexCount++] = t1v1;
+                        out_text.vertices[out_text.vertexCount++] = t1v2;
                     }
 
                     Overlay2DEntry::Element element = {};
@@ -232,27 +252,25 @@ namespace RB::Graphics
                     element.renderOrder = text->GetRenderOrder();
                     element.data        = out_text;  
 
-                    elements.push_back(element);
+                    elements[element_count++] = element;
                 }
             }
         }
-
-
-        auto components = scene->GetComponentsWithTypeOf<UIRenderComponent>();
         
-        if (elements.empty())
+        if (element_count == 0)
         {
             return nullptr;
         }
 
         // Sort the elements based on rendering order
-        std::sort(elements.begin(), elements.end(), [](const Overlay2DEntry::Element& a, const Overlay2DEntry::Element& b) -> bool
+        std::sort(elements, elements + element_count, [](const Overlay2DEntry::Element& a, const Overlay2DEntry::Element& b) -> bool
         {
             return a.renderOrder < b.renderOrder;
         });
 
         Overlay2DEntry* entry = (Overlay2DEntry*)allocator->Allocate(sizeof(Overlay2DEntry));
         entry->elements = elements;
+        entry->elementCount = element_count;
 
         return entry;
     }
@@ -304,10 +322,10 @@ namespace RB::Graphics
             in.ri->SetScissor(text.scissor);
 
             uint32_t vertex_size = sizeof(float) * 4;
-            uint32_t data_size = vertex_size * text.vertices.size();
+            uint32_t data_size = vertex_size * text.vertexCount;
             float* vertex_data = (float*)ALLOC_STACK(data_size);
 
-            for (int v_idx = 0; v_idx < text.vertices.size(); v_idx++)
+            for (int v_idx = 0; v_idx < text.vertexCount; v_idx++)
             {
                 const auto& vertex = text.vertices[v_idx];
                 vertex_data[v_idx * 4 + 0] = vertex.x;
@@ -326,7 +344,7 @@ namespace RB::Graphics
         };
 
         Overlay2DEntry* entry = (Overlay2DEntry*)in.entryContext;
-        for (int i = 0; i < entry->elements.size(); i++)
+        for (int i = 0; i < entry->elementCount; i++)
         {
             switch (entry->elements[i].type)
             {

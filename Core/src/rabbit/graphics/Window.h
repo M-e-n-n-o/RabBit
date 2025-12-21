@@ -52,7 +52,7 @@ namespace RB::Graphics
         void                    SetGammaCorrection(float gamma);
         void                    SetBrightness(float brightness);
         float                   GetGammaCorrection() const;
-        float                   GetBrighness() const;
+        float                   GetBrightness() const;
 
         virtual bool            IsMinimized()           const = 0;
         virtual bool            IsValid()               const = 0;

@@ -49,8 +49,8 @@ GBuffer SampleGBuffer(GBufferTexIndices textures, float2 uv)
 GBuffer SampleGBuffer(GBufferTexIndices textures, uint2 screen_coord)
 {
     GBufferEncoded enc;
-    enc.gbuf0 = FetchTex2D(textures.gbuf0).SampleLevel<float4>(g_ClampAnisoSampler, screen_coord, 0);
-    enc.gbuf1 = FetchTex2D(textures.gbuf1).SampleLevel<float4>(g_ClampAnisoSampler, screen_coord, 0);
+    enc.gbuf0 = FetchTex2D(textures.gbuf0).Load<float4>(int3(screen_coord, 0));
+    enc.gbuf1 = FetchTex2D(textures.gbuf1).Load<float4>(int3(screen_coord, 0));
     return DecodeGBuffer(enc);
 }
 

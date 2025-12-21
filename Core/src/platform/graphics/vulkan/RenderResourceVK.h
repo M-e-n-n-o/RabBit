@@ -73,6 +73,12 @@ namespace RB::Graphics::VK
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
 
+        uint32_t GetViewportWidth() const override { return m_VpWidth; }
+        uint32_t GetViewportHeight() const override { return m_VpHeight; }
+
+        void SetViewportWidth(uint32_t width) override;
+        void SetViewportHeight(uint32_t height) override;
+
         uint32_t GetMipCount() const override;
         uint32_t GetBaseMip() const override;
 
@@ -89,6 +95,8 @@ namespace RB::Graphics::VK
         VkImageView             m_ImageView;
         uint32_t                m_Width;
         uint32_t                m_Height;
+        uint32_t                m_VpWidth;
+        uint32_t                m_VpHeight;
         RenderResourceFormat    m_Format;
 
         bool                    m_IsRenderTarget;

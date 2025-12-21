@@ -48,27 +48,27 @@ namespace RB::Graphics
                 // Output textures
                 {
                     RenderResourceDesc {
-                        .name   = "GBuffer Color",
-                        .format = RenderResourceFormat::R32G32B32A32_FLOAT,
-                        .type   = RenderResourcePassType::Tex2D,
-                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
-                        .flags  = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
+                        .name     = "GBuffer Color",
+                        .format   = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
                     },
 
                     RenderResourceDesc {
-                        .name   = "GBuffer Normal",
-                        .format = RenderResourceFormat::R32G32B32A32_FLOAT,
-                        .type   = RenderResourcePassType::Tex2D,
-                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
-                        .flags  = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
+                        .name     = "GBuffer Normal",
+                        .format   = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
                     },
 
                     RenderResourceDesc {
-                        .name   = "Hyper Depth",
-                        .format = RenderResourceFormat::D32_FLOAT,
-                        .type   = RenderResourcePassType::Tex2D,
-                        .tex2D  = { kRTSize_Full, kRTSize_Full, 1 },
-                        .flags  = kRTFlag_ClearBeforeGraph
+                        .name     = "Hyper Depth",
+                        .format   = RenderResourceFormat::D32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_ClearBeforeGraph
                     }
                 },
 
