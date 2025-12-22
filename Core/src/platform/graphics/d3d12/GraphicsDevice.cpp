@@ -66,9 +66,6 @@ namespace RB::Graphics::D3D12
         , m_GraphicsQueue(nullptr)
         , m_InfoQueue(nullptr)
     {
-        // Tell Windows that this thread is DPI aware so it does not automatically apply scaling
-        SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
 #if !defined(RB_CONFIG_DIST)
         if (enable_debug_layer)
         {

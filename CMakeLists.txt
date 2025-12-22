@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16.3)
 
 project(RabBitSolution)
 set(CMAKE_CXX_STANDARD 20)
-set(CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Used for VS extensions
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -20,6 +20,7 @@ add_compile_definitions(
 
 # Add main projects
 add_subdirectory(Core)
+add_subdirectory(Editor)
 add_subdirectory(Sample)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
