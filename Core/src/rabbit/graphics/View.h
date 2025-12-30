@@ -27,7 +27,7 @@ namespace RB::Graphics
     {
     public:
         bool         enabled;
-        bool         isOffscreenContext;
+        bool         isOffscreen;
         uint32_t     windowIndex;
         Texture2D*   finalColorTarget;
         Math::Float4 clearColor;

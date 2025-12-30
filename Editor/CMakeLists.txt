@@ -1,31 +1,58 @@
-file(GLOB_RECURSE SAMPLE_SRC_FILES CONFIGURE_DEPENDS
+file(GLOB_RECURSE EDITOR_SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.cpp"
+
+    # ImGui files
+    # (Just directly include imgui into project for easy debugging)
+    "external/imgui/imgui/imconfig.h"
+    "external/imgui/imgui/imgui.cpp"
+    "external/imgui/imgui/imgui.h"
+    "external/imgui/imgui/imgui_demo.cpp"
+    "external/imgui/imgui/imgui_draw.cpp"
+    "external/imgui/imgui/imgui_internal.h"
+    "external/imgui/imgui/imgui_tables.cpp"
+    "external/imgui/imgui/imgui_widgets.cpp"
+    "external/imgui/imgui/imstb_rectpack.h"
+    "external/imgui/imgui/imstb_textedit.h"
+    "external/imgui/imgui/imstb_truetype.h"
+    # Backends
+    "external/imgui/imgui/backends/imgui_impl_win32.h"
+    "external/imgui/imgui/backends/imgui_impl_win32.cpp"
+    "external/imgui/imgui/backends/imgui_impl_dx12.h"
+    "external/imgui/imgui/backends/imgui_impl_dx12.cpp"
 )
 
-add_executable(Editor ${SAMPLE_SRC_FILES})
+add_executable(Editor ${EDITOR_SRC_FILES})
 
-# Link RabBits
-target_include_directories(Editor PUBLIC
+add_compile_definitions(
+    IMGUI_USER_CONFIG="ImGuiConfig.h"
+)
+
+target_include_directories(Editor PRIVATE
     "${PROJECT_SOURCE_DIR}/Core/src"
-    "../Core/external"
+    "${PROJECT_SOURCE_DIR}/Core/external"
+
+    # D3D12
+    "${PROJECT_SOURCE_DIR}/Core/external/D3D12/include"
 
     # Own dependencies
     "src"
+    "external/imgui"
     "external/imgui/imgui"
+    "external/imgui/imgui/backends"
 )
 
 target_link_directories(Editor PRIVATE 
     RabBit
-
-    # Own dependencies
-    "external/imgui/imgui"
 )
 
 target_link_libraries(Editor PRIVATE 
     RabBit
 
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/lib/x64/Release/ImGui.lib"
+    # D3D12
+    d3d12.lib
+    dxgi.lib
+    dxguid.lib
 )
 
 # Add post build command to copy RabBit libraries to build location

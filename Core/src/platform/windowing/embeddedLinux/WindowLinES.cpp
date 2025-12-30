@@ -127,7 +127,11 @@ namespace RB::Graphics::LinuxES
 
     bool WindowLinuxES::IsSemiTransparent() const
     {
-        // A native window cannot be transparent
+        return false;
+    }
+
+    bool WindowLinuxES::IsDraggableBorderless() const
+    {
         return false;
     }
 

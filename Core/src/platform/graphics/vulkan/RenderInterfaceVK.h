@@ -84,6 +84,8 @@ namespace RB::Graphics::VK
         void ProfileMarkerBegin(uint64_t color, const char* name) override {}
         void ProfileMarkerEnd() override {}
 
+        void* GetNativeInterface() const override { return (void*)&m_CommandBuffer; }
+
     private:
         void SetNewCommandBuffer();
         void InternalCopy(GpuResource* src, GpuResource* dst, uint64_t size);

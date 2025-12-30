@@ -56,7 +56,8 @@ namespace RB::Graphics::D3D12
 
         void CycleDescriptors();
 
-        Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> GetHeaps(uint32_t& num_heaps);
+        Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> GetPipelineHeaps(uint32_t& num_heaps);
+        DescriptorHeap* GetHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) const;
 
         DescriptorIndex GetDummyRwTex2DHandle() const { return m_DummyRwTex2DHandle; }
 
@@ -91,20 +92,22 @@ namespace RB::Graphics::D3D12
         D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle(int32_t offset) const;
 
     private:
-        GPtr<ID3D12DescriptorHeap>	m_Heap;
+        GPtr<ID3D12DescriptorHeap>  m_Heap;
         D3D12_CPU_DESCRIPTOR_HANDLE m_CpuStart;
         D3D12_GPU_DESCRIPTOR_HANDLE m_GpuStart;
-        D3D12_DESCRIPTOR_HEAP_TYPE	m_Type;
-        bool						m_ShaderVisible;
-        uint32_t					m_IncrementSize;
+        D3D12_DESCRIPTOR_HEAP_TYPE  m_Type;
+        bool                        m_ShaderVisible;
+        uint32_t                    m_IncrementSize;
 
-        List<bool>					m_PersistentSlots;
-        uint32_t					m_MaxPersistent;
-        uint32_t					m_MaxTransientPerCycle;
+        List<bool>                  m_PersistentSlots;
+        uint32_t                    m_MaxPersistent;
+        uint32_t                    m_MaxTransientPerCycle;
         uint32_t                    m_CurrPersistentIdx;
         uint32_t                    m_CurrTransientIdx;
         uint32_t                    m_TransientBase;
         uint32_t                    m_CycleIndex;
+
+        Mutex                       m_Mutex;
     };
 }
 #endif

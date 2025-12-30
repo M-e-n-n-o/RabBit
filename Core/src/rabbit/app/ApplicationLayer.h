@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Core.h"
-#include "Settings.h"
 #include "events/Event.h"
 
 #include <cstdint>

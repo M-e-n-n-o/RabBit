@@ -8,8 +8,9 @@ namespace RB::Graphics
 {
     enum WindowStyle : uint32_t
     {
-        kWindowStyle_Default            = (0),
-        kWindowStyle_SemiTransparent    = (1 << 0)
+        kWindowStyle_Default                = (0),
+        kWindowStyle_SemiTransparent        = (1 << 0),
+        kWindowStyle_DraggableBorderless    = (1 << 1)
     };
 
     struct RenderRect
@@ -57,8 +58,10 @@ namespace RB::Graphics
         virtual bool            IsMinimized()           const = 0;
         virtual bool            IsValid()               const = 0;
         virtual bool            IsSemiTransparent()     const = 0;
+        virtual bool            IsDraggableBorderless() const = 0;
 
         bool                    InFocus()               const;
+        bool                    IsFullscreen()          const;
 
         virtual Display*        GetParentDisplay() = 0;
 
@@ -69,8 +72,8 @@ namespace RB::Graphics
 
         virtual RenderResourceFormat  GetBackBufferFormat() = 0;
         virtual uint32_t              GetCurrentBackBufferIndex() = 0;
-        virtual Graphics::Texture2D*  GetCurrentBackBuffer() = 0;
-        Graphics::Texture2D*          GetVirtualBackBuffer();
+        virtual Texture2D*            GetCurrentBackBuffer() = 0;
+        Texture2D*                    GetVirtualBackBuffer();
 
         void           Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1);
 
@@ -92,21 +95,21 @@ namespace RB::Graphics
 
         void CalculateVirtualSize();
 
-        bool                         m_InFocus;
-                                     
-        float                        m_GammaCorrection;
-        float                        m_Brightness;
-                                     
-        bool                         m_IsFullscreen;
-        Math::Float4                 m_OriginalRect;
-                                     
-        uint32_t                     m_VirtualWidth;
-        uint32_t                     m_VirtualHeight;
-        uint32_t                     m_VirtualTop;
-        uint32_t                     m_VirtualLeft;
-        float                        m_CurrentVirtualResScale;
-        float                        m_NewVirtualResScale;
-        float                        m_NewVirtualAspect;
-        Shared<Graphics::Texture2D>  m_VirtualBackBuffer;
+        bool               m_InFocus;
+                           
+        float              m_GammaCorrection;
+        float              m_Brightness;
+                           
+        bool               m_IsFullscreen;
+        Math::Float4       m_OriginalRect;
+                           
+        uint32_t           m_VirtualWidth;
+        uint32_t           m_VirtualHeight;
+        uint32_t           m_VirtualTop;
+        uint32_t           m_VirtualLeft;
+        float              m_CurrentVirtualResScale;
+        float              m_NewVirtualResScale;
+        float              m_NewVirtualAspect;
+        Shared<Texture2D>  m_VirtualBackBuffer;
     };
 }

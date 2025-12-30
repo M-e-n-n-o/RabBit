@@ -9,6 +9,7 @@
 #include "events/WindowEvent.h"
 #include "events/MouseEvent.h"
 #include "events/KeyEvent.h"
+#include "events/input/Input.h"
 
 #if RB_GRAPHICS_API_D3D12
 #include "platform/graphics/d3d12/SwapChainD3D12.h"
@@ -38,14 +39,21 @@ namespace RB::Graphics::Windows
         RegisterWindowCLass(args.instance, args.className.c_str());
 
         DWORD style = WS_OVERLAPPEDWINDOW;
-        DWORD extended_style = NULL;
+        DWORD extended_style = WS_EX_APPWINDOW;
         
         m_IsSemiTransparent = false;
-
         if (args.windowStyle & kWindowStyle_SemiTransparent)
         {
             extended_style = WS_EX_NOREDIRECTIONBITMAP;
             m_IsSemiTransparent = true;
+        }
+
+        m_IsDraggableBorderless = false;
+        if (args.windowStyle & kWindowStyle_DraggableBorderless)
+        {
+            // Window snapping does not work with draggable borderless
+            style = WS_POPUP;
+            m_IsDraggableBorderless = true;
         }
 
         uint32_t width = args.width;
@@ -123,6 +131,7 @@ namespace RB::Graphics::Windows
         RB_LOG(LOGTAG_WINDOWING, "Destroying window");
 
         ::DestroyWindow(m_WindowHandle);
+        //::UnregisterClassW(class_name, instance);
     }
 
     void WindowWin::Update()
@@ -185,6 +194,11 @@ namespace RB::Graphics::Windows
         return m_IsSemiTransparent;
     }
 
+    bool WindowWin::IsDraggableBorderless() const
+    {
+        return m_IsDraggableBorderless;
+    }
+
     Display* WindowWin::GetParentDisplay()
     {
         List<Display*> displays = Application::GetInstance()->GetDisplays();
@@ -212,7 +226,17 @@ namespace RB::Graphics::Windows
         }
         else
         {
-            SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+            LONG_PTR style = WS_VISIBLE;
+            if (m_IsDraggableBorderless)
+            {
+                style |= WS_POPUP;
+            }
+            else
+            {
+                style |= WS_OVERLAPPEDWINDOW;
+            }
+
+            SetWindowLongPtr(m_WindowHandle, GWL_STYLE, style);
         }
     }
 
@@ -297,8 +321,8 @@ namespace RB::Graphics::Windows
         window_class.lpszClassName  = class_name;
         window_class.hIconSm        = ::LoadIcon(instance, "0");			// MAKEINTRESOURCE(APP_ICON)
 
-        HRESULT result = ::RegisterClassExW(&window_class);
-        RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, SUCCEEDED(result), "Failed to register window");
+        ATOM result = ::RegisterClassExW(&window_class);
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, result != 0, "Failed to register window");
     }
 
     void WindowWin::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style)
@@ -334,8 +358,19 @@ namespace RB::Graphics::Windows
         RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_WindowHandle, "Failed to create window");
     }
 
+    bool(*g_OnNativeWindowEventCallback)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) = nullptr;
+
+    void SetOnNativeWindowEventCallback(bool(*onEvent)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam))
+    {
+        g_OnNativeWindowEventCallback = onEvent;
+    }
+
     LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
+        if (g_OnNativeWindowEventCallback)
+            if (g_OnNativeWindowEventCallback(hwnd, message, wParam, lParam))
+                return 1;
+
         switch (message)
         {
         case WM_SYSKEYDOWN:
@@ -369,6 +404,58 @@ namespace RB::Graphics::Windows
         {
             WindowLostFocusEvent e(hwnd);
             g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_NCHITTEST:
+        {
+            auto* window = Application::GetInstance()->FindWindow(hwnd);
+
+            if (window->IsFullscreen())
+                return 0; // Should not able to resize using mouse
+
+            // Custom hit testing is only for draggable borderless windows
+            if (!window->IsDraggableBorderless())
+            {
+                DefWindowProcW(hwnd, message, wParam, lParam);
+            }
+
+            Math::Float2 mouse_pos = Events::GetMousePos();
+        
+            RECT rect;
+            ::GetWindowRect(hwnd, &rect);
+        
+            // TODO: Probably have to make these sizes customizable
+            const int border = 8;
+            const int title_bar_height = 32;
+            // Corner testing
+            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border &&
+                mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+                return HTTOPLEFT;
+            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right &&
+                mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+                return HTTOPRIGHT;
+            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border &&
+                mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+                return HTBOTTOMLEFT;
+            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right &&
+                mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+                return HTBOTTOMRIGHT;
+
+            // Side testing
+            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border)
+                return HTLEFT;
+            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right)
+                return HTRIGHT;
+            if (mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+                return HTTOP;
+            if (mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+                return HTBOTTOM;
+        
+            // Draggable area
+            if (mouse_pos.y < rect.top + title_bar_height)
+                return HTCAPTION;
+
+            return HTCLIENT;
         }
         break;
         case WM_CLOSE:

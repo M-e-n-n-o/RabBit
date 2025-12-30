@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Core.h"
-#include "Settings.h"
 #include "ApplicationLayer.h"
 #include "FrameAllocator.h"
 #include "events/Event.h"
+#include "graphics/Renderer.h"
 
 #include <cstdint>
 
@@ -27,20 +27,21 @@ namespace RB
         struct Window
         {
             const char* windowName          = "RabBit App";
-            bool		fullscreen          = false;
+            bool        fullscreen          = false;
             int32_t     windowIndex         = -1;
             uint32_t    windowWidth         = 1280;
             uint32_t    windowHeight        = 720;
             bool        vsync               = true;
-            float		forcedRenderAspect  = 0.0f;
-            float		renderScale         = 1.0f;
+            float       forcedRenderAspect  = 0.0f;
+            float       renderScale         = 1.0f;
             float       gammaCorrection     = 2.2f;
             float       brightness          = 1.0f;
-            bool		semiTransparent     = false;
+            bool        semiTransparent     = false;
         };
 
-        const char*		appName;
-        List<Window>	windows;
+        const char*                     appName;
+        List<Window>                    windows;
+        Graphics::RenderGraphBuilder    initialRenderGraph;
     };
 
     class Application : public Events::EventListener
@@ -66,11 +67,8 @@ namespace RB
         Graphics::Window* GetPrimaryWindow() const;
         Graphics::Window* GetWindow(uint32_t index) const;
         Graphics::Window* FindWindow(void* window_handle) const;
-        int32_t			  FindWindowIndex(void* window_handle) const;
-
-        void ApplyNewGraphicsSettings(GraphicsSettings& settings);
-        GraphicsSettings GetGraphicsSettings() { return m_GraphicsSettings; }
-        const GraphicsSettings& GetGraphicsSettings() const { return m_GraphicsSettings; }
+        int32_t           FindWindowIndex(void* window_handle) const;
+        void              AddWindow(Graphics::Window* window);
 
         Graphics::Renderer* GetRenderer() const { return m_Renderer; }
 
@@ -104,7 +102,6 @@ namespace RB
         int32_t                     m_PrimaryWindowIndex;
         bool                        m_CheckWindows;
 
-        GraphicsSettings            m_GraphicsSettings;
         Graphics::Renderer*         m_Renderer;
 
         Entity::Scene*              m_Scene;

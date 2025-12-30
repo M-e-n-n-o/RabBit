@@ -21,11 +21,6 @@
 #include "entity/components/Camera.h"
 #include "entity/components/Transform.h"
 
-#include "passes/GBuffer.h"
-#include "passes/CascadedShadow.h"
-#include "passes/DeferredLighting.h"
-#include "passes/Overlay2D.h"
-
 #if RB_GRAPHICS_API_D3D12
 #include "platform/graphics/d3d12/RendererD3D12.h"
 #endif
@@ -109,7 +104,7 @@ namespace RB::Graphics
     {
         m_IsShutdown = false;
 
-        m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k2MB);
+        m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k4MB);
 
         m_ResourceStreamer = new ResourceStreamer();
 
@@ -133,8 +128,10 @@ namespace RB::Graphics
         m_RenderGraphContext = new RenderGraphContext();
         m_CurrentValidRenderGraphSizes = 0;
         m_RenderGraphSizeIDs = nullptr;
-
-        CreateRenderGraphs(Application::GetInstance()->GetGraphicsSettings());
+        for (uint32_t i = 0; i < kRenderGraphType_Count; ++i)
+        {
+            m_RenderGraphs[i] = nullptr;
+        }
 
         float vertices[] =
         {   // Pos          UV
@@ -342,7 +339,7 @@ namespace RB::Graphics
             //    }
             //
             //    // Set window virtual backbuffer as finalColorTarget
-            //    contexts[context_index].isOffscreenContext  = false;
+            //    contexts[context_index].isOffscreen         = false;
             //    contexts[context_index].windowIndex         = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
             //    contexts[context_index].finalColorTarget    = virtual_back_buffer;
             //    contexts[context_index].viewport.width      = virtual_back_buffer->GetViewportWidth();
@@ -350,7 +347,7 @@ namespace RB::Graphics
             //}
             //else
             //{
-            //    contexts[context_index].isOffscreenContext  = true;
+            //    contexts[context_index].isOffscreen         = true;
             //    contexts[context_index].finalColorTarget    = render_texture.get();
             //    contexts[context_index].viewport.width      = render_texture->GetViewportWidth();
             //    contexts[context_index].viewport.height     = render_texture->GetViewportHeight();
@@ -368,43 +365,6 @@ namespace RB::Graphics
         }
 
         return contexts;
-    }
-
-    void Renderer::CreateRenderGraphs(const GraphicsSettings& settings)
-    {
-        // Set the render passes
-        for (uint32_t i = 0; i < kRenderGraphType_Count; ++i)
-        {
-            m_RenderGraphs[i] = nullptr;
-        }
-
-        // TODO 
-        // - Later it would probably be better to set this rendergraph from user code (or atleast be able to)
-        // - When implementing upscaling, we still want to render the UI at full res. 
-        //      Probably good to make a separate graph for the UI rendering and just use the output of regular rendering
-        //      as input to the UI graph.
-
-        m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
-            // Passes
-            .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
-            .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
-            .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
-            .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
-
-            // Connections           (from)     ->      (to)
-            .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
-                                     0u,                0u,
-                                     1u,                1u)
-
-            .AddLink(RenderPassType::CascadedShadow,    RenderPassType::DeferredLighting,
-                                     0u,                2u)
-
-            .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
-                                     0u,                0u)
-
-            // Finalize
-            .SetFinalPass(RenderPassType::Overlay2D, 0)
-            .Build(kRenderGraphType_Normal, m_RenderGraphContext);
     }
 
     void Renderer::UpdateRenderGraphSizes(const ViewContext* view_contexts, uint32_t context_count)
@@ -460,6 +420,13 @@ namespace RB::Graphics
                     m_RenderThread->SyncAll();
                 }
             }
+
+            if (gpu_sync)
+            {
+                // When GPU syncing we are likely going to change some render arguments,
+                // so invalidate all the upcoming render tasks.
+                m_RenderThread->CancelAll();
+            }
         }
 
         if (gpu_sync)
@@ -469,6 +436,20 @@ namespace RB::Graphics
 
         // Notify that we are done syncing
         m_ForceSync.SetValue(kForceSyncState_None);
+    }
+
+    void Renderer::SetRenderGraph(RenderGraphType graph_type, const RenderGraphBuilder& graph)
+    {
+        SyncRenderer(true);
+
+        SAFE_DELETE(m_RenderGraphs[graph_type]);
+
+        m_RenderGraphContext->DeleteGraphResourceDescriptions();
+
+        m_RenderGraphs[graph_type] = graph.Build(graph_type, m_RenderGraphContext);
+
+        // Makes sure to recreate the render resources with the new graphs before rendering the next frame
+        m_CurrentValidRenderGraphSizes = 0;
     }
 
     uint64_t Renderer::GetRenderFrameIndex()
@@ -555,37 +536,6 @@ namespace RB::Graphics
                 // Actually process the event
                 window->ProcessEvent(*window_event);
             }
-        }
-        else if (event.IsInCategory(kEventCat_Application))
-        {
-            BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& app_event)
-            {
-                const GraphicsSettings& settings = app_event.GetNewSettings();
-
-                if (!settings.RequiresNewResources(app_event.GetOldSettings()))
-                {
-                    // We don't have to recreate the render resources on this setting change
-                    return true;
-                }
-
-                bool success = sync();
-                if (!success)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < kRenderGraphType_Count; ++i)
-                {
-                    SAFE_DELETE(m_RenderGraphs[i]);
-                }
-
-                m_RenderGraphContext->DeleteGraphResourceDescriptions();
-
-                CreateRenderGraphs(settings);
-
-                // Makes sure to recreate the render resources with the new graphs before rendering the next frame
-                m_CurrentValidRenderGraphSizes = 0;
-            }, event);
         }
 
         return true;
@@ -688,7 +638,7 @@ namespace RB::Graphics
         {
             ViewContext& view_context = context->viewContexts[view_context_index];
 
-            if (!view_context.enabled || view_context.isOffscreenContext)
+            if (!view_context.enabled || view_context.isOffscreen)
             {
                 continue;
             }
@@ -718,6 +668,12 @@ namespace RB::Graphics
             }
 
             Texture2D* back_buffer = window->GetCurrentBackBuffer();
+
+            if (back_buffer == nullptr)
+            {
+                continue;
+            }
+
             RenderRect rect = window->GetVirtualWindowRect();
 
             // TODO: Enable for proper rendering

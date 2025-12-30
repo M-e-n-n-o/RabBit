@@ -48,5 +48,26 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     //window2.renderScale         = 0.25f;
     //app_info.windows.push_back(window2);
 
+    app_info.initialRenderGraph = RenderGraphBuilder()
+        // Passes
+        .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
+        .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
+        .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
+        .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
+
+        // Connections           (from)     ->      (to)
+        .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
+                                    0u,                0u,
+                                    1u,                1u)
+
+        .AddLink(RenderPassType::CascadedShadow,    RenderPassType::DeferredLighting,
+                                    0u,                2u)
+
+        .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
+                                    0u,                0u)
+
+        // Finalize
+        .SetFinalPass(RenderPassType::Overlay2D, 0);
+
     return new SampleApp(app_info);
 }

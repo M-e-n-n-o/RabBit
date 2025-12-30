@@ -114,6 +114,8 @@ namespace RB::Graphics
         virtual void ProfileMarkerBegin(uint64_t color, const char* name) = 0;
         virtual void ProfileMarkerEnd() = 0;
 
+        virtual void* GetNativeInterface() const = 0;
+
         static RenderInterface* Create(bool allow_only_copy_operations);
 
     protected:

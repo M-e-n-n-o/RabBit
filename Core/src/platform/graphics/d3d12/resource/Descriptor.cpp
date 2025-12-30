@@ -166,7 +166,7 @@ namespace RB::Graphics::D3D12
         m_DepthStencilHeap->CycleTransientDescriptors();
     }
 
-    Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> DescriptorManager::GetHeaps(uint32_t& num_heaps)
+    Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> DescriptorManager::GetPipelineHeaps(uint32_t& num_heaps)
     {
         Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> arr;
 
@@ -178,6 +178,25 @@ namespace RB::Graphics::D3D12
         num_heaps = 1;
 
         return arr;
+    }
+
+    DescriptorHeap* DescriptorManager::GetHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) const
+    {
+        switch (type)
+        {
+        case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
+            return m_BindlessSrvUavHeap;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+            return m_RenderTargetHeap;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+            return m_DepthStencilHeap;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
+        default:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Trying to get an invalid descriptor heap type");
+            break;
+        }
+
+        return nullptr;
     }
 
     // ---------------------------------------------------------------------------
@@ -228,6 +247,8 @@ namespace RB::Graphics::D3D12
 
     int32_t DescriptorHeap::AllocPersistent()
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         uint32_t start = m_CurrPersistentIdx;
         uint32_t slot = start;
 
@@ -252,6 +273,8 @@ namespace RB::Graphics::D3D12
 
     int32_t DescriptorHeap::AllocTransient()
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         if ((m_CurrTransientIdx - m_TransientBase + 1) >= m_MaxTransientPerCycle)
         {
             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Increase the max amount of transient descriptors for heap type: %d", (int)m_Type);
@@ -267,6 +290,8 @@ namespace RB::Graphics::D3D12
 
     void DescriptorHeap::CycleTransientDescriptors()
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         m_CycleIndex        = (m_CycleIndex + 1) % TRANSIENT_CYCLES;
         m_TransientBase     = m_CycleIndex * m_MaxTransientPerCycle + m_MaxPersistent;
         m_CurrTransientIdx  = m_TransientBase;
@@ -274,6 +299,8 @@ namespace RB::Graphics::D3D12
 
     void DescriptorHeap::InvalidateDescriptor(int32_t& heap_index)
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         if (heap_index < 0 || heap_index >= m_MaxPersistent)
         {
             // Invalid handle

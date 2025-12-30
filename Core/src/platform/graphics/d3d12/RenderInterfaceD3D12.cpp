@@ -116,6 +116,11 @@ namespace RB::Graphics::D3D12
     {
         HandlePendingClears();
         FlushResourceBarriers();
+
+        if (m_RenderState.renderTargetDirty)
+        {
+            SetRenderTargets();
+        }
     }
 
     void RenderInterfaceD3D12::PushRenderTarget(RenderResource* color_target, uint32_t index)
@@ -236,7 +241,7 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetShaderResourceInput(RenderResource* resource, uint32_t slot)
     {
-        TransitionResource(resource, ResourceState::PIXEL_SHADER_RESOURCE);
+        TransitionResource(resource, ResourceState::READ);
 
         switch (resource->GetType())
         {
@@ -846,7 +851,7 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::BindDescriptorHeaps()
     {
         uint32_t num_heaps;
-        auto heaps = g_DescriptorManager->GetHeaps(num_heaps);
+        auto heaps = g_DescriptorManager->GetPipelineHeaps(num_heaps);
         m_CommandList->SetDescriptorHeaps(num_heaps, heaps.data());
     }
 

@@ -174,7 +174,7 @@ namespace RB::Graphics
         return *this;
     }
 
-    RenderGraph* RenderGraphBuilder::Build(uint32_t graph_id, RenderGraphContext* context)
+    RenderGraph* RenderGraphBuilder::Build(uint32_t graph_id, RenderGraphContext* context) const
     {
         if (m_FinalPassType == RenderPassType::None)
         {

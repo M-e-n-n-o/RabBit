@@ -60,6 +60,14 @@
 
 #include "rabbit/app/Application.h"
 
+#include "rabbit/events/input/Input.h"
+#include "rabbit/events/input/KeyCodes.h"
+#include "rabbit/events/input/MouseCodes.h"
+
+#include "rabbit/math/Misc.h"
+#include "rabbit/math/Matrix.h"
+#include "rabbit/math/Vector.h"
+
 #include "rabbit/entity/Scene.h"
 #include "rabbit/entity/GameObject.h"
 #include "rabbit/entity/components/Transform.h"
@@ -68,10 +76,7 @@
 #include "rabbit/entity/components/UI.h"
 #include "rabbit/entity/components/Light.h"
 
-#include "rabbit/events/input/Input.h"
-#include "rabbit/events/input/KeyCodes.h"
-#include "rabbit/events/input/MouseCodes.h"
-
-#include "rabbit/math/Misc.h"
-#include "rabbit/math/Matrix.h"
-#include "rabbit/math/Vector.h"
+#include "rabbit/graphics/passes/GBuffer.h"
+#include "rabbit/graphics/passes/CascadedShadow.h"
+#include "rabbit/graphics/passes/DeferredLighting.h"
+#include "rabbit/graphics/passes/Overlay2D.h"

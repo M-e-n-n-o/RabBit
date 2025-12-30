@@ -8,7 +8,6 @@ namespace RB::Graphics::VK
 {
     GraphicsDevice* g_GraphicsDevice = nullptr;
 
-
     List<const char*> g_InstanceExtensions =
     {
         VK_KHR_SURFACE_EXTENSION_NAME,

@@ -72,7 +72,7 @@ namespace RB::Graphics
         // TODO Add the option to link to the output of a different RenderGraph?
 
         // Allocates a RenderGraph using new when succeeded! 
-        RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context);
+        RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context) const;
 
     private:
         using ResourceConnections = List<uint32_t>;
@@ -111,7 +111,7 @@ namespace RB::Graphics
     {
         List<uint32_t> connection_ids = { cs... };
 
-        RB_ASSERT(LOGTAG_GRAPHICS, !connection_ids.empty() && (connection_ids.size() % 2 == 0) && connection_ids.size() <= MAX_INOUT_RESOURCES_PER_RENDERPASS, "The RenderGraph connections are not correctly supplied");
+        RB_ASSERT(!connection_ids.empty() && (connection_ids.size() % 2 == 0) && connection_ids.size() <= MAX_INOUT_RESOURCES_PER_RENDERPASS, "The RenderGraph connections are not correctly supplied");
 
         auto to_itr = m_Connections.find(to);
 

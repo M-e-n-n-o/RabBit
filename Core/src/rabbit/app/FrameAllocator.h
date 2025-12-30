@@ -29,7 +29,7 @@ namespace RB
         void* Allocate(uint64_t size, uint64_t align = 1);
 
         template<typename T>
-        T* Allocate(uint64_t amount);
+        T* Allocate(uint64_t amount = 1);
 
         FrameAllocationPageSet LockCurrentPageSet();
         void UnlockPageSet(FrameAllocationPageSet set);

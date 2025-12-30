@@ -8,7 +8,6 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include <wrl.h>
 
 #if defined(CreateWindow)
 #undef CreateWindow
@@ -48,6 +47,7 @@ namespace RB::Graphics::Windows
         bool         IsMinimized()              const override;
         bool         IsValid()                  const override;
         bool         IsSemiTransparent()        const override;
+        bool         IsDraggableBorderless()    const override;
 
         Display* GetParentDisplay() override;
 
@@ -58,11 +58,11 @@ namespace RB::Graphics::Windows
 
         RenderResourceFormat GetBackBufferFormat() override;
         uint32_t GetCurrentBackBufferIndex() override;
-        Graphics::Texture2D* GetCurrentBackBuffer() override;
+        Texture2D* GetCurrentBackBuffer() override;
 
         HWND GetHandle() const { return m_WindowHandle; }
 
-    private:
+    protected:
         void ResizeWindow(uint32_t width, uint32_t height, int32_t x, int32_t y) override;
         void ResizeBackBuffers(uint32_t width, uint32_t height) override;
         void DestroyWindow() override;
@@ -75,7 +75,11 @@ namespace RB::Graphics::Windows
         SwapChain*              m_SwapChain;
         bool                    m_IsValid;
         bool                    m_IsSemiTransparent;
+        bool                    m_IsDraggableBorderless;
         RenderResourceFormat    m_BackBufferFormat;
     };
+
+    // Nasty way to be able to insert custom logic before the event handling
+    void SetOnNativeWindowEventCallback(bool (*onEvent)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam));
 }
 #endif

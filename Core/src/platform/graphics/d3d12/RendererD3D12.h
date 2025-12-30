@@ -9,7 +9,8 @@
 
 namespace RB::Graphics::D3D12
 {
-    #define TRANSIENT_CYCLES (BACK_BUFFER_COUNT + 1)
+    #define MAX_NUM_CPU_FRAMES_IN_FLIGHT (BACK_BUFFER_COUNT + 1)
+    #define TRANSIENT_CYCLES             MAX_NUM_CPU_FRAMES_IN_FLIGHT
 
     class RendererD3D12 : public Renderer
     {

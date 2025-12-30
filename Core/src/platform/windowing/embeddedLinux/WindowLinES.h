@@ -37,6 +37,7 @@ namespace RB::Graphics::LinuxES
         bool         IsMinimized()              const override;
         bool         IsValid()                  const override;
         bool         IsSemiTransparent()        const override;
+        bool         IsDraggableBorderless()    const override;
 
         Display* GetParentDisplay() override;
 

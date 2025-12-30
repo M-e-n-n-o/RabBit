@@ -3,8 +3,8 @@
 #include "Window.h"
 #include "events/Event.h"
 #include "utils/Threading.h"
-#include "app/Settings.h"
 #include "app/FrameAllocator.h"
+#include "RenderGraph.h"
 
 namespace RB::Entity
 {
@@ -25,12 +25,15 @@ namespace RB::Graphics
     class ViewContext;
     class ResourceStreamer;
     class VertexBuffer;
-    class RenderGraph;
-    class RenderGraphContext;
 
     enum RenderGraphType
     {
         kRenderGraphType_Normal = 0,
+
+        // TODO: When implementing upscaling, we still want to render the UI at full res.
+        //       Probably good to make a separate graph for the UI rendering and just use
+        //       the output of regular rendering as input to the UI graph.
+        //kRenderGraphType_Post = 1,
 
         kRenderGraphType_Count
     };
@@ -47,10 +50,14 @@ namespace RB::Graphics
         void SubmitFrame(const Entity::Scene* const scene);
 
         // Sync with the render thread (and optionally also wait until GPU is idle)
-        // Should only be called from the Main thread!
+        // Should only be called from the Main or Render thread!
         void SyncRenderer(bool gpu_sync = false);
 
+        void SetRenderGraph(RenderGraphType graph_type, const RenderGraphBuilder& graph);
+
         ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
+        
+        FrameAllocator* GetAllocator() const { return m_RenderAllocator; }
 
         uint64_t GetRenderFrameIndex();
 
@@ -71,7 +78,6 @@ namespace RB::Graphics
 
     private:
         ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
-        void CreateRenderGraphs(const GraphicsSettings& settings);
         void UpdateRenderGraphSizes(const ViewContext* view_contexts, uint32_t context_count);
 
         // Should only be called from the render thread!

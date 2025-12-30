@@ -3,42 +3,21 @@
 using namespace RB;
 using namespace RB::Events;
 using namespace RB::Entity;
+using namespace RB::Graphics;
 using namespace RB::Math;
 
-//#include "imgui.h"
-#include "backends/imgui_impl_win32.h"
-#include "backends/imgui_impl_dx12.h"
+#include "EditorWindow.h"
+#include "EditorLayer.h"
+#include "ImGuiRenderer.h"
 
-class Editor : public RB::Application
+class EditorApp : public RB::Application
 {
 public:
-    Editor(RB::AppInfo& info) : Application(info) {}
+    EditorApp(RB::AppInfo& info) : Application(info) {}
 
     void OnStart() override
     {
-        // Make process DPI aware and obtain main monitor scale
-        ImGui_ImplWin32_EnableDpiAwareness();
-
-        // Setup Dear ImGui context
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-        io.ConfigDpiScaleFonts = true;
-        io.ConfigDpiScaleViewports = true;
-
-        // Setup Dear ImGui style
-        ImGui::StyleColorsDark();
-        //ImGui::StyleColorsLight();
-
-        ImGuiStyle& style = ImGui::GetStyle();
-
-        // Setup Platform/Renderer backends
-        //ImGui_ImplWin32_Init(hwnd);
-        //GetWindow
+        PushLayer<Editor::EditorLayer>();
     }
 
     void OnStop() override
@@ -51,14 +30,32 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     AppInfo app_info = {};
     app_info.appName = "RabBit Editor";
 
-    AppInfo::Window window = {};
-    window.windowName          = "RabBit Editor";
-    window.fullscreen          = false;
-    window.windowIndex         = 0;
-    window.vsync               = false;
-    window.windowWidth         = 1280;
-    window.windowHeight        = 720;
-    app_info.windows.push_back(window);
+    // Using a custom ImGUI window
 
-    return new Editor(app_info);
+    app_info.initialRenderGraph = RenderGraphBuilder()
+        // Passes
+        .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
+        .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
+        .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
+        .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
+        .AddPass<Editor::ImGuiRenderer> (RenderPassType::Custom0,           RenderPassSettings{})
+
+        // Connections           (from)     ->      (to)
+        .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
+                                    0u,                0u,
+                                    1u,                1u)
+
+        .AddLink(RenderPassType::CascadedShadow,    RenderPassType::DeferredLighting,
+                                    0u,                2u)
+
+        .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
+                                    0u,                0u)
+
+        .AddLink(RenderPassType::Overlay2D,         RenderPassType::Custom0,
+                                    0u,                 0u)
+
+        // Finalize
+        .SetFinalPass(RenderPassType::Custom0, 0);
+
+    return new EditorApp(app_info);
 }

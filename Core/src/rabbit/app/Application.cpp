@@ -92,15 +92,11 @@ namespace RB
         Renderer::SetAPI(RenderAPI::None);
 #endif
 
-        m_GraphicsSettings = {};
-        //m_GraphicsSettings.renderWidth = // What size to set here??
-
-        m_GraphicsSettings.Print();
-
         m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
 
         m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
         m_Renderer->Init();
+        m_Renderer->SetRenderGraph(kRenderGraphType_Normal, m_StartAppInfo.initialRenderGraph);
 
         m_Displays = Display::CreateDisplays();
 
@@ -114,7 +110,7 @@ namespace RB
                 m_Windows.push_back(Window::Create(window.windowName, 
                                                    m_Displays[index],
                                                    window.vsync, 
-                                                   window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, 
+                                                   window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default,
                                                    window.renderScale, window.forcedRenderAspect));
             }
             else
@@ -356,13 +352,9 @@ namespace RB
         return -1;
     }
 
-    void Application::ApplyNewGraphicsSettings(GraphicsSettings& settings)
+    void Application::AddWindow(Graphics::Window* window)
     {
-        settings.Validate();
-        settings.Print();
-
-        GraphicsSettingsChangedEvent e(settings, m_GraphicsSettings);
-        g_EventManager->InsertEvent(e);
+        m_Windows.push_back(window);
     }
 
     bool Application::OnEvent(Event& event)
@@ -415,12 +407,6 @@ namespace RB
         BindEvent<WindowCloseRequestEvent>([&](WindowCloseRequestEvent& close_event)
         {
             m_CheckWindows = true;
-        }, event);
-
-        
-        BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& settings_event)
-        {
-            m_GraphicsSettings = settings_event.GetNewSettings();
         }, event);
 
         if (passtrough_layers)

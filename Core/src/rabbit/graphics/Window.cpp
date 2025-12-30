@@ -87,6 +87,11 @@ namespace RB::Graphics
         return m_InFocus;
     }
 
+    bool Window::IsFullscreen() const
+    {
+        return m_IsFullscreen;
+    }
+
     float Window::GetAspectRatio() const
     {
         return (float)GetWidth() / (float)GetHeight();
@@ -335,8 +340,11 @@ namespace RB::Graphics
     Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, bool vsync, uint32_t window_style, RenderResourceFormat window_format, float virtual_scale, float virtual_aspect)
     {
 #if RB_PLATFORM_WINDOWS
+        wchar_t* wchar_class_name = new wchar_t[strlen(window_name) + 1];
+        CharToWchar(window_name, wchar_class_name);
+
         Windows::WindowArgs args = {};
-        args.className      = L"RabBit WindowClass";
+        args.className      = wchar_class_name;
         args.instance       = GetModuleHandle(nullptr);
         args.fullscreen     = false;
         args.width          = window_width;
@@ -349,6 +357,8 @@ namespace RB::Graphics
         args.format         = window_format;
 
         return new Windows::WindowWin(args);
+        
+        delete[] wchar_class_name;
 #else
         RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the platform");
         return nullptr;

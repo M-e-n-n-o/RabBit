@@ -88,7 +88,7 @@ namespace RB::Graphics::D3D12
         void ProfileMarkerBegin(uint64_t color, const char* name) override;
         void ProfileMarkerEnd() override;
 
-        GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
+        void* GetNativeInterface() const override { return m_CommandList.Get(); }
 
     private:
         void PrepareDraw();

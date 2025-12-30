@@ -22,6 +22,8 @@ namespace RB::Graphics
         DeferredLighting,
         Overlay2D,
 
+        Custom0,
+
         Count
     };
 
