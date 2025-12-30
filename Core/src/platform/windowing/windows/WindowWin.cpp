@@ -331,7 +331,7 @@ namespace RB::Graphics::Windows
         int screen_height = ::GetSystemMetrics(SM_CYSCREEN);
 
         RECT window_rect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
-        ::AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, FALSE);
+        ::AdjustWindowRect(&window_rect, style, FALSE);
 
         int window_width = window_rect.right - window_rect.left;
         int window_height = window_rect.bottom - window_rect.top;

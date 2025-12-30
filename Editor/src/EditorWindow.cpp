@@ -36,15 +36,21 @@ namespace Editor
         // Make process DPI aware and obtain main monitor scale
         ImGui_ImplWin32_EnableDpiAwareness();
 
-        // Make sure that ImGui gets the windows events before the application itself
-        RB::Graphics::Windows::SetOnNativeWindowEventCallback([](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> bool
-            {
-                return ImGui_ImplWin32_WndProcHandler(hwnd, message, wParam, lParam);
-            });
-
         m_Context = CreateImGuiContext();
         ImGui_ImplWin32_Init(m_WindowHandle);
         InitializeImGuiContextRenderBackend(m_Context, m_BackBufferFormat);
+
+        // Make sure that ImGui gets the windows events before the application itself
+        RB::Graphics::Windows::SetOnNativeWindowEventCallback([](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> bool
+            {
+                auto* window = (EditorWindow*)Application::GetInstance()->FindWindow(hwnd);
+                if (window)
+                {
+                    window->Select();
+                    return ImGui_ImplWin32_WndProcHandler(hwnd, message, wParam, lParam);
+                }
+                return false;
+            });
     }
 
     EditorWindow::~EditorWindow()
@@ -56,8 +62,11 @@ namespace Editor
         ImGui::SetCurrentContext(m_Context);
     }
 
-    void EditorWindow::PrepareDraw()
+    void EditorWindow::Update()
     {
+        // Call base class
+        WindowWin::Update();
+
         ImGui::SetCurrentContext(m_Context);
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();

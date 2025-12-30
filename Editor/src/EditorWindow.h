@@ -16,8 +16,8 @@ namespace Editor
 
         // Call before trying to do any ImGui stuff for this window
         void Select();
-        // Call before ImGui::Render()
-        void PrepareDraw();
+
+        void Update() override;
 
         void SetBorderless(bool borderless) override;
 

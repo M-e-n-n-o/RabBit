@@ -91,6 +91,8 @@ namespace Editor
 
     void InitializeImGuiContextRenderBackend(ImGuiContext* ctx, RenderResourceFormat format)
     {
+        ImGui::SetCurrentContext(ctx);
+
         ImGui_ImplDX12_InitInfo init_info = {};
         init_info.Device            = D3D12::g_GraphicsDevice->Get().Get();
         init_info.CommandQueue      = D3D12::g_GraphicsDevice->GetGraphicsQueue()->GetCommandQueue().Get();

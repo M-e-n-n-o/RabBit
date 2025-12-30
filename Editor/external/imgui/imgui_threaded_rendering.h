@@ -126,12 +126,10 @@ inline void ImDrawDataSnapshot::SnapUsingCopy(ImDrawData* src, double)
     {
         ImDrawList* dst_list = IM_NEW(ImDrawList)(src_list->_Data);
 
-        dst_list->Flags = src_list->Flags;
-        dst_list->_VtxCurrentIdx = src_list->_VtxCurrentIdx;
-
         dst_list->CmdBuffer = src_list->CmdBuffer;
         dst_list->IdxBuffer = src_list->IdxBuffer;
         dst_list->VtxBuffer = src_list->VtxBuffer;
+        dst_list->Flags = src_list->Flags;
 
         dst->CmdLists.push_back(dst_list);
     }
