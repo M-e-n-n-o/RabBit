@@ -325,7 +325,7 @@ namespace RB::Graphics
 
     ResourceID RenderGraphContext::ScheduleNewResource(const RenderResourceDesc& desc, uint32_t current_graph_id)
     {
-        if (current_graph_id >= m_GraphDescriptions.size())
+        while (current_graph_id >= m_GraphDescriptions.size())
         {
             m_GraphDescriptions.push_back({});
         }
@@ -359,7 +359,7 @@ namespace RB::Graphics
 
         if (graph_id >= m_GraphDescriptions.size())
         {
-            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Trying to grab an invalid list of resource ID's from the RenderGraphContext");
+            // Can be valid if a graph does not have its own resources, but just directly the viewcontext output
             return {};
         }
 

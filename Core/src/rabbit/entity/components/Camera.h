@@ -18,7 +18,7 @@ namespace RB::Entity
             , m_TargetWindowHandle(target_window_handle)
             , m_RenderTexture(nullptr)
             , m_RenderGraphType(Graphics::kRenderGraphType_Normal)
-            , m_ClearColor(1.0f)
+            , m_ClearColor(0.0f)
         {
         }
 
@@ -29,7 +29,7 @@ namespace RB::Entity
             , m_TargetWindowHandle(nullptr)
             , m_RenderTexture(render_texture)
             , m_RenderGraphType(Graphics::kRenderGraphType_Normal)
-            , m_ClearColor(1.0f)
+            , m_ClearColor(0.0f)
         {
         }
 

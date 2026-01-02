@@ -41,7 +41,8 @@ namespace RB
 
         const char*                     appName;
         List<Window>                    windows;
-        Graphics::RenderGraphBuilder    initialRenderGraph;
+
+        UnorderedMap<Graphics::RenderGraphType, Graphics::RenderGraphBuilder> renderGraphs;
     };
 
     class Application : public Events::EventListener
@@ -89,7 +90,7 @@ namespace RB
         void OnNewLayerPushed(ApplicationLayer* layer);
         bool OnEvent(Events::Event& event) override;
 
-        const AppInfo               m_StartAppInfo;
+        const AppInfo*              m_StartAppInfo;
 
         bool                        m_Initialized;
         bool                        m_ShouldStop;

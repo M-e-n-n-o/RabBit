@@ -282,6 +282,13 @@ namespace RB::Graphics
     {
         auto camera_components = scene->GetComponentsWithTypeOf<Entity::Camera>();
 
+        // Sort the camera's based on renderGraphType, which is going to be the render order
+        // Maybe a way to do the sort when inserting the camera in the scene instead of every frame?
+        std::sort(camera_components.begin(), camera_components.end(), [](const Entity::ObjectComponent* a, const Entity::ObjectComponent* b) -> bool
+            {
+                return ((const Entity::Camera*)a)->GetRenderGraphType() < ((const Entity::Camera*)b)->GetRenderGraphType();
+            });
+
         out_context_count = camera_components.size();
 
         // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)?
@@ -298,14 +305,7 @@ namespace RB::Graphics
 
             if (!camera->GetGameObject()->HasComponent<Entity::Transform>())
             {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object uses the default transform");
-            }
-
-            Window* window = Application::GetInstance()->FindWindow(camera->GetTargetWindowHandle());
-
-            if (window == nullptr)
-            {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Target window index of Camera is invalid, skipping...");
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object does not have a transform");
                 out_context_count--;
                 continue;
             }
@@ -329,6 +329,15 @@ namespace RB::Graphics
             //Shared<Texture2D> render_texture = camera->GetRenderTexture();
             //if (render_texture == nullptr)
             //{
+            //    Window* window = Application::GetInstance()->FindWindow(camera->GetTargetWindowHandle());
+            //
+            //    if (window == nullptr)
+            //    {
+            //        RB_LOG_WARN(LOGTAG_GRAPHICS, "Target window index of Camera is invalid, skipping...");
+            //        out_context_count--;
+            //        continue;
+            //    }
+            //
             //    Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
             //
             //    if (virtual_back_buffer == nullptr)
@@ -420,8 +429,7 @@ namespace RB::Graphics
                     m_RenderThread->SyncAll();
                 }
             }
-
-            if (gpu_sync)
+            else if (gpu_sync)
             {
                 // When GPU syncing we are likely going to change some render arguments,
                 // so invalidate all the upcoming render tasks.
@@ -438,15 +446,21 @@ namespace RB::Graphics
         m_ForceSync.SetValue(kForceSyncState_None);
     }
 
-    void Renderer::SetRenderGraph(RenderGraphType graph_type, const RenderGraphBuilder& graph)
+    void Renderer::SetRenderGraphs(const UnorderedMap<RenderGraphType, RenderGraphBuilder>& graphs)
     {
         SyncRenderer(true);
 
-        SAFE_DELETE(m_RenderGraphs[graph_type]);
+        for (int i = 0; i < kRenderGraphType_Count; ++i)
+        {
+            SAFE_DELETE(m_RenderGraphs[i]);
+        }
 
         m_RenderGraphContext->DeleteGraphResourceDescriptions();
 
-        m_RenderGraphs[graph_type] = graph.Build(graph_type, m_RenderGraphContext);
+        for (const auto& pair : graphs)
+        {
+            m_RenderGraphs[pair.first] = pair.second.Build(pair.first, m_RenderGraphContext);
+        }
 
         // Makes sure to recreate the render resources with the new graphs before rendering the next frame
         m_CurrentValidRenderGraphSizes = 0;

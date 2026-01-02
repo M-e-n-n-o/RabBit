@@ -5,6 +5,9 @@
 #include "EditorWindow.h"
 #include "ImGuiManager.h"
 
+#include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
+#include "platform/graphics/d3d12/resource/Descriptor.h"
+
 #include "imgui.h"
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx12.h"
@@ -23,6 +26,7 @@ namespace Editor
         EditorWindow* m_Window;
         EditorWindow* m_Window1;
         ImGuiContext* m_ImGuiRenderContext;
+        Shared<Texture2D> m_SceneTexture;
 
     public:
         EditorLayer() : ApplicationLayer("EditorLayer") 
@@ -45,15 +49,17 @@ namespace Editor
             auto* context_obj = scene->CreateGameObject();
             context_obj->AddComponent<ImGuiManager>(m_ImGuiRenderContext);
 
-            auto* obj = scene->CreateGameObject();
-            obj->AddComponent<Transform>();
-            Camera* cam_comp = obj->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_Window->GetNativeWindowHandle());
+            m_SceneTexture = Texture2D::Create("Game scene", RenderResourceFormat::R8G8B8A8_UNORM, 1280, 720, true, true);
+
+            auto* game_cam_obj = scene->CreateGameObject();
+            game_cam_obj->AddComponent<Transform>();
+            Camera* cam_comp = game_cam_obj->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_SceneTexture);
             cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
-            //auto* obj2 = scene->CreateGameObject();
-            //obj2->AddComponent<Transform>();
-            //Camera* cam_comp2 = obj2->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_Window1->GetNativeWindowHandle());
-            //cam_comp2->SetClearColor({ 0.5f, 0.3f, 0.3f, 0.8f });
+            auto* imgui_cam = scene->CreateGameObject();
+            imgui_cam->AddComponent<Transform>();
+            Camera* cam_comp2 = imgui_cam->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_Window->GetNativeWindowHandle());
+            cam_comp2->SetRenderGraphType(kRenderGraphType_Post);
         }
 
         void OnUpdate(float delta) override
@@ -61,6 +67,7 @@ namespace Editor
             m_Window->Select();
             ImGui::Begin("Test window");
             ImGui::Text("Hello World");
+            ImGui::Image((ImTextureID)(D3D12::g_DescriptorManager->GetGpuHandle((std::static_pointer_cast<D3D12::Texture2DD3D12>(m_SceneTexture)->GetSrvHandle())).ptr), ImVec2(1280, 720));
             ImGui::End();
 
             //m_Window1->Select();

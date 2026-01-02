@@ -26,15 +26,17 @@ namespace RB::Graphics
     class ResourceStreamer;
     class VertexBuffer;
 
+    // Defines the different render graph types and the order in which they are rendered
     enum RenderGraphType
     {
-        kRenderGraphType_Normal = 0,
-
-        // TODO: When implementing upscaling, we still want to render the UI at full res.
+        // TODO: 
+        //  - When implementing upscaling, we still want to render the UI at full res.
         //       Probably good to make a separate graph for the UI rendering and just use
         //       the output of regular rendering as input to the UI graph.
-        //kRenderGraphType_Post = 1,
+        //  - Need to add support for custom rendertargets as an input to a renderpass.
 
+        kRenderGraphType_Normal = 0,
+        kRenderGraphType_Post,
         kRenderGraphType_Count
     };
 
@@ -53,7 +55,7 @@ namespace RB::Graphics
         // Should only be called from the Main or Render thread!
         void SyncRenderer(bool gpu_sync = false);
 
-        void SetRenderGraph(RenderGraphType graph_type, const RenderGraphBuilder& graph);
+        void SetRenderGraphs(const UnorderedMap<RenderGraphType, RenderGraphBuilder>& graphs);
 
         ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
         

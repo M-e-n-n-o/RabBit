@@ -26,7 +26,6 @@ namespace RB
 
     Application::Application(AppInfo& info)
         : EventListener(kEventCat_All)
-        , m_StartAppInfo(info)
         , m_Initialized(false)
         , m_ShouldStop(false)
         , m_FrameIndex(0)
@@ -35,6 +34,8 @@ namespace RB
     {
         RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
         s_Instance = this;
+
+        m_StartAppInfo = new AppInfo(info);
 
         RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
         RB_LOG_RELEASE(LOGTAG_MAIN, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
@@ -96,11 +97,11 @@ namespace RB
 
         m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
         m_Renderer->Init();
-        m_Renderer->SetRenderGraph(kRenderGraphType_Normal, m_StartAppInfo.initialRenderGraph);
+        m_Renderer->SetRenderGraphs(m_StartAppInfo->renderGraphs);
 
         m_Displays = Display::CreateDisplays();
 
-        for (const AppInfo::Window& window : m_StartAppInfo.windows)
+        for (const AppInfo::Window& window : m_StartAppInfo->windows)
         {
             if (window.fullscreen && window.windowIndex >= 0)
             {
@@ -136,8 +137,10 @@ namespace RB
         RB_LOG(LOGTAG_MAIN, "");
 
         // Initialize app user
-        RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.appName);
+        RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo->appName);
         OnStart();
+
+        SAFE_DELETE(m_StartAppInfo);
 
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "======== STARTING MAIN LOOP =========");
