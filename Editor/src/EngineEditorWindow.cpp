@@ -1,4 +1,4 @@
-#include "EditorWindow.h"
+#include "EngineEditorWindow.h"
 #include "ImGuiManager.h"
 #include "app/Application.h"
 #include "graphics/Renderer.h"
@@ -18,7 +18,7 @@ namespace Editor
     // Window callback function
     LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-    EditorWindow::EditorWindow(const char* name)
+    EngineEditorWindow::EngineEditorWindow(const char* name)
         : WindowWin(WindowArgs {
                 .instance       = GetModuleHandle(nullptr),
                 .className      = CharToWString(name),
@@ -43,7 +43,7 @@ namespace Editor
         // Make sure that ImGui gets the windows events before the application itself
         RB::Graphics::Windows::SetOnNativeWindowEventCallback([](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> bool
             {
-                auto* window = (EditorWindow*)Application::GetInstance()->FindWindow(hwnd);
+                auto* window = (EngineEditorWindow*)Application::GetInstance()->FindWindow(hwnd);
                 if (window)
                 {
                     window->Select();
@@ -53,16 +53,16 @@ namespace Editor
             });
     }
 
-    EditorWindow::~EditorWindow()
+    EngineEditorWindow::~EngineEditorWindow()
     {
     }
 
-    void EditorWindow::Select()
+    void EngineEditorWindow::Select()
     {
         ImGui::SetCurrentContext(m_Context);
     }
 
-    void EditorWindow::Update()
+    void EngineEditorWindow::Update()
     {
         // Call base class
         WindowWin::Update();
@@ -72,12 +72,12 @@ namespace Editor
         ImGui::NewFrame();
     }
 
-    void EditorWindow::SetBorderless(bool borderless)
+    void EngineEditorWindow::SetBorderless(bool borderless)
     {
         // Not supported
     }
 
-    void EditorWindow::DestroyWindow()
+    void EngineEditorWindow::DestroyWindow()
     {
         Application::GetInstance()->GetRenderer()->SyncRenderer(true);
 

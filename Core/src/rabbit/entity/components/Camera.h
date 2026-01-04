@@ -11,24 +11,24 @@ namespace RB::Entity
     {
     public:
         // FOV in degrees
-        Camera(float near_plane, float far_plane, float vfov, void* target_window_handle)
+        Camera(float near_plane, float far_plane, float vfov, void* target_window_handle, Graphics::RenderGraphType type = Graphics::kRenderGraphType_Normal)
             : m_Near(near_plane)
             , m_Far(far_plane)
             , m_VFovDegrees(vfov)
             , m_TargetWindowHandle(target_window_handle)
             , m_RenderTexture(nullptr)
-            , m_RenderGraphType(Graphics::kRenderGraphType_Normal)
+            , m_RenderGraphType(type)
             , m_ClearColor(0.0f)
         {
         }
 
-        Camera(float near_plane, float far_plane, float vfov, const Shared<Graphics::Texture2D>& render_texture)
+        Camera(float near_plane, float far_plane, float vfov, const Shared<Graphics::Texture2D>& render_texture, Graphics::RenderGraphType type = Graphics::kRenderGraphType_Normal)
             : m_Near(near_plane)
             , m_Far(far_plane)
             , m_VFovDegrees(vfov)
             , m_TargetWindowHandle(nullptr)
             , m_RenderTexture(render_texture)
-            , m_RenderGraphType(Graphics::kRenderGraphType_Normal)
+            , m_RenderGraphType(type)
             , m_ClearColor(0.0f)
         {
         }

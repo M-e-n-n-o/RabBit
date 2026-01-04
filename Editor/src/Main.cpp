@@ -4,14 +4,10 @@
 #include <RabBit.h>
 
 using namespace RB;
-using namespace RB::Events;
-using namespace RB::Entity;
 using namespace RB::Graphics;
-using namespace RB::Math;
 
-#include "EditorWindow.h"
 #include "EditorLayer.h"
-#include "ImGuiRenderer.h"
+#include "ImGuiRenderPass.h"
 
 class EditorApp : public RB::Application
 {
@@ -62,7 +58,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             {
                 kRenderGraphType_Post,
                 RenderGraphBuilder()
-                .AddPass<Editor::ImGuiRenderer>(RenderPassType::Custom0, RenderPassSettings{})
+                .AddPass<Editor::ImGuiRenderPass>(RenderPassType::Custom0, RenderPassSettings{})
                 .SetFinalPass(RenderPassType::Custom0, 0)
             },
         };

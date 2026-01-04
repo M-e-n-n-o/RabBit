@@ -8,11 +8,11 @@
 
 namespace Editor
 {
-    class EditorWindow : public RB::Graphics::Windows::WindowWin
+    class EngineEditorWindow : public RB::Graphics::Windows::WindowWin
     {
     public:
-        EditorWindow(const char* name);
-        ~EditorWindow();
+        EngineEditorWindow(const char* name);
+        ~EngineEditorWindow();
 
         // Call before trying to do any ImGui stuff for this window
         void Select();

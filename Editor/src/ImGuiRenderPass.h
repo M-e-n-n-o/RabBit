@@ -10,7 +10,7 @@ namespace Editor
         // No settings
     };
 
-    class ImGuiRenderer : public RB::Graphics::RenderPass
+    class ImGuiRenderPass : public RB::Graphics::RenderPass
     {
     public:
         const char* GetName() override { return "ImGuiRenderer"; }

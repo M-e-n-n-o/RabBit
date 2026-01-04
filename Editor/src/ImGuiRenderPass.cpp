@@ -1,6 +1,6 @@
 #include "RabBitCommon.h"
-#include "ImGuiRenderer.h"
-#include "EditorWindow.h"
+#include "ImGuiRenderPass.h"
+#include "EngineEditorWindow.h"
 #include "ImGuiManager.h"
 
 #include "app/Application.h"
@@ -27,7 +27,7 @@ namespace Editor
         ImDrawDataSnapshot* snapshot;
     };
 
-    RenderPassConfig ImGuiRenderer::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig ImGuiRenderPass::GetConfiguration(const RenderPassSettings& setting)
     {
         return RenderPassConfig
         {
@@ -55,7 +55,7 @@ namespace Editor
         };
     }
 
-    RenderPassEntry* ImGuiRenderer::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* ImGuiRenderPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         if (view_context->isOffscreen)
         {
@@ -73,7 +73,7 @@ namespace Editor
         ImGuiRenderEntry* entry = allocator->Allocate<ImGuiRenderEntry>();
         memset(entry, 0, sizeof(ImGuiRenderEntry));
 
-        auto* window = dynamic_cast<EditorWindow*>(Application::GetInstance()->GetWindow(view_context->windowIndex));
+        auto* window = dynamic_cast<EngineEditorWindow*>(Application::GetInstance()->GetWindow(view_context->windowIndex));
         window->Select();
 
         // Prepare render data for rendering
@@ -98,7 +98,7 @@ namespace Editor
         return entry;
     }
 
-    void ImGuiRenderer::Render(RenderPassInput& in)
+    void ImGuiRenderPass::Render(RenderPassInput& in)
     {
         ImGuiRenderEntry* entry = (ImGuiRenderEntry*)in.entryContext;
 
