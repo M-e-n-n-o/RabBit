@@ -20,6 +20,7 @@ namespace RB::Graphics
     {
         struct ModelEntry
         {
+            uint32_t             frustumMask;
             Shared<VertexBuffer> vb;
             Shared<IndexBuffer>  ib;
             Math::Float4x4       modelMatrix;
@@ -73,6 +74,17 @@ namespace RB::Graphics
         uint32_t size = sizeof(CascadedShadowEntry::ModelEntry) * mesh_renderers.size();
         CascadedShadowEntry::ModelEntry* entries = (CascadedShadowEntry::ModelEntry*)allocator->Allocate(size);
 
+        const auto* light = (DirectionalLight*)list[0];
+
+        uint32_t fsize = sizeof(Frustum) * m_ShadowSlices;
+        Frustum* frustums = (Frustum*)allocator->Allocate(fsize);
+
+        for (int i = 0; i < m_ShadowSlices; ++i)
+        {
+            float split;
+            frustums[i] = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform, i, m_ShadowSlices, &split);
+        }
+
         uint32_t total_entries = 0;
 
         for (int i = 0; i < mesh_renderers.size(); ++i)
@@ -87,15 +99,28 @@ namespace RB::Graphics
                 continue;
             }
 
-            const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Transform*     transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
 
-            // TODO: Do frustum culling on each shadow slice
+            uint32_t frustum_mask = 0;
+            if (mesh->HasValidAABB())
+            {
+                const Math::AABB& aabb = mesh->GetAABB();
+                const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
+
+                // Do frustum culling on each shadow slice
+                for (int i = 0; i < m_ShadowSlices; ++i)
+                {
+                    const Math::Float4x4 vp = frustums[i].GetWorldToViewMatrix() * frustums[i].GetViewToClipMatrix();
+                    frustum_mask |= Frustum::IsInFrustum(world_aabb, vp) << i;
+                }
+            }
 
             CascadedShadowEntry::ModelEntry entry = {};
+            entry.frustumMask   = frustum_mask;
             entry.vb            = vp.primaryBuffer;
             entry.ib            = vp.indexBuffer;
-            entry.modelMatrix   = transform->GetLocalToWorldMatrix();
-
+            entry.modelMatrix   = model_mat;
             entries[total_entries] = entry;
             total_entries++;
         }
@@ -103,17 +128,6 @@ namespace RB::Graphics
         if (total_entries == 0)
         {
             return nullptr;
-        }
-
-        const auto* light = (DirectionalLight*)list[0];
-
-        uint32_t fsize = sizeof(Frustum) * m_ShadowSlices;
-        Frustum* frustums = (Frustum*)allocator->Allocate(fsize);
-
-        for (int i = 0; i < m_ShadowSlices; ++i)
-        {
-            float split;
-            frustums[i] = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform, i, m_ShadowSlices, &split);
         }
 
         CascadedShadowEntry* entry = (CascadedShadowEntry*)allocator->Allocate(sizeof(CascadedShadowEntry));
@@ -151,6 +165,11 @@ namespace RB::Graphics
             for (int i = 0; i < entry->entryCount; ++i)
             {
                 CascadedShadowEntry::ModelEntry& model_entry = entry->modelEntries[i];
+
+                if (model_entry.frustumMask & (1U << slice) == 0)
+                {
+                    continue;
+                }
 
                 in.ri->SetVertexBuffer(model_entry.vb.get());
 
