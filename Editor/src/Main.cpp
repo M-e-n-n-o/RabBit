@@ -7,7 +7,7 @@ using namespace RB;
 using namespace RB::Graphics;
 
 #include "EditorLayer.h"
-#include "ImGuiRenderPass.h"
+#include "engine/ImGuiRenderPass.h"
 
 class EditorApp : public RB::Application
 {

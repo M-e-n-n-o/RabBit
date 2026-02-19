@@ -5,7 +5,7 @@
 #define RB_PLATFORM_WINDOWS 1
 #include <RabBit.h>
 
-#include "EngineEditorWindow.h"
+#include "engine/EngineEditorWindow.h"
 #include "ImGuiManager.h"
 
 #include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
@@ -67,16 +67,18 @@ namespace Editor
 
         void OnUpdate(float delta) override
         {
-            m_Window->Select();
+            m_Window->SelectForDraw();
             ImGui::Begin("Test window");
             ImGui::Text("Hello World");
             ImGui::Image((ImTextureID)(D3D12::g_DescriptorManager->GetGpuHandle((std::static_pointer_cast<D3D12::Texture2DD3D12>(m_SceneTexture)->GetSrvHandle())).ptr), ImVec2(1280, 720));
             ImGui::End();
+            m_Window->DeselectForDraw();
 
-            //m_Window1->Select();
+            //m_Window1->SelectForDraw();
             //ImGui::Begin("Test window");
             //ImGui::Text("Hello World");
             //ImGui::End();
+            //m_Window1->DeselectForDraw();
         }
 
         bool OnEvent(const Event& event) override

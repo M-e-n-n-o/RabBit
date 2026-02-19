@@ -125,6 +125,7 @@ inline void ImDrawDataSnapshot::SnapUsingCopy(ImDrawData* src, double)
     for (ImDrawList* src_list : src->CmdLists)
     {
         ImDrawList* dst_list = IM_NEW(ImDrawList)(src_list->_Data);
+        memset(dst_list, 0, sizeof(ImDrawList));
 
         dst_list->CmdBuffer = src_list->CmdBuffer;
         dst_list->IdxBuffer = src_list->IdxBuffer;

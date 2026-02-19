@@ -16,6 +16,8 @@ namespace Editor
 
         // Call before trying to do any ImGui stuff for this window
         void Select();
+        void SelectForDraw();
+        void DeselectForDraw();
 
         void Update() override;
 
@@ -24,6 +26,8 @@ namespace Editor
     private:
         void DestroyWindow() override;
 
+        const char*   m_Name;
+        std::string   m_TitleWindowName;
         ImGuiContext* m_Context;
     };
 }

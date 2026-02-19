@@ -104,7 +104,7 @@ namespace RB::Graphics
     {
         m_IsShutdown = false;
 
-        m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k4MB);
+        m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k8MB);
 
         m_ResourceStreamer = new ResourceStreamer();
 

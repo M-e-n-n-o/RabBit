@@ -2,6 +2,7 @@
 #include "ImGuiManager.h"
 #include "app/Application.h"
 #include "graphics/Renderer.h"
+#include "graphics/Display.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_win32.h"
@@ -32,6 +33,7 @@ namespace Editor
                 .windowStyle    = kWindowStyle_DraggableBorderless,
                 .format         = RenderResourceFormat::R8G8B8A8_UNORM
             })
+        , m_Name(name)
     {
         // Make process DPI aware and obtain main monitor scale
         ImGui_ImplWin32_EnableDpiAwareness();
@@ -51,6 +53,9 @@ namespace Editor
                 }
                 return false;
             });
+
+        m_TitleWindowName = name;
+        m_TitleWindowName += " title bar";
     }
 
     EngineEditorWindow::~EngineEditorWindow()
@@ -62,6 +67,17 @@ namespace Editor
         ImGui::SetCurrentContext(m_Context);
     }
 
+    void EngineEditorWindow::SelectForDraw()
+    {
+        Select();
+        ImGui::Begin(m_Name);
+    }
+
+    void EngineEditorWindow::DeselectForDraw()
+    {
+        ImGui::End();
+    }
+
     void EngineEditorWindow::Update()
     {
         // Call base class
@@ -70,6 +86,49 @@ namespace Editor
         ImGui::SetCurrentContext(m_Context);
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
+
+        // Defined in WindowWin
+        const int os_title_bar_height = 25;
+        const Math::Float4 os_window_rect = GetNativeWindowRectangle();
+
+        // Create the custom title bar
+        ImGui::SetNextWindowSize(ImVec2(os_window_rect.x, os_window_rect.y));
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::Begin(m_TitleWindowName.c_str(), nullptr, ImGuiWindowFlags_NoDecoration | 
+                                                         ImGuiWindowFlags_NoMove | 
+                                                         ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                                         ImGuiWindowFlags_NoDocking |
+                                                         ImGuiWindowFlags_NoScrollWithMouse |
+                                                         ImGuiWindowFlags_NoBackground);
+        ImGui::SetCursorPos(ImVec2(10, 3));
+        ImGui::Text(m_Name);
+        ImGui::SameLine(ImGui::GetWindowWidth() - 70);
+        if (ImGui::Button("_"))
+        {
+            ShowWindow(m_WindowHandle, SW_MINIMIZE);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("O"))
+        {
+            WindowFullscreenToggleEvent e(m_WindowHandle);
+            g_EventManager->InsertEvent(e);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("X"))
+        {
+            WindowCloseRequestEvent e(m_WindowHandle);
+            g_EventManager->InsertEvent(e);
+        }
+        ImGui::End();
+
+        // Create the renderable area
+        ImGui::SetNextWindowSize(ImVec2(os_window_rect.x, os_window_rect.y - os_title_bar_height));
+        ImGui::SetNextWindowPos(ImVec2(0, os_title_bar_height));
+        ImGui::Begin(m_Name, nullptr, ImGuiWindowFlags_NoDecoration |
+                                      ImGuiWindowFlags_NoMove |
+                                      ImGuiWindowFlags_NoScrollWithMouse |
+                                      ImGuiWindowFlags_NoBackground);
+        ImGui::End();
     }
 
     void EngineEditorWindow::SetBorderless(bool borderless)

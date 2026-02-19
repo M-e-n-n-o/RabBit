@@ -426,7 +426,7 @@ namespace RB::Graphics::Windows
         
             // TODO: Probably have to make these sizes customizable
             const int border = 8;
-            const int title_bar_height = 32;
+            const int title_bar_height = 25;
             // Corner testing
             if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border &&
                 mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
@@ -452,7 +452,7 @@ namespace RB::Graphics::Windows
                 return HTBOTTOM;
         
             // Draggable area
-            if (mouse_pos.y < rect.top + title_bar_height)
+            if (mouse_pos.y < rect.top + title_bar_height && mouse_pos.x < rect.right - 80)
                 return HTCAPTION;
 
             return HTCLIENT;
