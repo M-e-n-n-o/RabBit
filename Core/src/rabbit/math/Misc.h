@@ -143,4 +143,10 @@ namespace RB::Math
     {
         return value * (180.0f / kPI);
     }
+
+    template<typename T>
+    inline T Lerp(T from, T to, T t)
+    {
+        return from + t * (to - from);
+    }
 }

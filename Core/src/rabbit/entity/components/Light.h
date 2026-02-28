@@ -22,45 +22,64 @@ namespace RB::Entity
 
         Graphics::Frustum CalculateFrustum(const Camera& camera, const Transform& cam_transform, uint32_t slice, uint32_t total_slices, float* out_split) const
         {
-            // TODO This slice calculation is still FAR from optimal! There is a lot of overlap between the slices, have to fix this
+            // Calculate Split Distances
+            float near_p = Math::Max(camera.GetNearPlane(), 0.5f);
+            float far_p = Math::Min(camera.GetFarPlane(), m_ShadowDistance);
+            float ratio = far_p / near_p;
 
-            Math::Float3 dir = m_Direction;
+            // Practical split lerp between logarithmic and linear
+            float p = (float)(slice + 1) / (float)total_slices;
+            float log_split = near_p * Math::Pow(ratio, p);
+            float lin_split = near_p + (far_p - near_p) * p;
+            float split_dist = Math::Lerp(log_split, lin_split, m_SliceSteepness);
 
-            dir.y = Math::Clamp(dir.y, -1.0f, 1.0f);
+            float prev_split = (slice == 0) ? camera.GetNearPlane() : *out_split;
+            *out_split = split_dist;
 
-            // yaw: rotate around Y so +Z aligns with projection of dir on XZ plane
-            const float yaw = atan2(dir.x, dir.z);
+            // Get the corners of this frustum slice in world space
+            Graphics::Frustum temp_frustum;
+            temp_frustum.SetTransform(cam_transform.position, cam_transform.rotation);
+            temp_frustum.SetPerspectiveProjectionVFov(prev_split, split_dist,
+                                                      camera.GetVerticalFovInRadians(), 
+                                                      ((float)camera.GetRenderTargetWidth() / (float)camera.GetRenderTargetHeight()),
+                                                      false);
 
-            // pitch: rotation around X to raise/lower from forward
-            const float pitch = -asin(dir.y);
+            Math::Float4x4 slice_view_proj = temp_frustum.GetWorldToViewMatrix() * temp_frustum.GetViewToClipMatrix();
+            Math::Float4x4 inv_slice_vp = slice_view_proj;
+            inv_slice_vp.Invert();
 
-            const Math::Float3 rot = Math::Float3(Math::RadiansToDegrees(pitch), Math::RadiansToDegrees(yaw), 0.0f);
+            List<Math::Float3> corners = Graphics::Frustum::GetFrustumCornersWorldSpace(inv_slice_vp);
 
-            float cam_pitch = Math::DegreesToRadians(-cam_transform.rotation.x);
-            float cam_yaw   = Math::DegreesToRadians(cam_transform.rotation.y);
+            // Create the Light View Matrix
+            Math::Float3 center(0.0f, 0.0f, 0.0f);
+            for (const auto& v : corners) {
+                center = center + v;
+            }
+            center = center * (1.0f / 8.0f);
 
-            const Math::Float3 cam_forward(
-                Math::Cos(cam_pitch) * Math::Sin(cam_yaw),
-                Math::Sin(cam_pitch),
-                Math::Cos(cam_pitch) * Math::Cos(cam_yaw)
-            );
+            Math::Float3 lightPos = center - (m_Direction * m_PullBackDistance);
 
-            const float frustum_distance = Math::Min(camera.GetFarPlane(), m_ShadowDistance) * Math::Pow((float)(slice + 1) / (float)total_slices, m_SliceSteepness);
-            const float frustum_far = 5000.0f; // Just use a big value so we don't clip into any big objects
+            // The light looks at the center of our frustum slice
+            temp_frustum.LookAt(lightPos, center, Math::Float3(0, 1, 0));
+            Math::Float4x4 lightView = temp_frustum.GetWorldToViewMatrix();
 
-            Math::Float3 light_pos = cam_transform.position;
-            // Nudge the position forward with quarter the frustum distance
-            light_pos = light_pos + cam_forward * (frustum_distance * 0.25f);
-            
-            *out_split = (cam_transform.position - light_pos).GetLength() + frustum_distance;
+            // Find Min/Max in Light Space
+            float min_x = FLT_MAX, max_x = -FLT_MAX;
+            float min_y = FLT_MAX, max_y = -FLT_MAX;
+            float max_z = -FLT_MAX;
 
-            // Move the light up by 80% of the far distance
-            light_pos = light_pos + dir * (frustum_far * -0.8f);
-            
+            for (const auto& v : corners) 
+            {
+                Math::Float3 trf = v * lightView;
+                min_x = Math::Min(min_x, trf.x); max_x = Math::Max(max_x, trf.x);
+                min_y = Math::Min(min_y, trf.y); max_y = Math::Max(max_y, trf.y);
+                max_z = Math::Max(max_z, trf.z);
+            }
+
+            // Build the Final Frustum
             Graphics::Frustum frustum;
-            frustum.SetTransform(light_pos, rot);
-            frustum.SetOrthographicProjection(0.1f, frustum_far, -frustum_distance, frustum_distance, frustum_distance, -frustum_distance, false);
-
+            frustum.SetTransform(lightView);
+            frustum.SetOrthographicProjection(0.1f, max_z + 25.0f, min_x, max_x, max_y, min_y, false);
             return frustum;
         }
 
@@ -68,7 +87,8 @@ namespace RB::Entity
         Math::Float3        m_Direction;
         Math::Float3        m_Color;
 
-        float               m_SliceSteepness = 2.8f;   // How fast do we transition to the next shadow slice? (the higher the less distance the first few slices will cover) 
-        float               m_ShadowDistance = 250.0f; // The max shadow coverage
+        float               m_SliceSteepness = 0.4f;     // How fast do we transition to the next shadow slice?
+        float               m_ShadowDistance = 500.0f;   // The max shadow coverage
+        float               m_PullBackDistance = 900.0f; // How far away is the directionalLight from the scene?
     };
 }

@@ -362,6 +362,16 @@ Float4 Float4::operator*(const float& other) const
     );
 }
 
+Float4 Float4::operator*(const Float4x4& other) const
+{
+    return Float4(
+        (x * other.row0.x) + (y * other.row1.x) + (z * other.row2.x) + (w * other.row3.x),
+        (x * other.row0.y) + (y * other.row1.y) + (z * other.row2.y) + (w * other.row3.y),
+        (x * other.row0.z) + (y * other.row1.z) + (z * other.row2.z) + (w * other.row3.z),
+        (x * other.row0.w) + (y * other.row1.w) + (z * other.row2.w) + (w * other.row3.w)
+    );
+}
+
 Float4 Float4::operator/(const Float4& other) const
 {
     return Float4(

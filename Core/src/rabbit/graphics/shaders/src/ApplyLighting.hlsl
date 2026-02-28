@@ -56,34 +56,40 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     float3 world_pos = TransformScreenUVsToWorld(uv, view_depth, false);
 
     // Shadows
-    float shadow;
+    float shadow = 1.0f;
     {
         // Find cascade
-        uint cascade_idx = 0;
-        for (int i = 0; i < min(g_ApplyLighting.cascades, MAX_NUM_CASCADES) - 1; i++)
+        int cascade_idx = -1;
+        for (uint i = 0; i < min(g_ApplyLighting.cascades, MAX_NUM_CASCADES); ++i) 
         {
-            if (view_depth > g_ApplyLighting.cascadeSplits[i])
-                cascade_idx = i + 1;
+            if (view_depth <= g_ApplyLighting.cascadeSplits[i]) 
+            {
+                cascade_idx = i;
+                break;
+            }
         }
 
-        // Shadow map coords
-        float4 shadow_clip = mul(g_ApplyLighting.shadowVPs[cascade_idx], float4(world_pos, 1.0f));
-        float3 shadow_ndc = shadow_clip.xyz / shadow_clip.w;
+        if (cascade_idx >= 0)
+        {
+            // Shadow map coords
+            float4 shadow_clip = mul(g_ApplyLighting.shadowVPs[cascade_idx], float4(world_pos, 1.0f));
+            float3 shadow_ndc = shadow_clip.xyz / shadow_clip.w;
 
-        // Convert from NDC [-1,1] to UV [0,1]
-        float2 shadow_uv = float2(shadow_ndc.x * 0.5f + 0.5f,
-            1.0f - (shadow_ndc.y * 0.5f + 0.5f));
+            // Convert from NDC [-1,1] to UV [0,1]
+            float2 shadow_uv = float2(shadow_ndc.x * 0.5f + 0.5f,
+                                      1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
-        // Sample shadow map
-        shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, cascade_idx, 0.0001f);
+            // Sample shadow map
+            shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, cascade_idx, 0.001f);
+        }
     }
 
     // Calculate lighting
     float4 final_color;
     {
         float specularity = 0.5f;
-        float metallicness = 0.0f;
-        float roughness = 1.0f;
+        float metallicness = 0.6f;
+        float roughness = 0.4f;
 
 
         // Setup Directions
