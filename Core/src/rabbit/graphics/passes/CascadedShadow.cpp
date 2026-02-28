@@ -116,6 +116,11 @@ namespace RB::Graphics
                 }
             }
 
+            if (frustum_mask == 0)
+            {
+                continue;
+            }
+
             CascadedShadowEntry::ModelEntry entry = {};
             entry.frustumMask   = frustum_mask;
             entry.vb            = vp.primaryBuffer;
@@ -166,7 +171,7 @@ namespace RB::Graphics
             {
                 CascadedShadowEntry::ModelEntry& model_entry = entry->modelEntries[i];
 
-                if (model_entry.frustumMask & (1U << slice) == 0)
+                if ((model_entry.frustumMask & (1U << slice)) == 0)
                 {
                     continue;
                 }

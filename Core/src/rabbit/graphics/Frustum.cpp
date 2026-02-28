@@ -155,6 +155,8 @@ namespace RB::Graphics
         
         const float* m = view_proj.a;
 
+        bool inverted_depth = (m[14] > 0.5f && m[10] < 0.0f);
+
         // For each plane, test the "positive vertex" of the AABB
         for (int i = 0; i < 6; ++i)
         {
@@ -188,16 +190,36 @@ namespace RB::Graphics
                 d_plane = m[15] - m[13];
                 break;
             case 4: // Near
-                plane.x = m[3] + m[2];
-                plane.y = m[7] + m[6];
-                plane.z = m[11] + m[10];
-                d_plane = m[15] + m[14];
+                if (inverted_depth) 
+                {
+                    plane.x = m[3] - m[2]; 
+                    plane.y = m[7] - m[6]; 
+                    plane.z = m[11] - m[10]; 
+                    d_plane = m[15] - m[14];
+                }
+                else 
+                {
+                    plane.x = m[2];
+                    plane.y = m[6];
+                    plane.z = m[10];
+                    d_plane = m[14];
+                }
                 break;
             case 5: // Far
-                plane.x = m[3] - m[2];
-                plane.y = m[7] - m[6];
-                plane.z = m[11] - m[10];
-                d_plane = m[15] - m[14];
+                if (inverted_depth)
+                {
+                    plane.x = m[2];
+                    plane.y = m[6];
+                    plane.z = m[10];
+                    d_plane = m[14];
+                }
+                else 
+                {
+                    plane.x = m[3] - m[2];
+                    plane.y = m[7] - m[6];
+                    plane.z = m[11] - m[10];
+                    d_plane = m[15] - m[14];
+                }
                 break;
             }
 
