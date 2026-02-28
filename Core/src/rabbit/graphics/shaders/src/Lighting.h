@@ -3,34 +3,128 @@
 
 #include "../shared/ConstantBuffers.h"
 
-static const float PI = 3.14159265f;
+static const float PI = 3.14159265358979323846f;
 
 // Blinn-Phong
 // ---------------------------------------------------------------
 
+float RoughnessToShininess(float roughness)
+{
+    return max(0.001f, (2.0f / (roughness * roughness)) - 2.0f);
+}
+
 // Blinn-Phong model with some modifications to make both diffuse 
 // and specular lighting have better energy conservation (Cook-Torrance).
-void GetBlinnPhongBRDF(in  float3 view_world_pos,
-                       in  float3 world_pos,
-                       in  float3 world_nrm,
-                       in  float  shininess,
-                       in  Light  light,
+void GetBlinnPhongBRDF(in float3 N,
+                       in float3 V,
+                       in float3 L,
+                       in float3 base_color,
+                       in float3 specular_color,
+                       in float  shininess,
+                       in float3 light_color,
                        out float3 diffuse,
                        out float3 specular)
 {
-    //float3 light_dir = normalize(light.worldPos - world_pos);
-    float3 light_dir = normalize(-light.direction); // Directional light
+    float3 H = normalize(V + L);
 
-    // diffuse
-    float  diff      = max(dot(world_nrm, light_dir), 0.0f);
-           diffuse   = (diff / PI) * light.color;
+    float NdotL = saturate(dot(N, L));
+    float NdotH = saturate(dot(N, H));
 
-    // specular
-    float3 view_dir    = normalize(view_world_pos - world_pos);
-    float3 halfway_dir = normalize(light_dir + view_dir);
-    float  spec        = pow(max(dot(world_nrm, halfway_dir), 0.0f), shininess);
-    float  k_s         = (shininess + 8) / (8 * PI); // Normalization
-           specular    = spec * k_s * light.color;
+    // Diffuse
+    diffuse = base_color * (NdotL / PI) * light_color;
+
+    // Specular
+    float spec = pow(NdotH, shininess);
+    float normalization = (shininess + 2.0f) / (2.0f * PI);
+
+    specular = specular_color * spec * normalization * NdotL * light_color;
+}
+
+// Disney BRDF
+// ---------------------------------------------------------------
+
+float SchlickFresnel(float u)
+{
+    float m = clamp(1.0f - u, 0.0f, 1.0f);
+    float m2 = m * m;
+    return m2 * m2 * m; // pow(m,5)
+}
+
+float Gtr1(float NdotH, float alpha)
+{
+    [flatten]
+    if (alpha >= 1.0f)
+    {
+        return 1.0f / PI;
+    }
+    float a2 = alpha * alpha;
+    float t = 1.0f + (a2 - 1.0f) * NdotH * NdotH;
+    return (a2 - 1.0f) / (PI * log(a2) * t);
+}
+
+float Gtr2(float NdotH, float alpha)
+{
+    float a2 = alpha * alpha;
+    float t = NdotH * NdotH * (a2 - 1.0f) + 1.0f;
+    return a2 / (PI * t * t);
+}
+
+float SmithGGX(float NdotV, float alpha)
+{
+    float a2 = alpha * alpha;
+    float b = NdotV * NdotV;
+    return 1.0f / (NdotV + sqrt(a2 + (1.0f - a2) * b));
+}
+
+float SmithGGXAnisotropy(float NdotV, float ax)
+{
+    return 1.0f / (NdotV + sqrt(ax * ax * (1 - NdotV * NdotV) + NdotV * NdotV));
+}
+
+void GetDisneyBRDF(in float3 N,
+                   in float3 V,
+                   in float3 L,
+                   in float3 base_color,
+                   in float3 specular_color,
+                   in float  roughness,
+                   in float  clearcoat_strength,
+                   in float3 light_color,
+                   out float3 diffuse,
+                   out float3 specular)
+{
+    float3 H = normalize(V + L);
+
+    float NdotL = saturate(dot(N, L));
+    float NdotV = saturate(dot(N, V));
+    float NdotH = saturate(dot(N, H));
+    float LdotH = saturate(dot(L, H));
+
+    // Diffuse (Disney Burley)
+    float FL = SchlickFresnel(NdotL);
+    float FV = SchlickFresnel(NdotV);
+    float Fss90 = LdotH * LdotH * roughness;
+    float Fss = lerp(1.0f, Fss90, FL) * lerp(1.0f, Fss90, FV);
+    float diffuse_term = (1.0f / PI) * Fss;
+
+    diffuse = base_color * diffuse_term * NdotL * light_color;
+
+    // Specular (GGX Cook-Torrance)
+    float alpha = max(0.001f, roughness * roughness);
+    float D = Gtr2(NdotH, alpha);
+    float FH = SchlickFresnel(LdotH);
+    float3 F = lerp(specular_color, 1.0f.xxx, FH);
+    float G = SmithGGXAnisotropy(NdotL, alpha) * SmithGGXAnisotropy(NdotV, alpha);
+    float3 spec_term = (D * G * F) / max(4.0f * NdotV * NdotL, 1e-5f);
+
+    specular = spec_term * NdotL * light_color;
+
+    // Clearcoat
+    float Dr = Gtr1(NdotH, 0.01f);
+    float Fr = lerp(0.04f, 1.0f, FH);
+    float Gr = SmithGGX(NdotL, 0.25f) * SmithGGX(NdotV, 0.25f);
+    float clearcoat = clearcoat_strength * 0.25f * Dr * Fr * Gr / max(4.0f * NdotV * NdotL, 1e-5f);
+
+    specular += clearcoat * NdotL * light_color;
 }
 
 #endif

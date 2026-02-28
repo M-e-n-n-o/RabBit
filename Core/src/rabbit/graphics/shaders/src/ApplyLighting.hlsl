@@ -55,40 +55,77 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
     float2 uv = TransformPixelCoordsToScreenUVs(screen_coord);
     float3 world_pos = TransformScreenUVsToWorld(uv, view_depth, false);
 
-    // Find cascade
-    uint cascade_idx = 0;
-    for (int i = 0; i < min(g_ApplyLighting.cascades, MAX_NUM_CASCADES) - 1; i++)
+    // Shadows
+    float shadow;
     {
-        if (view_depth > g_ApplyLighting.cascadeSplits[i])
-            cascade_idx = i + 1;
+        // Find cascade
+        uint cascade_idx = 0;
+        for (int i = 0; i < min(g_ApplyLighting.cascades, MAX_NUM_CASCADES) - 1; i++)
+        {
+            if (view_depth > g_ApplyLighting.cascadeSplits[i])
+                cascade_idx = i + 1;
+        }
+
+        // Shadow map coords
+        float4 shadow_clip = mul(g_ApplyLighting.shadowVPs[cascade_idx], float4(world_pos, 1.0f));
+        float3 shadow_ndc = shadow_clip.xyz / shadow_clip.w;
+
+        // Convert from NDC [-1,1] to UV [0,1]
+        float2 shadow_uv = float2(shadow_ndc.x * 0.5f + 0.5f,
+            1.0f - (shadow_ndc.y * 0.5f + 0.5f));
+
+        // Sample shadow map
+        shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, cascade_idx, 0.0001f);
     }
 
-    // Shadow map coords
-    float4 shadow_clip = mul(g_ApplyLighting.shadowVPs[cascade_idx], float4(world_pos, 1.0f));
-    float3 shadow_ndc = shadow_clip.xyz / shadow_clip.w;
-
-    // Convert from NDC [-1,1] to UV [0,1]
-    float2 shadow_uv = float2(shadow_ndc.x * 0.5f + 0.5f,
-                              1.0f - (shadow_ndc.y * 0.5f + 0.5f));
-
-    // Sample shadow map
-    float shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, cascade_idx, 0.0001f);
-
     // Calculate lighting
-    float3 diffuse;
-    float3 specular;
-    float3 ambient = gbuf.diffColor.rgb * 0.01f;
-    GetBlinnPhongBRDF(GetCameraPos(),
-                      world_pos,
-                      gbuf.normal,
-                      69.0f,
-                      g_ApplyLighting.light,
-                      diffuse,
-                      specular);
+    float4 final_color;
+    {
+        float specularity = 0.5f;
+        float metallicness = 0.0f;
+        float roughness = 1.0f;
 
-    diffuse  *= shadow;
-    specular *= shadow;
 
-    float4 final_color = float4(ambient + diffuse + specular, 1.0f);
+        // Setup Directions
+        float3 N = gbuf.normal;
+        float3 V = normalize(GetCameraPos() - world_pos);
+        float3 L = normalize(-g_ApplyLighting.light.direction); // Directional light
+
+        // Setup Colors
+        float3 albedo       = gbuf.diffColor.rgb;
+        float3 dielectricF0 = 0.08f * specularity;
+        float3 spec_color   = lerp(dielectricF0, albedo, metallicness);
+        // Only non-metals have diffuse
+        float3 diff_color   = albedo * (1.0f - metallicness);
+
+        float3 diffuse_out;
+        float3 specular_out;
+        float3 ambient = albedo * 0.01f;
+
+        // Calculate BRDF
+        //GetBlinnPhongBRDF(N, V, L,
+        //                  diff_color,
+        //                  spec_color,
+        //                  RoughnessToShininess(roughness),
+        //                  g_ApplyLighting.light.color,
+        //                  diffuse_out,
+        //                  specular_out);
+        GetDisneyBRDF(N, V, L,
+                      diff_color,
+                      spec_color,
+                      roughness,
+                      0.0f,
+                      g_ApplyLighting.light.color,
+                      diffuse_out, 
+                      specular_out);
+
+        // Apply Shadows and Combine
+        diffuse_out *= shadow;
+        specular_out *= shadow;
+
+        float3 final_rgb = ambient + diffuse_out + specular_out;
+        final_color = float4(final_rgb, 1.0f);
+    }
+
     FetchRWTex2D(3).Store<float4>(screen_coord, final_color);
 }
