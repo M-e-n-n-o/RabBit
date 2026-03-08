@@ -25,7 +25,7 @@ namespace RB
         m_SharedContext->pendingJobs                = {};
         m_SharedContext->highPriorityInsertIndex    = 0;
         m_SharedContext->startedJobsCount           = 0;
-        m_SharedContext->completedJobsCount         = 0;
+        m_SharedContext->lastCompletedJob           = UINT64_MAX;
         m_SharedContext->counterStart               = 0;
 
         m_ThreadHandle = std::thread(WorkerThreadLoop, m_SharedContext);
@@ -148,7 +148,8 @@ namespace RB
             else
             {
                 // Job data is overwritten
-                itr->data->OnDestroy(true);
+                if (itr->data)
+                    itr->data->OnDestroy(true);
                 SAFE_DELETE(itr->data);
                 itr->data = data;
                 job.id = itr->id;
@@ -211,33 +212,27 @@ namespace RB
     {
         m_SharedContext->kickMutex.lock();
         
-        uint64_t wait_for = m_SharedContext->startedJobsCount;
-        
         if (job_id != m_SharedContext->currentJob)
         {
             auto itr = FindJobBy(job_id);
         
             if (itr == m_SharedContext->pendingJobs.end())
             {
-                // Job not found
+                // Job not found, probably completed already
                 m_SharedContext->kickMutex.unlock();
                 return;
             }
-        
-            wait_for += std::distance(m_SharedContext->pendingJobs.begin(), itr) + 1;
         }
         
+        m_SharedContext->completedMutex.lock();
         m_SharedContext->kickMutex.unlock();
         
         // Wait until the task has been completed
-        {
-            std::unique_lock<Mutex> lock(m_SharedContext->completedMutex);
+        m_SharedContext->completedCV.wait(m_SharedContext->completedMutex, [&] {
+            return m_SharedContext->lastCompletedJob == job_id;
+        });
 
-            m_SharedContext->completedCV.wait(lock, [&] {
-                // TODO This logic will break when syncing a job that has not been prioritized as other jobs can then jump before this one, fix!!!
-                return m_SharedContext->completedJobsCount >= wait_for;
-            });
-        }
+        m_SharedContext->completedMutex.unlock();
     }
 
     void WorkerThread::SyncAll()
@@ -282,7 +277,8 @@ namespace RB
             return;
         }
 
-        itr->data->OnDestroy(false);
+        if (itr->data)
+            itr->data->OnDestroy(false);
         SAFE_DELETE(itr->data);
         m_SharedContext->pendingJobs.erase(itr);
     }
@@ -293,7 +289,8 @@ namespace RB
 
         for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
         {
-            m_SharedContext->pendingJobs[i].data->OnDestroy(false);
+            if (m_SharedContext->pendingJobs[i].data)
+                m_SharedContext->pendingJobs[i].data->OnDestroy(false);
             SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
         }
         m_SharedContext->pendingJobs.clear();
@@ -376,14 +373,15 @@ namespace RB
             // Do the job
             {
                 (*current_job.function)(current_job.data);
-                current_job.data->OnDestroy(false);
+                if (current_job.data)
+                    current_job.data->OnDestroy(false);
                 SAFE_DELETE(current_job.data);
             }
 
             // Notify that we are done with a job
             {
                 context->completedMutex.lock();
-                context->completedJobsCount++;
+                context->lastCompletedJob = current_job.id;
                 context->completedMutex.unlock();
                 context->completedCV.notify_all();
             }

@@ -113,7 +113,7 @@ namespace RB
             List<Job>           pendingJobs;
             uint32_t            highPriorityInsertIndex;
             uint64_t            startedJobsCount;
-            uint64_t            completedJobsCount;
+            JobID               lastCompletedJob;
         };
 
         struct JobType

@@ -156,6 +156,7 @@ TEST(ThreadTest, SimpleCancelAllTest)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     thread.CancelAll();
+    thread.SyncAll();
 
     ASSERT_EQ(result, 1);
 }
@@ -177,7 +178,7 @@ TEST(ThreadTest, SimpleJobOverwriteTest)
 
     auto job_test = [](JobData* data)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
         Data* d = (Data*)data;
         *d->var = *d->var + 1;
@@ -186,9 +187,13 @@ TEST(ThreadTest, SimpleJobOverwriteTest)
     WorkerThread thread("test");
     JobTypeID job_type = thread.AddJobType(job_test, true);
 
+    // Wait until worker thread is ready
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
     for (int i = 0; i < 5; i++)
     {
         thread.ScheduleJob(job_type, datas[i]);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Small wait to make sure worker thread also has time to claim the lock
     }
 
     thread.SyncAll();
@@ -246,6 +251,9 @@ TEST(ThreadTest, PrioritizationTest)
         {
             thread.PrioritizeJob(job);
         }
+
+        // Small wait to make sure worker thread also has time to claim the lock
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     thread.SyncAll();
@@ -295,12 +303,18 @@ TEST(ThreadTest, PrioritizationSyncTest)
     JobTypeID job_type = thread.AddJobType(job_test);
 
     JobID job0 = thread.ScheduleJob(job_type, datas[0]);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     JobID job1 = thread.ScheduleJob(job_type, datas[1]);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     JobID job2 = thread.ScheduleJob(job_type, datas[2]);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     JobID job3 = thread.ScheduleJob(job_type, datas[3]);
     thread.PrioritizeJob(job3);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     JobID job4 = thread.ScheduleJob(job_type, datas[4]);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     JobID job5 = thread.ScheduleJob(job_type, datas[5]);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     JobID job6 = thread.ScheduleJob(job_type, datas[6]);
     
     auto prio_job = [&thread, &job5](JobData* jd) mutable
@@ -372,6 +386,9 @@ TEST(ThreadTest, PrioritizationCancelTest)
         {
             thread.Cancel(job);
         }
+
+        // Small wait to make sure worker thread also has time to claim the lock
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     thread.SyncAll();
