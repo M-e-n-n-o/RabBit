@@ -34,6 +34,7 @@ namespace RB
             bool        vsync               = true;
             float       forcedRenderAspect  = 0.0f;
             float       renderScale         = 1.0f;
+            bool        linearUpscale       = true;
             float       gammaCorrection     = 2.2f;
             float       brightness          = 1.0f;
             bool        semiTransparent     = false;

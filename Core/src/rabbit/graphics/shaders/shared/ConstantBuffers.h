@@ -9,7 +9,8 @@ struct PresentCB
     float2 currSize;
     float  brightnessValue;
     float  gammaValue;
-    float2 padding;
+    uint   linearUpscale;
+    float  padding;
 };
 ALIGN_CHECK(PresentCB);
 

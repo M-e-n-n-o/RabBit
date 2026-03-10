@@ -46,8 +46,9 @@
 * Every class, function and variable in this engine is inside the RB namespace.
 *
 * Command line options:
-*	-assetPath <path>		->	(REQUIRED) Specify the asset locaion path
-*	-renderDebug			->	Enables native graphics API validation (does not when RB_CONFIG_DIST is defined)
+*   -assetPath <path>       ->  (REQUIRED) Specify the asset locaion path
+*   -renderDebug            ->  Enables native graphics API validation
+*   -pix                    ->  (Windows only) Loads the PIX runtime DLL so that PIX can be attatched after startup for GPU debugging
 */
 
 

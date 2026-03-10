@@ -138,6 +138,16 @@ namespace RB::Graphics
         Resize(window_rect.x, window_rect.y, window_rect.z, window_rect.w);
     }
 
+    void Window::SetVirtualResolutionLinearUpscale(bool linear)
+    {
+        m_VirtualResLinearUpscale = linear;
+    }
+
+    bool Window::IsVirtualResolutionLinearUpscale() const
+    {
+        return m_VirtualResLinearUpscale;
+    }
+
     void Window::SetGammaCorrection(float gamma)
     {
         m_GammaCorrection = gamma;

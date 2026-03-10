@@ -29,7 +29,7 @@
 #include "platform/graphics/vulkan/RendererVK.h"
 #endif
 
-#ifdef RB_ENABLE_LOGS
+#if defined(RB_ENABLE_LOGS) && RB_PLATFORM_WINDOWS
 #define USE_PIX
 #include <pix3.h>
 #endif
@@ -557,7 +557,7 @@ namespace RB::Graphics
 
     Renderer* Renderer::Create(bool enable_validation_layer, bool load_pix_lib)
     {
-#ifdef RB_ENABLE_LOGS
+#if defined(RB_ENABLE_LOGS) && RB_PLATFORM_WINDOWS
         if (load_pix_lib)
         {
             // Load PIX library so you can attach at runtime
@@ -696,6 +696,7 @@ namespace RB::Graphics
             //present_data.texOffset          = Math::Float2(rect.left, rect.top);
             //present_data.gammaValue         = window->GetGammaCorrection();
             //present_data.brightnessValue    = window->GetBrightness();
+            //present_data.linearUpscale      = window->IsVirtualResolutionLinearUpscale();
             //
             //context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
             //

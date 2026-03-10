@@ -50,6 +50,9 @@ namespace RB::Graphics
         uint32_t                GetVirtualHeight()      const;
         void                    SetVirtualResolutionAndAspectRatio(float resolution_scale, float aspect);
 
+        void                    SetVirtualResolutionLinearUpscale(bool linear);
+        bool                    IsVirtualResolutionLinearUpscale() const;
+
         void                    SetGammaCorrection(float gamma);
         void                    SetBrightness(float brightness);
         float                   GetGammaCorrection() const;
@@ -110,6 +113,7 @@ namespace RB::Graphics
         float              m_CurrentVirtualResScale;
         float              m_NewVirtualResScale;
         float              m_NewVirtualAspect;
+        bool               m_VirtualResLinearUpscale;
         Shared<Texture2D>  m_VirtualBackBuffer;
     };
 }

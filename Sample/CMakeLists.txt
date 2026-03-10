@@ -7,6 +7,7 @@ file(GLOB_RECURSE SAMPLE_SRC_FILES CONFIGURE_DEPENDS
 )
 
 add_executable(${APP_NAME} ${SAMPLE_SRC_FILES})
+set_target_properties(${APP_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${APP_NAME}>")
 
 # Link RabBit
 target_include_directories(${APP_NAME} PUBLIC

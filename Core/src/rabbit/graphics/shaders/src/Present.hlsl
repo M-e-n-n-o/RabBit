@@ -38,7 +38,11 @@ float4 PS_Present(v2p input) : SV_TARGET
         return 0.0f;
     }
 
-    float4 color = FetchTex2D(0).Sample<float4>(g_ClampLinearSampler, tex_uv);
+    float4 color;
+    if (g_PresentCB.linearUpscale)
+        color = FetchTex2D(0).Sample<float4>(g_ClampLinearSampler, tex_uv);
+    else
+        color = FetchTex2D(0).Sample<float4>(g_ClampPointSampler, tex_uv);
 
     // Apply gamma correction & brightness
     color.rgb = g_PresentCB.brightnessValue * pow(color.rgb, 1.0f / g_PresentCB.gammaValue);
