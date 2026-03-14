@@ -9,8 +9,7 @@
 #include "entity/Scene.h"
 #include "entity/components/Light.h"
 #include "graphics/shaders/shared/Common.h"
-#include "graphics/shaders/shared/ConstantBuffers.h"
-#include "graphics/codeGen/ShaderDefines.h"
+#include <codeGen/ShaderDefines.h>
 
 namespace RB::Graphics
 {

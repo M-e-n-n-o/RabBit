@@ -1,21 +1,18 @@
-#ifndef RB_SHADER_LIGHTING
-#define RB_SHADER_LIGHTING
-
-#include "../shared/ConstantBuffers.h"
+module Lighting;
 
 static const float PI = 3.14159265358979323846f;
 
 // Blinn-Phong
 // ---------------------------------------------------------------
 
-float RoughnessToShininess(float roughness)
+public float RoughnessToShininess(float roughness)
 {
     return max(0.001f, (2.0f / (roughness * roughness)) - 2.0f);
 }
 
 // Blinn-Phong model with some modifications to make both diffuse 
 // and specular lighting have better energy conservation (Cook-Torrance).
-void GetBlinnPhongBRDF(in float3 N,
+public void GetBlinnPhongBRDF(in float3 N,
                        in float3 V,
                        in float3 L,
                        in float3 base_color,
@@ -81,7 +78,7 @@ float SmithGGXAnisotropy(float NdotV, float ax)
     return 1.0f / (NdotV + sqrt(ax * ax * (1 - NdotV * NdotV) + NdotV * NdotV));
 }
 
-void GetDisneyBRDF(in float3 N,
+public void GetDisneyBRDF(in float3 N,
                    in float3 V,
                    in float3 L,
                    in float3 base_color,
@@ -126,5 +123,3 @@ void GetDisneyBRDF(in float3 N,
 
     specular += clearcoat * NdotL * light_color;
 }
-
-#endif

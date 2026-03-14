@@ -14,78 +14,64 @@ typedef RB::Math::Float4x4  float4x4;
 
 #define ALIGN_CHECK(type)           static_assert(sizeof(type) % 16 == 0)
 #define SIZE_EQUAL(type1, type2)    static_assert(sizeof(type1) == sizeof(type2))
+#define PB
+
+namespace RB::Graphics::Shader
+{
 #else
 #define ALIGN_CHECK(type)
 #define SIZE_EQUAL(type1, type2)
+#define PB public
 #endif
 
-
-// Global slots
-// ---------------------------------------------------------------
-
-// Constant buffer slots
-#define kRenderResourceMapCB        0
-#define kFrameConstantsCB           1
-#define kInstanceCB                 2
-
-// Static samplers
-#define kClampAnisoSamplerSlot      0
-#define kClampPointSamplerSlot      1
-#define kClampLinearSamplerSlot     2
-#define kWrapAnisoSamplerSlot       3
 
 
 // Global constant buffer structs
 // ---------------------------------------------------------------
-
-#include "RenderResources.h"
-
-#define SHADER_RESOURCE_SLOTS 16
-
-struct RenderResourceMap
+PB struct FrameConstants
 {
-    ShaderResource resources[SHADER_RESOURCE_SLOTS];
+    PB float4x4 worldToViewMat;    // View matrix
+    PB float4x4 viewToWorldMat;    // Inverse view matrix
+    PB float4x4 viewToClipMat;     // Projection matrix
+    PB float4x4 clipToViewMat;     // Inverse projection matrix
+    PB float4   dimensions;        // width, height, 1/width, 1/height
 };
-
-struct FrameConstants
-{
-    float4x4 worldToViewMat;    // View matrix
-    float4x4 viewToWorldMat;    // Inverse view matrix
-    float4x4 viewToClipMat;     // Projection matrix
-    float4x4 clipToViewMat;     // Inverse projection matrix
-    float4   dimensions;        // width, height, 1/width, 1/height
-};
-
-ALIGN_CHECK(RenderResourceMap);
 ALIGN_CHECK(FrameConstants);
 
-#if SHADER
-
-// Global constant buffers
-// ---------------------------------------------------------------
-
-cbuffer RenderResourceMapCB : CBUFFER_REG(kRenderResourceMapCB)
+PB struct PresentCB
 {
-    RenderResourceMap g_RenderResourceMap;
-}
+    PB float2 texOffset;
+    PB float2 currSize;
+    PB float  brightnessValue;
+    PB float  gammaValue;
+    PB uint   linearUpscale;
+    PB float  padding;
+};
+ALIGN_CHECK(PresentCB);
 
-cbuffer FrameConstantsCB : CBUFFER_REG(kFrameConstantsCB)
+PB struct DirectionalLight
 {
-    FrameConstants g_FC;
-}
+    PB float3 direction;
+    PB float  pad0;
+    PB float3 color;
+    PB float  pad1;
+};
 
-#define FetchTex2D(index)        ((Tex2D)g_RenderResourceMap.resources[index])
-#define FetchTex2DArray(index)   ((Tex2DArray)g_RenderResourceMap.resources[index])
-#define FetchRWTex2D(index)      ((RwTex2D)g_RenderResourceMap.resources[index])
+PB static const uint MAX_NUM_CASCADES = 4;
 
-// Static samplers
-// ---------------------------------------------------------------
+PB struct ApplyLightingCB
+{
+    PB float4x4            shadowVPs[MAX_NUM_CASCADES];
+    PB float4              cascadeSplits; // A float4 because array's cause padding
 
-SamplerState g_ClampAnisoSampler  : SAMPLER_REG(kClampAnisoSamplerSlot);
-SamplerState g_ClampPointSampler  : SAMPLER_REG(kClampPointSamplerSlot);
-SamplerState g_ClampLinearSampler : SAMPLER_REG(kClampLinearSamplerSlot);
-SamplerState g_WrapAnisoSampler   : SAMPLER_REG(kWrapAnisoSamplerSlot);
+    PB int                 cascades;
+    PB float3              padding;
 
+    PB DirectionalLight    light;
+};
+ALIGN_CHECK(ApplyLightingCB);
+
+#if !SHADER
+} // namespace RB::Graphics::Shader
 #endif
-
 #endif

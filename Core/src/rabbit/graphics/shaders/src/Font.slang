@@ -1,9 +1,5 @@
-#include "../shared/Common.h"
-
-cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
-{
-    float4x4 projection;
-}
+module Font;
+import Common;
 
 struct VI_Font
 {
@@ -17,7 +13,8 @@ struct PI_Font
     float2 uv       : TEXCOORD0;
 };
 
-PI_Font VS_Font2D(VI_Font input)
+[shader("vertex")]
+PI_Font VS_Font2D(VI_Font input, uniform float4x4 projection)
 {
     PI_Font output;
     output.position = mul(projection, float4(input.position, 1, 1));
@@ -26,8 +23,9 @@ PI_Font VS_Font2D(VI_Font input)
     return output;
 }
 
-float4 PS_Font2D(PI_Font input) : SV_Target0
+[shader("pixel")]
+float4 PS_Font2D(PI_Font input, uniform Texture2D<float>.Handle tex) : SV_Target0
 {
-    float alpha = FetchTex2D(0).Sample<float>(g_ClampAnisoSampler, input.uv);
+    float alpha = tex.Sample(g_ClampAnisoSampler, input.uv);
     return float4(1.0, 1.0, 1.0, alpha);
 }

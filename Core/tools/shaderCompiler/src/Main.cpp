@@ -3,20 +3,14 @@
 #include <regex>
 #include <cstring>
 
-#include <atlbase.h>
-#include <dxcapi.h>
-#include <d3d12shader.h>
-
 #include "Compiler.h"
 #include "ShaderWriter.h"
 #include "Utils.h"
 
-void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>&files);
-
 /*
 
 	RabBit D3D12/VK Shader Compiler
-	- It only compiles files with the ".hlsl" extension, so ".h" files serve as include files (a bridge between cpp and hlsl)
+	- It only compiles files with the ".slang" extension, so ".h" files serve as include files (a bridge between cpp and hlsl)
 	- It writes all the compiled shaders into the generated folder which the engine can include
 
 */
@@ -42,8 +36,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	std::string shader_files_dir = RB_SHADER_SOURCE;
-	LOGW(L"Shader files directory: " << shader_files_dir.c_str());
+	LOG("Shader files directory: " << RB_SHADER_SOURCE);
 
 	if (shader_bin_dir.empty())
 	{
@@ -55,42 +48,18 @@ int main(int argc, char* argv[])
 
 	LOGW(L"");
 
-	// Check if the DLL's are loaded
-	HANDLE dxc_handle = GetModuleHandle("dxcompiler.dll");
-	HANDLE dxil_handle = GetModuleHandle("dxil.dll");
-	EXIT_ON_FAIL(dxc_handle, L"dxcompiler.dll was not loaded");
-	EXIT_ON_FAIL(dxil_handle, L"dxil.dll was not loaded");
-
-	std::vector<std::wstring> files;
-	RetrieveFiles(shader_files_dir, files);
-
 	Compiler compiler;
-	compiler.CompileFiles(files);
+	compiler.CompileFiles(RB_SHADER_SOURCE);
+
+	auto reflection = compiler.GetShaderReflection();
+	auto blobs = compiler.GetShaderBlobs();
 
 	LOGW(L"");
 
 	ShaderWriter writer;
-	writer.WriteOutShaders(RB_GRAPHICS_FOLDER, RB_API_GRAPHICS_FOLDER, shader_bin_dir, compiler.GetCompiledShaders());
+	writer.WriteOutShaders(RB_DEFINE_FOLDER, shader_bin_dir, reflection, blobs);
 
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");
 	LOGW(L"Succesfully finished compiling the shaders");
-}
-
-void RetrieveFiles(const std::filesystem::path& path, std::vector<std::wstring>& files)
-{
-	for (const auto& entry : std::filesystem::directory_iterator(path))
-	{
-		if (entry.is_directory())
-		{
-			RetrieveFiles(entry.path(), files);
-		}
-		else
-		{
-			if (std::wstring(entry.path().c_str()).find(L".hlsl") != std::wstring::npos)
-			{
-				files.push_back(entry.path().c_str());
-			}
-		}
-	}
 }

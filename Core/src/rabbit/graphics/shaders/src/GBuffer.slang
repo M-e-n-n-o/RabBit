@@ -1,26 +1,26 @@
-#ifndef RB_SHADER_GBUFFER
-#define RB_SHADER_GBUFFER
+module GBuffer;
+import Common;
 
-struct GBuffer
+public struct GBuffer
 {
-    float4 diffColor;
-    float3 normal;
-    float  depth;
+    public float4 diffColor;
+    public float3 normal;
+    public float  depth;
 };
 
-struct GBufferTexIndices
+public struct GBufferEncoded
 {
-    uint gbuf0;
-    uint gbuf1;
+    public float4 gbuf0;
+    public float4 gbuf1;
 };
 
-struct GBufferEncoded
+public struct GBufferTexHandles
 {
-    float4 gbuf0;
-    float4 gbuf1;
+    Texture2D<float4>.Handle gbuf0;
+    Texture2D<float4>.Handle gbuf1;
 };
 
-GBufferEncoded EncodeGBuffer(GBuffer gbuf)
+public GBufferEncoded EncodeGBuffer(GBuffer gbuf)
 {
     GBufferEncoded enc;
     enc.gbuf0 = gbuf.diffColor;
@@ -28,7 +28,7 @@ GBufferEncoded EncodeGBuffer(GBuffer gbuf)
     return enc;
 }
 
-GBuffer DecodeGBuffer(GBufferEncoded enc)
+public GBuffer DecodeGBuffer(GBufferEncoded enc)
 {
     GBuffer gbuf;
     gbuf.diffColor = enc.gbuf0;
@@ -37,20 +37,20 @@ GBuffer DecodeGBuffer(GBufferEncoded enc)
     return gbuf;
 }
 
-GBuffer SampleGBuffer(GBufferTexIndices textures, float2 uv)
+public GBuffer SampleGBuffer(GBufferTexHandles handles, float2 uv)
 {
     GBufferEncoded enc;
-    enc.gbuf0 = FetchTex2D(textures.gbuf0).Sample<float4>(g_ClampAnisoSampler, uv);
-    enc.gbuf1 = FetchTex2D(textures.gbuf1).Sample<float4>(g_ClampAnisoSampler, uv);
+    enc.gbuf0 = handles.gbuf0.Sample(g_ClampAnisoSampler, uv);
+    enc.gbuf1 = handles.gbuf1.Sample(g_ClampAnisoSampler, uv);
     return DecodeGBuffer(enc);
 }
 
 // For compute shaders
-GBuffer SampleGBuffer(GBufferTexIndices textures, uint2 screen_coord)
+public GBuffer SampleGBuffer(GBufferTexHandles handles, uint2 screen_coord)
 {
     GBufferEncoded enc;
-    enc.gbuf0 = FetchTex2D(textures.gbuf0).Load<float4>(int3(screen_coord, 0));
-    enc.gbuf1 = FetchTex2D(textures.gbuf1).Load<float4>(int3(screen_coord, 0));
+    enc.gbuf0 = handles.gbuf0.Load(int3(screen_coord, 0));
+    enc.gbuf1 = handles.gbuf1.Load(int3(screen_coord, 0));
     return DecodeGBuffer(enc);
 }
 
@@ -67,5 +67,3 @@ float UnpackUNorm(uint enc_input, uint shift, uint num_bits)
     enc_input = (enc_input >> shift) & mask;
     return float(enc_input) / float(mask);
 }
-
-#endif

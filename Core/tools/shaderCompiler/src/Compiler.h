@@ -1,26 +1,29 @@
 #pragma once
-#include <atlbase.h>
-#include <dxcapi.h>
-#include <d3d12shader.h>
-#include "Shader.h"
+
+#include <vector>
+#include <functional>
+#include <filesystem>
+
+#include <slang.h>
+#include <slang-com-ptr.h>
+#include "../include/ShaderReflection.h"
 
 class Compiler
 {
 public:
 	Compiler();
 
-	void CompileFiles(std::vector<std::wstring>& files);
+	void CompileFiles(const char* base_path);
 
-	std::vector<Shader> GetCompiledShaders() const { return m_CompiledShaders; }
+	std::vector<RB::ShaderCompiler::CompiledShader> GetShaderReflection() const { return m_Reflections; }
+	std::vector<Slang::ComPtr<slang::IBlob>> GetShaderBlobs() const { return m_ShaderBlobs; }
 
 private:
-	void RetrieveShaderEntries(DxcBuffer& source, std::vector<Shader>& entries);
-	void GetShaderStages(const char* source, ShaderStage stage, const char* prefix, std::vector<Shader>& entries);
-	void AddInputMasks(Shader& shader);
+	void FindFiles(const char* base_path, std::vector<std::string>& dirs, std::vector<std::filesystem::path>& files);
+	void ReflectEntryPointParameters(slang::EntryPointReflection* entry, RB::ShaderCompiler::CompiledShader* out_shader);
+	void ReflectGlobalScope(slang::VariableLayoutReflection* layout, RB::ShaderCompiler::CompiledShader* out_shader);
 
-	CComPtr<IDxcUtils>			m_Utils;
-	CComPtr<IDxcCompiler3>		m_Compiler;
-	CComPtr<IDxcIncludeHandler> m_IncludeHandler;
-
-	std::vector<Shader>			m_CompiledShaders;
+	Slang::ComPtr<slang::IGlobalSession>			m_GlobalSession;
+	std::vector<RB::ShaderCompiler::CompiledShader>	m_Reflections;
+	std::vector< Slang::ComPtr<slang::IBlob>>		m_ShaderBlobs;
 };

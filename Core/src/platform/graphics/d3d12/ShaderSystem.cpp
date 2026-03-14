@@ -12,10 +12,8 @@ namespace RB::Graphics::D3D12
     {
         m_EmptyMask = ShaderResourceMask();
 
-        RB_ASSERT_FATAL_RELEASE_D3D(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_DxcUtils)), "Failed to create DXC Utils object");
-
         // Load the shader data from the binary file
-        std::ifstream stream(SHADER_OBJ_FILE_LOCATION, std::ios::in | std::ios::binary);
+        std::ifstream stream(ShaderCompiler::OBJ_FILE_LOCATION, std::ios::in | std::ios::binary);
 
         if (!stream.is_open())
         {
@@ -23,13 +21,13 @@ namespace RB::Graphics::D3D12
             return;
         }
 
-        for (uint64_t shader_index = 0; shader_index < SHADER_ENTRIES; ++shader_index)
+        for (uint64_t shader_index = 0; shader_index < ShaderCompiler::SHADER_ENTRIES; ++shader_index)
         {
             CompiledShaderBlob* blob = new CompiledShaderBlob();
 
             // Read shader blob
-            uint64_t start = SHADER_LUT[shader_index].offsetInFile;
-            uint64_t end = SHADER_LUT[shader_index].offsetInFile + SHADER_LUT[shader_index].shaderBlobLength;
+            uint64_t start = ShaderCompiler::SHADERS_LOOKUP[shader_index].shaderBlob.offsetInFile;
+            uint64_t end = start + ShaderCompiler::SHADERS_LOOKUP[shader_index].shaderBlob.size;
 
             stream.seekg(start, std::ios::beg);
             blob->shaderBlobSize = end - start;
@@ -38,7 +36,7 @@ namespace RB::Graphics::D3D12
 
             // Read reflection blob
             start = end;
-            end += SHADER_LUT[shader_index].reflectionBlobLength;
+            end += ShaderCompiler::SHADERS_LOOKUP[shader_index].reflectionBlobLength;
 
             DxcBuffer reflection_data;
             reflection_data.Encoding = DXC_CP_ACP;
@@ -67,7 +65,7 @@ namespace RB::Graphics::D3D12
 
     ShaderSystem::~ShaderSystem()
     {
-        for (uint64_t shader_index = 0; shader_index < SHADER_ENTRIES; ++shader_index)
+        for (uint64_t shader_index = 0; shader_index < ShaderCompiler::SHADER_ENTRIES; ++shader_index)
         {
             if (m_ShaderBlobs[shader_index] != nullptr)
             {

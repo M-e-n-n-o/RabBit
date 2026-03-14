@@ -11,7 +11,7 @@
 #include "entity/components/UI.h"
 
 #include "graphics/shaders/shared/Common.h"
-#include "graphics/codeGen/ShaderDefines.h"
+#include <codeGen/ShaderDefines.h>
 
 #include <variant>
 

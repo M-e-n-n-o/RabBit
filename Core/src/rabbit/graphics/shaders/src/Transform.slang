@@ -1,10 +1,8 @@
-#ifndef RB_SHADER_TRANSFORM
-#define RB_SHADER_TRANSFORM
-
-#include "../shared/Common.h"
+module Transform;
+import Common;
 
 // --------------------------------------------------------------
-float3 GetCameraDir()
+public float3 GetCameraDir()
 {
     return float3(
         g_FC.viewToWorldMat[0].z,
@@ -14,7 +12,7 @@ float3 GetCameraDir()
 }
 
 // --------------------------------------------------------------
-float3 GetCameraPos()
+public float3 GetCameraPos()
 {
     return float3(
         g_FC.viewToWorldMat[0].w,
@@ -24,31 +22,31 @@ float3 GetCameraPos()
 }
 
 // --------------------------------------------------------------
-float4 TransformPosition(float3 position, float4x4 transform)
+public float4 TransformPosition(float3 position, float4x4 transform)
 {
     return (position.xxxx * transform[0]) + (position.yyyy * transform[1]) + (position.zzzz * transform[2]) + transform[3];
 }
 
 // --------------------------------------------------------------
-float3 TransformLocalToWorld(float3 local_pos, float4x4 obj_to_world)
+public float3 TransformLocalToWorld(float3 local_pos, float4x4 obj_to_world)
 {
     return mul(obj_to_world, float4(local_pos, 1.0f)).xyz;
 }
 
 // --------------------------------------------------------------
-float3 TransformWorldToView(float3 world_pos)
+public float3 TransformWorldToView(float3 world_pos)
 {
     return mul(g_FC.worldToViewMat, float4(world_pos, 1.0f)).xyz;
 }
 
 // --------------------------------------------------------------
-float4 TransformViewToClip(float3 view_pos)
+public float4 TransformViewToClip(float3 view_pos)
 {
     return mul(g_FC.viewToClipMat, float4(view_pos.xyz, 1.0f));
 }
 
 // --------------------------------------------------------------
-float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth, bool orthographic)
+public float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth, bool orthographic)
 {
     float2 ndc = screen_uvs * 2.0f - 1.0f;
 
@@ -77,19 +75,19 @@ float3 TransformScreenUVsToWorld(float2 screen_uvs, float linear_depth, bool ort
 }
 
 // --------------------------------------------------------------
-float2 TransformPixelCoordsToScreenUVs(uint2 coords)
+public float2 TransformPixelCoordsToScreenUVs(uint2 coords)
 {
     return (float2(coords) + 0.5f) * g_FC.dimensions.zw;
 }
 
 // --------------------------------------------------------------
-bool IsReversedZ()
+public bool IsReversedZ()
 {
     return g_FC.viewToClipMat[2][2] < 0.0f;
 }
 
 // --------------------------------------------------------------
-float2 ExtractNearFar(bool reversed_z)
+public float2 ExtractNearFar(bool reversed_z)
 {
     float C = g_FC.viewToClipMat[2][2];
     float D = g_FC.viewToClipMat[2][3];
@@ -101,7 +99,7 @@ float2 ExtractNearFar(bool reversed_z)
 }
 
 // --------------------------------------------------------------
-float LinearizeDepth(float depth, float near, float far, bool reversed_z)
+public float LinearizeDepth(float depth, float near, float far, bool reversed_z)
 {
     if (reversed_z)
         return (near * far) / (depth * (far - near) + near);
@@ -110,11 +108,9 @@ float LinearizeDepth(float depth, float near, float far, bool reversed_z)
 }
 
 // --------------------------------------------------------------
-float LinearizeDepth(float depth)
+public float LinearizeDepth(float depth)
 {
     bool reversed_z = IsReversedZ();
     float2 nf = ExtractNearFar(reversed_z);
     return LinearizeDepth(depth, nf.x, nf.y, reversed_z);
 }
-
-#endif

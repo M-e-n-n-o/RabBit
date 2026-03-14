@@ -8,9 +8,8 @@
 #include "ResourceStreamer.h"
 #include "RenderGraph.h"
 
-#include "codeGen/ShaderDefines.h"
+#include <codeGen/ShaderDefines.h>
 #include "shaders/shared/Common.h"
-#include "shaders/shared/ConstantBuffers.h"
 
 #include "app/Application.h"
 #include "app/FrameAllocator.h"

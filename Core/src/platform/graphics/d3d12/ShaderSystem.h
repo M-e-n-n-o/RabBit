@@ -5,12 +5,11 @@
 #include "RabBitCommon.h"
 
 // If you get an error that this file cannot be found, run the ShaderCompilerD3D12 project
-#include "codeGen/ShaderDefines.h"
+#include <codeGen/ShaderDefines.h>
+#include <codeGen/ShaderReflectionDefines.h>
 
-// DirectX 12 specific headers.
 #include <d3d12.h>
 #include <d3d12shader.h>
-#include <dxcapi.h>
 
 namespace RB::Graphics::D3D12
 {
@@ -40,9 +39,8 @@ namespace RB::Graphics::D3D12
         const ShaderResourceMask& GetShaderResourceMask(int32_t shader_identifier);
 
     private:
-        GPtr<IDxcUtils>     m_DxcUtils;
-        CompiledShaderBlob* m_ShaderBlobs[SHADER_ENTRIES];
-        ShaderResourceMask  m_ShaderMasks[SHADER_ENTRIES];
+        CompiledShaderBlob* m_ShaderBlobs[ShaderCompiler::SHADER_ENTRIES];
+        ShaderResourceMask  m_ShaderMasks[ShaderCompiler::SHADER_ENTRIES];
         ShaderResourceMask  m_EmptyMask;
     };
 

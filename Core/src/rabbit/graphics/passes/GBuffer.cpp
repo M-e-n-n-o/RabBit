@@ -10,7 +10,7 @@
 #include "entity/components/Transform.h"
 
 #include "graphics/shaders/shared/Common.h"
-#include "graphics/codeGen/ShaderDefines.h"
+#include <codeGen/ShaderDefines.h>
 
 using namespace RB::Entity;
 

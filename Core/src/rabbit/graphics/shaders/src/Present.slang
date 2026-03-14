@@ -1,5 +1,5 @@
-#include "../shared/Common.h"
-#include "../shared/ConstantBuffers.h"
+module Present;
+import Common;
 
 struct vertexInfo
 {
@@ -13,11 +13,9 @@ struct v2p
     float2 uv       : TEXCOORD0;
 };
 
-cbuffer PresentCB : CBUFFER_REG(kInstanceCB)
-{
-    PresentCB g_PresentCB;
-}
+ConstantBuffer<PresentCB> g_PresentCB;
 
+[shader("vertex")]
 v2p VS_Present(vertexInfo input)
 {
     v2p output;
@@ -27,7 +25,8 @@ v2p VS_Present(vertexInfo input)
     return output;
 }
 
-float4 PS_Present(v2p input) : SV_TARGET
+[shader("pixel")]
+float4 PS_Present(v2p input, uniform Texture2D<float4>.Handle tex) : SV_TARGET
 {
     float2 screen_coords = input.uv * g_PresentCB.currSize;
     float2 tex_coords    = screen_coords - g_PresentCB.texOffset.xy;
@@ -40,9 +39,9 @@ float4 PS_Present(v2p input) : SV_TARGET
 
     float4 color;
     if (g_PresentCB.linearUpscale)
-        color = FetchTex2D(0).Sample<float4>(g_ClampLinearSampler, tex_uv);
+        color = tex.Sample(g_ClampLinearSampler, tex_uv);
     else
-        color = FetchTex2D(0).Sample<float4>(g_ClampPointSampler, tex_uv);
+        color = tex.Sample(g_ClampPointSampler, tex_uv);
 
     // Apply gamma correction & brightness
     color.rgb = g_PresentCB.brightnessValue * pow(color.rgb, 1.0f / g_PresentCB.gammaValue);

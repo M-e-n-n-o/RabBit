@@ -1,19 +1,15 @@
-#include "../shared/Common.h"
-#include "Transform.h"
-#include "Lighting.h"
-#include "GBuffer.h"
+module ApplyLighting;
+import Common;
+import Transform;
+import Lighting;
+import GBuffer;
 
-cbuffer ApplyLightingCB : CBUFFER_REG(kInstanceCB)
+ConstantBuffer<ApplyLightingCB> g_ApplyLighting;
+
+float SampleShadowPCF3X3(Texture2DArray<float>.Handle shadow_slices, float2 uv, float depth, float slice, float bias)
 {
-    ApplyLightingCB g_ApplyLighting;
-}
-
-float SampleShadowPCF(float2 uv, float depth, float slice, float bias)
-{
-    Tex2DArray shadow_map = FetchTex2DArray(2);
-
     float width, height, elements;
-    shadow_map.GetDimensions<float>(width, height, elements);
+    shadow_slices.GetDimensions(width, height, elements);
     float2 texel_size = 1.0f / float2(width, height);
 
     // 3x3 kernel around UV
@@ -25,7 +21,7 @@ float SampleShadowPCF(float2 uv, float depth, float slice, float bias)
         for (int x = -1; x <= 1; x++)
         {
             float2 offset = float2(x, y) * texel_size;
-            float sample_depth = shadow_map.Sample<float>(g_ClampAnisoSampler, float3(uv + offset, slice));
+            float sample_depth = shadow_slices.Sample(g_ClampAnisoSampler, float3(uv + offset, slice));
 
             // Standard depth test with bias
             sum += (sample_depth > (depth - bias)) ? 1.0f : 0.0f;
@@ -35,14 +31,23 @@ float SampleShadowPCF(float2 uv, float depth, float slice, float bias)
     return sum / 9.0f; // Normalize to [0,1]
 }
 
-[numthreads(8, 8, 1)]
-void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
+// TODO These should be root constants!!! Is it ok to have them in a struct?
+struct Handles
 {
-    GBufferTexIndices indices;
-    indices.gbuf0 = 0;
-    indices.gbuf1 = 1;
+    GBufferTexHandles gbuf_handles;
+    Texture2DArray<float>.Handle shadow_slices;
+    RWTexture2D<float4>.Handle output;
+}
 
-    GBuffer gbuf = SampleGBuffer(indices, screen_coord);
+[shader("compute")]
+[numthreads(8, 8, 1)]
+void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
+                              //uniform Handles handles
+                              uniform GBufferTexHandles gbuf_handles,
+                              uniform Texture2DArray<float>.Handle shadow_slices,
+                              uniform RWTexture2D<float4>.Handle output)
+{
+    GBuffer gbuf = SampleGBuffer(gbuf_handles, screen_coord);
 
     float view_depth = gbuf.depth;
 
@@ -80,7 +85,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
                                       1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
             // Sample shadow map
-            shadow = SampleShadowPCF(shadow_uv, shadow_ndc.z, cascade_idx, 0.001f);
+            shadow = SampleShadowPCF3X3(shadow_slices, shadow_uv, shadow_ndc.z, cascade_idx, 0.001f);
         }
     }
 
@@ -133,5 +138,5 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID)
         final_color = float4(final_rgb, 1.0f);
     }
 
-    FetchRWTex2D(3).Store<float4>(screen_coord, final_color);
+    output[screen_coord] = final_color;
 }

@@ -1,11 +1,7 @@
-#include "../shared/Common.h"
-#include "Transform.h"
-#include "GBuffer.h"
-
-cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
-{
-    float4x4 localToWorldMat;
-}
+module Geometry;
+import Common;
+import Transform;
+import GBuffer;
 
 struct VI_Simple
 {
@@ -27,7 +23,8 @@ struct PO_GBufferEncodedOutput
     float4 gbuf1 : SV_Target1;
 };
 
-PI_SIMPLE VS_Gbuffer(VI_Simple input)
+[shader("vertex")]
+PI_SIMPLE VS_Gbuffer(VI_Simple input, uniform float4x4 localToWorldMat)
 {
     float3 world_pos = TransformLocalToWorld(input.position, localToWorldMat);
     float3 view_pos  = TransformWorldToView(world_pos);
@@ -41,12 +38,12 @@ PI_SIMPLE VS_Gbuffer(VI_Simple input)
     return output;
 }
 
-PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input)
+[shader("pixel")]
+PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input, uniform Texture2D<float4>.Handle albeo)
 {
     GBuffer gbuf;
 
-    Tex2D tex = FetchTex2D(0);
-    float4 color = tex.Sample<float4>(g_WrapAnisoSampler, input.uv);
+    float4 color = albeo.Sample(g_WrapAnisoSampler, input.uv);
 
     gbuf.diffColor = float4(color.rgb, 1.0f);
     gbuf.normal    = input.normal;

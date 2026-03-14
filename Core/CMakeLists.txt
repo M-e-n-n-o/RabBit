@@ -63,6 +63,9 @@ target_precompile_headers(RabBit PRIVATE "src/rabbit/RabBitCommon.h")
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
 target_include_directories(RabBit PRIVATE
+    # Shader compiler
+    "tools/shaderCompiler/include"
+
     # STB
     "external/stb"
     
@@ -88,15 +91,11 @@ if(RABBIT_API_DX12)
         
         # WinPixEventRuntime
         "external/WinPixEventRuntime/Include/WinPixEventRuntime"
-        
-        # DXC
-        "external/DXC/inc"
     )
 
     # Library paths
     set(ENV{D3D_PATH} "${EXTERNAL_PATH}/D3D12")
     set(ENV{PIX_PATH} "${EXTERNAL_PATH}/WinPixEventRuntime/bin/x64")
-    set(ENV{DXC_PATH} "${EXTERNAL_PATH}/DXC")
     
     target_link_libraries(RabBit PRIVATE
         # D3D12
@@ -110,9 +109,6 @@ if(RABBIT_API_DX12)
     
         # WinPixEventRuntime
         "$ENV{PIX_PATH}/WinPixEventRuntime.lib"
-    
-        # DXC 
-        "$ENV{DXC_PATH}/lib/x64/dxcompiler.lib"
     )
     
     # Add D3D12 shader compiler
@@ -149,7 +145,6 @@ function(RabBitCopyLibs)
     if(RABBIT_API_DX12)
         list (APPEND DLLS_TO_COPY
             "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
-            "$ENV{DXC_PATH}/bin/x64/dxcompiler.dll"
         )
 
         # Copy the D3D12 DLL's to a specific folder

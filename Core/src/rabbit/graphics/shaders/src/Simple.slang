@@ -1,10 +1,6 @@
-#include "../shared/Common.h"
-#include "Transform.h"
-
-cbuffer InstanceCB : CBUFFER_REG(kInstanceCB)
-{
-    float4x4 customMatrix;
-}
+module Simple;
+import Common;
+import Transform;
 
 // Simple color
 // ---------------------------------------------------------------
@@ -26,7 +22,8 @@ struct PI_Simple
     float4 position : SV_POSITION;
 };
 
-PI_SimpleCol VS_Simple2D(VI_Simple input)
+[shader("vertex")]
+PI_SimpleCol VS_Simple2D(VI_Simple input, uniform float4x4 customMatrix)
 {
     PI_SimpleCol output;
     output.position = mul(customMatrix, float4(input.position, 1, 1));
@@ -35,6 +32,7 @@ PI_SimpleCol VS_Simple2D(VI_Simple input)
     return output;
 }
 
+[shader("pixel")]
 float4 PS_Simple2D(PI_SimpleCol input) : SV_Target0
 {
     return input.color;
@@ -55,7 +53,8 @@ struct PI_SimpleTex
     float2 uv       : TEXCOORD0;
 };
 
-PI_SimpleTex VS_SimpleTex2D(VI_SimpleTex input)
+[shader("vertex")]
+PI_SimpleTex VS_SimpleTex2D(VI_SimpleTex input, uniform float4x4 customMatrix)
 {
     PI_SimpleTex output;
     output.position = mul(customMatrix, float4(input.position, 1, 1));
@@ -64,9 +63,10 @@ PI_SimpleTex VS_SimpleTex2D(VI_SimpleTex input)
     return output;
 }
 
-float4 PS_SimpleTex2D(PI_SimpleTex input) : SV_Target0
+[shader("pixel")]
+float4 PS_SimpleTex2D(PI_SimpleTex input, uniform Texture2D<float4>.Handle tex) : SV_Target0
 {
-    return FetchTex2D(0).Sample<float4>(g_ClampAnisoSampler, input.uv);
+    return tex.Sample(g_ClampAnisoSampler, input.uv);
 }
 
 // Simple 3D
@@ -77,7 +77,8 @@ struct VI_Simple3D
     float3 position : POSITION;
 };
 
-PI_Simple VS_Simple3D(VI_Simple3D input)
+[shader("vertex")]
+PI_Simple VS_Simple3D(VI_Simple3D input, uniform float4x4 customMatrix)
 {
     float3 world_pos = TransformLocalToWorld(input.position, customMatrix);
     float3 view_pos  = TransformWorldToView(world_pos);
