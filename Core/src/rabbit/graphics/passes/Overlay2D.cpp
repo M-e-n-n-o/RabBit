@@ -11,11 +11,12 @@
 #include "entity/components/UI.h"
 
 #include "graphics/shaders/shared/Common.h"
-#include <codeGen/ShaderDefines.h>
+#include "codeGen/ShaderDefines.h"
 
 #include <variant>
 
 using namespace RB::Entity;
+using namespace RB::Graphics::Shader;
 
 namespace RB::Graphics
 {
@@ -285,12 +286,13 @@ namespace RB::Graphics
 
         Frustum frustum;
         frustum.SetOrthographicProjection(0.0f, 1.0f, 0.0f, in.viewContext->viewport.width, 0.0f, in.viewContext->viewport.height, false);
-        in.ri->SetConstantShaderData(kInstanceCB, &frustum.GetViewToClipMatrix(), sizeof(Math::Float4x4));
 
         auto RenderRectangle = [&](const Overlay2DEntry::Rectangle& rect)
         {
             in.ri->SetVertexShader(VS_Simple2D);
             in.ri->SetPixelShader(PS_Simple2D);
+
+            in.ri->SetConstantShaderData(SimpleGlobals_CustomMatrix, &frustum.GetViewToClipMatrix(), sizeof(Math::Float4x4));
 
             Viewport vp;
             vp.left   = 0;
@@ -321,6 +323,8 @@ namespace RB::Graphics
             in.ri->SetPixelShader(PS_Font2D);
             in.ri->SetScissor(text.scissor);
 
+            in.ri->SetConstantShaderData(FontGlobals_Projection, &frustum.GetViewToClipMatrix(), sizeof(Math::Float4x4));
+
             uint32_t vertex_size = sizeof(float) * 4;
             uint32_t data_size = vertex_size * text.vertexCount;
             float* vertex_data = (float*)ALLOC_STACK(data_size);
@@ -338,7 +342,7 @@ namespace RB::Graphics
             auto vb = VertexBuffer::Create("Text Element", TopologyType::TriangleList, vertex_data, vertex_size, data_size, true);
             in.ri->SetVertexBuffer(vb.get());
 
-            in.ri->SetShaderResourceInput(text.fontTex.get(), 0);
+            in.ri->SetShaderResourceInput(PsFont2D_Tex, text.fontTex.get());
 
             in.ri->Draw();
         };

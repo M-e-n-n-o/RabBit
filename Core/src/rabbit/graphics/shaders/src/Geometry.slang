@@ -23,27 +23,34 @@ struct PO_GBufferEncodedOutput
     float4 gbuf1 : SV_Target1;
 };
 
+ConstantBuffer<float4x4> g_LocalToWorldMat;
+
 [shader("vertex")]
-PI_SIMPLE VS_Gbuffer(VI_Simple input, uniform float4x4 localToWorldMat)
+PI_SIMPLE Gbuffer(VI_Simple input)
 {
-    float3 world_pos = TransformLocalToWorld(input.position, localToWorldMat);
+    float3 world_pos = TransformLocalToWorld(input.position, g_LocalToWorldMat);
     float3 view_pos  = TransformWorldToView(world_pos);
     float4 clip_pos  = TransformViewToClip(view_pos);
         
     PI_SIMPLE output;
     output.position = clip_pos;
-    output.normal   = normalize(mul((float3x3)localToWorldMat, input.normal));
+    output.normal   = normalize(mul((float3x3)g_LocalToWorldMat, input.normal));
     output.uv       = input.uv;
 
     return output;
 }
 
+struct PixelUniforms
+{
+    Texture2D<float4>.Handle albedo;
+};
+
 [shader("pixel")]
-PO_GBufferEncodedOutput PS_Gbuffer(PI_SIMPLE input, uniform Texture2D<float4>.Handle albeo)
+PO_GBufferEncodedOutput Gbuffer(PI_SIMPLE input, uniform PixelUniforms u)
 {
     GBuffer gbuf;
 
-    float4 color = albeo.Sample(g_WrapAnisoSampler, input.uv);
+    float4 color = u.albedo.Sample(g_WrapAnisoSampler, input.uv);
 
     gbuf.diffColor = float4(color.rgb, 1.0f);
     gbuf.normal    = input.normal;

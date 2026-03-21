@@ -9,7 +9,9 @@
 #include "entity/Scene.h"
 #include "entity/components/Light.h"
 #include "graphics/shaders/shared/Common.h"
-#include <codeGen/ShaderDefines.h>
+#include "codeGen/ShaderDefines.h"
+
+using namespace RB::Graphics::Shader;
 
 namespace RB::Graphics
 {
@@ -83,12 +85,12 @@ namespace RB::Graphics
 
         inputs.ri->SetComputeShader(CS_ApplyLightingDeferred);
         
-        inputs.ri->SetShaderResourceInput(inputs.dependencyRes[0], 0);
-        inputs.ri->SetShaderResourceInput(inputs.dependencyRes[1], 1);
+        inputs.ri->SetShaderResourceInput(CsApplyLightingDeferred_Gbuf0, inputs.dependencyRes[0]);
+        inputs.ri->SetShaderResourceInput(CsApplyLightingDeferred_Gbuf1, inputs.dependencyRes[1]);
 
         DeferredLightingEntry* entry = (DeferredLightingEntry*)inputs.entryContext;
 
-        ApplyLightingCB cb = {};
+        Shader::ApplyLightingCB cb = {};
         cb.light.direction = entry->light.GetDirection();
         cb.light.color     = entry->light.GetColor();
 
@@ -110,19 +112,19 @@ namespace RB::Graphics
                 cb.cascadeSplits.arr[i] = split;
             }
 
-            inputs.ri->SetShaderResourceInput(shadow_map, 2);
+            inputs.ri->SetShaderResourceInput(CsApplyLightingDeferred_ShadowSlices, shadow_map);
         }
         else
         {
             cb.cascades = 0;
             cb.shadowVPs[0] = Math::Float4x4();
 
-            inputs.ri->SetShaderResourceInput(g_TexDefaultWhite.get(), 2);
+            inputs.ri->SetShaderResourceInput(CsApplyLightingDeferred_ShadowSlices, g_TexDefaultWhite.get());
         }
 
-        inputs.ri->SetConstantShaderData(kInstanceCB, &cb, sizeof(ApplyLightingCB));
+        inputs.ri->SetConstantShaderData(ApplyLightingGlobals_ApplyLighting, &cb, sizeof(Shader::ApplyLightingCB));
 
-        inputs.ri->SetRandomReadWriteInput(inputs.outputRes[0], 3);
+        inputs.ri->SetRandomReadWriteInput(CsApplyLightingDeferred_Output, inputs.outputRes[0]);
 
         // TODO: Make this a dispatch indirect per BRDF type so that the shader doesn't diverge as much 
         // (cause it currently early outs if it doesn't have to shader)

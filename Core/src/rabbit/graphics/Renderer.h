@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Window.h"
+#include "RenderGraph.h"
 #include "events/Event.h"
 #include "utils/Threading.h"
 #include "app/FrameAllocator.h"
-#include "RenderGraph.h"
 
 namespace RB::Entity
 {
@@ -24,6 +24,7 @@ namespace RB::Graphics
     class GpuGuard;
     class ViewContext;
     class ResourceStreamer;
+    class ShaderSystem;
     class VertexBuffer;
 
     // Defines the different render graph types and the order in which they are rendered
@@ -58,8 +59,8 @@ namespace RB::Graphics
         void SetRenderGraphs(const UnorderedMap<RenderGraphType, RenderGraphBuilder>& graphs);
 
         ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
-        
-        FrameAllocator* GetAllocator() const { return m_RenderAllocator; }
+        ShaderSystem*     GetShaderSystem() const { return m_ShaderSystem; }
+        FrameAllocator*   GetAllocator() const { return m_RenderAllocator; }
 
         uint64_t GetRenderFrameIndex();
 
@@ -106,6 +107,7 @@ namespace RB::Graphics
         bool                        m_MultiThreadingSupport;
 
         ResourceStreamer*           m_ResourceStreamer;
+        ShaderSystem*               m_ShaderSystem;
 
         FrameAllocator*             m_RenderAllocator;
 

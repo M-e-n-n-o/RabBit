@@ -31,23 +31,19 @@ float SampleShadowPCF3X3(Texture2DArray<float>.Handle shadow_slices, float2 uv, 
     return sum / 9.0f; // Normalize to [0,1]
 }
 
-// TODO These should be root constants!!! Is it ok to have them in a struct?
 struct Handles
 {
-    GBufferTexHandles gbuf_handles;
-    Texture2DArray<float>.Handle shadow_slices;
-    RWTexture2D<float4>.Handle output;
+    GBufferTexHandles               gbuf;
+    Texture2DArray<float>.Handle    shadowSlices;
+    RWTexture2D<float4>.Handle      output;
 }
 
 [shader("compute")]
 [numthreads(8, 8, 1)]
-void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
-                              //uniform Handles handles
-                              uniform GBufferTexHandles gbuf_handles,
-                              uniform Texture2DArray<float>.Handle shadow_slices,
-                              uniform RWTexture2D<float4>.Handle output)
+void ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
+                              uniform Handles handles)
 {
-    GBuffer gbuf = SampleGBuffer(gbuf_handles, screen_coord);
+    GBuffer gbuf = SampleGBuffer(handles.gbuf, screen_coord);
 
     float view_depth = gbuf.depth;
 
@@ -85,7 +81,7 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
                                       1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
             // Sample shadow map
-            shadow = SampleShadowPCF3X3(shadow_slices, shadow_uv, shadow_ndc.z, cascade_idx, 0.001f);
+            shadow = SampleShadowPCF3X3(handles.shadowSlices, shadow_uv, shadow_ndc.z, cascade_idx, 0.001f);
         }
     }
 
@@ -138,5 +134,5 @@ void CS_ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
         final_color = float4(final_rgb, 1.0f);
     }
 
-    output[screen_coord] = final_color;
+    handles.output[screen_coord] = final_color;
 }

@@ -16,7 +16,7 @@ struct v2p
 ConstantBuffer<PresentCB> g_PresentCB;
 
 [shader("vertex")]
-v2p VS_Present(vertexInfo input)
+v2p Present(vertexInfo input)
 {
     v2p output;
     output.position = float4(input.position, 0, 1);
@@ -25,8 +25,13 @@ v2p VS_Present(vertexInfo input)
     return output;
 }
 
+struct PixelUniforms
+{
+    Texture2D<float4>.Handle tex;
+};
+
 [shader("pixel")]
-float4 PS_Present(v2p input, uniform Texture2D<float4>.Handle tex) : SV_TARGET
+float4 Present(v2p input, uniform PixelUniforms u) : SV_TARGET
 {
     float2 screen_coords = input.uv * g_PresentCB.currSize;
     float2 tex_coords    = screen_coords - g_PresentCB.texOffset.xy;
@@ -39,9 +44,9 @@ float4 PS_Present(v2p input, uniform Texture2D<float4>.Handle tex) : SV_TARGET
 
     float4 color;
     if (g_PresentCB.linearUpscale)
-        color = tex.Sample(g_ClampLinearSampler, tex_uv);
+        color = u.tex.Sample(g_ClampLinearSampler, tex_uv);
     else
-        color = tex.Sample(g_ClampPointSampler, tex_uv);
+        color = u.tex.Sample(g_ClampPointSampler, tex_uv);
 
     // Apply gamma correction & brightness
     color.rgb = g_PresentCB.brightnessValue * pow(color.rgb, 1.0f / g_PresentCB.gammaValue);

@@ -5,10 +5,11 @@
 #include "Window.h"
 #include "View.h"
 #include "ResourceDefaults.h"
+#include "ShaderSystem.h"
 #include "ResourceStreamer.h"
 #include "RenderGraph.h"
 
-#include <codeGen/ShaderDefines.h>
+#include "codeGen/ShaderDefines.h"
 #include "shaders/shared/Common.h"
 
 #include "app/Application.h"
@@ -105,6 +106,7 @@ namespace RB::Graphics
 
         m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k8MB);
 
+        m_ShaderSystem = new ShaderSystem();
         m_ResourceStreamer = new ResourceStreamer();
 
         // Initialize default resources
@@ -198,6 +200,8 @@ namespace RB::Graphics
 
         delete m_GraphicsInterface;
         delete m_CopyInterface;
+
+        delete m_ShaderSystem;
 
         delete m_RenderAllocator;
     }
@@ -629,8 +633,8 @@ namespace RB::Graphics
 
         // Prepare draw(s) to backbuffer(s)
         context->graphicsInterface->InvalidateState(false);
-        context->graphicsInterface->SetVertexShader(VS_Present);
-        context->graphicsInterface->SetPixelShader(PS_Present);
+        context->graphicsInterface->SetVertexShader(Shader::VS_Present);
+        context->graphicsInterface->SetPixelShader(Shader::PS_Present);
         context->graphicsInterface->SetCullMode(CullMode::Back);
         context->graphicsInterface->SetDepthMode(DepthMode::PassAll, false, false);
         context->graphicsInterface->SetVertexBuffer(context->backBufferCopyVB);
@@ -690,16 +694,16 @@ namespace RB::Graphics
             RenderRect rect = window->GetVirtualWindowRect();
 
             // TODO: Enable for proper rendering
-            //PresentCB present_data = {};
+            //Shader::PresentCB present_data = {};
             //present_data.currSize           = Math::Float2(window->GetWidth(), window->GetHeight());
             //present_data.texOffset          = Math::Float2(rect.left, rect.top);
             //present_data.gammaValue         = window->GetGammaCorrection();
             //present_data.brightnessValue    = window->GetBrightness();
             //present_data.linearUpscale      = window->IsVirtualResolutionLinearUpscale();
             //
-            //context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
+            //context->graphicsInterface->SetConstantShaderData(Shader::PresentGlobals_PresentCB, &present_data, sizeof(Shader::PresentCB));
             //
-            //context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
+            //context->graphicsInterface->SetShaderResourceInput(Shader::PsPresent_Tex, view_context.finalColorTarget);
             //context->graphicsInterface->PushRenderTarget(back_buffer, 0);
             //
             //if (window->IsSemiTransparent())

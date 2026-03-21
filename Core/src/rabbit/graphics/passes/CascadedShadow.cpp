@@ -10,7 +10,7 @@
 #include "entity/components/Mesh.h"
 
 #include "graphics/shaders/shared/Common.h"
-#include <codeGen/ShaderDefines.h>
+#include "codeGen/ShaderDefines.h"
 
 using namespace RB::Entity;
 
@@ -147,7 +147,7 @@ namespace RB::Graphics
     void CascadedShadowPass::Render(RenderPassInput& in)
     {
         // Not using a pixel shader
-        in.ri->SetVertexShader(VS_Simple3D);
+        in.ri->SetVertexShader(Shader::VS_Simple3D);
 
         in.ri->SetBlendMode(BlendMode::None);
         in.ri->SetCullMode(CullMode::Back); // should this be front? (breaks on some meshes)
@@ -183,7 +183,7 @@ namespace RB::Graphics
                     in.ri->SetIndexBuffer(model_entry.ib.get());
                 }
 
-                in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+                in.ri->SetConstantShaderData(Shader::SimpleGlobals_CustomMatrix, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
                 in.ri->Draw();
             }

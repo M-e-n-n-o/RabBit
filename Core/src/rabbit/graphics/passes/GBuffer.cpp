@@ -10,9 +10,10 @@
 #include "entity/components/Transform.h"
 
 #include "graphics/shaders/shared/Common.h"
-#include <codeGen/ShaderDefines.h>
+#include "codeGen/ShaderDefines.h"
 
 using namespace RB::Entity;
+using namespace RB::Graphics::Shader;
 
 namespace RB::Graphics
 {
@@ -174,9 +175,9 @@ namespace RB::Graphics
                 in.ri->SetIndexBuffer(model_entry.ib.get());
             }
 
-            in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+            in.ri->SetConstantShaderData(GeometryGlobals_LocalToWorldMat, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-            in.ri->SetShaderResourceInput(model_entry.texture.get(), 0);
+            in.ri->SetShaderResourceInput(PsGbuffer_Albedo, model_entry.texture.get());
 
             in.ri->Draw();
         }

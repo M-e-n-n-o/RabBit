@@ -13,19 +13,26 @@ struct PI_Font
     float2 uv       : TEXCOORD0;
 };
 
+ConstantBuffer<float4x4> g_Projection;
+
 [shader("vertex")]
-PI_Font VS_Font2D(VI_Font input, uniform float4x4 projection)
+PI_Font Font2D(VI_Font input)
 {
     PI_Font output;
-    output.position = mul(projection, float4(input.position, 1, 1));
+    output.position = mul(g_Projection, float4(input.position, 1, 1));
     output.uv = input.uv;
 
     return output;
 }
 
-[shader("pixel")]
-float4 PS_Font2D(PI_Font input, uniform Texture2D<float>.Handle tex) : SV_Target0
+struct PixelUniforms
 {
-    float alpha = tex.Sample(g_ClampAnisoSampler, input.uv);
+    Texture2D<float>.Handle tex;
+};
+
+[shader("pixel")]
+float4 Font2D(PI_Font input, uniform PixelUniforms u) : SV_Target0
+{
+    float alpha = u.tex.Sample(g_ClampAnisoSampler, input.uv);
     return float4(1.0, 1.0, 1.0, alpha);
 }

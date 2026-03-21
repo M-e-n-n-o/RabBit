@@ -4,6 +4,7 @@
 
 // Shader code
 #include "shaders/shared/Common.h"
+#include "codeGen/ShaderDefines.h"
 
 using namespace RB::Math;
 
@@ -16,13 +17,13 @@ namespace RB::Graphics
 
     void ViewContext::SetFrameConstants(RenderInterface* render_interface, Viewport vp, Frustum frustum) const
     {
-        FrameConstants constants;
+        Shader::FrameConstants constants;
         constants.worldToViewMat = frustum.GetWorldToViewMatrix();
         constants.viewToWorldMat = frustum.GetViewToWorldMatrix();
         constants.viewToClipMat  = frustum.GetViewToClipMatrix();
         constants.clipToViewMat  = frustum.GetClipToViewMatrix();
         constants.dimensions     = Float4(vp.width, vp.height, 1.0f / (float)vp.width, 1.0f / (float)vp.height);
 
-        render_interface->SetConstantShaderData(kFrameConstantsCB, &constants, sizeof(constants));
+        render_interface->SetConstantShaderData(Shader::CommonGlobals_FC, &constants, sizeof(constants));
     }
 }
