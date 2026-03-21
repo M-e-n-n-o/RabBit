@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "graphics/Renderer.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/RenderResource.h"
 #include "graphics/shaders/shared/Common.h"
@@ -51,9 +52,8 @@ namespace RB::Graphics::D3D12
         void SetDepthStencil(RenderResource* ds_target) override;
         void ClearRenderTargets() override;
 
-        void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override;
-        void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) override;
-        void ClearShaderResource(uint32_t slot) override;
+        void SetShaderResourceInput(uint32_t handle, RenderResource* resource) override;
+        void SetRandomReadWriteInput(uint32_t handle, RenderResource* resource) override;
 
         void SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size) override;
 
@@ -109,6 +109,7 @@ namespace RB::Graphics::D3D12
         bool                                m_CopyOperationsOnly;
         DeviceQueue*                        m_Queue;
         GPtr<ID3D12GraphicsCommandList2>    m_CommandList;
+        ShaderSystem*                       m_ShaderSystem;
 
         struct PendingClear
         {
@@ -148,7 +149,9 @@ namespace RB::Graphics::D3D12
             D3D12_DEPTH_STENCIL_DESC            depthStencilDesc = {};
             D3D12_GPU_VIRTUAL_ADDRESS           cbvAddresses[16];
 
-            DescriptorIndex                     shaderResourceHandles[SHADER_RESOURCE_SLOTS];
+            DescriptorIndex                     vertexResourceHandles[16]; // Can be upped to max 32 (256 bytes allowed)
+            DescriptorIndex                     pixelResourceHandles[16];
+            DescriptorIndex                     computeResourceHandles[16];
 
             List<PendingClear>                  pendingClears;
         };

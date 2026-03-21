@@ -47,9 +47,8 @@ namespace RB::Graphics::VK
         void SetDepthStencil(RenderResource* ds_target) override {}
         void ClearRenderTargets() override {}
 
-        void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override {}
-        void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) override {}
-        void ClearShaderResource(uint32_t slot) override {}
+        void SetShaderResourceInput(uint32_t handle, RenderResource* resource) override {}
+        void SetRandomReadWriteInput(uint32_t handle, RenderResource* resource) override {}
 
         void SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size) override {}
 

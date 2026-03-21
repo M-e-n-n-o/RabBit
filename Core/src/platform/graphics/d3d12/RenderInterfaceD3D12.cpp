@@ -9,10 +9,13 @@
 #include "resource/UploadAllocator.h"
 #include "resource/Descriptor.h"
 #include "Pipeline.h"
-#include "ShaderSystem.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
 #include "graphics/ResourceDefaults.h"
+#include "graphics/Renderer.h"
+#include "graphics/ShaderSystem.h"
+#include "app/Application.h"
+#include <ShaderReflection.h>
 
 #define USE_PIX
 #include <pix3.h>
@@ -47,6 +50,8 @@ namespace RB::Graphics::D3D12
         : m_CopyOperationsOnly(allow_only_copy_operations)
         , m_RenderState()
     {
+        m_ShaderSystem = Application::GetInstance()->GetRenderer()->GetShaderSystem();
+
         if (allow_only_copy_operations)
             m_Queue = g_GraphicsDevice->GetCopyQueue();
         else
@@ -239,23 +244,47 @@ namespace RB::Graphics::D3D12
         m_RenderState.dsvFormat = DXGI_FORMAT_UNKNOWN;
     }
 
-    void RenderInterfaceD3D12::SetShaderResourceInput(RenderResource* resource, uint32_t slot)
+    void RenderInterfaceD3D12::SetShaderResourceInput(uint32_t handle, RenderResource* resource)
     {
         TransitionResource(resource, ResourceState::READ);
+
+        uint32_t binding_offset = (handle >> 3) & 0x1FFFFFFF;
+        ShaderCompiler::Stage stage = (ShaderCompiler::Stage)(handle & 0x7);
+
+        // Descriptor handle takes up a uint2 in Slang
+        uint32_t slot = binding_offset / sizeof(uint64_t);
 
         switch (resource->GetType())
         {
         case RenderResourceType::Texture2D:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.shaderResourceHandles), "Shader resource input slot out of range");
-            m_RenderState.shaderResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle();
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
+
+            switch (stage)
+            {
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
+                break;
+            }
         }
         break;
 
         case RenderResourceType::Texture2DArray:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.shaderResourceHandles), "Shader resource input slot out of range");
-            m_RenderState.shaderResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle();
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
+
+            switch (stage)
+            {
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
+                break;
+            }
         }
         break;
 
@@ -265,15 +294,21 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::SetRandomReadWriteInput(RenderResource* resource, uint32_t slot)
+    void RenderInterfaceD3D12::SetRandomReadWriteInput(uint32_t handle, RenderResource* resource)
     {
         TransitionResource(resource, ResourceState::UNORDERED_ACCESS);
 
-        switch (resource->GetType())
+        uint32_t binding_offset = (handle >> 3) & 0x1FFFFFFF;
+        ShaderCompiler::Stage stage = (ShaderCompiler::Stage)(handle & 0x7);
+
+        // Descriptor handle takes up a uint2 in Slang
+        uint32_t slot = binding_offset / sizeof(uint64_t);
+
+        switch (resource->GetPrimitiveType())
         {
-        case RenderResourceType::Texture2D:
+        case RenderResourceType::Texture:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.shaderResourceHandles), "UAV input slot out of range");
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "UAV input slot out of range");
 
             Texture* tex = (Texture*)resource;
 
@@ -284,9 +319,29 @@ namespace RB::Graphics::D3D12
             }
 
             if (tex->GetType() == RenderResourceType::Texture2D)
-                m_RenderState.shaderResourceHandles[slot] = ((Texture2DD3D12*)tex)->GetUavHandle();
+            {
+                switch (stage)
+                {
+                case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+                default:
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
+                    break;
+                }
+            }
             else if (tex->GetType() == RenderResourceType::Texture2DArray)
-                m_RenderState.shaderResourceHandles[slot] = ((Texture2DArrayD3D12*)tex)->GetUavHandle();
+            {
+                switch (stage)
+                {
+                case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+                default:
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
+                    break;
+                }
+            }
             else
                 RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as random read write input");
         }
@@ -296,11 +351,6 @@ namespace RB::Graphics::D3D12
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a UAV input");
             break;
         }
-    }
-
-    void RenderInterfaceD3D12::ClearShaderResource(uint32_t slot)
-    {
-        m_RenderState.shaderResourceHandles[slot] = DescriptorIndex{};
     }
 
     void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size)
@@ -947,86 +997,71 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::BindResources(bool compute)
     {
-        bool bind_textures;
-        if (compute)
-        {
-            bind_textures = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << kRenderResourceMapCB)) > 0;
-        }
-        else
-        {
-            bind_textures = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kRenderResourceMapCB)) > 0 ||
-                             (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kRenderResourceMapCB)) > 0);
-        }
+        uint32_t root_index = 0;
 
-        // Set the bindless SRV/UAV slots (only if the shader is actually using any textures)
-        if (bind_textures)
+        for (int i = 0; i < 3; i++)
         {
-            RenderResourceMap indices = {};
+            DescriptorIndex* handles;
+            if (i == 0)
+                handles = m_RenderState.vertexResourceHandles;
+            else if (i == 1)
+                handles = m_RenderState.pixelResourceHandles;
+            else
+                handles = m_RenderState.computeResourceHandles;
 
-            for (int i = 0; i < _countof(indices.resources); ++i)
+            // Set the bindless SRV/UAV slots in the root constants
+            uint32_t values_to_set = 0;
+            uint32_t* descriptor_handle_values = ALLOC_STACKC(uint32_t, _countof(m_RenderState.vertexResourceHandles) * 2);
+            for (int i = 0; i < _countof(m_RenderState.vertexResourceHandles); i++)
             {
-                uint32_t& index = indices.resources[i].handle;
-
-                if (m_RenderState.shaderResourceHandles[i].isValid())
+                if (handles[i].isValid())
                 {
-                    index  = (uint32_t)m_RenderState.shaderResourceHandles[i].heapIndex;
-                }
-                else
-                {
-                    // Error texture
-                    index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError.get())->GetSrvHandle().heapIndex;
+                    descriptor_handle_values[values_to_set++] = handles[i].heapIndex;   // Resource heap index
+                    descriptor_handle_values[values_to_set++] = 0;                      // Sampler heap index (for Sampler2D)
                 }
             }
+            if (values_to_set > 0)
+            {
+                if (compute)
+                    m_CommandList->SetComputeRoot32BitConstants(root_index, values_to_set, descriptor_handle_values, 0);
+                else
+                    m_CommandList->SetGraphicsRoot32BitConstants(root_index, values_to_set, descriptor_handle_values, 0);
 
-            // TODO Make the texture indices a root constant instead of a CBV.
-            // Or just remove the kTexIndicesCB and let each shader itself pass in the correct handle/index using their CBV?
-            SetConstantShaderData(kRenderResourceMapCB, &indices, sizeof(RenderResourceMap));
-        }
-        else
-        {
-            m_RenderState.cbvAddresses[kRenderResourceMapCB] = 0;
+                root_index++;
+            }
         }
 
         // Bind the CBV's
-        uint32_t root_index = 0;
         for (int i = 0; i < _countof(m_RenderState.cbvAddresses); ++i)
         {
             if (m_RenderState.cbvAddresses[i] > 0)
             {
                 if (compute)
                 {
-                    m_CommandList->SetComputeRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+                    m_CommandList->SetComputeRootConstantBufferView(root_index, m_RenderState.cbvAddresses[i]);
                 }
                 else
                 {
-                    m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+                    m_CommandList->SetGraphicsRootConstantBufferView(root_index, m_RenderState.cbvAddresses[i]);
                 }
                 root_index++;
             }
-
-#if RB_CONFIG_DEBUG
-            // Some extra debug checks
-            bool occupies_slot;
-            if (compute)
-            {
-                occupies_slot = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << i)) > 0;
-            }
-            else
-            {
-                occupies_slot = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << i)) > 0 ||
-                                 (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << i)) > 0);
-            }
-
-            RB_ASSERT(LOGTAG_GRAPHICS, m_RenderState.cbvAddresses[i] > 0 == occupies_slot, "The bounded CBV slot does not match the shader's used CBV slots");
-#endif
         }
     }
 
     void RenderInterfaceD3D12::ClearResources()
     {
-        for (int i = 0; i < _countof(m_RenderState.shaderResourceHandles); ++i)
+        for (int i = 0; i < _countof(m_RenderState.vertexResourceHandles); ++i)
         {
-            ClearShaderResource(i);
+            m_RenderState.vertexResourceHandles[i] = DescriptorIndex{};
+        }
+        for (int i = 0; i < _countof(m_RenderState.pixelResourceHandles); ++i)
+        {
+            m_RenderState.pixelResourceHandles[i] = DescriptorIndex{};
+        }
+        for (int i = 0; i < _countof(m_RenderState.computeResourceHandles); ++i)
+        {
+            m_RenderState.computeResourceHandles[i] = DescriptorIndex{};
         }
     }
 
@@ -1046,15 +1081,15 @@ namespace RB::Graphics::D3D12
 
         if (m_RenderState.rootSignatureDirty)
         {
-            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.vsShader, m_RenderState.psShader);
+            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_ShaderSystem, m_RenderState.vsShader, m_RenderState.psShader);
 
             m_RenderState.rootSignatureDirty = false;
         }
 
-        List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader, m_RenderState.vertexBufferCount);
+        const List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_ShaderSystem, m_RenderState.vsShader, m_RenderState.vertexBufferCount);
 
-        CompiledShaderBlob* vs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.vsShader);
-        CompiledShaderBlob* ps_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.psShader);
+        const CompiledShaderBlob* vs_blob = m_ShaderSystem->GetCompiledShader(m_RenderState.vsShader);
+        const CompiledShaderBlob* ps_blob = m_ShaderSystem->GetCompiledShader(m_RenderState.psShader);
 
         DXGI_FORMAT formats[8];
         for (int i = 0; i < 8; i++)
@@ -1067,8 +1102,8 @@ namespace RB::Graphics::D3D12
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
         pso_desc.pRootSignature         = m_RenderState.rootSignature.Get();
-        pso_desc.VS                     = { vs_blob->shaderBlob, vs_blob->shaderBlobSize };
-        pso_desc.PS                     = { ps_blob ? ps_blob->shaderBlob : nullptr, ps_blob ? ps_blob->shaderBlobSize : 0 };
+        pso_desc.VS                     = { vs_blob->blob, vs_blob->size };
+        pso_desc.PS                     = { ps_blob ? ps_blob->blob : nullptr, ps_blob ? ps_blob->size : 0 };
         //pso_desc.DS                   = ;
         //pso_desc.HS                   = ;
         //pso_desc.GS                   = ;
@@ -1107,16 +1142,16 @@ namespace RB::Graphics::D3D12
 
         if (m_RenderState.rootSignatureDirty)
         {
-            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.csShader);
+            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_ShaderSystem, m_RenderState.csShader);
 
             m_RenderState.rootSignatureDirty = false;
         }
 
-        CompiledShaderBlob* cs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.csShader);
+        const CompiledShaderBlob* cs_blob = m_ShaderSystem->GetCompiledShader(m_RenderState.csShader);
 
         D3D12_COMPUTE_PIPELINE_STATE_DESC pso_desc = {};
         pso_desc.pRootSignature = m_RenderState.rootSignature.Get();
-        pso_desc.CS             = { cs_blob->shaderBlob, cs_blob->shaderBlobSize };
+        pso_desc.CS             = { cs_blob->blob, cs_blob->size };
         pso_desc.NodeMask       = 0;
         //pso_desc.CachedPSO    = NULL;
         pso_desc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;

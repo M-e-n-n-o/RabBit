@@ -10,7 +10,7 @@ target_include_directories(ShaderCompilerVK PUBLIC
     "../../../external/slang/include"
 )
 
-set(DXC_PATH ${EXTERNAL_PATH}/DXC)
+set(SLANG_PATH ${EXTERNAL_PATH}/slang)
 
 target_link_libraries(ShaderCompilerVK PRIVATE
     "${SLANG_PATH}/lib/x86_64/slang.lib"

@@ -44,7 +44,7 @@ void Compiler::CompileFiles(const char* base_path)
     TargetDesc session_target = {};
 #if RB_SHADER_COMPILER_D3D12
     session_target.format  = SLANG_DXIL;
-    session_target.profile = m_GlobalSession->findProfile("sm_6_9");
+    session_target.profile = m_GlobalSession->findProfile("sm_6_6"); //sm_6_9
 #elif RB_SHADER_COMPILER_VK
     session_target.format = SLANG_SPIRV;
     session_target.profile = m_GlobalSession->findProfile("spirv_1_6");
@@ -71,12 +71,13 @@ void Compiler::CompileFiles(const char* base_path)
     };
     
     SessionDesc session_desc = {};
-    session_desc.targets                = &session_target;
-    session_desc.targetCount            = 1;
-    session_desc.searchPaths            = search_paths.data();
-    session_desc.searchPathCount        = search_paths.size();
-    session_desc.preprocessorMacros     = global_macros;
-    session_desc.preprocessorMacroCount = _countof(global_macros);
+    session_desc.targets                 = &session_target;
+    session_desc.targetCount             = 1;
+    session_desc.searchPaths             = search_paths.data();
+    session_desc.searchPathCount         = search_paths.size();
+    session_desc.preprocessorMacros      = global_macros;
+    session_desc.preprocessorMacroCount  = _countof(global_macros);
+    session_desc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR; // HLSL standard
     
     Slang::ComPtr<ISession> session;
     m_GlobalSession->createSession(session_desc, session.writeRef());
@@ -118,6 +119,8 @@ void Compiler::CompileFiles(const char* base_path)
             { CompilerOptionName::DebugInformationFormat,   CompilerOptionValue{.kind = CompilerOptionValueKind::Int,       .intValue0      = SLANG_DEBUG_INFO_FORMAT_PDB       }},
             { CompilerOptionName::Optimization,             CompilerOptionValue{.kind = CompilerOptionValueKind::Int,       .intValue0      = SLANG_OPTIMIZATION_LEVEL_NONE     }},
     #if RB_SHADER_COMPILER_VK
+            //VulkanBindShift
+            //VulkanBindGlobals
             { CompilerOptionName::VulkanEmitReflection,     CompilerOptionValue{.kind = CompilerOptionValueKind::Int,       .intValue0      = true                              }},
     #endif
 #else
@@ -132,13 +135,17 @@ void Compiler::CompileFiles(const char* base_path)
         ProgramLayout* program_layout = program->getLayout(0, diag_blob.writeRef());
         EXIT_ON_FAIL(program_layout, L"Failed to get program layout: " << (const char*)diag_blob->getBufferPointer());
 
+        std::vector<GlobalParameter> global_params;
+        ReflectGlobalScope(program_layout->getGlobalParamsVarLayout(), &global_params);
+
         for (int entry_point_idx = 0; entry_point_idx < program_layout->getEntryPointCount(); entry_point_idx++)
         {
             EntryPointReflection* entry_point = program_layout->getEntryPointByIndex(entry_point_idx);
             LOG("Found: " << entry_point->getName());
 
-            CompiledShader compiled_shader = {};
-            compiled_shader.entryName = entry_point->getName();
+            RB::ShaderCompiler::ShaderReflection compiled_shader = {};
+            compiled_shader.entryName           = entry_point->getName();
+            compiled_shader.globalParameters    = global_params;
             
             switch (entry_point->getStage())
             {
@@ -150,7 +157,6 @@ void Compiler::CompileFiles(const char* base_path)
                 break;
             }
 
-            ReflectGlobalScope(program_layout->getGlobalParamsVarLayout(), &compiled_shader);
             ReflectEntryPointParameters(entry_point, &compiled_shader);
 
             Slang::ComPtr<IBlob> shader_blob;
@@ -159,6 +165,35 @@ void Compiler::CompileFiles(const char* base_path)
             m_ShaderBlobs.push_back(shader_blob);
 
             m_Reflections.push_back(compiled_shader);
+        }
+
+        // Get the global params of this single module only
+        std::vector<GlobalParameter> module_params;
+        ReflectGlobalScope(module->getLayout()->getGlobalParamsVarLayout(), &module_params);
+        m_ModuleParameters.emplace(module->getName(), module_params);
+    }
+
+    // Update the binding indices of each module param with the actual linked global params
+    {
+        std::unordered_map<std::string, uint32_t> binding_lookup;
+
+        for (const auto& reflection : m_Reflections)
+        {
+            for (const auto& global_param : reflection.globalParameters)
+            {
+                binding_lookup[global_param.name] = global_param.bindingIndex;
+            }
+        }
+
+        for (auto& [module_name, module_params] : m_ModuleParameters)
+        {
+            for (auto& param : module_params)
+            {
+                if (auto it = binding_lookup.find(param.name); it != binding_lookup.end())
+                {
+                    param.bindingIndex = it->second;
+                }
+            }
         }
     }
 }
@@ -170,31 +205,64 @@ uint32_t GetScalarSize(TypeReflection::ScalarType type)
     case SLANG_SCALAR_TYPE_FLOAT32: return 4;
     case SLANG_SCALAR_TYPE_FLOAT16: return 2;
     case SLANG_SCALAR_TYPE_INT32:   return 4;
+    case SLANG_SCALAR_TYPE_INT16:   return 2;
     case SLANG_SCALAR_TYPE_UINT32:  return 4;
-    case SLANG_SCALAR_TYPE_INT64:   return 8;
-    case SLANG_SCALAR_TYPE_UINT64:  return 8;
+    case SLANG_SCALAR_TYPE_UINT16:  return 2;
     default: 
         EXIT_ON_FAIL(false, "SIZE OF SCALAR TYPE NOT YET IMPLEMENTED: " << (int)type);
         return 0;
     }
 }
 
-void Compiler::ReflectEntryPointParameters(EntryPointReflection* entry, CompiledShader* out_shader)
+void ReflectEntryFields(VariableLayoutReflection* var, uint32_t base_offset, RB::ShaderCompiler::ShaderReflection* out_shader)
 {
-    TypeLayoutReflection* entry_layout = entry->getTypeLayout()->getElementTypeLayout();
+    TypeLayoutReflection* type_layout = var->getTypeLayout();
 
-    if (entry_layout->getFieldCount() <= 0)
+    if (type_layout->getKind() == TypeReflection::Kind::Struct)
     {
+        for (uint32_t i = 0; i < type_layout->getFieldCount(); i++)
+        {
+            auto field = type_layout->getFieldByIndex(i);
+
+            if (field->getCategory() != SLANG_PARAMETER_CATEGORY_UNIFORM)
+                continue;
+
+            uint32_t offset = base_offset + field->getOffset(SLANG_PARAMETER_CATEGORY_UNIFORM);
+
+            ReflectEntryFields(field, offset, out_shader);
+        }
         return;
     }
+
+#if DEBUG_PRINT
+    LOG("       name: " << var->getName());
+    LOG("       binding offset: " << base_offset);
+    LOG("       size: " << type_layout->getSize(SLANG_PARAMETER_CATEGORY_UNIFORM));
+    LOG("       kind: " << (int)type_layout->getKind());
+    LOG("");
+#endif
+
+    EXIT_ON_FAIL(type_layout->getSize(SLANG_PARAMETER_CATEGORY_UNIFORM) == 8 && type_layout->getKind() == TypeReflection::Kind::Vector, "Entry parameters can only be handles to render resources!");
+
+    EntryParameter entry_param = {};
+    entry_param.name            = var->getName();
+    entry_param.bindingOffset   = base_offset;
+    entry_param.size            = type_layout->getSize(SLANG_PARAMETER_CATEGORY_UNIFORM);
+    out_shader->entryPointParameters.push_back(entry_param);
+}
+
+void Compiler::ReflectEntryPointParameters(EntryPointReflection* entry, RB::ShaderCompiler::ShaderReflection* out_shader)
+{
+    if (entry->getParameterCount() == 0)
+        return;
 
 #if DEBUG_PRINT
     LOG("   Entry parameters:");
 #endif
 
-    for (int i = 0; i < entry_layout->getFieldCount(); i++)
+    for (int i = 0; i < entry->getParameterCount(); i++)
     {
-        VariableLayoutReflection* param = entry_layout->getFieldByIndex(i);
+        VariableLayoutReflection* param = entry->getParameterByIndex(i);
 
         auto type_layout = param->getTypeLayout();
 
@@ -210,7 +278,6 @@ void Compiler::ReflectEntryPointParameters(EntryPointReflection* entry, Compiled
             {
                 auto field = type_layout->getFieldByIndex(i);
                 auto field_layout = field->getTypeLayout();
-                auto field_type2 = field->getType();
 
                 TypeReflection* field_type = field->getTypeLayout()->getType();
 
@@ -253,33 +320,25 @@ void Compiler::ReflectEntryPointParameters(EntryPointReflection* entry, Compiled
                 {
                 case SLANG_SCALAR_TYPE_FLOAT32: vertex_param.scalarType = ScalarType::Float32; break;
                 case SLANG_SCALAR_TYPE_FLOAT16: vertex_param.scalarType = ScalarType::Float16; break;
-                case SLANG_SCALAR_TYPE_INT32:   vertex_param.scalarType = ScalarType::Int32;   break;
                 case SLANG_SCALAR_TYPE_UINT32:  vertex_param.scalarType = ScalarType::UInt32;  break;
+                case SLANG_SCALAR_TYPE_UINT16:  vertex_param.scalarType = ScalarType::UInt16;  break;
+                case SLANG_SCALAR_TYPE_INT32:   vertex_param.scalarType = ScalarType::Int32;   break;
+                case SLANG_SCALAR_TYPE_INT16:   vertex_param.scalarType = ScalarType::Int16;   break;
                 default:
                     EXIT_ON_FAIL(false, "SCALAR TYPE NOT YET IMPLEMENTED");
                 }
 
                 out_shader->vertexParameters.push_back(vertex_param);
             }
+
+            continue;
         }
 
-        // Skip stage inputs like SV_DispatchThreadID
-        if (param->getCategory() != SLANG_PARAMETER_CATEGORY_UNIFORM)
+        // Only support entry parameters inside a struct
+        if (type_layout->getKind() != TypeReflection::Kind::Struct)
             continue;
 
-#if DEBUG_PRINT
-        LOG("       name: " << param->getName());
-        LOG("       binding offset: " << param->getOffset());
-        LOG("       type: " << (int)type_layout->getKind());
-        LOG("       size: " << type_layout->getSize());
-        LOG("");
-#endif
-
-        EntryParameter entry_param = {};
-        entry_param.name            = param->getName();
-        entry_param.bindingOffset   = param->getOffset();
-        entry_param.size            = type_layout->getSize();
-        out_shader->entryPointParameters.push_back(entry_param);
+        ReflectEntryFields(param, 0, out_shader);
     }
 }
 
@@ -310,7 +369,7 @@ uint32_t GetConstantBufferSize(TypeLayoutReflection* cb_layout)
     size = element_layout->getSize(ParameterCategory::Uniform);
 }
 
-void Compiler::ReflectGlobalScope(VariableLayoutReflection* layout, CompiledShader* out_shader)
+void Compiler::ReflectGlobalScope(VariableLayoutReflection* layout, std::vector<GlobalParameter>* out_parameters)
 {
     TypeLayoutReflection* type_layout = layout->getTypeLayout();
 
@@ -374,7 +433,7 @@ void Compiler::ReflectGlobalScope(VariableLayoutReflection* layout, CompiledShad
 #if DEBUG_PRINT
             LOG("");
 #endif
-            out_shader->globalParameters.push_back(global_param);
+            out_parameters->push_back(global_param);
         }
     }
     break;

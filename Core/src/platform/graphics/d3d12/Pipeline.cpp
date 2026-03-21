@@ -2,10 +2,11 @@
 
 #include "RabBitCommon.h"
 #include "Pipeline.h"
-#include "ShaderSystem.h"
 #include "GraphicsDevice.h"
 #include "resource/Descriptor.h"
-#include "graphics/shaders/shared/Common.h"
+#include "graphics/ShaderSystem.h"
+
+using namespace RB::ShaderCompiler;
 
 namespace RB::Graphics::D3D12
 {
@@ -65,7 +66,7 @@ namespace RB::Graphics::D3D12
         return pso;
     }
 
-    GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(uint32_t vs_identifier, int32_t ps_identifier)
+    GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(const ShaderSystem* ss, uint32_t vs_identifier, int32_t ps_identifier)
     {
         uint64_t hash = 0;
         HashCombine(hash, vs_identifier);
@@ -78,58 +79,96 @@ namespace RB::Graphics::D3D12
             return found->second;
         }
 
-        const ShaderResourceMask& vs_mask = g_ShaderSystem->GetShaderResourceMask(vs_identifier);
-        const ShaderResourceMask& ps_mask = g_ShaderSystem->GetShaderResourceMask(ps_identifier);
+        const auto* vs_reflection = ss->GetReflection(vs_identifier);
+        const auto* ps_reflection = ss->GetReflection(ps_identifier);
 
-        uint64_t combined_cbv_mask = vs_mask.cbvMask | ps_mask.cbvMask;
+        List<CD3DX12_ROOT_PARAMETER1> parameters;
 
-        // Num parameters:
-        // - All inline CBV's
-        uint32_t num_parameters = NumberOfSetBits(combined_cbv_mask);
-
-        CD3DX12_ROOT_PARAMETER1* parameters = (CD3DX12_ROOT_PARAMETER1*)ALLOC_STACK(sizeof(CD3DX12_ROOT_PARAMETER1) * num_parameters);
-
-        // Parameters
+        // Set entry point parameters as root constants
         {
-            uint32_t parameter_index = 0;
-
-            // Inline CBV's
+            uint32_t vs_size = 0;
+            for (int i = 0; i < vs_reflection->entryPointParameters.size(); i++)
             {
-                RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == CBV_ROOT_PARAMETER_INDEX_OFFSET, "These should match!");
+                vs_size += vs_reflection->entryPointParameters[i].size;
+            }
+            if (vs_size > 0)
+            {
+                CD3DX12_ROOT_PARAMETER1 root_param_vs;
+                root_param_vs.InitAsConstants(vs_size / sizeof(uint32_t), 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+                parameters.push_back(root_param_vs);
+            }
 
-                DWORD index;
-                while (_BitScanForward(&index, combined_cbv_mask) && index < (sizeof(combined_cbv_mask) * 8))
+            uint32_t ps_size = 0;
+            if (ps_reflection)
+            {
+                for (int i = 0; i < ps_reflection->entryPointParameters.size(); i++)
                 {
-                    if ((vs_mask.cbvMask & (1 << index)) > 0 && (ps_mask.cbvMask & (1 << index)) > 0)
-                    {
-                        // Visible in both stages
-                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL);
-                    }
-                    else if ((vs_mask.cbvMask & (1 << index)) > 0)
-                    {
-                        // Visible in vertex stage only
-                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-                    }
-                    else
-                    {
-                        // Visible in pixel stage only
-                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
-                    }
-
-                    // Flip the bit so it's not scanned again
-                    combined_cbv_mask ^= (1 << index);
-
-                    parameter_index++;
+                    ps_size += ps_reflection->entryPointParameters[i].size;
+                }
+                if (ps_size > 0)
+                {
+                    CD3DX12_ROOT_PARAMETER1 root_param_ps;
+                    root_param_ps.InitAsConstants(ps_size / sizeof(uint32_t), 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+                    parameters.push_back(root_param_ps);
                 }
             }
         }
 
-        List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions();
+        // All inline CBV's
+        {
+            uint64_t vs_cbv_mask = 0;
+            for (int i = 0; i < vs_reflection->globalParameters.size(); i++)
+            {
+                if (vs_reflection->globalParameters[i].type == ParamType::kConstantBuffer)
+                    vs_cbv_mask |= (1 << vs_reflection->globalParameters[i].bindingIndex);
+            }
+            uint64_t ps_cbv_mask = 0;
+            if (ps_reflection)
+            {
+                for (int i = 0; i < ps_reflection->globalParameters.size(); i++)
+                {
+                    if (ps_reflection->globalParameters[i].type == ParamType::kConstantBuffer)
+                        ps_cbv_mask |= (1 << ps_reflection->globalParameters[i].bindingIndex);
+                }
+            }
+
+            uint64_t combined_cbv_mask = vs_cbv_mask | ps_cbv_mask;
+
+            DWORD index;
+            while (_BitScanForward(&index, combined_cbv_mask) && index < (sizeof(combined_cbv_mask) * 8))
+            {
+                CD3DX12_ROOT_PARAMETER1 root_param;
+
+                if ((vs_cbv_mask & (1 << index)) > 0 && (ps_cbv_mask & (1 << index)) > 0)
+                {
+                    // Visible in both stages
+                    root_param.InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL);
+                }
+                else if ((vs_cbv_mask & (1 << index)) > 0)
+                {
+                    // Visible in vertex stage only
+                    root_param.InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+                }
+                else
+                {
+                    // Visible in pixel stage only
+                    root_param.InitAsConstantBufferView(index, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+                }
+
+                parameters.push_back(root_param);
+
+                // Flip the bit so it's not scanned again
+                combined_cbv_mask ^= (1 << index);
+            }
+        }
+
+        // It shouldn't matter if we pass in the vs/ps identifier here as samplers should be shared within the same Slang module
+        List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions(ss, vs_identifier);
 
         D3D12_ROOT_SIGNATURE_DESC1 desc = {};
         desc.Flags              = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-        desc.NumParameters      = num_parameters;
-        desc.pParameters        = parameters;
+        desc.NumParameters      = parameters.size();
+        desc.pParameters        = parameters.data();
         desc.NumStaticSamplers  = static_samplers.size();
         desc.pStaticSamplers    = static_samplers.data();
 
@@ -149,7 +188,7 @@ namespace RB::Graphics::D3D12
         return signature;
     }
 
-    GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(uint32_t cs_identifier)
+    GPtr<ID3D12RootSignature> PipelineManager::GetRootSignature(const ShaderSystem* ss, uint32_t cs_identifier)
     {
         uint64_t hash = 0;
         HashCombine(hash, cs_identifier);
@@ -161,39 +200,42 @@ namespace RB::Graphics::D3D12
             return found->second;
         }
 
-        uint64_t cbv_mask = g_ShaderSystem->GetShaderResourceMask(cs_identifier).cbvMask;
+        const auto* reflection = ss->GetReflection(cs_identifier);
 
-        // Num parameters:
-        // - All inline CBV's
-        uint32_t num_parameters = NumberOfSetBits(cbv_mask);
+        List<CD3DX12_ROOT_PARAMETER1> parameters;
 
-        CD3DX12_ROOT_PARAMETER* parameters = (CD3DX12_ROOT_PARAMETER*)ALLOC_STACK(sizeof(CD3DX12_ROOT_PARAMETER) * num_parameters);
-
-        // Parameters
+        // Set entry point parameters as root constants
         {
-            uint32_t parameter_index = 0;
-
-            // Inline CBV's
+            uint32_t size = 0;
+            for (int i = 0; i < reflection->entryPointParameters.size(); i++)
             {
-                RB_ASSERT(LOGTAG_GRAPHICS, parameter_index == CBV_ROOT_PARAMETER_INDEX_OFFSET, "These should match!");
-
-                DWORD index;
-                while (_BitScanForward(&index, cbv_mask) && index < (sizeof(cbv_mask) * 8))
-                {
-                    if ((cbv_mask & (1 << index)) > 0)
-                    {
-                        parameters[parameter_index].InitAsConstantBufferView(index, 0, D3D12_SHADER_VISIBILITY_ALL);
-                    }
-
-                    // Flip the bit so it's not scanned again
-                    cbv_mask ^= (1 << index);
-
-                    parameter_index++;
-                }
+                size += reflection->entryPointParameters[i].size;
+            }
+            if (size > 0)
+            {
+                CD3DX12_ROOT_PARAMETER1 root_param;
+                root_param.InitAsConstants(size / sizeof(uint32_t), 0, 0, D3D12_SHADER_VISIBILITY_ALL);
+                parameters.push_back(root_param);
             }
         }
 
-        List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions();
+        // All inline CBV's
+        {
+            for (int i = 0; i < reflection->globalParameters.size(); i++)
+            {
+                const GlobalParameter& param = reflection->globalParameters[i];
+                if (param.type != ParamType::kConstantBuffer)
+                {
+                    continue;
+                }
+
+                CD3DX12_ROOT_PARAMETER1 root_param;
+                root_param.InitAsConstantBufferView(param.bindingIndex, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL);
+                parameters.push_back(root_param);
+            }
+        }
+
+        List<D3D12_STATIC_SAMPLER_DESC> static_samplers = GetSamplerDescriptions(ss, cs_identifier);
 
         D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
                                            D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
@@ -203,16 +245,20 @@ namespace RB::Graphics::D3D12
                                            D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS |
                                            D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS;
 
-        D3D12_ROOT_SIGNATURE_DESC desc = {};
+        D3D12_ROOT_SIGNATURE_DESC1 desc = {};
         desc.Flags              = flags;
-        desc.NumParameters      = num_parameters;
-        desc.pParameters        = parameters;
+        desc.NumParameters      = parameters.size();
+        desc.pParameters        = parameters.data();
         desc.NumStaticSamplers  = static_samplers.size();
         desc.pStaticSamplers    = static_samplers.data();
 
+        D3D12_VERSIONED_ROOT_SIGNATURE_DESC versioned_desc = {};
+        versioned_desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+        versioned_desc.Desc_1_1 = desc;
+
         GPtr<ID3DBlob> root_signature_blob;
         GPtr<ID3DBlob> error_blob;
-        RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &root_signature_blob, &error_blob), "Could not serialize root signature");
+        RB_ASSERT_FATAL_RELEASE_D3D(D3D12SerializeVersionedRootSignature(&versioned_desc, &root_signature_blob, &error_blob), "Could not serialize root signature");
 
         GPtr<ID3D12RootSignature> signature;
         RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&signature)), "Could not create root signature");
@@ -295,80 +341,107 @@ namespace RB::Graphics::D3D12
         return seed;
     }
 
-    List<D3D12_STATIC_SAMPLER_DESC> PipelineManager::GetSamplerDescriptions()
+    List<D3D12_STATIC_SAMPLER_DESC> PipelineManager::GetSamplerDescriptions(const ShaderSystem* ss, uint32_t shader_identifier)
     {
         List<D3D12_STATIC_SAMPLER_DESC> static_samplers;
 
-        // TODO Set the filter (and max anisotropy) based on texture filter setting (maybe to do this we would need non static samplers)
+        const auto* reflection = ss->GetReflection(shader_identifier);
+        if (reflection == nullptr)
+        {
+            return static_samplers;
+        }
 
-        D3D12_STATIC_SAMPLER_DESC clamp = {};
-        clamp.ShaderRegister   = kClampAnisoSamplerSlot;
-        clamp.RegisterSpace    = 0;
-        clamp.Filter           = D3D12_FILTER_ANISOTROPIC;
-        clamp.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp.MipLODBias       = 0;
-        clamp.MaxAnisotropy    = 8;
-        clamp.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        clamp.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-        clamp.MinLOD           = 0.0f;
-        clamp.MaxLOD           = D3D12_FLOAT32_MAX;
-        clamp.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        static_samplers.push_back(clamp);
+        const auto& global_params = reflection->globalParameters;
 
-        D3D12_STATIC_SAMPLER_DESC clamp_point = {};
-        clamp_point.ShaderRegister   = kClampPointSamplerSlot;
-        clamp_point.RegisterSpace    = 0;
-        clamp_point.Filter           = D3D12_FILTER_MIN_MAG_MIP_POINT;
-        clamp_point.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp_point.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp_point.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp_point.MipLODBias       = 0;
-        clamp_point.MaxAnisotropy    = 1;
-        clamp_point.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        clamp_point.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-        clamp_point.MinLOD           = 0.0f;
-        clamp_point.MaxLOD           = D3D12_FLOAT32_MAX;
-        clamp_point.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        static_samplers.push_back(clamp_point);
+        // Very ugly string compare loop :D
+        for (int i = 0; i < global_params.size(); i++)
+        {
+            const GlobalParameter& param = global_params[i];
+            if (param.type != ParamType::kSampler)
+            {
+                continue;
+            }
 
-        D3D12_STATIC_SAMPLER_DESC clamp_linear = {};
-        clamp_linear.ShaderRegister   = kClampLinearSamplerSlot;
-        clamp_linear.RegisterSpace    = 0;
-        clamp_linear.Filter           = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-        clamp_linear.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp_linear.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp_linear.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        clamp_linear.MipLODBias       = 0;
-        clamp_linear.MaxAnisotropy    = 1;
-        clamp_linear.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        clamp_linear.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-        clamp_linear.MinLOD           = 0.0f;
-        clamp_linear.MaxLOD           = D3D12_FLOAT32_MAX;
-        clamp_linear.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        static_samplers.push_back(clamp_linear);
+            // TODO Set the filter (and max anisotropy) based on texture filter setting (maybe to do this we would need non static samplers)
 
-        D3D12_STATIC_SAMPLER_DESC wrap = {};
-        wrap.ShaderRegister   = kWrapAnisoSamplerSlot;
-        wrap.RegisterSpace    = 0;
-        wrap.Filter           = D3D12_FILTER_ANISOTROPIC;
-        wrap.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        wrap.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        wrap.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        wrap.MipLODBias       = 0;
-        wrap.MaxAnisotropy    = 8;
-        wrap.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        wrap.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-        wrap.MinLOD           = 0.0f;
-        wrap.MaxLOD           = D3D12_FLOAT32_MAX;
-        wrap.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        static_samplers.push_back(wrap);
+            if (std::strstr(param.name.c_str(), "g_ClampAnisoSampler"))
+            {
+                D3D12_STATIC_SAMPLER_DESC clamp = {};
+                clamp.ShaderRegister   = param.bindingIndex;
+                clamp.RegisterSpace    = 0;
+                clamp.Filter           = D3D12_FILTER_ANISOTROPIC;
+                clamp.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp.MipLODBias       = 0;
+                clamp.MaxAnisotropy    = 8;
+                clamp.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+                clamp.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+                clamp.MinLOD           = 0.0f;
+                clamp.MaxLOD           = D3D12_FLOAT32_MAX;
+                clamp.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+                static_samplers.push_back(clamp);
+            }
+            else if (std::strstr(param.name.c_str(), "g_ClampPointSampler"))
+            {
+                D3D12_STATIC_SAMPLER_DESC clamp_point = {};
+                clamp_point.ShaderRegister   = param.bindingIndex;
+                clamp_point.RegisterSpace    = 0;
+                clamp_point.Filter           = D3D12_FILTER_MIN_MAG_MIP_POINT;
+                clamp_point.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_point.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_point.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_point.MipLODBias       = 0;
+                clamp_point.MaxAnisotropy    = 1;
+                clamp_point.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+                clamp_point.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+                clamp_point.MinLOD           = 0.0f;
+                clamp_point.MaxLOD           = D3D12_FLOAT32_MAX;
+                clamp_point.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+                static_samplers.push_back(clamp_point);
+            }
+            else if (std::strstr(param.name.c_str(), "g_ClampLinearSampler"))
+            {
+                D3D12_STATIC_SAMPLER_DESC clamp_linear = {};
+                clamp_linear.ShaderRegister   = param.bindingIndex;
+                clamp_linear.RegisterSpace    = 0;
+                clamp_linear.Filter           = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+                clamp_linear.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_linear.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_linear.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_linear.MipLODBias       = 0;
+                clamp_linear.MaxAnisotropy    = 1;
+                clamp_linear.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+                clamp_linear.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+                clamp_linear.MinLOD           = 0.0f;
+                clamp_linear.MaxLOD           = D3D12_FLOAT32_MAX;
+                clamp_linear.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+                static_samplers.push_back(clamp_linear);
+            }
+            else if (std::strstr(param.name.c_str(), "g_WrapAnisoSampler"))
+            {
+                D3D12_STATIC_SAMPLER_DESC wrap = {};
+                wrap.ShaderRegister   = param.bindingIndex;
+                wrap.RegisterSpace    = 0;
+                wrap.Filter           = D3D12_FILTER_ANISOTROPIC;
+                wrap.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+                wrap.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+                wrap.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+                wrap.MipLODBias       = 0;
+                wrap.MaxAnisotropy    = 8;
+                wrap.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+                wrap.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+                wrap.MinLOD           = 0.0f;
+                wrap.MaxLOD           = D3D12_FLOAT32_MAX;
+                wrap.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+                static_samplers.push_back(wrap);
+            }
+        }
 
         return static_samplers;
     }
 
-    List<D3D12_INPUT_ELEMENT_DESC> PipelineManager::GetInputElementDesc(uint32_t vs_identifier, uint32_t vertex_buffers_count)
+    List<D3D12_INPUT_ELEMENT_DESC> PipelineManager::GetInputElementDesc(const ShaderSystem* ss, uint32_t vs_identifier, uint32_t vertex_buffers_count)
     {
         uint64_t hash = 0;
         HashCombine(hash, vs_identifier);
@@ -381,20 +454,16 @@ namespace RB::Graphics::D3D12
             return found->second;
         }
 
-        GPtr<ID3D12ShaderReflection> reflection = g_ShaderSystem->GetCompilerShader(vs_identifier)->reflectionData;
+        const auto& vertex_params = ss->GetReflection(vs_identifier)->vertexParameters;
 
-        D3D12_SHADER_DESC shader_desc;
-        reflection->GetDesc(&shader_desc);
-
-        List<D3D12_INPUT_ELEMENT_DESC> elements(shader_desc.InputParameters);
+        List<D3D12_INPUT_ELEMENT_DESC> elements(vertex_params.size());
 
         int32_t prev_input_slot = -1;
         uint32_t element_offset = 0;
 
-        for (int i = 0; i < shader_desc.InputParameters; ++i)
+        for (int i = 0; i < vertex_params.size(); ++i)
         {
-            D3D12_SIGNATURE_PARAMETER_DESC desc;
-            reflection->GetInputParameterDesc(i, &desc);
+            const VertexEntryParameter& param = vertex_params[i];
 
             uint32_t input_slot = Math::Min(uint32_t(prev_input_slot + 1), vertex_buffers_count - 1);
             if (input_slot != prev_input_slot)
@@ -403,8 +472,8 @@ namespace RB::Graphics::D3D12
             }
 
             elements[i] = {};
-            elements[i].SemanticName            = desc.SemanticName;
-            elements[i].SemanticIndex           = desc.SemanticIndex;
+            elements[i].SemanticName            = param.semantic.c_str();
+            elements[i].SemanticIndex           = param.semanticIndex;
             elements[i].InstanceDataStepRate    = 0;
             elements[i].InputSlot               = input_slot;
             elements[i].AlignedByteOffset       = element_offset;
@@ -412,15 +481,13 @@ namespace RB::Graphics::D3D12
 
             prev_input_slot = input_slot;
 
-            uint32_t channel_count = NumberOfSetBits(desc.Mask);
-
-            switch (desc.ComponentType)
+            switch (param.scalarType)
             {
-            case D3D_REGISTER_COMPONENT_UINT32:
+            case ScalarType::UInt32:
             {
-                element_offset += sizeof(uint32_t) * channel_count;
+                element_offset += sizeof(uint32_t) * param.elements;
 
-                switch (channel_count)
+                switch (param.elements)
                 {
                 case 1: elements[i].Format = DXGI_FORMAT_R32_UINT; break;
                 case 2: elements[i].Format = DXGI_FORMAT_R32G32_UINT; break;
@@ -432,11 +499,11 @@ namespace RB::Graphics::D3D12
                 }
             }
             break;
-            case D3D_REGISTER_COMPONENT_SINT32:
+            case ScalarType::Int32:
             {
-                element_offset += sizeof(uint32_t) * channel_count;
+                element_offset += sizeof(int32_t) * param.elements;
 
-                switch (channel_count)
+                switch (param.elements)
                 {
                 case 1: elements[i].Format = DXGI_FORMAT_R32_SINT; break;
                 case 2: elements[i].Format = DXGI_FORMAT_R32G32_SINT; break;
@@ -448,11 +515,11 @@ namespace RB::Graphics::D3D12
                 }
             }
             break;
-            case D3D_REGISTER_COMPONENT_FLOAT32:
+            case ScalarType::Float32:
             {
-                element_offset += sizeof(float) * channel_count;
+                element_offset += sizeof(float) * param.elements;
 
-                switch (channel_count)
+                switch (param.elements)
                 {
                 case 1: elements[i].Format = DXGI_FORMAT_R32_FLOAT; break;
                 case 2: elements[i].Format = DXGI_FORMAT_R32G32_FLOAT; break;
@@ -464,11 +531,11 @@ namespace RB::Graphics::D3D12
                 }
             }
             break;
-            case D3D_REGISTER_COMPONENT_UINT16:
+            case ScalarType::UInt16:
             {
-                element_offset += sizeof(uint16_t) * channel_count;
+                element_offset += sizeof(uint16_t) * param.elements;
 
-                switch (channel_count)
+                switch (param.elements)
                 {
                 case 1: elements[i].Format = DXGI_FORMAT_R16_UINT; break;
                 case 2: elements[i].Format = DXGI_FORMAT_R16G16_UINT; break;
@@ -480,11 +547,11 @@ namespace RB::Graphics::D3D12
                 }
             }
             break;
-            case D3D_REGISTER_COMPONENT_SINT16:
+            case ScalarType::Int16:
             {
-                element_offset += sizeof(uint16_t) * channel_count;
+                element_offset += sizeof(int16_t) * param.elements;
 
-                switch (channel_count)
+                switch (param.elements)
                 {
                 case 1: elements[i].Format = DXGI_FORMAT_R16_SINT; break;
                 case 2: elements[i].Format = DXGI_FORMAT_R16G16_SINT; break;
@@ -496,11 +563,11 @@ namespace RB::Graphics::D3D12
                 }
             }
             break;
-            case D3D_REGISTER_COMPONENT_FLOAT16:
+            case ScalarType::Float16:
             {
-                element_offset += sizeof(uint16_t) * channel_count;
+                element_offset += sizeof(uint16_t) * param.elements;
 
-                switch (channel_count)
+                switch (param.elements)
                 {
                 case 1: elements[i].Format = DXGI_FORMAT_R16_FLOAT; break;
                 case 2: elements[i].Format = DXGI_FORMAT_R16G16_FLOAT; break;
@@ -512,9 +579,6 @@ namespace RB::Graphics::D3D12
                 }
             }
             break;
-            case D3D_REGISTER_COMPONENT_UINT64:
-            case D3D_REGISTER_COMPONENT_SINT64:
-            case D3D_REGISTER_COMPONENT_FLOAT64:
             default:
                 RB_LOG_ERROR(LOGTAG_GRAPHICS, "Format not recognized");
                 return elements;

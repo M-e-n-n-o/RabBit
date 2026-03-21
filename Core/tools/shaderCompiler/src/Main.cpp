@@ -53,11 +53,12 @@ int main(int argc, char* argv[])
 
 	auto reflection = compiler.GetShaderReflection();
 	auto blobs = compiler.GetShaderBlobs();
+	auto params = compiler.GetModuleParameters();
 
 	LOGW(L"");
 
 	ShaderWriter writer;
-	writer.WriteOutShaders(RB_DEFINE_FOLDER, shader_bin_dir, reflection, blobs);
+	writer.WriteOutShaders(RB_DEFINE_FOLDER, shader_bin_dir, reflection, blobs, params);
 
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");

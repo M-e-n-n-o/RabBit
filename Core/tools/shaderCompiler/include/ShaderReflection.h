@@ -1,7 +1,5 @@
 #pragma once
 
-// This file is borrowed from and copied over by the shader compiler, do not modify this file in the RabBit project!
-
 #include <vector>
 #include <string>
 
@@ -24,8 +22,10 @@ namespace RB::ShaderCompiler
 	{
 		Float32 = 0,
 		Float16,
-		Int32,
 		UInt32,
+		UInt16,
+		Int32,
+		Int16,
 	};
 
 	struct GlobalParameter
@@ -36,7 +36,7 @@ namespace RB::ShaderCompiler
 		uint32_t	size;
 	};
 
-	struct EntryParameter // Push constant
+	struct EntryParameter
 	{
 		std::string name;
 		uint32_t	bindingOffset;
@@ -59,13 +59,13 @@ namespace RB::ShaderCompiler
 		uint64_t size;
 	};
 
-	struct CompiledShader
+	struct ShaderReflection
 	{
 		std::string							entryName;
 		Stage								stage;
 		Blob								shaderBlob;
 		std::vector<GlobalParameter>		globalParameters;
-		std::vector<EntryParameter>			entryPointParameters;
+		std::vector<EntryParameter>			entryPointParameters; // Push constants
 		std::vector<VertexEntryParameter>	vertexParameters;
 	};
 }
