@@ -100,19 +100,15 @@ namespace RB::Graphics::VK
 
     void DeviceQueue::UpdateRunningSubmissions()
     {
-        auto itr = m_RunningSubmissions.begin();
-        while (itr != m_RunningSubmissions.end())
-        {
-            if (IsSubmissionComplete(itr->submissionValue))
+        std::erase_if(m_RunningSubmissions, [this](const auto& submission) 
             {
-                m_AvailableCommandBuffers.push(itr->commandBuffer);
-                itr = m_RunningSubmissions.erase(itr);
-            }
-            else
-            {
-                ++itr;
-            }
-        }
+                if (IsSubmissionComplete(submission.submissionValue)) 
+                {
+                    m_AvailableCommandBuffers.push(submission.commandBuffer);
+                    return true;
+                }
+                return false;
+            });
     }
 
     void DeviceQueue::CpuWaitUntilIdle(uint64_t max_duration_ms)

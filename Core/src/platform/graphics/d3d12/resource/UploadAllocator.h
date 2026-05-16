@@ -81,5 +81,6 @@ namespace RB::Graphics::D3D12
 
     extern TransientUploadBuffer* g_TransientCBVAllocator;
     extern TransientUploadBuffer* g_TransientVBAllocator;
+    extern TransientUploadBuffer* g_TransientUploadAllocator;
 }
 #endif

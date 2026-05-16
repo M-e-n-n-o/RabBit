@@ -719,31 +719,19 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
     {
-        // TODO Create a big upload resource and keep it alive for a couple of frames so we don't have to create an upload resource for every upload 
-        // if we do 10 uploads after eachother (so suballocate an upload resource in the full resource). If we create such a big upload resource, 
-        // make sure that when doing texture uploads, the starting point of a allocation should be aligned by D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT!
-        // !!! REMOVE THE HACK IN ResourceManager.cpp WHEN THIS HAS BEEN IMPLEMENTED !!!
-
         RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
+
+        GpuResource* gpu_res = (GpuResource*)resource->GetNativeResource();
 
         switch (resource->GetPrimitiveType())
         {
         case RenderResourceType::Buffer:
         {
-            GpuResource* upload_res = new GpuResource();
-            g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", { data_size });
+            UploadAllocation upload_alloc = g_TransientUploadAllocator->Allocate(data_size);
 
-            char* mapped_mem;
-            RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
+            memcpy(upload_alloc.cpuWriteAddress, data, data_size);
 
-            memcpy(mapped_mem, data, data_size);
-
-            // Unmapping is unnecessary
-            //upload_res->Unmap(0, nullptr);
-
-            InternalCopy(upload_res, (GpuResource*)resource->GetNativeResource(), resource->GetPrimitiveType());
-
-            delete upload_res;
+            m_CommandList->CopyBufferRegion(gpu_res->GetResource(), 0, upload_alloc.resource->GetResource(), upload_alloc.offset, data_size);
         }
         break;
 
@@ -751,7 +739,7 @@ namespace RB::Graphics::D3D12
         {
             // Reference: https://alextardif.com/D3D11To12P3.html
 
-            D3D12_RESOURCE_DESC desc = ((GpuResource*)resource->GetNativeResource())->GetResource()->GetDesc();
+            D3D12_RESOURCE_DESC desc = gpu_res->GetResource()->GetDesc();
 
             uint64_t row_size = GetElementSizeFromFormat(resource->GetFormat()) * desc.Width;
 
@@ -763,11 +751,7 @@ namespace RB::Graphics::D3D12
 
             g_GraphicsDevice->Get()->GetCopyableFootprints(&desc, 0, (uint32_t)num_sub_resources, 0, layouts, num_rows, row_sizes_in_bytes, &tex_mem_size);
 
-            GpuResource* upload_res = new GpuResource();
-            g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", { tex_mem_size });
-
-            uint8_t* mapped_mem;
-            RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
+            UploadAllocation upload_alloc = g_TransientUploadAllocator->Allocate(tex_mem_size, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 
             for (uint64_t array_index = 0; array_index < desc.DepthOrArraySize; array_index++)
             {
@@ -781,7 +765,7 @@ namespace RB::Graphics::D3D12
                     const uint64_t sub_resource_pitch = Math::AlignUp(sub_resourceLayout.Footprint.RowPitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
                     const uint64_t sub_resource_depth = sub_resourceLayout.Footprint.Depth;
 
-                    uint8_t* destination_sub_resource_memory = mapped_mem + sub_resourceLayout.Offset;
+                    uint8_t* destination_sub_resource_memory = upload_alloc.cpuWriteAddress + sub_resourceLayout.Offset;
 
                     for (uint64_t slice_index = 0; slice_index < sub_resource_depth; slice_index++)
                     {
@@ -804,20 +788,18 @@ namespace RB::Graphics::D3D12
             for (int sub_resource_index = 0; sub_resource_index < num_sub_resources; ++sub_resource_index)
             {
                 D3D12_TEXTURE_COPY_LOCATION src_loc = {};
-                src_loc.pResource               = upload_res->GetResource();
+                src_loc.pResource               = upload_alloc.resource->GetResource();
                 src_loc.Type                    = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
                 src_loc.PlacedFootprint         = layouts[sub_resource_index];
-                src_loc.PlacedFootprint.Offset  = 0;
+                src_loc.PlacedFootprint.Offset  = upload_alloc.offset;
 
                 D3D12_TEXTURE_COPY_LOCATION dest_loc = {};
-                dest_loc.pResource          = ((GpuResource*)resource->GetNativeResource())->GetResource();
+                dest_loc.pResource          = gpu_res->GetResource();
                 dest_loc.Type               = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dest_loc.SubresourceIndex   = sub_resource_index;
 
                 m_CommandList->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, nullptr);
             }
-
-            delete upload_res;
         }
         break;
 

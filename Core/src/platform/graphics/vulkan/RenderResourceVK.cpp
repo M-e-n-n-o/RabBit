@@ -120,6 +120,21 @@ namespace RB::Graphics::VK
         m_IsDepthStencil = IsDepthFormat(format);
     }
 
+    Texture2DVK::Texture2DVK(const Texture2DVK* other)
+        : m_Name(other->m_Name)
+        , m_Resource(other->m_Resource)
+        , m_ImageView(other->m_ImageView)
+        , m_Format(other->m_Format)
+        , m_Width(other->m_Width)
+        , m_Height(other->m_Height)
+        , m_VpWidth(other->m_VpWidth)
+        , m_VpHeight(other->m_VpHeight)
+        , m_IsRenderTarget(other->m_IsRenderTarget)
+        , m_AllowReadWrite(other->m_AllowReadWrite)
+        , m_IsDepthStencil(other->m_IsDepthStencil)
+    {
+    }
+
     Texture2DVK::~Texture2DVK()
     {
         SAFE_DELETE(m_Resource);

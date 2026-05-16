@@ -213,6 +213,12 @@ namespace RB::Graphics
         case RenderAPI::D3D12:
             return CreateShared<D3D12::Texture2DD3D12>((D3D12::Texture2DD3D12*)original.get());
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return CreateShared<VK::Texture2DVK>((VK::Texture2DVK*)original.get());
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;

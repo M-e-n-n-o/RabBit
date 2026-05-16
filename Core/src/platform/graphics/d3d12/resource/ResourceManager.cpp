@@ -55,6 +55,11 @@ namespace RB::Graphics::D3D12
         m_CreationThread->ScheduleJob(m_DeletionJob, desc);
 
         list.clear();
+
+        std::erase_if(m_ScheduledCreations, [this](const auto& creation)
+            {
+                return m_CreationThread->IsFinished(creation.jobID);
+            });
     }
 
     void ResourceManager::FlushBookkeeping()
@@ -97,12 +102,6 @@ namespace RB::Graphics::D3D12
             }
 
             id = itr->jobID;
-
-            // HACK
-            // TODO Somehow the references to the upload resources from RenderInterfaceD3D12::UploadDataToResource are somehow getting mixed up in this list 
-            // and they start waiting on eachothers job (no clue why). To fix this for now just remove the job from the list when starting to wait on it.
-            // This can break when having multiple threads calling WaitUntilResourceValid and thus should be removed when the big upload resource has been implemented!
-            m_ScheduledCreations.erase(itr);
 
             // Tell the thread to prioritize this resource creation as we are waiting for it
             m_CreationThread->PrioritizeJob(id);

@@ -164,6 +164,7 @@ namespace RB::Graphics::D3D12
     
     TransientUploadBuffer* g_TransientCBVAllocator = nullptr;
     TransientUploadBuffer* g_TransientVBAllocator = nullptr;
+    TransientUploadBuffer* g_TransientUploadAllocator = nullptr;
 
     TransientUploadBuffer::TransientUploadBuffer(const char* name, uint64_t page_size)
         : m_CurrentAllocation(0)
