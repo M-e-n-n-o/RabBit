@@ -49,14 +49,11 @@ float SchlickFresnel(float u)
 
 float Gtr1(float NdotH, float alpha)
 {
-    [flatten]
-    if (alpha >= 1.0f)
-    {
-        return 1.0f / PI;
-    }
+    alpha = min(alpha, 0.999f);
+
     float a2 = alpha * alpha;
     float t = 1.0f + (a2 - 1.0f) * NdotH * NdotH;
-    return (a2 - 1.0f) / (PI * log(a2) * t);
+    return (a2 - 1.0f) / max(PI * log(a2) * t, 1e-5f);
 }
 
 float Gtr2(float NdotH, float alpha)
@@ -76,6 +73,22 @@ float SmithGGX(float NdotV, float alpha)
 float SmithGGXAnisotropy(float NdotV, float ax)
 {
     return 1.0f / (NdotV + sqrt(ax * ax * (1 - NdotV * NdotV) + NdotV * NdotV));
+}
+
+float GeometrySpecAA(float3 N, float roughness)
+{
+    // The higher the more aggressive the filtering, but blurrier reflections
+    const float k = 0.3f;
+
+    float3 dndu = ddx(N);
+    float3 dndv = ddy(N);
+
+    float variance = max(dot(dndu, dndu), dot(dndv, dndv));
+
+    float r2 = roughness * roughness;
+    r2 += variance * k;
+
+    return saturate(sqrt(r2));
 }
 
 public void GetDisneyBRDF(in float3 N,
@@ -105,8 +118,10 @@ public void GetDisneyBRDF(in float3 N,
 
     diffuse = base_color * diffuse_term * NdotL * light_color;
 
+    float filtered_roughness = GeometrySpecAA(N, roughness);
+
     // Specular (GGX Cook-Torrance)
-    float alpha = max(0.001f, roughness * roughness);
+    float alpha = max(0.001f, filtered_roughness * filtered_roughness);
     float D = Gtr2(NdotH, alpha);
     float FH = SchlickFresnel(LdotH);
     float3 F = lerp(specular_color, 1.0f.xxx, FH);
