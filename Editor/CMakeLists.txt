@@ -23,6 +23,7 @@ file(GLOB_RECURSE EDITOR_SRC_FILES CONFIGURE_DEPENDS
 )
 
 add_executable(Editor ${EDITOR_SRC_FILES})
+set_target_properties(Editor PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Editor>")
 
 add_compile_definitions(
     IMGUI_USER_CONFIG="ImGuiConfig.h"
