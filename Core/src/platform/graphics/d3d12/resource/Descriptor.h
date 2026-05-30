@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "platform/utils/Windows.h"
 #include <d3d12.h>
 
 namespace RB::Graphics::D3D12

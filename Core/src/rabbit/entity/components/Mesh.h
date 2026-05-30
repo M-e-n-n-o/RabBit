@@ -20,7 +20,7 @@ namespace RB::Entity
         };
 
         Mesh(const char* name, LoadedMesh::Submodel& submodel);
-        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data, uint64_t index_data_count);
+        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data = nullptr, uint64_t index_data_count = 0);
 
         const VertexPack& GetVertexPack() const
         {
@@ -46,6 +46,7 @@ namespace RB::Entity
     {
     public:
 
+        Material();
         Material(const char* name, LoadedImage* image);
         Material(const char* file_name, TextureColorSpace color_space = TextureColorSpace::sRGB);
 

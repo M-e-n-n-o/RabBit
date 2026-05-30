@@ -60,6 +60,11 @@ namespace Editor
 
     EngineEditorWindow::~EngineEditorWindow()
     {
+        for (int i = 0; i < m_Panels.size(); i++)
+        {
+            m_Panels[i]->OnDestroy();
+            delete m_Panels[i];
+        }
     }
 
     void EngineEditorWindow::Select()
@@ -69,13 +74,11 @@ namespace Editor
 
     void EngineEditorWindow::SelectForDraw()
     {
-        Select();
-        ImGui::Begin(m_Name);
+        ImGui::SetNextWindowDockID(m_DockSpaceID, ImGuiCond_FirstUseEver);
     }
 
     void EngineEditorWindow::DeselectForDraw()
     {
-        ImGui::End();
     }
 
     void EngineEditorWindow::Update()
@@ -102,6 +105,7 @@ namespace Editor
                                                          ImGuiWindowFlags_NoBackground);
         ImGui::SetCursorPos(ImVec2(10, 3));
         ImGui::Text(m_Name);
+
         ImGui::SameLine(ImGui::GetWindowWidth() - 70);
         if (ImGui::Button("_"))
         {
@@ -124,16 +128,43 @@ namespace Editor
         // Create the renderable area
         ImGui::SetNextWindowSize(ImVec2(os_window_rect.x, os_window_rect.y - os_title_bar_height));
         ImGui::SetNextWindowPos(ImVec2(0, os_title_bar_height));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
         ImGui::Begin(m_Name, nullptr, ImGuiWindowFlags_NoDecoration |
                                       ImGuiWindowFlags_NoMove |
+                                      ImGuiWindowFlags_NoDocking |
                                       ImGuiWindowFlags_NoScrollWithMouse |
                                       ImGuiWindowFlags_NoBackground);
+
+        m_DockSpaceID = ImGui::GetID("MainDockSpace");
+        ImGui::DockSpace(
+            m_DockSpaceID,
+            ImVec2(0, 0),
+            ImGuiDockNodeFlags_PassthruCentralNode
+        );
+
         ImGui::End();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar(2);
+
+        UpdatePanels();
     }
 
     void EngineEditorWindow::SetBorderless(bool borderless)
     {
         // Not supported
+    }
+
+    void EngineEditorWindow::UpdatePanels()
+    {
+        Select();
+        for (int i = 0; i < m_Panels.size(); i++)
+        {
+            SelectForDraw();
+            m_Panels[i]->OnUpdate();
+            DeselectForDraw();
+        }
     }
 
     void EngineEditorWindow::DestroyWindow()

@@ -15,4 +15,12 @@ namespace RB::Events
 
         int GetCategoryFlags() const override { return kEventCat_Application; }
     };
+
+    class RenderOutputChangedEvent : public ApplicationEvent
+    {
+    public:
+        RenderOutputChangedEvent() : ApplicationEvent() {}
+
+        DEFINE_CLASS_TYPE(RenderOutputChangedEvent, RenderOutputChanged, true)
+    };
 }

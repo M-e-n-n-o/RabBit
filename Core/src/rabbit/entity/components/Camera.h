@@ -36,8 +36,9 @@ namespace RB::Entity
         void SetRenderGraphType(Graphics::RenderGraphType type) { m_RenderGraphType = type; }
         uint32_t GetRenderGraphType() const { return m_RenderGraphType; }
 
-        void* GetTargetWindowHandle()	const { return m_TargetWindowHandle; }
+        void* GetTargetWindowHandle() const { return m_TargetWindowHandle; }
         Shared<Graphics::Texture2D> GetRenderTexture() const { return m_RenderTexture; }
+        void SetRenderTexture(Shared<Graphics::Texture2D> tex) { m_RenderTexture = tex; }
         
         uint32_t GetRenderTargetWidth() const;
         uint32_t GetRenderTargetHeight() const;

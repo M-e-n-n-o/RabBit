@@ -10,7 +10,7 @@ namespace RB::Events
         WindowCreated, WindowCloseRequest, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved, WindowFullscreenToggle,
         KeyPressed, KeyReleased, KeyTyped,
         MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
-        GraphicsSettingsChanged
+        RenderOutputChanged
     };
 
     enum EventCategory

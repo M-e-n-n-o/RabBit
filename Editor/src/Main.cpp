@@ -1,6 +1,8 @@
 // We need these defines to be able to access the platform files inside RabBit
 #define RB_GRAPHICS_API_D3D12 1
 #define RB_PLATFORM_WINDOWS 1
+
+#define RB_DEFINE_ENTRY_POINT
 #include <RabBit.h>
 
 using namespace RB;

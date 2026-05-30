@@ -445,8 +445,11 @@ namespace RB::Graphics
             SyncWithGpu();
         }
 
-        // Notify that we are done syncing
-        m_ForceSync.SetValue(kForceSyncState_None);
+        if (!m_RenderThread->IsCurrentThread())
+        {
+            // Notify that we are done syncing
+            m_ForceSync.SetValue(kForceSyncState_None);
+        }
     }
 
     void Renderer::SetRenderGraphs(const UnorderedMap<RenderGraphType, RenderGraphBuilder>& graphs)
@@ -506,52 +509,55 @@ namespace RB::Graphics
             return true;
         };
 
-        if (event.IsInCategory(kEventCat_Window))
+        if (event.IsInCategory(kEventCat_Window) || event.IsInCategory(kEventCat_Application))
         {
-            WindowEvent* window_event = static_cast<WindowEvent*>(&event);
-
-            Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
-
-            if (window)
+            switch (event.GetEventType())
             {
-                switch (window_event->GetEventType())
+            case EventType::WindowResize:
+            case EventType::RenderOutputChanged:
+            {
+                bool success = sync();
+                if (!success)
                 {
-                case EventType::WindowResize:
-                {
-                    bool success = sync();
-                    if (!success)
-                    {
-                        return false;
-                    }
-
-                    // Recreate the render resources with the new sizes before rendering the next frame
-                    m_CurrentValidRenderGraphSizes = 0;
+                    return false;
                 }
+
+                // Recreate the render resources with the new sizes before rendering the next frame
+                m_CurrentValidRenderGraphSizes = 0;
+            }
+            break;
+
+            case EventType::WindowCloseRequest:
+            {
+                // Make sure that the next render jobs are canceled
+                bool success = sync();
+                if (!success)
+                {
+                    return false;
+                }
+            }
+            break;
+
+            case EventType::WindowCreated:
+            case EventType::WindowClose:
+            case EventType::WindowFocus:
+            case EventType::WindowLostFocus:
+            case EventType::WindowMoved:
+            case EventType::WindowFullscreenToggle: // Also toggles a window resize event after this
+            default:
                 break;
+            }
 
-                case EventType::WindowCloseRequest:
+            if (event.IsInCategory(kEventCat_Window))
+            {
+                WindowEvent* window_event = static_cast<WindowEvent*>(&event);
+                Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
+
+                if (window)
                 {
-                    // Make sure that the next render jobs are canceled
-                    bool success = sync();
-                    if (!success)
-                    {
-                        return false;
-                    }
+                    // Actually process the event
+                    window->ProcessEvent(*window_event);
                 }
-                break;
-
-                case EventType::WindowCreated:
-                case EventType::WindowClose:
-                case EventType::WindowFocus:
-                case EventType::WindowLostFocus:
-                case EventType::WindowMoved:
-                case EventType::WindowFullscreenToggle: // Also toggles a window resize event after this
-                default:
-                    break;
-                }
-
-                // Actually process the event
-                window->ProcessEvent(*window_event);
             }
         }
 

@@ -52,9 +52,10 @@
 */
 
 
-// --Entry point--------------------
-#include "rabbit/EntryPoint.h"
-// ---------------------------------
+// Define on the app side in the file with "RB::CreateApplication"
+#ifdef RB_DEFINE_ENTRY_POINT
+    #include "rabbit/EntryPoint.h"
+#endif
 
 #include "rabbit/utils/debug/Log.h"
 #include "rabbit/utils/debug/Assert.h"

@@ -1,3 +1,4 @@
+#define RB_DEFINE_ENTRY_POINT
 #include <RabBit.h>
 #include "TestLayer.h"
 

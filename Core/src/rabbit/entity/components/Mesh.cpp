@@ -47,6 +47,11 @@ namespace RB::Entity
         m_ValidBounds = false;
     }
 
+    Material::Material()
+    {
+        m_Texture = Graphics::g_TexDefaultError;
+    }
+
     Material::Material(const char* name, LoadedImage* image)
     {
         m_Texture = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
