@@ -78,8 +78,6 @@ namespace Editor
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // I don't want ImGui to create/destroy windows itself!
-        io.ConfigDpiScaleFonts = true;
-        io.ConfigDpiScaleViewports = true;
 
         // Setup style
         ImGui::StyleColorsDark();
@@ -130,6 +128,9 @@ namespace Editor
         };
 
         ImGui_ImplDX12_Init(&init_info);
+
+        // Call NewFrame after init to create the font atlas
+        ImGui_ImplDX12_NewFrame();
     }
     
     void Editor::DestroyImGuiContext(ImGuiContext* ctx)
