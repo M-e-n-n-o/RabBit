@@ -10,9 +10,9 @@ namespace Editor
     public:
         ViewportPanel();
 
-        virtual void OnCreate() override;
-        virtual void OnDestroy() override;
-        virtual void OnUpdate() override;
+        void OnCreate() override;
+        void OnDestroy() override;
+        void OnUpdate() override;
 
         RB::Shared<RB::Graphics::Texture2D> GetSceneTexture() const { return m_SceneTexture; }
 

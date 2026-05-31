@@ -12,6 +12,9 @@ int main(int argc, char* argv[])
     // Create the logger
 #ifdef RB_ENABLE_LOGS
     RB::Utils::Debug::Logger::OpenConsole();
+
+    RB::Utils::Debug::Logger::LogTime();
+    RB::Utils::Debug::Logger::LogCore(RB::LOGTAG_MAIN, "Welcome to the RabBit Engine\n");
 #endif
 
     RB::Events::g_EventManager = new RB::Events::EventManager();

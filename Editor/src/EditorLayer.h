@@ -2,7 +2,8 @@
 
 #include <rabbit/app/ApplicationLayer.h>
 
-#include "ViewportPanel.h"
+#include "panels/ViewportPanel.h"
+#include "panels/ConsolePanel.h"
 #include "engine/EngineEditorWindow.h"
 #include "ImGuiManager.h"
 
@@ -24,11 +25,15 @@ namespace Editor
 
         void OnDetach() override;
 
+        void CustomLogging(int mode, const char* format, va_list args);
+
     private:
         ImGuiContext* m_ImGuiRenderContext;
         EngineEditorWindow* m_Window;
 
         ViewportPanel* m_Viewport;
+        ConsolePanel* m_Console;
+
         RB::Entity::Camera* m_Camera;
         RB::Entity::Mesh* m_TriangleMesh;
         RB::Entity::Material* m_Material;

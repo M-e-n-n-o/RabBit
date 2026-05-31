@@ -7,6 +7,30 @@
 
 namespace RB::Utils::Debug
 {
+    static int m_CurrentMode = Logger::kOutputMode_Normal;
+    static void(*m_CustomOutput)(int, const char*, va_list) = nullptr;
+
+    void Print(char const* const format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+
+        if (m_CustomOutput)
+            m_CustomOutput(m_CurrentMode, format, args);
+        else
+            vprintf(format, args);
+
+        va_end(args);
+    }
+
+    void PrintV(char const* const format, va_list args)
+    {
+        if (m_CustomOutput)
+            m_CustomOutput(m_CurrentMode, format, args);
+        else
+            vprintf(format, args);
+    }
+
     void Logger::OpenConsole()
     {
 #if RB_PLATFORM_WINDOWS
@@ -29,20 +53,26 @@ namespace RB::Utils::Debug
 
     void Logger::SetModeNormal()
     {
-        // Green
-        printf("\033[1;32m");
+        m_CurrentMode = Logger::kOutputMode_Normal;
+
+        if (!m_CustomOutput)
+            printf("\033[1;32m"); // Green
     }
 
     void Logger::SetModeWarn()
     {
-        // Orange/Yellow
-        printf("\033[1;33m");
+        m_CurrentMode = Logger::kOutputMode_Warn;
+
+        if (!m_CustomOutput)
+            printf("\033[1;33m"); // Orange/Yellow
     }
 
     void Logger::SetModeError()
     {
-        // Red
-        printf("\033[1;31m");
+        m_CurrentMode = Logger::kOutputMode_Error;
+
+        if (!m_CustomOutput)
+            printf("\033[1;31m"); // Red
     }
 
     void Logger::LogTime()
@@ -56,22 +86,22 @@ namespace RB::Utils::Debug
         std::ostringstream oss;
         oss << std::put_time(&tm, "%H:%M:%S") << '.' << std::setw(3) << std::setfill('0') << ms.count();
 
-        printf("[%s] ", oss.str().c_str());
+        Print("[%s] ", oss.str().c_str());
     }
 
     void Logger::LogCore(const char* tag, const char* format, ...)
     {
         if (strlen(format) == 0)
         {
-            printf("\n");
+            Print("\n");
             return;
         }
 
         va_list args;
         va_start(args, format);
         if (strlen(tag) != 0)
-            printf("[RabBit-%s] ", tag);
-        vprintf(format, args);
+            Print("[RabBit-%s] ", tag);
+        PrintV(format, args);
         va_end(args);
     }
 
@@ -79,15 +109,28 @@ namespace RB::Utils::Debug
     {
         if (strlen(format) == 0)
         {
-            printf("\n");
+            Print("\n");
             return;
         }
 
         va_list args;
         va_start(args, format);
-        printf("[App] ");
-        vprintf(format, args);
+        Print("[App] ");
+        PrintV(format, args);
         va_end(args);
+    }
+
+    void Logger::SetCustomOutput(void(*CustomLog)(int, const char*, va_list))
+    {
+        if (CustomLog != nullptr && m_CustomOutput == nullptr)
+        {
+            m_CustomOutput = CustomLog;
+
+            // Close console window
+            fflush(stdout);
+            fclose(stdout);
+            FreeConsole();
+        }
     }
 }
 #endif

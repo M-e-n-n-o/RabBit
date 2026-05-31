@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WindowPanel.h"
+#include "panels/WindowPanel.h"
 
 // We need the windows define to be able to access the windows platform files inside RabBit
 #define RB_PLATFORM_WINDOWS 1

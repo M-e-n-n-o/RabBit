@@ -57,10 +57,10 @@ namespace RB
         void Shutdown();
 
         template<class Layer, typename... Args>
-        ApplicationLayer* PushLayer(Args... args);
+        Layer* PushLayer(Args... args);
 
         template<class Overlay, typename... Args>
-        ApplicationLayer* PushOverlay(Args... args);
+        Overlay* PushOverlay(Args... args);
 
         void PopLayer(ApplicationLayer* layer);
 
@@ -116,18 +116,18 @@ namespace RB
     };
 
     template<class Layer, typename... Args>
-    inline ApplicationLayer* Application::PushLayer(Args... args)
+    inline Layer* Application::PushLayer(Args... args)
     {
-        ApplicationLayer* layer = new Layer(args...);
+        Layer* layer = new Layer(args...);
         m_LayerStack.PushLayer(layer);
         OnNewLayerPushed(layer);
         return layer;
     }
 
     template<class Overlay, typename... Args>
-    inline ApplicationLayer* Application::PushOverlay(Args... args)
+    inline Overlay* Application::PushOverlay(Args... args)
     {
-        ApplicationLayer* overlay = new Overlay(args...);
+        Overlay* overlay = new Overlay(args...);
         m_LayerStack.PushOverlay(overlay);
         OnNewLayerPushed(overlay);
         return overlay;

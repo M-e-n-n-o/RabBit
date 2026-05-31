@@ -2,7 +2,9 @@
 
 #include "Core.h"
 
-#ifndef RB_ENABLE_LOGS
+#ifdef RB_ENABLE_LOGS
+#include <cstdarg>
+#else
 #include <cstdio>
 #include <string>
 #endif
@@ -59,6 +61,13 @@ namespace RB::Utils::Debug
 #ifdef RB_ENABLE_LOGS
     namespace Logger
     {
+        enum OutputMode
+        {
+            kOutputMode_Normal,
+            kOutputMode_Warn,
+            kOutputMode_Error
+        };
+
         void OpenConsole();
 
         void SetModeNormal();
@@ -68,6 +77,8 @@ namespace RB::Utils::Debug
         void LogTime();
         void LogCore(const char* tag, const char* format, ...);
         void LogApp(const char* format, ...);
+
+        void SetCustomOutput(void (*CustomLog)(int mode, const char* format, va_list args));
     }
 #endif
 }

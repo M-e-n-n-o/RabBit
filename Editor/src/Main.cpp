@@ -14,17 +14,36 @@ using namespace RB::Graphics;
 class EditorApp : public RB::Application
 {
 public:
-    EditorApp(RB::AppInfo& info) : Application(info) {}
+    EditorApp(RB::AppInfo& info) 
+        : Application(info)
+        , m_EditorLayer(nullptr)
+    {}
 
     void OnStart() override
     {
-        PushLayer<Editor::EditorLayer>();
+        m_EditorLayer = PushLayer<Editor::EditorLayer>();
     }
 
     void OnStop() override
     {
     }
+
+    void CustomLogging(int mode, const char* format, va_list args)
+    {
+        if (m_EditorLayer)
+            m_EditorLayer->CustomLogging(mode, format, args);
+    }
+
+private:
+    Editor::EditorLayer* m_EditorLayer;
 };
+
+void CustomLogging(int mode, const char* format, va_list args)
+{
+    EditorApp* app = (EditorApp*)Application::GetInstance();
+
+    app->CustomLogging(mode, format, args);
+}
 
 RB::Application* RB::CreateApplication(const char* launch_args)
 {
@@ -65,5 +84,9 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             },
         };
 
-    return new EditorApp(app_info);
+    RB::Application* app = new EditorApp(app_info);
+
+    RB::Utils::Debug::Logger::SetCustomOutput(CustomLogging);
+
+    return app;
 }

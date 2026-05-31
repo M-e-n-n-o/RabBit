@@ -47,7 +47,7 @@ namespace Editor
         InitializeImGuiContextRenderBackend(m_ImGuiRenderContext, m_Window->GetBackBufferFormat());
 
         m_Viewport = m_Window->AddPanel<ViewportPanel>();
-        m_Window->AddPanel<TestWindowPanel>();
+        m_Console = m_Window->AddPanel<ConsolePanel>();
         m_Window->AddPanel<TestWindowPanel>();
     }
 
@@ -103,5 +103,11 @@ namespace Editor
         delete m_TriangleMesh;
         delete m_Material;
         DestroyImGuiContext(m_ImGuiRenderContext);
+    }
+
+    void EditorLayer::CustomLogging(int mode, const char* format, va_list args)
+    {
+        if (m_Console)
+            m_Console->AppendLog(mode, format, args);
     }
 }
