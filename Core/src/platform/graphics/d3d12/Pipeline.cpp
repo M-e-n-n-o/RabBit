@@ -6,6 +6,8 @@
 #include "resource/Descriptor.h"
 #include "graphics/ShaderSystem.h"
 
+#include <d3dx12/d3dx12.h>
+
 using namespace RB::ShaderCompiler;
 
 namespace RB::Graphics::D3D12

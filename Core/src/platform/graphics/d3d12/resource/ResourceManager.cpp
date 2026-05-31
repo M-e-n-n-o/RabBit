@@ -6,6 +6,8 @@
 #include "ResourceManager.h"
 #include "ResourceStateManager.h"
 
+#include <d3dx12/d3dx12.h>
+
 namespace RB::Graphics::D3D12
 {
     void CreationJob(JobData* data);

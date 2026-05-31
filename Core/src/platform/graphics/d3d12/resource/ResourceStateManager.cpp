@@ -5,6 +5,8 @@
 #include "GpuResource.h"
 #include "../GraphicsDevice.h"
 
+#include <d3dx12/d3dx12.h>
+
 namespace RB::Graphics::D3D12
 {
     ResourceStateManager* g_ResourceStateManager = nullptr;

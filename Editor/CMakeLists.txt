@@ -1,3 +1,5 @@
+project(RabBitEditor VERSION 0.0.1)
+
 file(GLOB_RECURSE EDITOR_SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.cpp"

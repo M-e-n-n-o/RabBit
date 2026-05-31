@@ -1,7 +1,4 @@
-cmake_minimum_required(VERSION 3.22.1)
-
 project(RabBitEngine VERSION 0.0.1)
-set(CMAKE_CXX_STANDARD 20)
 
 # Platform detection
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
