@@ -105,9 +105,14 @@ namespace Editor
         DestroyImGuiContext(m_ImGuiRenderContext);
     }
 
-    void EditorLayer::CustomLogging(int mode, const char* format, va_list args)
+    bool EditorLayer::CustomLogging(int mode, const char* text)
     {
         if (m_Console)
-            m_Console->AppendLog(mode, format, args);
+        {
+            m_Console->AppendLog(mode, text);
+            return true;
+        }
+
+        return false;
     }
 }

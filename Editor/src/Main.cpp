@@ -8,11 +8,15 @@
 using namespace RB;
 using namespace RB::Graphics;
 
+#include "Utils.h"
 #include "EditorLayer.h"
 #include "engine/ImGuiRenderPass.h"
 
 class EditorApp : public RB::Application
 {
+private:
+    std::string m_DeferredLog;
+
 public:
     EditorApp(RB::AppInfo& info) 
         : Application(info)
@@ -30,8 +34,15 @@ public:
 
     void CustomLogging(int mode, const char* format, va_list args)
     {
+        m_DeferredLog += Editor::FormatToString(format, args);
+
+        bool success = false;
+
         if (m_EditorLayer)
-            m_EditorLayer->CustomLogging(mode, format, args);
+            success = m_EditorLayer->CustomLogging(mode, m_DeferredLog.c_str());
+
+        if (success)
+            m_DeferredLog.clear();
     }
 
 private:

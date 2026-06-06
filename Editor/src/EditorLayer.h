@@ -25,7 +25,7 @@ namespace Editor
 
         void OnDetach() override;
 
-        void CustomLogging(int mode, const char* format, va_list args);
+        bool CustomLogging(int mode, const char* text);
 
     private:
         ImGuiContext* m_ImGuiRenderContext;

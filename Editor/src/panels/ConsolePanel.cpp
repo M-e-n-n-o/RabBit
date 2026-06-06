@@ -34,33 +34,11 @@ namespace Editor
         ImGui::End();
     }
 
-    void ConsolePanel::AppendLog(int mode, const char* format, va_list args)
+    void ConsolePanel::AppendLog(int mode, const char* text)
     {
-        m_Text += FormatToString(format, args);
+        m_Text += text;
 
         if (m_Text.size() > c_MaxCharacters)
             m_Text.erase(0, m_Text.size() - c_MaxCharacters);
-    }
-
-    std::string ConsolePanel::FormatToString(const char* format, va_list args)
-    {
-        // Make a copy of args because vsnprintf consumes the va_list
-        va_list args_copy;
-        va_copy(args_copy, args);
-
-        int size = vsnprintf(nullptr, 0, format, args_copy);
-        va_end(args_copy);
-
-        if (size <= 0)
-        {
-            return std::string();
-        }
-
-        std::string result;
-        result.resize(size);
-
-        vsnprintf(&result[0], size + 1, format, args);
-
-        return result;
     }
 }
