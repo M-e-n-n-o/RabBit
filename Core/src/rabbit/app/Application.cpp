@@ -85,7 +85,7 @@ namespace RB
         AssetManager::Init(asset_path);
 
 #if RB_GRAPHICS_API_D3D12
-        Renderer::SetAPI(RenderAPI::Vulkan);
+        Renderer::SetAPI(RenderAPI::D3D12);
 #elif RB_GRAPHICS_API_VULKAN
         Renderer::SetAPI(RenderAPI::Vulkan);
 #else
