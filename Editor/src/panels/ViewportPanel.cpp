@@ -1,4 +1,5 @@
 #include "ViewportPanel.h"
+#include "imgui.h"
 
 // We need these defines to be able to access the platform files inside RabBit
 #define RB_GRAPHICS_API_D3D12 1

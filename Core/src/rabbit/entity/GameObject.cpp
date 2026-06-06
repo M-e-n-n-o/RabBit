@@ -4,8 +4,9 @@
 
 namespace RB::Entity
 {
-    GameObject::GameObject()
-        : m_Parent(nullptr)
+    GameObject::GameObject(const char* name)
+        : m_Name(name)
+        , m_Parent(nullptr)
     {
     }
 

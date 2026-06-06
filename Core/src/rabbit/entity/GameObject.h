@@ -22,7 +22,7 @@ namespace RB::Entity
     class GameObject
     {
     public:
-        GameObject();
+        GameObject(const char* name);
         ~GameObject();
 
         void Update();
@@ -46,6 +46,8 @@ namespace RB::Entity
         template<typename T>
         bool RemoveComponent();
 
+        const char* GetName() const { return m_Name.c_str(); }
+
         // Pass in nullptr to detach the parent
         void SetParent(GameObject* new_parent);
         GameObject* GetParent() const;
@@ -57,6 +59,7 @@ namespace RB::Entity
         void OnNewChildAttached(GameObject* obj);
         void OnChildDetached(GameObject* obj);
 
+        std::string                                     m_Name;
         GameObject*                                     m_Parent;
         UnorderedSet<GameObject*>                       m_Children;
         List<ObjectComponent*>                          m_Components;

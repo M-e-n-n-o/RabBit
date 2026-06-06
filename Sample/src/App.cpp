@@ -47,7 +47,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
     window2.windowHeight        = 720;
     window2.forcedRenderAspect  = 0.0f;
     window2.renderScale         = 0.25f;
-    app_info.windows.push_back(window2);
+    //app_info.windows.push_back(window2);
 
     app_info.renderGraphs = { 
         {   

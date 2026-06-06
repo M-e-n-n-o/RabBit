@@ -16,9 +16,9 @@ namespace RB::Entity
         }
     }
 
-    GameObject* Scene::CreateGameObject()
+    GameObject* Scene::CreateGameObject(const char* name)
     {
-        GameObject* obj = new GameObject();
+        GameObject* obj = new GameObject(name);
         m_GameObjects.push_back(obj);
 
         return obj;
@@ -46,7 +46,7 @@ namespace RB::Entity
         }
     }
 
-    List<GameObject*> Scene::GetGameObjects()
+    List<GameObject*>& Scene::GetGameObjects()
     {
         return m_GameObjects;
     }

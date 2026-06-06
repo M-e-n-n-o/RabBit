@@ -48,6 +48,7 @@ namespace Editor
 
         m_Viewport = m_Window->AddPanel<ViewportPanel>();
         m_Console = m_Window->AddPanel<ConsolePanel>();
+        m_Hierarchy = m_Window->AddPanel<HierarchyPanel>();
         m_Window->AddPanel<TestWindowPanel>();
     }
 
@@ -73,18 +74,21 @@ namespace Editor
         m_TriangleMesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data));
         m_Material = new Material();
 
-        GameObject* triangle_obj = scene->CreateGameObject();
+        GameObject* triangle_obj = scene->CreateGameObject("Triangle");
         triangle_obj->AddComponent<MeshRenderer>(m_TriangleMesh, m_Material);
         auto* t = triangle_obj->AddComponent<Transform>();
         t->position.z = 5;
 
-        auto* sun = scene->CreateGameObject();
+        auto* sun = scene->CreateGameObject("Sun");
         sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
+        sun->SetParent(triangle_obj);
 
         // This camera just renders the ImGui stuff on the OS window
         auto* imgui_cam = scene->CreateGameObject();
         imgui_cam->AddComponent<Transform>();
         imgui_cam->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_Window->GetNativeWindowHandle(), kRenderGraphType_Post);
+
+        m_Hierarchy->SetRoot(scene);
     }
 
     void EditorLayer::OnUpdate(float delta)

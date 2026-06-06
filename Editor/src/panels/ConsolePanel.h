@@ -1,7 +1,7 @@
 #pragma once
 
-#include <RabBit.h>
 #include "WindowPanel.h"
+#include <string>
 
 namespace Editor
 {

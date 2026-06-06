@@ -4,6 +4,7 @@
 
 #include "panels/ViewportPanel.h"
 #include "panels/ConsolePanel.h"
+#include "panels/HierarchyPanel.h"
 #include "engine/EngineEditorWindow.h"
 #include "ImGuiManager.h"
 
@@ -33,6 +34,7 @@ namespace Editor
 
         ViewportPanel* m_Viewport;
         ConsolePanel* m_Console;
+        HierarchyPanel* m_Hierarchy;
 
         RB::Entity::Camera* m_Camera;
         RB::Entity::Mesh* m_TriangleMesh;

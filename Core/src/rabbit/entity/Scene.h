@@ -10,12 +10,12 @@ namespace RB::Entity
         Scene();
         ~Scene();
 
-        GameObject* CreateGameObject();
+        GameObject* CreateGameObject(const char* name = "GameObject");
         void RemoveGameObject(GameObject* obj);
 
         void UpdateScene();
 
-        List<GameObject*> GetGameObjects();
+        List<GameObject*>& GetGameObjects();
 
         template<class T>
         const List<const ObjectComponent*> GetComponentsWithTypeOf() const;
