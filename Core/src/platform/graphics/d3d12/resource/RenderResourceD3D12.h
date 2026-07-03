@@ -76,10 +76,11 @@ namespace RB::Graphics::D3D12
         bool GetData(void* memory, bool should_block) override;
 
     private:
-        GpuResource*                    m_Resource;
-        uint8_t*                        m_MappedMemory;
-        uint64_t                        m_Size;
-        Queue<Shared<GpuGuardD3D12>>    m_Fences;
+        GpuResource*                                m_Resource;
+        uint8_t*                                    m_MappedMemory;
+        uint64_t                                    m_Size;
+        List<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>    m_Layouts;
+        Queue<Shared<GpuGuardD3D12>>                m_Fences;
     };
 
     class Texture2DD3D12 : public Texture2D

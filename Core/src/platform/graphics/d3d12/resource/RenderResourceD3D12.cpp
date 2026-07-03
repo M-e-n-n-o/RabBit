@@ -140,7 +140,7 @@ namespace RB::Graphics::D3D12
 
             uint32_t subresource_count = tex->GetMipCount() * tex->GetArraySize();
 
-            List<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> layouts(subresource_count);
+            m_Layouts.resize(subresource_count);
             List<UINT> num_rows(subresource_count);
             List<UINT64> row_sizes(subresource_count);
             UINT64 totalBytes;
@@ -149,7 +149,7 @@ namespace RB::Graphics::D3D12
                 0,
                 subresource_count,
                 0,
-                layouts.data(),
+                m_Layouts.data(),
                 num_rows.data(),
                 row_sizes.data(),
                 &totalBytes);
@@ -212,7 +212,37 @@ namespace RB::Graphics::D3D12
             m_Resource->GetResource()->Map(0, nullptr, (void**)&m_MappedMemory);
         }
 
-        memcpy(memory, m_MappedMemory, m_Size);
+        if (m_Layouts.empty())
+        {
+            memcpy(memory, m_MappedMemory, m_Size);
+        }
+        else
+        {
+            for (uint32_t i = 0; i < m_Layouts.size(); i++)
+            {
+                const auto& layout = m_Layouts[i];
+                const auto& fp = layout.Footprint;
+
+                uint8_t* src = (uint8_t*)m_MappedMemory + layout.Offset;
+                uint8_t* dst = (uint8_t*)memory + layout.Offset;
+
+                uint32_t row_pitch = layout.Footprint.RowPitch;
+                uint32_t slice_size = row_pitch * fp.Height;
+
+                for (uint32_t z = 0; z < fp.Depth; z++)
+                {
+                    const uint8_t* src_slice = src + z * slice_size;
+                    uint8_t* dst_slice = dst + z * slice_size;
+
+                    for (uint32_t y = 0; y < fp.Height; y++)
+                    {
+                        memcpy(dst_slice + y * row_pitch,
+                               src_slice + y * row_pitch,
+                               row_pitch);
+                    }
+                }
+            }
+        }
 
         return true;
     }
