@@ -166,7 +166,14 @@ Float3::Float3(float x, float y, float z)
 
 void Float3::Normalize()
 {
-    *this = *this / GetLength();
+    float length = GetLength();
+
+    if (length == 0)
+    {
+        return;
+    }
+
+    *this = *this / length;
 }
 
 float Float3::GetLength() const
@@ -246,6 +253,33 @@ Float3 Float3::operator/(const float& other) const
     );
 }
 
+Float3 Float3::operator*(const Float4x4& other) const
+{
+    return Float3(
+        x * other.a00 + y * other.a10 + z * other.a20 + other.a30,
+        x * other.a01 + y * other.a11 + z * other.a21 + other.a31,
+        x * other.a02 + y * other.a12 + z * other.a22 + other.a32
+    );
+}
+
+Float3 Float3::Min(const Float3& first, const Float3& second)
+{
+    return Float3(
+        first.x < second.x ? first.x : second.x,
+        first.y < second.y ? first.y : second.y,
+        first.z < second.z ? first.z : second.z 
+    );
+}
+
+Float3 Float3::Max(const Float3& first, const Float3& second)
+{
+    return Float3(
+        first.x > second.x ? first.x : second.x,
+        first.y > second.y ? first.y : second.y,
+        first.z > second.z ? first.z : second.z 
+    );
+}
+
 Float3 Float3::Cross(const Float3& first, const Float3& second)
 {
     return Float3(
@@ -261,7 +295,7 @@ float Float3::Dot(const Float3& first, const Float3& second)
         first.x * second.x +
         first.y * second.y +
         first.z * second.z
-        );
+    );
 }
 
 float Float3::Angle(const Float3& first, const Float3& second)
@@ -325,5 +359,35 @@ Float4 Float4::operator*(const float& other) const
         y * other,
         z * other,
         w * other
+    );
+}
+
+Float4 Float4::operator*(const Float4x4& other) const
+{
+    return Float4(
+        (x * other.row0.x) + (y * other.row1.x) + (z * other.row2.x) + (w * other.row3.x),
+        (x * other.row0.y) + (y * other.row1.y) + (z * other.row2.y) + (w * other.row3.y),
+        (x * other.row0.z) + (y * other.row1.z) + (z * other.row2.z) + (w * other.row3.z),
+        (x * other.row0.w) + (y * other.row1.w) + (z * other.row2.w) + (w * other.row3.w)
+    );
+}
+
+Float4 Float4::operator/(const Float4& other) const
+{
+    return Float4(
+        x / other.x,
+        y / other.y,
+        z / other.z,
+        w / other.w
+    );
+}
+
+Float4 Float4::operator/(const float& other) const
+{
+    return Float4(
+        x / other,
+        y / other,
+        z / other,
+        w / other
     );
 }

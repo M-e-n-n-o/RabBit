@@ -18,6 +18,8 @@ namespace RB
         uint64_t m_Size;
     };
 
+    using FrameAllocationPageSet = List<FrameAllocationPage*>;
+
     class FrameAllocator
     {
     public:
@@ -27,24 +29,24 @@ namespace RB
         void* Allocate(uint64_t size, uint64_t align = 1);
 
         template<typename T>
-        T* Allocate(uint64_t amount);
+        T* Allocate(uint64_t amount = 1);
+
+        FrameAllocationPageSet LockCurrentPageSet();
+        void UnlockPageSet(FrameAllocationPageSet set);
 
         void Cycle();
 
     private:
-        struct UsedPages
-        {
-            List<FrameAllocationPage*> pages;
-        };
-
         Deque<FrameAllocationPage>   m_AllPages;
         Queue<FrameAllocationPage*>  m_FreePages;
-        List<UsedPages>              m_UsedPages;
+        List<FrameAllocationPageSet> m_UsedPageSets;
 
         uint32_t                     m_CurrentPage;
         uint32_t                     m_FrameCycles;
         uint64_t                     m_PageSize;
         const char*                  m_Name;
+
+        Mutex                        m_Mutex;
     };
 
     template<typename T>

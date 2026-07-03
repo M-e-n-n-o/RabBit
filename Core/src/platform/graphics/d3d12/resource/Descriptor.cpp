@@ -2,6 +2,7 @@
 
 #include "RabBitCommon.h"
 #include "Descriptor.h"
+#include "platform/graphics/d3d12/RendererD3D12.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
 
 namespace RB::Graphics::D3D12
@@ -113,6 +114,21 @@ namespace RB::Graphics::D3D12
         return di;
     }
 
+    DescriptorIndex DescriptorManager::CreateDescriptor(ID3D12Resource* res, bool transient)
+    {
+        uint32_t heap_index = transient ? m_RenderTargetHeap->AllocTransient() :
+                                          m_RenderTargetHeap->AllocPersistent();
+
+        g_GraphicsDevice->Get()->CreateRenderTargetView(res, nullptr, m_RenderTargetHeap->GetCpuHandle(heap_index));
+
+        DescriptorIndex di = {};
+        di.heapIndex = heap_index;
+        di.type      = DescriptorHandleType::RTV;
+        di.transient = transient;
+
+        return di;
+    }
+
     DescriptorIndex DescriptorManager::CreateDescriptor(ID3D12Resource* res, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc, bool transient)
     {
         uint32_t heap_index = transient ? m_DepthStencilHeap->AllocTransient() :
@@ -138,7 +154,7 @@ namespace RB::Graphics::D3D12
         case DescriptorHandleType::DSV: m_DepthStencilHeap->InvalidateDescriptor(idx.heapIndex);    break;
         case DescriptorHandleType::CBV:
         default:
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Descriptor handle type not valid");
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Descriptor handle type not valid");
             break;
         }
     }
@@ -150,7 +166,7 @@ namespace RB::Graphics::D3D12
         m_DepthStencilHeap->CycleTransientDescriptors();
     }
 
-    Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> DescriptorManager::GetHeaps(uint32_t& num_heaps)
+    Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> DescriptorManager::GetPipelineHeaps(uint32_t& num_heaps)
     {
         Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> arr;
 
@@ -162,6 +178,25 @@ namespace RB::Graphics::D3D12
         num_heaps = 1;
 
         return arr;
+    }
+
+    DescriptorHeap* DescriptorManager::GetHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) const
+    {
+        switch (type)
+        {
+        case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
+            return m_BindlessSrvUavHeap;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+            return m_RenderTargetHeap;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+            return m_DepthStencilHeap;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
+        default:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Trying to get an invalid descriptor heap type");
+            break;
+        }
+
+        return nullptr;
     }
 
     // ---------------------------------------------------------------------------
@@ -176,7 +211,7 @@ namespace RB::Graphics::D3D12
         , m_CurrPersistentIdx(0)
         , m_CycleIndex(0)
     {
-        uint32_t max_descriptors = m_MaxPersistent + (m_MaxTransientPerCycle * DESCRIPTOR_HEAP_TRANSIENT_CYCLES);
+        uint32_t max_descriptors = m_MaxPersistent + (m_MaxTransientPerCycle * TRANSIENT_CYCLES);
 
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, max_descriptors < 1e6, "The max total of descriptors cannot exceed 1 million");
 
@@ -196,7 +231,7 @@ namespace RB::Graphics::D3D12
         gpu_desc.NodeMask       = 0;
 
         RB_ASSERT_FATAL_D3D(g_GraphicsDevice->Get()->CreateDescriptorHeap(&gpu_desc, IID_PPV_ARGS(&m_Heap)),
-            "Failed to create main descriptor heap: %ws", name);
+            "Failed to create main descriptor heap: %ls", name);
 
         m_Heap->SetName(name);
 
@@ -212,6 +247,8 @@ namespace RB::Graphics::D3D12
 
     int32_t DescriptorHeap::AllocPersistent()
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         uint32_t start = m_CurrPersistentIdx;
         uint32_t slot = start;
 
@@ -229,15 +266,15 @@ namespace RB::Graphics::D3D12
         }
 
         m_PersistentSlots[slot] = false;
-
-        uint32_t before = m_CurrPersistentIdx;
         m_CurrPersistentIdx = slot;
 
-        return (int32_t)before;
+        return (int32_t)slot;
     }
 
     int32_t DescriptorHeap::AllocTransient()
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         if ((m_CurrTransientIdx - m_TransientBase + 1) >= m_MaxTransientPerCycle)
         {
             RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Increase the max amount of transient descriptors for heap type: %d", (int)m_Type);
@@ -253,13 +290,17 @@ namespace RB::Graphics::D3D12
 
     void DescriptorHeap::CycleTransientDescriptors()
     {
-        m_CycleIndex        = (m_CycleIndex + 1) % DESCRIPTOR_HEAP_TRANSIENT_CYCLES;
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
+        m_CycleIndex        = (m_CycleIndex + 1) % TRANSIENT_CYCLES;
         m_TransientBase     = m_CycleIndex * m_MaxTransientPerCycle + m_MaxPersistent;
         m_CurrTransientIdx  = m_TransientBase;
     }
 
     void DescriptorHeap::InvalidateDescriptor(int32_t& heap_index)
     {
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
         if (heap_index < 0 || heap_index >= m_MaxPersistent)
         {
             // Invalid handle

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "graphics/Renderer.h"
 #include "graphics/RenderInterface.h"
 #include "graphics/RenderResource.h"
 #include "graphics/shaders/shared/Common.h"
@@ -13,19 +14,18 @@ namespace RB::Graphics::D3D12
 {
     class DeviceQueue;
     class GpuResource;
-    class UploadAllocator;
 
     class GpuGuardD3D12 : public GpuGuard
     {
     public:
         GpuGuardD3D12(uint64_t fence_value, DeviceQueue* queue);
 
-        bool IsFinishedRendering() override;
+        bool IsFinishedRendering() const override;
         void WaitUntilFinishedRendering() override;
 
     private:
-        uint64_t				m_FenceValue;
-        DeviceQueue*            m_Queue;
+        uint64_t        m_FenceValue;
+        DeviceQueue*    m_Queue;
 
         friend class RenderInterfaceD3D12;
     };
@@ -52,12 +52,10 @@ namespace RB::Graphics::D3D12
         void SetDepthStencil(RenderResource* ds_target) override;
         void ClearRenderTargets() override;
 
-        void SetShaderResourceInput(RenderResource* resource, uint32_t slot) override;
-        void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) override;
-        void ClearShaderResourceInput(uint32_t slot) override;
-        void ClearRandomReadWriteInput(uint32_t slot) override;
+        void SetShaderResourceInput(uint32_t handle, RenderResource* resource) override;
+        void SetRandomReadWriteInput(uint32_t handle, RenderResource* resource) override;
 
-        void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) override;
+        void SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size) override;
 
         void SetVertexShader(uint32_t shader_index) override;
         void SetPixelShader(uint32_t shader_index) override;
@@ -68,6 +66,9 @@ namespace RB::Graphics::D3D12
         void SetViewport(const Viewport& viewport) override;
         void SetViewports(const Viewport* viewports, uint32_t total_viewports) override;
 
+        void SetScissor(const Viewport& scissor) override;
+        void SetScissors(const Viewport* scissors, uint32_t total_scissors) override;
+
         void SetBlendMode(const BlendMode& mode) override;
         void SetCullMode(const CullMode& mode) override;
         void SetDepthMode(const DepthMode& mode, bool write_depth, bool reversed_depth) override;
@@ -76,38 +77,40 @@ namespace RB::Graphics::D3D12
         void SetVertexBuffer(RenderResource* vertex_resource, uint32_t slot) override;
         void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot) override;
 
-        void CopyResource(RenderResource* src, RenderResource* dest) override;
+        void CopyResource(RenderResource* src, RenderResource* dst) override;
+        
+        void Readback(RenderResource* src, ReadbackBuffer* dst) override;
 
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
         void DrawInternal() override;
+        void DrawInstancedInternal(uint32_t instances) override;
         void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) override;
 
         void ProfileMarkerBegin(uint64_t color, const char* name) override;
         void ProfileMarkerEnd() override;
 
-        GPtr<ID3D12GraphicsCommandList2> GetCommandList() const { return m_CommandList; }
+        void* GetNativeInterface() const override { return m_CommandList.Get(); }
 
     private:
+        void PrepareDraw();
+
         void HandlePendingClears();
-        void InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type);
-        void MarkResourceUsed(RenderResource* resource);
-        void MarkResourceUsed(GpuResource* resource);
 
         void SetRenderTargets();
 
         void BindDescriptorHeaps();
         void BindResources(bool compute);
-        void ClearSrvResources();
-        void ClearUavResources();
+        void ClearResources();
 
         void SetGraphicsPipelineState();
         void SetComputePipelineState();
         void SetNewCommandList();
 
-        bool								m_CopyOperationsOnly;
+        bool                                m_CopyOperationsOnly;
         DeviceQueue*                        m_Queue;
-        GPtr<ID3D12GraphicsCommandList2>	m_CommandList;
+        GPtr<ID3D12GraphicsCommandList2>    m_CommandList;
+        ShaderSystem*                       m_ShaderSystem;
 
         struct PendingClear
         {
@@ -118,52 +121,45 @@ namespace RB::Graphics::D3D12
 
         struct RenderState
         {
-            bool							    psoDirty = true;
-            bool							    rootSignatureDirty = true;
+            bool                                psoDirty = true;
+            bool                                rootSignatureDirty = true;
 
-            GPtr<ID3D12RootSignature>		    rootSignature = nullptr;
-            D3D12_PRIMITIVE_TOPOLOGY_TYPE	    vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
-            uint32_t						    vertexCountPerInstance = 0;
-            uint32_t						    indexCountPerInstance = 0;
-            bool							    scissorSet = false;
-            bool							    viewportSet = false;
+            GPtr<ID3D12RootSignature>           rootSignature = nullptr;
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE       vertexBufferType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+            uint32_t                            vertexBufferCount = 0;
+            uint32_t                            vertexCountPerInstance = 0;
+            uint32_t                            indexCountPerInstance = 0;
+            bool                                scissorSet = false;
+            bool                                viewportSet = false;
             uint32_t                            width = 0;
             uint32_t                            height = 0;
             Stack<D3D12_CPU_DESCRIPTOR_HANDLE>  rtvHandles[8];
             Stack<DXGI_FORMAT>                  rtvFormats[8];
-            D3D12_CPU_DESCRIPTOR_HANDLE	        dsvHandle;
+            D3D12_CPU_DESCRIPTOR_HANDLE         dsvHandle;
             DXGI_FORMAT                         dsvFormat = DXGI_FORMAT_UNKNOWN;
-            uint32_t						    numRenderTargets = 0;
+            uint32_t                            numRenderTargets = 0;
             bool                                renderTargetDirty = true;
-            int32_t							    vsShader = -1;
-            int32_t							    psShader = -1;
+            int32_t                             vsShader = -1;
+            int32_t                             psShader = -1;
             int32_t                             csShader = -1;
-            bool							    blendingSet = false;
-            D3D12_BLEND_DESC				    blendDesc = {};
-            bool							    rasterizerSet = false;
-            D3D12_RASTERIZER_DESC			    rasterizerDesc = {};
-            bool							    depthStencilSet = false;
-            D3D12_DEPTH_STENCIL_DESC		    depthStencilDesc = {};
-            D3D12_GPU_VIRTUAL_ADDRESS		    cbvAddresses[16];
+            bool                                blendingSet = false;
+            D3D12_BLEND_DESC                    blendDesc = {};
+            bool                                rasterizerSet = false;
+            D3D12_RASTERIZER_DESC               rasterizerDesc = {};
+            bool                                depthStencilSet = false;
+            D3D12_DEPTH_STENCIL_DESC            depthStencilDesc = {};
+            D3D12_GPU_VIRTUAL_ADDRESS           cbvAddresses[16];
 
-            DescriptorIndex				        tex2DsrvHandles[SHADER_TEX2D_SLOTS];
-            bool                                tex2DSRGBs[SHADER_TEX2D_SLOTS];
-            DescriptorIndex				        rwTex2DsrvHandles[SHADER_TEX2D_SLOTS];
+            DescriptorIndex                     vertexResourceHandles[16]; // Can be upped to max 32 (256 bytes allowed)
+            DescriptorIndex                     pixelResourceHandles[16];
+            DescriptorIndex                     computeResourceHandles[16];
 
             List<PendingClear>                  pendingClears;
         };
 
         RenderState                             m_RenderState;
 
-        struct UploadAllocatorPair
-        {
-            UploadAllocator* allocator;
-            uint64_t fenceValue;
-        };
-
-        Queue<UploadAllocator*>		        m_AvailableCBVAllocators;
-        List<UploadAllocatorPair>	        m_InFlightCBVAllocators;
-        UploadAllocator*                    m_CurrentCBVAllocator;
+        List<ReadbackBuffer*>                   m_SchedulesReadbacks;
     };
 }
 #endif

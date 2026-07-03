@@ -10,7 +10,7 @@ namespace RB::Graphics
         DeleteGraphResources();
     }
 
-    RenderResource* RenderGraphContext::GetResource(ResourceID id)
+    Shared<RenderResource> RenderGraphContext::GetResource(ResourceID id, uint32_t graph_id, uint16_t size_id)
     {
         if (id < 0)
         {
@@ -18,10 +18,17 @@ namespace RB::Graphics
             return nullptr;
         }
 
-        return m_Resources[m_ResourcePointers[id]];
+        uint32_t base_idx = m_BasePointers[id];
+
+        uint64_t key = ((uint64_t)base_idx << 32) | ((uint64_t)graph_id << 16) | (uint64_t)size_id;
+
+        auto it = m_AliasLookup.find(key);
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, it != m_AliasLookup.end(), "Alias entry missing for resource:%u graph:%u size:%u", id, graph_id, size_id);
+
+        return m_Resources[it->second];
     }
 
-    bool RenderGraphContext::RequiresClear(ResourceID id)
+    Shared<RenderResource> RenderGraphContext::GetResource(ResourceID id)
     {
         if (id < 0)
         {
@@ -29,10 +36,21 @@ namespace RB::Graphics
             return nullptr;
         }
 
-        return m_Clears[m_ResourcePointers[id]];
+        return m_Resources[m_BasePointers[id]];
     }
 
-    void RenderGraphContext::AddGraphSize(uint32_t graph_id, const RenderGraphSize& size)
+    float RenderGraphContext::RequiresClear(ResourceID id)
+    {
+        if (id < 0)
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Trying to grab an invalid RenderResource from the RenderGraphContext");
+            return false;
+        }
+
+        return m_Clears[m_BasePointers[id]];
+    }
+
+    uint16_t RenderGraphContext::AddGraphSize(uint32_t graph_id, const RenderGraphSize& size)
     {
         if (graph_id >= m_GraphSizes.size())
         {
@@ -40,6 +58,8 @@ namespace RB::Graphics
         }
 
         m_GraphSizes[graph_id].push_back(size);
+
+        return m_GraphSizes[graph_id].size() - 1;
     }
 
     void RenderGraphContext::DeleteSizes()
@@ -61,15 +81,52 @@ namespace RB::Graphics
             return;
         }
 
+        auto ResolveResourceSize = [](const RenderResourceDesc& desc, const RenderGraphSize& graph_size, uint32_t& out_width, uint32_t& out_height)
+        {
+            if (desc.HasFlag(kRTFlag_CustomSized))
+            {
+                // Use absolute dimensions from the desc
+                switch (desc.type)
+                {
+                case RenderResourcePassType::Tex2D:
+                    out_width = desc.typeDesc.tex2D.width;
+                    out_height = desc.typeDesc.tex2D.height;
+                    return;
+
+                default:
+                    RB_LOG_ERROR(LOGTAG_GRAPHICS, "Custom sized resource type not supported");
+                    out_width = out_height = 0;
+                    return;
+                }
+            }
+
+            // Pick graph-space size
+            uint32_t w = (uint32_t)graph_size.size.x;
+            uint32_t h = (uint32_t)graph_size.size.y;
+
+            switch (desc.type)
+            {
+            case RenderResourcePassType::Tex2D:
+                out_width = (w >> desc.typeDesc.tex2D.width);
+                out_height = (h >> desc.typeDesc.tex2D.height);
+                return;
+
+            default:
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Computed sized resource type not supported");
+                out_width = out_height = 0;
+                return;
+            }
+        };
+
         struct LinkedDesc
         {
-            RenderTextureDesc desc;
-            uint64_t graphs; // Bitmask for in which graph this desc is used
-            List<ResourceID> ids;
+            RenderResourceDesc desc;
+            uint64_t           graphs; // Bitmask for in which graph this desc is used
+            List<ResourceID>   ids;
         };
 
         // Will contain all the resources that will be created for this context
-        List<LinkedDesc> aliased_descs;
+        List<LinkedDesc> descriptions;
 
         for (uint32_t current_graph_id = 0; current_graph_id < m_GraphDescriptions.size(); ++current_graph_id)
         {
@@ -82,53 +139,31 @@ namespace RB::Graphics
 
                 biggest_size.size.x = Math::Max(biggest_size.size.x, current_size.size.x);
                 biggest_size.size.y = Math::Max(biggest_size.size.y, current_size.size.y);
-
-                biggest_size.uiSize.x = Math::Max(biggest_size.uiSize.x, current_size.uiSize.x);
-                biggest_size.uiSize.y = Math::Max(biggest_size.uiSize.y, current_size.uiSize.y);
-
-                biggest_size.upscaledSize.x = Math::Max(biggest_size.upscaledSize.x, current_size.upscaledSize.x);
-                biggest_size.upscaledSize.y = Math::Max(biggest_size.upscaledSize.y, current_size.upscaledSize.y);
             }
 
             for (const ResourceID& current_id : m_GraphDescriptions[current_graph_id])
             {
-                RenderTextureDesc current_desc = m_Descriptions[current_id];
+                RenderResourceDesc current_desc = m_Descriptions[current_id];
 
                 // First make sure to update the size of the description to the actual size
-                if (!current_desc.HasFlag(kRTFlag_CustomSized))
-                {
-                    uint32_t width = (uint32_t)biggest_size.size.x;
-                    uint32_t height = (uint32_t)biggest_size.size.y;
+                uint32_t w, h;
+                ResolveResourceSize(current_desc, biggest_size, w, h);
 
-                    if (current_desc.HasFlag(kRTFlag_UiSized))
-                    {
-                        width = (uint32_t)biggest_size.uiSize.x;
-                        height = (uint32_t)biggest_size.uiSize.y;
-                    }
-                    else if (current_desc.HasFlag(kRTFlag_UpscaledSized))
-                    {
-                        width = (uint32_t)biggest_size.upscaledSize.x;
-                        height = (uint32_t)biggest_size.upscaledSize.y;
-                    }
-
-                    // Divide the width & height to the desired size
-                    current_desc.width = (width >> current_desc.width);
-                    current_desc.height = (height >> current_desc.height);
-                    current_desc.CombineFlags(kRTFlag_CustomSized);
-                }
+                current_desc.typeDesc.tex2D.width = w;
+                current_desc.typeDesc.tex2D.height = h;
 
                 RB_ASSERT_FATAL(LOGTAG_GRAPHICS, current_graph_id < 64, "We can not have more than 64 graphs, then the RenderGraph logic will break");
 
                 int32_t aliased_id = -1;
 
                 // Then check if we can reuse a different resource from another graph
-                for (uint32_t aliased_idx = 0; aliased_idx < aliased_descs.size(); ++aliased_idx)
+                for (uint32_t aliased_idx = 0; aliased_idx < descriptions.size(); ++aliased_idx)
                 {
                     // Already used by this graph? If so, can not alias
-                    if ((aliased_descs[aliased_idx].graphs & (1u << current_graph_id)) != 0)
+                    if ((descriptions[aliased_idx].graphs & (1ull << current_graph_id)) != 0)
                         continue;
                     
-                    if (aliased_descs[aliased_idx].desc.IsAliasableWith(current_desc))
+                    if (descriptions[aliased_idx].desc.IsAliasableWith(current_desc))
                     {
                         aliased_id = aliased_idx;
                         break;
@@ -140,67 +175,146 @@ namespace RB::Graphics
                 if (aliased_id != -1)
                 {
                     // Found an alias
-                    aliased_descs[aliased_id].desc.CombineFlags(current_desc.flags);
-                    aliased_descs[aliased_id].graphs |= (1u << current_graph_id);
-                    aliased_descs[aliased_id].ids.push_back(current_id);
+                    descriptions[aliased_id].desc.CombineFlags(current_desc.flags);
+                    descriptions[aliased_id].graphs |= (1ull << current_graph_id);
+                    descriptions[aliased_id].ids.push_back(current_id);
                     continue;
                 }
 
                 // No alias found
                 LinkedDesc linked_desc = {};
                 linked_desc.desc = current_desc;
-                linked_desc.graphs = (1u << current_graph_id);
+                linked_desc.graphs = (1ull << current_graph_id);
                 linked_desc.ids.push_back(current_id);
 
-                aliased_descs.push_back(linked_desc);
+                descriptions.push_back(linked_desc);
             }
         }
 
         // Initialize the resource pointers
-        size_t size = sizeof(uint32_t) * m_Descriptions.size();
-        m_ResourcePointers = (uint32_t*) ALLOC_HEAP(size);
-        memset(m_ResourcePointers, 0, size);
+        size_t ptr_size = sizeof(uint32_t) * m_Descriptions.size();
+        m_BasePointers = (uint32_t*) ALLOC_HEAP(ptr_size);
+        memset(m_BasePointers, 0, ptr_size);
 
-        m_Resources.reserve(aliased_descs.size());
-        m_Clears.reserve(aliased_descs.size());
+        m_Resources.reserve(descriptions.size());
+        m_Clears.reserve(descriptions.size());
 
         // Actually create the resources
-        for (uint32_t i = 0; i < aliased_descs.size(); ++i)
+        for (uint32_t i = 0; i < descriptions.size(); ++i)
         {
-            const LinkedDesc& aliased_desc = aliased_descs[i];
+            const LinkedDesc& ld = descriptions[i];
 
             std::string name = "GraphResouce " + std::to_string(i);
 
-            m_Resources.push_back(Texture2D::Create(name.c_str(),
-                                                    aliased_desc.desc.format, 
-                                                    aliased_desc.desc.width, 
-                                                    aliased_desc.desc.height, 
-                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRenderTarget),
-                                                    aliased_desc.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+            switch (ld.desc.type)
+            {
+            case RenderResourcePassType::Tex2D:
+            {
+                if (ld.desc.typeDesc.tex2D.slices > 1)
+                {
+                    m_Resources.push_back(Texture2DArray::Create(name.c_str(),
+                                                                 ld.desc.format, 
+                                                                 ld.desc.typeDesc.tex2D.width, 
+                                                                 ld.desc.typeDesc.tex2D.height,
+                                                                 ld.desc.typeDesc.tex2D.slices,
+                                                                 ld.desc.HasFlag(kRTFlag_AllowRenderTarget),
+                                                                 ld.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+                }
+                else
+                {
+                    m_Resources.push_back(Texture2D::Create(name.c_str(),
+                                                            ld.desc.format, 
+                                                            ld.desc.typeDesc.tex2D.width,
+                                                            ld.desc.typeDesc.tex2D.height,
+                                                            ld.desc.HasFlag(kRTFlag_AllowRenderTarget),
+                                                            ld.desc.HasFlag(kRTFlag_AllowRandomReadWrites)));
+                }
+            }
+            break;
 
-            m_Clears.push_back(aliased_desc.desc.HasFlag(kRTFlag_ClearBeforeGraph));
+            default:
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "RenderResourcePassType not yet supported");
+                break;
+            }
+
+            // Points to the underlying resource (with the biggest size)
+            uint32_t base_pointer_id = m_Resources.size() - 1;
+
+            m_Clears.push_back(ld.desc.HasFlag(kRTFlag_ClearBeforeGraph) ? ld.desc.clearValue : -1.0f);
 
             // Make sure that the ResourceID's point to the correct resource in the m_Resources list
-            uint32_t pointer_id = m_Resources.size() - 1;
-
-            for (const ResourceID& current_id : aliased_desc.ids)
+            for (const ResourceID& current_id : ld.ids)
             {
-                RB_ASSERT_FATAL(LOGTAG_GRAPHICS, m_ResourcePointers[current_id] == 0, "This ResourcePointer is already assigned");
-                m_ResourcePointers[current_id] = pointer_id;
+                RB_ASSERT_FATAL(LOGTAG_GRAPHICS, m_BasePointers[current_id] == 0, "This ResourcePointer is already assigned");
+                m_BasePointers[current_id] = base_pointer_id;
+            }
+        }
+
+        m_AliasLookup.clear();
+        m_AliasLookup.reserve(m_Descriptions.size() * 2);
+
+        // Create the resolution aliases
+        for (uint32_t graph_id = 0; graph_id < m_GraphDescriptions.size(); ++graph_id)
+        {
+            for (uint32_t size_id = 0; size_id < m_GraphSizes[graph_id].size(); ++size_id)
+            {
+                const RenderGraphSize& sz = m_GraphSizes[graph_id][size_id];
+
+                // For each resource used by this graph
+                for (ResourceID rid : m_GraphDescriptions[graph_id])
+                {
+                    uint32_t base_idx = m_BasePointers[rid];
+                    auto base = m_Resources[base_idx];
+
+                    const RenderResourceDesc& scheduled_desc = m_Descriptions[rid];
+
+                    uint32_t resolved_width, resolved_height;
+                    ResolveResourceSize(scheduled_desc, sz, resolved_width, resolved_height);
+
+                    // Create alias from the base resource and set viewport sizes
+                    Shared<RenderResource> alias = nullptr;
+
+                    switch (base->GetType())
+                    {
+                    case RenderResourceType::Texture2D:
+                    {
+                        auto a = Texture2D::Alias(std::static_pointer_cast<Texture2D>(base));
+                        a->SetViewportWidth(resolved_width);
+                        a->SetViewportHeight(resolved_height);
+                        alias = a;
+                    }
+                    break;
+
+                    case RenderResourceType::Texture2DArray:
+                    {
+                        auto a = Texture2DArray::Alias(std::static_pointer_cast<Texture2DArray>(base));
+                        a->SetViewportWidth(resolved_width);
+                        a->SetViewportHeight(resolved_height);
+                        alias = a;
+                    }
+                    break;
+
+                    default:
+                        RB_LOG_ERROR(LOGTAG_GRAPHICS, "Alias creation unsupported type");
+                        continue;
+                    }
+
+                    uint32_t alias_idx = m_Resources.size();
+                    m_Resources.push_back(alias);
+
+                    uint64_t key = ((uint64_t)base_idx << 32) | ((uint64_t)graph_id << 16) | (uint64_t)size_id;
+                    m_AliasLookup[key] = alias_idx;
+                }
             }
         }
     }
 
     void RenderGraphContext::DeleteGraphResources()
     {
-        for (RenderResource* res : m_Resources)
-        {
-            delete res;
-        }
-
+        m_AliasLookup.clear();
         m_Resources.clear();
         m_Clears.clear();
-        SAFE_FREE(m_ResourcePointers);
+        SAFE_FREE(m_BasePointers);
     }
 
     void RenderGraphContext::DeleteGraphResourceDescriptions()
@@ -209,9 +323,9 @@ namespace RB::Graphics
         m_GraphDescriptions.clear();
     }
 
-    ResourceID RenderGraphContext::ScheduleNewResource(const RenderTextureDesc& desc, uint32_t current_graph_id)
+    ResourceID RenderGraphContext::ScheduleNewResource(const RenderResourceDesc& desc, uint32_t current_graph_id)
     {
-        if (current_graph_id >= m_GraphDescriptions.size())
+        while (current_graph_id >= m_GraphDescriptions.size())
         {
             m_GraphDescriptions.push_back({});
         }
@@ -225,7 +339,7 @@ namespace RB::Graphics
         return new_id;
     }
 
-    RenderTextureDesc RenderGraphContext::GetScheduledResource(ResourceID id)
+    RenderResourceDesc RenderGraphContext::GetScheduledResource(ResourceID id)
     {
         if (id < 0 || id >= m_Descriptions.size())
         {
@@ -245,7 +359,7 @@ namespace RB::Graphics
 
         if (graph_id >= m_GraphDescriptions.size())
         {
-            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Trying to grab an invalid list of resource ID's from the RenderGraphContext");
+            // Can be valid if a graph does not have its own resources, but just directly the viewcontext output
             return {};
         }
 

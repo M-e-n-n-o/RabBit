@@ -25,10 +25,8 @@ namespace RB::Graphics
 
         RenderGraph() = default;
 
-        RenderPassEntry** SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene);
-        void RunGraph(ViewContext* view_context, FrameAllocator* allocator, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context);
-
-        void DestroyEntries(RenderPassEntry** entries);
+        RenderPassEntry** SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator);
+        void RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context, uint32_t size_id);
 
     private:
         friend class RenderGraphBuilder;
@@ -71,14 +69,12 @@ namespace RB::Graphics
         template<class ...ConnectionID>
         RenderGraphBuilder& AddLink(RenderPassType from, RenderPassType to, const ConnectionID&... connection_ids);
 
-        // TODO Add the option to link to the output of a different RenderGraph
+        // TODO Add the option to link to the output of a different RenderGraph?
 
         // Allocates a RenderGraph using new when succeeded! 
-        RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context);
+        RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context) const;
 
     private:
-        RenderPassType GetNextLeafPass(uint64_t processed_mask, RenderPassType current_type);
-
         using ResourceConnections = List<uint32_t>;
 
         // Yes, I know, these types are getting very long and confusing :(
@@ -115,7 +111,7 @@ namespace RB::Graphics
     {
         List<uint32_t> connection_ids = { cs... };
 
-        RB_ASSERT(LOGTAG_GRAPHICS, !connection_ids.empty() && (connection_ids.size() % 2 == 0) && connection_ids.size() <= MAX_INOUT_RESOURCES_PER_RENDERPASS, "The RenderGraph connections are not correctly supplied");
+        RB_ASSERT(!connection_ids.empty() && (connection_ids.size() % 2 == 0) && connection_ids.size() <= MAX_INOUT_RESOURCES_PER_RENDERPASS, "The RenderGraph connections are not correctly supplied");
 
         auto to_itr = m_Connections.find(to);
 

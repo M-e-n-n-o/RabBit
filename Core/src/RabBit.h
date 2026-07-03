@@ -46,28 +46,46 @@
 * Every class, function and variable in this engine is inside the RB namespace.
 *
 * Command line options:
-*	-assetPath "<path>"		->	(REQUIRED) Specify the asset locaion path
-*	-renderDebug			->	Enables native graphics API validation (does not when RB_CONFIG_DIST is defined)
+*   -assetPath <path>       ->  (REQUIRED) Specify the asset locaion path
+*   -renderDebug            ->  Enables native graphics API validation
+*   -pix                    ->  (Windows only) Loads the PIX runtime DLL so that PIX can be attatched after startup for GPU debugging
 */
 
 
-// --Entry point--------------------
-#include "rabbit/EntryPoint.h"
-// ---------------------------------
+// Define on the app side in the file with "RB::CreateApplication"
+#ifdef RB_DEFINE_ENTRY_POINT
+    #include "rabbit/EntryPoint.h"
+#endif
 
 #include "rabbit/utils/debug/Log.h"
 #include "rabbit/utils/debug/Assert.h"
 
 #include "rabbit/app/Application.h"
 
-#include "rabbit/entity/Scene.h"
-#include "rabbit/entity/GameObject.h"
-#include "rabbit/entity/components/Mesh.h"
-#include "rabbit/entity/components/Camera.h"
-#include "rabbit/entity/components/Transform.h"
+#include "rabbit/events/ApplicationEvent.h"
+#include "rabbit/events/KeyEvent.h"
+#include "rabbit/events/MouseEvent.h"
+#include "rabbit/events/WindowEvent.h"
 
 #include "rabbit/events/input/Input.h"
 #include "rabbit/events/input/KeyCodes.h"
 #include "rabbit/events/input/MouseCodes.h"
 
+#include "rabbit/math/Misc.h"
+#include "rabbit/math/Matrix.h"
 #include "rabbit/math/Vector.h"
+
+#include "rabbit/entity/Scene.h"
+#include "rabbit/entity/GameObject.h"
+#include "rabbit/entity/components/Transform.h"
+#include "rabbit/entity/components/Camera.h"
+#include "rabbit/entity/components/Mesh.h"
+#include "rabbit/entity/components/UI.h"
+#include "rabbit/entity/components/Light.h"
+#include "rabbit/entity/components/ScreenCapturer.h"
+
+#include "rabbit/graphics/passes/GBuffer.h"
+#include "rabbit/graphics/passes/CascadedShadow.h"
+#include "rabbit/graphics/passes/DeferredLighting.h"
+#include "rabbit/graphics/passes/Overlay2D.h"
+#include "rabbit/graphics/passes/ScreenCapturePass.h"

@@ -55,11 +55,12 @@ namespace RB::Math
         };
 
         Float4x4();
+        Float4x4(float uniform_value);
         ~Float4x4() = default;
 
         void ToData(float* out);
 
-        Float4x4 operator*(const Float4x4& other);
+        Float4x4 operator*(const Float4x4& other) const;
 
         // Note, all methods after calling this will not work anymore!
         void Transpose();
@@ -78,6 +79,7 @@ namespace RB::Math
         void Scale(float x, float y, float z);
 
         bool Invert();
+        void InvertProjection();
         float GetDeterminant() const;
         void GetCofactor(Float3x3& temp, int p, int q) const;
         Float4x4 GetAdjugate() const;
@@ -127,7 +129,7 @@ namespace RB::Math
         Float3x3();
         ~Float3x3() = default;
 
-        Float3x3 operator*(const Float3x3& other);
+        Float3x3 operator*(const Float3x3& other) const;
 
         float GetDeterminant() const;
     };

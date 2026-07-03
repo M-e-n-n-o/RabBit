@@ -18,7 +18,12 @@ namespace RB::Graphics
     {
         None,
         GBuffer,
+        CascadedShadow,
         DeferredLighting,
+        Overlay2D,
+        ScreenCapture,
+
+        Custom0,
 
         Count
     };
@@ -35,32 +40,51 @@ namespace RB::Graphics
     {
         kRTFlag_None                        = 0,
         kRTFlag_CustomSized                 = (1 << 0), // Are the width & height properties using custom sizes?
-        kRTFlag_UiSized                     = (1 << 1), // Are the width & height properties based on UI sizes?
-        kRTFlag_UpscaledSized               = (1 << 2),  // Are the width & height properties based after the upscale?
-        kRTFlag_AllowRenderTarget           = (1 << 3), // Will not be used as a RenderTarget?
-        kRTFlag_AllowRandomReadWrites       = (1 << 4), // Is UAV allowed?
-        kRTFlag_DenyAliasing                = (1 << 5), // Makes sure this resource is not shared between passes (likely contains history data)
-        kRTFlag_ClearBeforeGraph            = (1 << 6)  // Clears the resource to 0 before it enters the first RenderPass
+        kRTFlag_AllowRenderTarget           = (1 << 1), // Will not be used as a RenderTarget?
+        kRTFlag_AllowRandomReadWrites       = (1 << 2), // Is UAV allowed?
+        kRTFlag_DenyAliasing                = (1 << 3), // Makes sure this resource is not shared between passes (likely contains history data)
+        kRTFlag_ClearBeforeGraph            = (1 << 4)  // Clears the resource to 0 before it enters the first RenderPass
     };
 
-    struct RenderTextureDesc
+    enum class RenderResourcePassType
+    {
+        Tex2D
+    };
+
+    struct RenderResourceDesc
     {
         const char*             name;
         RenderResourceFormat    format;
-        uint32_t                width;  // RenderTextureSize
-        uint32_t                height; // RenderTextureSize
-        uint32_t                flags;
+        RenderResourcePassType  type;
 
-        bool IsAliasableWith(const RenderTextureDesc& other) const
+        union TypeDesc
+        {
+            struct RenderTexture2DDesc
+            {
+                uint32_t        width;  // RenderTextureSize
+                uint32_t        height; // RenderTextureSize
+                uint32_t        slices;
+
+            } tex2D;
+        } typeDesc;
+
+        uint32_t                flags = UINT32_MAX; // UINT32_MAX means this texture is invalid!
+
+        float                   clearValue = 0; // (optional) For when the ClearBeforeGraph flag has been set
+
+
+        bool IsAliasableWith(const RenderResourceDesc& other) const
         {
             return ((flags & kRTFlag_DenyAliasing) == 0 &&
                     (other.flags & kRTFlag_DenyAliasing) == 0 &&
                     ((flags & kRTFlag_CustomSized) == (other.flags & kRTFlag_CustomSized)) &&
-                    ((flags & kRTFlag_UiSized) == (other.flags & kRTFlag_UiSized)) &&
-                    ((flags & kRTFlag_UpscaledSized) == (other.flags & kRTFlag_UpscaledSized)) &&
                     format == other.format &&
-                    width == other.width &&
-                    height == other.height);
+                    type == other.type &&
+
+                    // Texture
+                    ( typeDesc.tex2D.width == other.typeDesc.tex2D.width &&
+                      typeDesc.tex2D.height == other.typeDesc.tex2D.height &&
+                      typeDesc.tex2D.slices == other.typeDesc.tex2D.slices));
         }
 
         bool HasFlag(RenderTextureFlag flag) const
@@ -78,8 +102,7 @@ namespace RB::Graphics
     struct RenderTextureInputDesc
     {
         const char* name;
-        bool        depthFormat;
-        // Points to an optional output texture (usefull for depth textures that we want to read from and write to)
+        // Points to an optional output texture (useful for depth textures that we want to read from and write to)
         // If this is set, then the dependencyTexture stays nullptr and the RenderPass should use the outputTexture
         int32_t     outputTextureIndex;
     };
@@ -89,14 +112,9 @@ namespace RB::Graphics
 
     struct RenderPassConfig
     {
-        // TODO Remove the totalDependencies, totalWorkingTextures& totalOutputTextures indices, they are confusing and not very fool/me proof
-
         RenderTextureInputDesc	dependencies[MAX_INOUT_RESOURCES_PER_RENDERPASS];
-        uint32_t                totalDependencies;
-        RenderTextureDesc	    workingTextures[MAX_WORKING_RESOURCES_PER_RENDERPASS];
-        uint32_t                totalWorkingTextures;
-        RenderTextureDesc	    outputTextures[MAX_INOUT_RESOURCES_PER_RENDERPASS]; // Maybe it should be possible to not only output rendertextures, but also buffers?
-        uint32_t                totalOutputTextures;
+        RenderResourceDesc	    workingResources[MAX_WORKING_RESOURCES_PER_RENDERPASS];
+        RenderResourceDesc	    outputResources[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         bool                    asyncComputeCompatible  = false; // TODO Still unused
     };
 
@@ -114,13 +132,21 @@ namespace RB::Graphics
     struct RenderPassInput
     {
         ViewContext*     viewContext;
-        FrameAllocator*  frameAllocator;
         RenderInterface* ri;
         RenderPassEntry* entryContext;
-        RenderResource** dependencyTextures;
-        RenderResource** workingTextures;
-        RenderResource** outputTextures;
+        RenderResource** dependencyRes;
+        RenderResource** workingRes;
+        RenderResource** outputRes;
     };
+
+    // TODO: Instead of each RenderPass having its own SubmitEntry and collecting partly overlapping scene data,
+    // its probably better to have separate RenderDataScrapers that RenderPasses can share or have their own.
+    // This way we reduce the amount of overlapping data between, for example, a GBuffer and DirectionalShadow pass.
+    //class RenderDataScraper
+    //{
+    //public:
+    //
+    //};
 
     class RenderPass
     {
@@ -134,9 +160,8 @@ namespace RB::Graphics
         // Executed on the main thread after the game logic update. This method just gives the needed context of the 
         // current frame' viewcontext to the renderpass (as the renderpass will run next frame as it is ~1 frame behind). 
         // It can also do some preprocessing before the actual Render() call to, for example, determine which RenderEntries 
-        // this pass needs, so the RenderThread does not need to do this. But it can maybe also determine if the pass needs 
-        // to run at all even.
-        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene) = 0;
+        // this pass needs, so the RenderThread does not need to do this. But it can also determine if the pass needs to run at all this frame.
+        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) = 0;
 
         // Executed on the render thread
         // Runs for every ViewContext

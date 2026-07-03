@@ -5,6 +5,8 @@
 #include "GpuResource.h"
 #include "../GraphicsDevice.h"
 
+#include <d3dx12/d3dx12.h>
+
 namespace RB::Graphics::D3D12
 {
     ResourceStateManager* g_ResourceStateManager = nullptr;
@@ -25,8 +27,7 @@ namespace RB::Graphics::D3D12
             return;
         }
 
-        ID3D12Resource* res = resource->GetResource().Get();
-
+        ID3D12Resource* res = resource->GetResource();
         D3D12_RESOURCE_STATES old_state = resource->GetState();
 
         resource->UpdateState(to_state);
@@ -36,13 +37,13 @@ namespace RB::Graphics::D3D12
 
     void ResourceStateManager::InsertUAVBarrier(GpuResource* resource)
     {
-        ID3D12Resource* res = resource ? resource->GetResource().Get() : nullptr;
+        ID3D12Resource* res = resource ? resource->GetResource() : nullptr;
         InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(res));
     }
 
     void ResourceStateManager::InsertAliasBarrier(GpuResource* before, GpuResource* after)
     {
-        InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::Aliasing(before->GetResource().Get(), after->GetResource().Get()));
+        InsertResourceBarrier(CD3DX12_RESOURCE_BARRIER::Aliasing(before->GetResource(), after->GetResource()));
     }
 
     void ResourceStateManager::FlushPendingTransitions(ID3D12GraphicsCommandList* command_list)

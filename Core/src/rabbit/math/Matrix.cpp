@@ -15,12 +15,20 @@ namespace RB::Math
         row3 = { 0, 0, 0, 1 };
     }
 
+    Float4x4::Float4x4(float v)
+    {
+        row0 = { v, v, v, v };
+        row1 = { v, v, v, v };
+        row2 = { v, v, v, v };
+        row3 = { v, v, v, v };
+    }
+
     void Float4x4::ToData(float* out)
     {
         memcpy(out, a, 16 * sizeof(float));
     }
 
-    Float4x4 Float4x4::operator*(const Float4x4& other)
+    Float4x4 Float4x4::operator*(const Float4x4& other) const
     {
         Float4x4 out;
         out.row0 = (other.row0 * row0.x) + (other.row1 * row0.y) + (other.row2 * row0.z) + (other.row3 * row0.w);
@@ -42,56 +50,50 @@ namespace RB::Math
 
     void Float4x4::RotateAroundX(float xrad)
     {
-        Float4x4 copy = *this;
-
-        float sin_theta = Sin(xrad);
-        float cos_theta = Cos(xrad);
-
-        for (int i = 0; i < 4; ++i)
-        {
-            copy.row[i].y = cos_theta * row[i].y - sin_theta * row[i].z;
-            copy.row[i].z = sin_theta * row[i].y + cos_theta * row[i].z;
-            copy.row[i].x = row[i].x;
-            copy.row[i].w = row[i].w;
-        }
-
-        memcpy(a, copy.a, 16 * sizeof(float));
+        float s = Sin(xrad);
+        float c = Cos(xrad);
+    
+        // Create rotation matrix
+        Float4x4 rot;
+        rot.row0 = Float4(1, 0, 0, 0);
+        rot.row1 = Float4(0, c, s, 0);
+        rot.row2 = Float4(0, -s, c, 0);
+        rot.row3 = Float4(0, 0, 0, 1);
+    
+        // Apply rotation
+        *this = (*this) * rot;
     }
-
+    
     void Float4x4::RotateAroundY(float yrad)
     {
-        Float4x4 copy = *this;
-
-        float sin_theta = Sin(yrad);
-        float cos_theta = Cos(yrad);
-
-        for (int i = 0; i < 4; ++i)
-        {
-            copy.row[i].z = cos_theta * row[i].z - sin_theta * row[i].x;
-            copy.row[i].x = sin_theta * row[i].z + cos_theta * row[i].x;
-            copy.row[i].y = row[i].y;
-            copy.row[i].w = row[i].w;
-        }
-
-        memcpy(a, copy.a, 16 * sizeof(float));
+        float s = Sin(yrad);
+        float c = Cos(yrad);
+    
+        // Create rotation matrix
+        Float4x4 rot;
+        rot.row0 = Float4(c, 0, -s, 0);
+        rot.row1 = Float4(0, 1, 0, 0);
+        rot.row2 = Float4(s, 0, c, 0);
+        rot.row3 = Float4(0, 0, 0, 1);
+    
+        // Apply rotation
+        *this = (*this) * rot;
     }
-
+    
     void Float4x4::RotateAroundZ(float zrad)
     {
-        Float4x4 copy = *this;
-
-        float sin_theta = Sin(zrad);
-        float cos_theta = Cos(zrad);
-
-        for (int i = 0; i < 4; ++i)
-        {
-            copy.row[i].x = cos_theta * row[i].x - sin_theta * row[i].y;
-            copy.row[i].y = sin_theta * row[i].x + cos_theta * row[i].y;
-            copy.row[i].z = row[i].z;
-            copy.row[i].w = row[i].w;
-        }
-
-        memcpy(a, copy.a, 16 * sizeof(float));
+        float s = Sin(zrad);
+        float c = Cos(zrad);
+    
+        // Create rotation matrix
+        Float4x4 rot;
+        rot.row0 = Float4(c, s, 0, 0);
+        rot.row1 = Float4(-s, c, 0, 0);
+        rot.row2 = Float4(0, 0, 1, 0);
+        rot.row3 = Float4(0, 0, 0, 1);
+    
+        // Apply rotation
+        *this = (*this) * rot;
     }
 
     Float3 Float4x4::GetPosition()
@@ -127,6 +129,45 @@ namespace RB::Math
         a00 *= x;
         a11 *= y;
         a22 *= z;
+    }
+
+    // Specialized, faster invert for projection matrices
+    void Float4x4::InvertProjection()
+    {
+        Float4x4 inv = {};
+
+        // Top-left diagonal (always invert)
+        inv.a[0] = 1.0f / a[0];
+        inv.a[5] = 1.0f / a[5];
+
+        float m22 = a[10];
+        float m23 = a[11];
+        float m32 = a[14];
+        float m33 = a[15];
+
+        const float epsilon = 1e-6f;
+
+        if (fabs(m32) > epsilon)
+        {
+            // Perspective projection
+            float inv_m32 = 1.0f / m32;
+
+            inv.a[10] = -m33 * inv_m32;
+            inv.a[11] = 1.0f;         
+            inv.a[14] = m22 * inv_m32;
+            inv.a[15] = -m23 * inv_m32;
+        }
+        else
+        {
+            // Orthographic projection
+            inv.a[10] = 1.0f / m22;
+            inv.a[11] = 0.0f;      
+            inv.a[14] = -m23 / m22;
+            inv.a[15] = 1.0f;      
+        }
+
+        // Copy back
+        memcpy(a, inv.a, sizeof(float) * 16);
     }
 
     bool Float4x4::Invert()
@@ -215,7 +256,7 @@ namespace RB::Math
         row2 = { 0, 0, 1 };
     }
 
-    Float3x3 Float3x3::operator*(const Float3x3& other)
+    Float3x3 Float3x3::operator*(const Float3x3& other) const
     {
         Float3x3 out;
         out.row0 = (other.row0 * row0.x) + (other.row1 * row0.y) + (other.row2 * row0.z);

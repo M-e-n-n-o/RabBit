@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Window.h"
+#include "RenderGraph.h"
 #include "events/Event.h"
 #include "utils/Threading.h"
-#include "app/Settings.h"
 #include "app/FrameAllocator.h"
 
 namespace RB::Entity
@@ -16,21 +16,28 @@ namespace RB::Graphics
     enum class RenderAPI
     {
         None,
-        D3D12
+        D3D12,
+        Vulkan
     };
 
     class RenderInterface;
     class GpuGuard;
     class ViewContext;
     class ResourceStreamer;
+    class ShaderSystem;
     class VertexBuffer;
-    class RenderGraph;
-    class RenderGraphContext;
 
+    // Defines the different render graph types and the order in which they are rendered
     enum RenderGraphType
     {
-        kRenderGraphType_Normal = 0,
+        // TODO: 
+        //  - When implementing upscaling, we still want to render the UI at full res.
+        //       Probably good to make a separate graph for the UI rendering and just use
+        //       the output of regular rendering as input to the UI graph.
+        //  - Need to add support for custom rendertargets as an input to a renderpass.
 
+        kRenderGraphType_Normal = 0,
+        kRenderGraphType_Post,
         kRenderGraphType_Count
     };
 
@@ -39,17 +46,21 @@ namespace RB::Graphics
     public:
         virtual ~Renderer();
 
-        static void SetAPI(RenderAPI api) { s_Api = api; }
+        static void SetAPI(RenderAPI api);
         inline static RenderAPI GetAPI() { return s_Api; }
 
         // Submits current frame relevant information of the scene to the renderer
         void SubmitFrame(const Entity::Scene* const scene);
 
         // Sync with the render thread (and optionally also wait until GPU is idle)
-        // Should only be called from the Main thread!
+        // Should only be called from the Main or Render thread!
         void SyncRenderer(bool gpu_sync = false);
 
+        void SetRenderGraphs(const UnorderedMap<RenderGraphType, RenderGraphBuilder>& graphs);
+
         ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
+        ShaderSystem*     GetShaderSystem() const { return m_ShaderSystem; }
+        FrameAllocator*   GetAllocator() const { return m_RenderAllocator; }
 
         uint64_t GetRenderFrameIndex();
 
@@ -58,7 +69,7 @@ namespace RB::Graphics
         // Also syncs with the render thread and GPU
         void Shutdown();
 
-        static Renderer* Create(bool enable_validation_layer);
+        static Renderer* Create(bool enable_validation_layer, bool load_pix_lib);
 
     protected:
         Renderer(bool multi_threading_support);
@@ -70,32 +81,33 @@ namespace RB::Graphics
 
     private:
         ViewContext* CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count);
-        void CreateRenderGraphs(const GraphicsSettings& settings);
-        void UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count);
+        void UpdateRenderGraphSizes(const ViewContext* view_contexts, uint32_t context_count);
 
         // Should only be called from the render thread!
         bool OnEvent(Events::Event& event) override;
 
         inline static RenderAPI s_Api = RenderAPI::None;
 
-        bool						m_IsShutdown;
+        bool                        m_IsShutdown;
         WorkerThread*               m_RenderThread;
-        JobTypeID					m_RenderJobType;
+        JobTypeID                   m_RenderJobType;
 
         RenderInterface*            m_GraphicsInterface; // Used by the render graphs
         RenderInterface*            m_CopyInterface;	 // Used for resource streaming 
         RenderGraph*                m_RenderGraphs[kRenderGraphType_Count];
         RenderGraphContext*         m_RenderGraphContext;
         uint32_t                    m_CurrentValidRenderGraphSizes;
+        uint32_t*                   m_RenderGraphSizeIDs;
 
-        ThreadedVariable<uint64_t>	m_RenderFrameIndex;
-        ThreadedVariable<uint32_t>	m_ForceSync;
+        ThreadedVariable<uint64_t>  m_RenderFrameIndex;
+        ThreadedVariable<uint32_t>  m_ForceSync;
 
-        VertexBuffer*               m_BackBufferCopyVB;
+        Shared<VertexBuffer>        m_BackBufferCopyVB;
 
-        bool						m_MultiThreadingSupport;
+        bool                        m_MultiThreadingSupport;
 
         ResourceStreamer*           m_ResourceStreamer;
+        ShaderSystem*               m_ShaderSystem;
 
         FrameAllocator*             m_RenderAllocator;
 

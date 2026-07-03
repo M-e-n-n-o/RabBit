@@ -238,6 +238,8 @@ namespace RB::Math
         static float Angle(const Float2& first, const Float2& second);
     };
 
+    struct Float4x4;
+
     struct Float3
     {
     public:
@@ -266,6 +268,11 @@ namespace RB::Math
         Float3 operator/(const Float3& other)  const;
         Float3 operator/(const float& other) const;
 
+        Float3 operator*(const Float4x4& other) const;
+
+        static Float3 Min(const Float3& first, const Float3& second);
+        static Float3 Max(const Float3& first, const Float3& second);
+
         static Float3 Cross(const Float3& first, const Float3& second);
 
         static float Dot(const Float3& first, const Float3& second);
@@ -277,10 +284,21 @@ namespace RB::Math
     struct Float4
     {
     public:
-        union { float x, r; };
-        union { float y, g; };
-        union { float z, b; };
-        union { float w, a; };
+        union
+        {
+            struct
+            {
+                float arr[4];
+            };
+
+            struct
+            {
+                union { float x, r; };
+                union { float y, g; };
+                union { float z, b; };
+                union { float w, a; };
+            };
+        };
 
         Float4();
         Float4(float xyzw);
@@ -299,9 +317,10 @@ namespace RB::Math
 
         Float4 operator*(const Float4& other)  const;
         Float4 operator*(const float& other) const;
+        Float4 operator*(const Float4x4& other) const;
 
-        //	Float4 operator/(const Float4& other)  const;
-        //	Float4 operator/(const float& other) const;
+        Float4 operator/(const Float4& other)  const;
+        Float4 operator/(const float& other) const;
 
         //	static Float4 Cross(const Float4& first, const Float4& second);
 
@@ -310,4 +329,8 @@ namespace RB::Math
         //	// Returns the angle between the two vectors in radians
         //	static float Angle(const Float4& first, const Float4& second);
     };
+
+    static const Float3 WorldRight   = Float3(1, 0, 0);
+    static const Float3 WorldUp      = Float3(0, 1, 0);
+    static const Float3 WorldForward = Float3(0, 0, 1);
 }

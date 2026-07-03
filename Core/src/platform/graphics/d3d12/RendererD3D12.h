@@ -3,13 +3,15 @@
 #pragma once
 #include "RabBitCommon.h"
 #include "graphics/Renderer.h"
-#include "DeviceQueue.h"
+#include "graphics/Window.h"
 
-// DirectX 12 specific headers.
 #include <d3d12.h>
 
 namespace RB::Graphics::D3D12
 {
+    #define MAX_NUM_CPU_FRAMES_IN_FLIGHT (BACK_BUFFER_COUNT + 1)
+    #define TRANSIENT_CYCLES             MAX_NUM_CPU_FRAMES_IN_FLIGHT
+
     class RendererD3D12 : public Renderer
     {
     public:

@@ -7,18 +7,30 @@
 
 #include <ufbx.h>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 using namespace RB::Graphics;
 
 namespace RB
 {
     LoadedImage::LoadedImage()
         : data(nullptr)
+        , dataSize(0)
+        , width(0)
+        , height(0)
     {}
 
     LoadedImage::~LoadedImage()
     {
-        stbi_image_free(data);
-        data = nullptr;
+        if (loadedUsingStb)
+        {
+            stbi_image_free(data);
+        }
+        else
+        {
+            SAFE_FREE(data);
+        }
     }
 
     LoadedMesh::LoadedMesh()
@@ -28,6 +40,19 @@ namespace RB
     LoadedMesh::~LoadedMesh()
     {
         ufbx_free_scene((ufbx_scene*)internalScene);
+    }
+
+    LoadedFont::LoadedFont()
+        : fontFace(nullptr)
+        , fontLibrary(nullptr)
+    {}
+
+    LoadedFont::~LoadedFont()
+    {
+        if (fontFace)
+            FT_Done_Face((FT_Face)fontFace);
+        if (fontLibrary)
+            FT_Done_FreeType((FT_Library)fontLibrary);
     }
 
     namespace AssetManager
@@ -43,41 +68,61 @@ namespace RB
         //								    Images
         // ---------------------------------------------------------------------------
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, uint32_t force_channels)
+        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb)
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
-            RB_LOG(LOGTAG_MAIN, "Loading: %s", final_path.c_str());
+            RB_LOG(LOGTAG_MAIN, "Loading image: %s", final_path.c_str());
 
             auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
+            if (!file_handle->IsValid())
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load texture file \"%s\" from disk", final_path.c_str());
+                return false;
+            }
+
             FileData data = file_handle->ReadFull();
 
+            int32_t actual_channels;
+            bool success = stbi_info_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &actual_channels);
+
+            if (!success)
+            {
+                const char* error_msg = stbi_failure_reason();
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load info of texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
+            }
+
+            if (actual_channels == 3)
+                actual_channels = 4; // We don't support 3 channel alpha textures
+
             // Note that this loads a 8 bit per channel image (use stbi_load_16_from_memory or stbi_loadf_from_memory for 16 or 32 bit)
-            out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &out_image->channels, force_channels);
+            int32_t original_channels;
+            out_image->data = stbi_load_from_memory((stbi_uc*)data.data, data.size, &out_image->width, &out_image->height, &original_channels, actual_channels);
+            out_image->loadedUsingStb = true;
 
             if (out_image->data == NULL)
             {
                 const char* error_msg = stbi_failure_reason();
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load texture \"%s\" with STB, error message: %s", final_path.c_str(), error_msg);
                 return false;
             }
 
-            if (force_channels != 0)
+            switch (actual_channels)
             {
-                // We forced to read only certain channels
-                out_image->channels = force_channels;
-            }
-
-            switch (out_image->channels)
-            {
-            case 1: out_image->format = RenderResourceFormat::R8_UNORM; break;
-            case 4: out_image->format = RenderResourceFormat::R8G8B8A8_UNORM; break;
+            case 1:
+                out_image->format = RenderResourceFormat::R8_UNORM; 
+                if (srgb)
+                    RB_LOG_WARN(LOGTAG_MAIN, "A single channel image cannot be in srgb space");
+                break;
+            case 4:
+                out_image->format = srgb ? RenderResourceFormat::R8G8B8A8_SRGB : RenderResourceFormat::R8G8B8A8_UNORM; 
+                break;
             case 0:
             case 2:
             case 3:
             default:
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "This many channels for an 8 bit image is not supported");
+                RB_LOG_ERROR(LOGTAG_MAIN, "This many channels for an 8 bit image is not supported");
                 out_image->format = RenderResourceFormat::Unkown;
                 break;
             }
@@ -91,13 +136,19 @@ namespace RB
         //								    Meshes
         // ---------------------------------------------------------------------------
 
-        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part);
+        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node);
 
         bool LoadMesh(const char* path, LoadedMesh* out_mesh)
         {
+            // TODO:
+            // - Do proper parent/child relationships
+            // - Store more texture types (normals, roughness, etc.)
+            // - Do model loading on a different thread? (+ use thread pool for each submodel)
+            //      - You can then choose the behaviour when its not yet loaded. Need to block until loaded or just skip rendering until loaded?
+
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
-            RB_LOG(LOGTAG_MAIN, "Loading: %s", final_path.c_str());
+            RB_LOG(LOGTAG_MAIN, "Loading mesh: %s", final_path.c_str());
 
             auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
@@ -114,7 +165,7 @@ namespace RB
 
             if (out_mesh->internalScene == nullptr)
             {
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to load model \"%s\" with ufbx, error message: %s", final_path.c_str(), error.description.data);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load model \"%s\" with ufbx, error message: %s", final_path.c_str(), error.description.data);
                 return false;
             }
 
@@ -122,11 +173,14 @@ namespace RB
 
             ufbx_scene* scene = (ufbx_scene*)out_mesh->internalScene;
 
-            // TODO Convert materials
-            //for (const ufbx_material* node : scene->materials)
-            //{
-            //    printf("%s\n", node->name.data);
-            //}
+            for (const ufbx_material* material : scene->materials)
+            {
+                out_mesh->diffuseColorTextures.push_back(material->fbx.diffuse_color.texture ? material->fbx.diffuse_color.texture->filename.data : material->name.data);
+
+                // Store the wrap type 
+                //material->fbx.diffuse_color.texture->wrap_u
+                //material->fbx.diffuse_color.texture->wrap_v
+            }
 
             for (const ufbx_node* node : scene->nodes) 
             {
@@ -135,44 +189,92 @@ namespace RB
                 if (mesh == nullptr)
                     continue;
 
-                for (const ufbx_mesh_part& mesh_part : mesh->material_parts)
+                for (uint32_t part_idx = 0; part_idx < mesh->material_parts.count; part_idx++)
                 {
-                    LoadedMesh::Submodel submodel = ConvertMeshPart(mesh, &mesh_part);
+                    LoadedMesh::Submodel submodel = ConvertMeshPart(mesh, &mesh->material_parts[part_idx], node);
+                    submodel.diffuseTexIndex = part_idx;
                     out_mesh->models.push_back(submodel);
                 }
-            }
 
-            //static_assert(false);
-            // TODO 
-            // - With indices generating the data is sometimes still wrong
-            // - Every submodel probably also needs its own transform
-            // - Model loading op een andere thread doen?
-            //      - Je kan dan behaviour kiezen of je moet blocken of gwn kan skippen totdat hij is geladen
+            }
 
             return true;
         }
-        
-        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part)
+
+        LoadedMesh::Submodel ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* mesh_part, const ufbx_node* node)
         {
-            List<Math::Float3> vertices;
-            List<Math::Float3> normals;
-            List<Math::Float2> uvs;
+            LoadedMesh::Submodel out_submodel = {};
+
+            // Transform code
+            Math::Float3 model_scale;
+            {
+                out_submodel.position.x = (float)node->node_to_world.m03;
+                out_submodel.position.y = (float)node->node_to_world.m13;
+                out_submodel.position.z = (float)node->node_to_world.m23;
+
+                const ufbx_matrix& m = node->node_to_world;
+
+                Math::Float3 cx(m.m00, m.m10, m.m20);
+                Math::Float3 cy(m.m01, m.m11, m.m21);
+                Math::Float3 cz(m.m02, m.m12, m.m22);
+
+                // Remove scale
+                float sx = cx.GetLength();
+                float sy = cy.GetLength();
+                float sz = cz.GetLength();
+
+                model_scale = { sx, sy, sz };
+
+                if (sx == 0) sx = 1;
+                if (sy == 0) sy = 1;
+                if (sz == 0) sz = 1;
+
+                Math::Float3 rx = cx / sx;
+                Math::Float3 ry = cy / sy;
+                Math::Float3 rz = cz / sz;
+
+                float det = Math::Float3::Dot(Math::Float3::Cross(rx, ry), rz);
+                if (det < 0.0f) 
+                {
+                    rx = rx * -1.0f;
+                }
+
+                float r00 = rx.x, r01 = ry.x, r02 = rz.x;
+                float r10 = rx.y, r11 = ry.y, r12 = rz.y;
+                float r20 = rx.z, r21 = ry.z, r22 = rz.z;
+
+                float y = asinf(-Math::Clamp(r20, -1.0f, 1.0f));
+                float x = atan2f(r21, r22);
+                float z = atan2f(r10, r00);
+
+                out_submodel.rotation.x = Math::RadiansToDegrees(x);
+                out_submodel.rotation.y = Math::RadiansToDegrees(y);
+                out_submodel.rotation.z = Math::RadiansToDegrees(z);
+            }
 
             const size_t num_vertices = mesh_part->num_triangles * 3;
-            vertices.reserve(num_vertices);
-            normals.reserve(num_vertices);
-            uvs.reserve(num_vertices);
+            List<Math::Float3> positions;
+            positions.resize(num_vertices);
+            List<LoadedMesh::Vertex> vertices;
+            vertices.resize(num_vertices);
 
             const size_t num_tri_indices = mesh->max_face_triangles * 3;
-            uint32_t* tri_indices = ALLOC_HEAPC(uint32_t, num_tri_indices);
+            if (num_tri_indices > 1000.0f)
+                RB_LOG_WARN(LOGTAG_MAIN, "Triange indices might overflow, maybe need to use ALLOC_HEAP");
+            uint32_t* tri_indices = ALLOC_STACKC(uint32_t, num_tri_indices);
 
+            Math::Float3 min_bounds(+FLT_MAX, +FLT_MAX, +FLT_MAX);
+            Math::Float3 max_bounds(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+            uint32_t vi_global = 0;
             // First fetch all vertices into a flat non-indexed buffer, we also need to triangulate the faces
             for (size_t fi = 0; fi < mesh_part->num_faces; fi++)
             {
                 ufbx_face face = mesh->faces.data[mesh_part->face_indices.data[fi]];
                 size_t num_tris = ufbx_triangulate_face(tri_indices, num_tri_indices, mesh, face);
 
-                ufbx_vec2 default_uv = { 0 };
+                ufbx_vec3 default_normal = { 0, 0, 1 };
+                ufbx_vec2 default_uv = { 0, 0 };
 
                 // Iterate through every vertex of every triangle in the triangulated result
                 for (size_t vi = 0; vi < num_tris * 3; vi++) 
@@ -180,48 +282,34 @@ namespace RB
                     uint32_t ix = tri_indices[vi];
 
                     ufbx_vec3 pos    = ufbx_get_vertex_vec3(&mesh->vertex_position, ix);
-                    ufbx_vec3 normal = ufbx_get_vertex_vec3(&mesh->vertex_normal, ix);
+                    ufbx_vec3 normal = mesh->vertex_normal.exists ? ufbx_get_vertex_vec3(&mesh->vertex_normal, ix) : default_normal;
                     ufbx_vec2 uv     = mesh->vertex_uv.exists ? ufbx_get_vertex_vec2(&mesh->vertex_uv, ix) : default_uv;
 
-                    vertices.push_back(Math::Float3(pos.x, pos.y, pos.z));
-                    normals.push_back(Math::Float3(normal.x, normal.y, normal.z));
-                    uvs.push_back(Math::Float2(uv.x, uv.y));
+                    // Apply the model scale to the position so that we avoid really small/big scales during rendering
+                    // (which can cause floating point issues)
+                    Math::Float3 scaled_pos = Math::Float3(pos.x, pos.y, pos.z) * model_scale;
+
+                    positions[vi_global] = scaled_pos;
+
+                    vertices[vi_global] = {};
+                    vertices[vi_global].normal   = Math::Float3(normal.x, normal.y, normal.z);
+                    vertices[vi_global].uv       = Math::Float2(uv.x, 1.0f - uv.y); // Flip the Y as UFBX uses bottom-left convention
+                    vi_global++;
+
+                    if (scaled_pos.x < min_bounds.x) min_bounds.x = scaled_pos.x;
+                    if (scaled_pos.y < min_bounds.y) min_bounds.y = scaled_pos.y;
+                    if (scaled_pos.z < min_bounds.z) min_bounds.z = scaled_pos.z;
+                    if (scaled_pos.x > max_bounds.x) max_bounds.x = scaled_pos.x;
+                    if (scaled_pos.y > max_bounds.y) max_bounds.y = scaled_pos.y;
+                    if (scaled_pos.z > max_bounds.z) max_bounds.z = scaled_pos.z;
                 }
             }
 
-            SAFE_FREE(tri_indices);
             RB_ASSERT(LOGTAG_MAIN, vertices.size() == num_vertices, "The amount of loaded vertices does not match what was expected");
 
-            List<ufbx_vertex_stream> streams;
-
-            {
-                ufbx_vertex_stream vertex_stream;
-                vertex_stream.data         = vertices.data();
-                vertex_stream.vertex_count = vertices.size();
-                vertex_stream.vertex_size  = sizeof(Math::Float3);
-
-                streams.push_back(vertex_stream);
-            }
-
-            {
-                ufbx_vertex_stream normal_stream;
-                normal_stream.data         = normals.data();
-                normal_stream.vertex_count = normals.size();
-                normal_stream.vertex_size  = sizeof(Math::Float3);
-
-                streams.push_back(normal_stream);
-            }
-
-            {
-                ufbx_vertex_stream uv_stream;
-                uv_stream.data         = uvs.data();
-                uv_stream.vertex_count = uvs.size();
-                uv_stream.vertex_size  = sizeof(Math::Float2);
-
-                streams.push_back(uv_stream);
-            }
-
-            LoadedMesh::Submodel out_submodel = {};
+            List<ufbx_vertex_stream> streams(2);
+            streams[0].data = positions.data(); streams[0].vertex_count = positions.size(); streams[0].vertex_size = sizeof(Math::Float3);
+            streams[1].data = vertices.data();  streams[1].vertex_count = vertices.size();  streams[1].vertex_size = sizeof(LoadedMesh::Vertex);
 
             const size_t num_indices = num_vertices;
 
@@ -232,37 +320,122 @@ namespace RB
             // compacts the vertex buffer and returns the number of used vertices.
             ufbx_error error;
             const size_t num_compacted_vertices = ufbx_generate_indices(streams.data(), streams.size(), indices.data(), num_indices, nullptr, &error);
-            if (error.type == UFBX_ERROR_NONE) 
+            if (error.type == UFBX_ERROR_NONE)
             {
                 out_submodel.indices.resize(num_indices);
-                for (int i = 0; i < num_indices; i++)
-                {
-                    out_submodel.indices[i] = indices[i];
-                }
-            
+                memcpy(out_submodel.indices.data(), indices.data(), sizeof(uint32_t) * num_indices);
+
+                out_submodel.positions.resize(num_compacted_vertices);
+                memcpy(out_submodel.positions.data(), positions.data(), sizeof(Math::Float3) * num_compacted_vertices);
+
                 out_submodel.vertices.resize(num_compacted_vertices);
-                for (int i = 0; i < num_compacted_vertices; i++)
-                {
-                    out_submodel.vertices[i].position = vertices[i];
-                    out_submodel.vertices[i].normal   = normals[i];
-                    out_submodel.vertices[i].uv       = uvs[i];
-                }
+                memcpy(out_submodel.vertices.data(), vertices.data(), sizeof(LoadedMesh::Vertex) * num_compacted_vertices);
+
+                out_submodel.minBounds = min_bounds;
+                out_submodel.maxBounds = max_bounds;
             }
             else
             {
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Failed to generate index buffer with ufbx, error message: %s", error.description.data);
-
-                // Return just without the indices
-                out_submodel.vertices.resize(num_vertices);
-                for (int i = 0; i < num_vertices; i++)
-                {
-                    out_submodel.vertices[i].position = vertices[i];
-                    out_submodel.vertices[i].normal = normals[i];
-                    out_submodel.vertices[i].uv = uvs[i];
-                }
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to generate index buffer with ufbx, error message: %s", error.description.data);
+                // Return empty submodel
+                return out_submodel;
             }
 
             return out_submodel;
         }
-}
+
+        // ---------------------------------------------------------------------------
+        //								    Fonts
+        // ---------------------------------------------------------------------------
+
+        bool LoadFont(const char* path, LoadedFont* out_font, uint32_t font_size)
+        {
+            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+
+            RB_LOG(LOGTAG_MAIN, "Loading font: %s", final_path.c_str());
+
+            LoadedImage* img = &out_font->fontAtlas;
+            *img = {};
+            img->loadedUsingStb = false;
+            img->format         = RenderResourceFormat::R8_UNORM;
+
+            FT_Library ft;
+            if (FT_Init_FreeType(&ft))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, " Could not init FreeType");
+                return false;
+            }
+            out_font->fontLibrary = ft;
+
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
+
+            FileData file_data = file_handle->ReadFull();
+
+            FT_Face face;
+            if (FT_New_Memory_Face(ft, file_data.data, file_data.size, 0, &face))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load font");
+                return false;
+            }
+            out_font->fontFace = face;
+
+            FT_Set_Pixel_Sizes(face, 0, font_size);
+
+            // Calculate the width and height of the font atlas
+            for (uint8_t c = 0; c < 128; c++)
+            {
+                FT_Load_Char(face, c, FT_LOAD_RENDER);
+                img->width += face->glyph->bitmap.width;
+                img->height = Math::Max(img->height, (int32_t)face->glyph->bitmap.rows);
+            }
+
+            img->dataSize = sizeof(uint8_t) * img->width * img->height;
+            img->data = (uint8_t*)ALLOC_HEAP(img->dataSize);
+            memset(img->data, 0, img->dataSize);
+
+            // Just load the first 128 ASCII characters
+            uint32_t offset = 0;
+            for (uint8_t c = 0; c < 128; c++)
+            {
+                if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+                {
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load glyph: %c", c);
+                    continue;
+                }
+                
+                FT_GlyphSlot g = face->glyph;
+
+                int pitch = g->bitmap.pitch;
+                const uint8_t* src_buffer = g->bitmap.buffer;
+                
+                if (pitch < 0)
+                {
+                    // rows are stored bottom-up, reverse this
+                    src_buffer += g->bitmap.rows * pitch;
+                    pitch = -pitch;
+                }
+                
+                for (uint32_t row = 0; row < g->bitmap.rows; ++row)
+                {
+                    // Write to the destination from bottom to top
+                    uint32_t flipped_row = g->bitmap.rows - 1 - row;
+                    memcpy((uint8_t*)img->data + flipped_row * img->width + offset,
+                           src_buffer + row * pitch,
+                           g->bitmap.width);
+                }
+                
+                LoadedFont::Character character = {};
+                character.imageUV       = Math::Float4((float)offset / img->width, 0.0f, (float)(offset + g->bitmap.width) / img->width, (float)g->bitmap.rows / img->height);
+                character.size          = Math::Float2(g->bitmap.width, g->bitmap.rows);
+                character.bearing       = Math::Float2(g->bitmap_left, g->bitmap_top);
+                character.advance       = g->advance.x >> 6; // Go from 26.6 fixed point to regular int
+                
+                out_font->characters.emplace(c, character);
+                
+                offset += g->bitmap.width;
+            }
+
+            return true;
+        }
+    }
 }

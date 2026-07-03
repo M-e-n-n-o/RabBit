@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
-#include <RabBit/math/Matrix.h>
-#include <RabBit/math/Vector.h>
+#include <rabbit/math/Misc.h>
+#include <rabbit/math/Matrix.h>
+#include <rabbit/math/Vector.h>
 
 using namespace RB::Math;
 using namespace testing;
@@ -13,7 +14,7 @@ bool IsApproximatelyIdentity(const Float4x4& m, float epsilon = 1e-5f)
 		{
 			float expected = (row == col) ? 1.0f : 0.0f;
 			float value = m.a[row * 4 + col];
-			if (std::fabs(value - expected) > epsilon)
+			if (Abs(value - expected) > epsilon)
 			{
 				//std::cout << "Mismatch at [" << row << "][" << col << "]: " << value << " != " << expected << "\n";
 				return false;

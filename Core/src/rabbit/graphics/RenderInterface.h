@@ -18,9 +18,8 @@ namespace RB::Graphics
     #define RB_PROFILE_GPU_SCOPED_COLOR(render_interface, name, color) 
 #endif
 
-    #define INTERMEDIATE_EXECUTE_THRESHOLD 350
-
     class RenderResource;
+    class ReadbackBuffer;
     class RenderTargetBundle;
     enum class ResourceState;
 
@@ -49,8 +48,8 @@ namespace RB::Graphics
     public:
         virtual ~GpuGuard() = default;
 
-        virtual bool IsFinishedRendering() = 0;
-        virtual void WaitUntilFinishedRendering() = 0;
+        virtual bool IsFinishedRendering() const = 0;
+        virtual void WaitUntilFinishedRendering() = 0; // TODO Implement a timer functionality here to check how long we keep waiting here
 
     protected:
         GpuGuard() = default;
@@ -86,15 +85,16 @@ namespace RB::Graphics
         virtual void SetDepthStencil(RenderResource* ds_target) = 0;
         virtual void ClearRenderTargets() = 0;
 
-        virtual void SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size) = 0;
+        virtual void SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size) = 0;
 
-        virtual void SetShaderResourceInput(RenderResource* resource, uint32_t slot) = 0;
-        virtual void SetRandomReadWriteInput(RenderResource* resource, uint32_t slot) = 0;
-        virtual void ClearShaderResourceInput(uint32_t slot) = 0;
-        virtual void ClearRandomReadWriteInput(uint32_t slot) = 0;
+        virtual void SetShaderResourceInput(uint32_t handle, RenderResource* resource) = 0;
+        virtual void SetRandomReadWriteInput(uint32_t handle, RenderResource* resource) = 0;
 
         virtual void SetViewport(const Viewport& viewport) = 0;
         virtual void SetViewports(const Viewport* viewports, uint32_t total_viewports) = 0;
+
+        virtual void SetScissor(const Viewport& scissor) = 0;
+        virtual void SetScissors(const Viewport* scissors, uint32_t total_scissors) = 0;
 
         virtual void SetBlendMode(const BlendMode& mode) = 0;
         virtual void SetCullMode(const CullMode& mode) = 0;
@@ -105,13 +105,17 @@ namespace RB::Graphics
         virtual void ClearDepth(RenderResource* resource, bool reversed_depth);
 
         virtual void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) = 0;
-        virtual void CopyResource(RenderResource* src, RenderResource* dest) = 0;
+        virtual void CopyResource(RenderResource* src, RenderResource* dst) = 0;
+        virtual void Readback(RenderResource* src, ReadbackBuffer* dst) = 0;
 
         void Draw();
+        void DrawInstanced(uint32_t instances);
         void Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z);
 
         virtual void ProfileMarkerBegin(uint64_t color, const char* name) = 0;
         virtual void ProfileMarkerEnd() = 0;
+
+        virtual void* GetNativeInterface() const = 0;
 
         static RenderInterface* Create(bool allow_only_copy_operations);
 
@@ -122,9 +126,8 @@ namespace RB::Graphics
 
         virtual Shared<GpuGuard> ExecuteInternal() = 0;
         virtual void DrawInternal() = 0;
+        virtual void DrawInstancedInternal(uint32_t instances) = 0;
         virtual void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) = 0;
-
-        uint32_t m_TotalDraws = 0;
     };
 
 #ifdef RB_ENABLE_LOGS

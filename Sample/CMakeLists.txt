@@ -1,4 +1,4 @@
-#define app name
+# Define app name
 set(APP_NAME Sample)
 
 file(GLOB_RECURSE SAMPLE_SRC_FILES CONFIGURE_DEPENDS
@@ -6,9 +6,8 @@ file(GLOB_RECURSE SAMPLE_SRC_FILES CONFIGURE_DEPENDS
     "src/*.cpp"
 )
 
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_executable(${APP_NAME} WIN32 ${SAMPLE_SRC_FILES})
-endif()
+add_executable(${APP_NAME} ${SAMPLE_SRC_FILES})
+set_target_properties(${APP_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${APP_NAME}>")
 
 # Link RabBit
 target_include_directories(${APP_NAME} PUBLIC
@@ -19,4 +18,4 @@ target_link_directories(${APP_NAME} PUBLIC RabBit)
 target_link_libraries(${APP_NAME} RabBit)
 
 # Add post build command to copy RabBit libraries to build location
-RabBitCopyLibs()
+RabBitCopyLibs(${APP_NAME})

@@ -6,23 +6,35 @@
 #include "platform/graphics/d3d12/RenderInterfaceD3D12.h"
 #endif
 
+#if RB_GRAPHICS_API_VULKAN
+#include "platform/graphics/vulkan/RenderInterfaceVK.h"
+#endif
+
 namespace RB::Graphics
 {
     Shared<GpuGuard> RenderInterface::ExecuteOnGpu()
     {
-        m_TotalDraws = 0;
         return ExecuteInternal();
     }
 
     bool RenderInterface::NeedsIntermediateExecute()
     {
-        return m_TotalDraws > INTERMEDIATE_EXECUTE_THRESHOLD;
+        return false; //m_TotalDraws > INTERMEDIATE_EXECUTE_THRESHOLD;
     }
 
     void RenderInterface::Draw()
     {
-        m_TotalDraws++;
         DrawInternal();
+
+        if (NeedsIntermediateExecute())
+        {
+            ExecuteOnGpu();
+        }
+    }
+
+    void RenderInterface::DrawInstanced(uint32_t instances)
+    {
+        DrawInstancedInternal(instances);
 
         if (NeedsIntermediateExecute())
         {
@@ -32,7 +44,6 @@ namespace RB::Graphics
 
     void RenderInterface::Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
-        m_TotalDraws++;
         DispatchInternal(thread_groups_x, thread_groups_y, thread_groups_z);
 
         if (NeedsIntermediateExecute())
@@ -55,10 +66,16 @@ namespace RB::Graphics
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
             return new D3D12::RenderInterfaceD3D12(allow_only_copy_operations);
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return new VK::RenderInterfaceVK(allow_only_copy_operations);
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the render interface for the set graphics API");
             break;

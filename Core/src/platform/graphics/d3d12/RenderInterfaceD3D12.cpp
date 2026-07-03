@@ -9,23 +9,32 @@
 #include "resource/UploadAllocator.h"
 #include "resource/Descriptor.h"
 #include "Pipeline.h"
-#include "ShaderSystem.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
 #include "graphics/ResourceDefaults.h"
+#include "graphics/Renderer.h"
+#include "graphics/ShaderSystem.h"
+#include "app/Application.h"
+#include <ShaderReflection.h>
 
 #define USE_PIX
 #include <pix3.h>
 
+#include <d3dx12/d3dx12.h>
+
 namespace RB::Graphics::D3D12
 {
+    // ---------------------------------------------------------------------------
+    //                                GpuGuard
+    // ---------------------------------------------------------------------------
+
     GpuGuardD3D12::GpuGuardD3D12(uint64_t fence_value, DeviceQueue* queue)
         : m_FenceValue(fence_value)
         , m_Queue(queue)
     {
     }
 
-    bool GpuGuardD3D12::IsFinishedRendering()
+    bool GpuGuardD3D12::IsFinishedRendering() const
     {
         return m_Queue->IsFenceReached(m_FenceValue);
     }
@@ -36,14 +45,15 @@ namespace RB::Graphics::D3D12
     }
 
     // ---------------------------------------------------------------------------
-    //								GpuGuard
+    //                             RenderInterface
     // ---------------------------------------------------------------------------
 
     RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
         : m_CopyOperationsOnly(allow_only_copy_operations)
         , m_RenderState()
-        , m_CurrentCBVAllocator(nullptr)
     {
+        m_ShaderSystem = Application::GetInstance()->GetRenderer()->GetShaderSystem();
+
         if (allow_only_copy_operations)
             m_Queue = g_GraphicsDevice->GetCopyQueue();
         else
@@ -55,18 +65,6 @@ namespace RB::Graphics::D3D12
 
     RenderInterfaceD3D12::~RenderInterfaceD3D12()
     {
-        SAFE_DELETE(m_CurrentCBVAllocator);
-
-        while (!m_AvailableCBVAllocators.empty())
-        {
-            SAFE_DELETE(m_AvailableCBVAllocators.front());
-            m_AvailableCBVAllocators.pop();
-        }
-
-        for (int i = 0; i < m_InFlightCBVAllocators.size(); ++i)
-        {
-            SAFE_DELETE(m_InFlightCBVAllocators[i].allocator);
-        }
     }
 
     void RenderInterfaceD3D12::InvalidateState(bool rebind_descriptor_heap)
@@ -84,29 +82,33 @@ namespace RB::Graphics::D3D12
             BindDescriptorHeaps();
         }
 
-        ClearSrvResources();
-        ClearUavResources();
+        ClearResources();
         ClearRenderTargets();
     }
 
     Shared<GpuGuard> RenderInterfaceD3D12::ExecuteInternal()
     {
+        if (!m_CopyOperationsOnly)
+        {
+            // Copy queue should not (have to) handle transitions
+            FlushAllPending();
+        }
+
         // TODO Maybe do the ExecuteCommandLists on a separate thread in the future?
         uint64_t fence_value = m_Queue->ExecuteCommandList(m_CommandList);
-
-        g_ResourceManager->OnCommandListExecute(m_Queue, fence_value);
-
-        if (m_CurrentCBVAllocator)
-        {
-            m_InFlightCBVAllocators.push_back({ m_CurrentCBVAllocator, fence_value });
-
-            m_CurrentCBVAllocator = nullptr;
-        }
 
         SetNewCommandList();
         InvalidateState(true);
 
-        return CreateShared<GpuGuardD3D12>(fence_value, m_Queue);
+        Shared<GpuGuardD3D12> guard = CreateShared<GpuGuardD3D12>(fence_value, m_Queue);
+
+        for (ReadbackBuffer* buf : m_SchedulesReadbacks)
+        {
+            ((ReadbackBufferD3D12*)buf)->OnScheduledReadback(guard);
+        }
+        m_SchedulesReadbacks.clear();
+
+        return guard;
     }
 
     void RenderInterfaceD3D12::GpuWaitOn(GpuGuard* guard)
@@ -117,8 +119,6 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::TransitionResource(RenderResource* resource, ResourceState state)
     {
-        MarkResourceUsed(resource);
-
         g_ResourceStateManager->TransitionResource((GpuResource*)resource->GetNativeResource(), ConvertToD3D12ResourceState(state));
     }
 
@@ -131,33 +131,42 @@ namespace RB::Graphics::D3D12
     {
         HandlePendingClears();
         FlushResourceBarriers();
+
+        if (m_RenderState.renderTargetDirty)
+        {
+            SetRenderTargets();
+        }
     }
 
     void RenderInterfaceD3D12::PushRenderTarget(RenderResource* color_target, uint32_t index)
     {
-        Texture2DD3D12* tex = (Texture2DD3D12*)color_target;
+        Texture* tex = (Texture*)color_target;
         if (!tex->AllowedRenderTarget())
         {
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "Texture is not a render target");
             return;
         }
 
-        if (m_RenderState.width != tex->GetWidth() || m_RenderState.height != tex->GetHeight())
+        if (m_RenderState.width != tex->GetViewportWidth() || m_RenderState.height != tex->GetViewportHeight())
         {
-            if (m_RenderState.width != 0 && m_RenderState.height != 0)
-            {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work for debugging though");
-            }
+            m_RenderState.width = tex->GetViewportWidth();
+            m_RenderState.height = tex->GetViewportHeight();
 
-            m_RenderState.width = tex->GetWidth();
-            m_RenderState.height = tex->GetHeight();
+            m_RenderState.viewportSet = false;
+            m_RenderState.scissorSet = false;
         }
 
         // This also waits until the resource has been created
         TransitionResource(tex, ResourceState::RENDER_TARGET);
 
-        m_RenderState.rtvHandles[index].push(tex->GetRenderTargetHandle());
-        m_RenderState.rtvFormats[index].push(ConvertToDXGIFormat(tex->GetFormat()));
+        if (tex->GetType() == RenderResourceType::Texture2D)
+            m_RenderState.rtvHandles[index].push(((Texture2DD3D12*)tex)->GetRenderTargetHandle());
+        else if (tex->GetType() == RenderResourceType::Texture2DArray)
+            m_RenderState.rtvHandles[index].push(((Texture2DArrayD3D12*)tex)->GetRenderTargetHandle());
+        else
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as rendertarget");
+
+        m_RenderState.rtvFormats[index].push(ConvertToDXGIFormat(tex->GetFormat(), true, false));
 
         m_RenderState.numRenderTargets = Math::Max(m_RenderState.numRenderTargets, index + 1);
 
@@ -188,31 +197,35 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetDepthStencil(RenderResource* ds_target)
     {
-        if (ds_target->GetType() != RenderResourceType::Texture2D)
+        if (ds_target->GetPrimitiveType() != RenderResourceType::Texture)
         {
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Depth Stencil should be a Texture2D");
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Depth Stencil should be a Texture");
             return;
         }
 
-        Texture2D* depth_stencil = (Texture2D*)ds_target;
+        Texture* depth_stencil = (Texture*)ds_target;
         if (depth_stencil->AllowedDepthStencil())
         {
-            if (m_RenderState.width != depth_stencil->GetWidth() || m_RenderState.height != depth_stencil->GetHeight())
+            if (m_RenderState.width != depth_stencil->GetViewportWidth() || m_RenderState.height != depth_stencil->GetViewportHeight())
             {
-                if (m_RenderState.width != 0 && m_RenderState.height != 0)
-                {
-                    RB_LOG_WARN(LOGTAG_GRAPHICS, "It is not really allowed to have multiple rendertargets bound with different resolutions, might work for debugging though");
-                }
+                m_RenderState.width = depth_stencil->GetViewportWidth();
+                m_RenderState.height = depth_stencil->GetViewportHeight();
 
-                m_RenderState.width = depth_stencil->GetWidth();
-                m_RenderState.height = depth_stencil->GetHeight();
+                m_RenderState.viewportSet = false;
+                m_RenderState.scissorSet = false;
             }
 
             // This also waits until the resource has been created
             TransitionResource(depth_stencil, ResourceState::DEPTH_WRITE);
 
-            m_RenderState.dsvHandle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
-            m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat());
+            if (depth_stencil->GetType() == RenderResourceType::Texture2D)
+                m_RenderState.dsvHandle = ((Texture2DD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
+            else if (depth_stencil->GetType() == RenderResourceType::Texture2DArray)
+                m_RenderState.dsvHandle = ((Texture2DArrayD3D12*)depth_stencil)->GetDepthStencilTargetHandle();
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as depth stencil");
+
+            m_RenderState.dsvFormat = ConvertToDXGIFormat(depth_stencil->GetFormat(), true, true);
 
             m_RenderState.renderTargetDirty = true;
             m_RenderState.psoDirty = true;
@@ -241,20 +254,47 @@ namespace RB::Graphics::D3D12
         m_RenderState.dsvFormat = DXGI_FORMAT_UNKNOWN;
     }
 
-    void RenderInterfaceD3D12::SetShaderResourceInput(RenderResource* resource, uint32_t slot)
+    void RenderInterfaceD3D12::SetShaderResourceInput(uint32_t handle, RenderResource* resource)
     {
-        TransitionResource(resource, ResourceState::PIXEL_SHADER_RESOURCE);
+        TransitionResource(resource, ResourceState::READ);
+
+        uint32_t binding_offset = (handle >> 3) & 0x1FFFFFFF;
+        ShaderCompiler::Stage stage = (ShaderCompiler::Stage)(handle & 0x7);
+
+        // Descriptor handle takes up a uint2 in Slang
+        uint32_t slot = binding_offset / sizeof(uint64_t);
 
         switch (resource->GetType())
         {
         case RenderResourceType::Texture2D:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.tex2DsrvHandles), "Shader resource input slot out of range");
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
 
-            Texture2DD3D12* tex = (Texture2DD3D12*)resource;
+            switch (stage)
+            {
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
+                break;
+            }
+        }
+        break;
 
-            m_RenderState.tex2DsrvHandles[slot] = tex->GetSrvHandle();
-            m_RenderState.tex2DSRGBs[slot] = tex->GetColorSpace() == TextureColorSpace::sRGB;
+        case RenderResourceType::Texture2DArray:
+        {
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
+
+            switch (stage)
+            {
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
+                break;
+            }
         }
         break;
 
@@ -264,17 +304,23 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::SetRandomReadWriteInput(RenderResource* resource, uint32_t slot)
+    void RenderInterfaceD3D12::SetRandomReadWriteInput(uint32_t handle, RenderResource* resource)
     {
         TransitionResource(resource, ResourceState::UNORDERED_ACCESS);
 
-        switch (resource->GetType())
-        {
-        case RenderResourceType::Texture2D:
-        {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.rwTex2DsrvHandles), "UAV input slot out of range");
+        uint32_t binding_offset = (handle >> 3) & 0x1FFFFFFF;
+        ShaderCompiler::Stage stage = (ShaderCompiler::Stage)(handle & 0x7);
 
-            Texture2DD3D12* tex = (Texture2DD3D12*)resource;
+        // Descriptor handle takes up a uint2 in Slang
+        uint32_t slot = binding_offset / sizeof(uint64_t);
+
+        switch (resource->GetPrimitiveType())
+        {
+        case RenderResourceType::Texture:
+        {
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "UAV input slot out of range");
+
+            Texture* tex = (Texture*)resource;
 
             if (!tex->AllowedRandomReadWrites())
             {
@@ -282,7 +328,32 @@ namespace RB::Graphics::D3D12
                 return;
             }
 
-            m_RenderState.rwTex2DsrvHandles[slot] = tex->GetUavHandle();
+            if (tex->GetType() == RenderResourceType::Texture2D)
+            {
+                switch (stage)
+                {
+                case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+                default:
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
+                    break;
+                }
+            }
+            else if (tex->GetType() == RenderResourceType::Texture2DArray)
+            {
+                switch (stage)
+                {
+                case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+                case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+                default:
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
+                    break;
+                }
+            }
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as random read write input");
         }
         break;
 
@@ -292,58 +363,15 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::ClearShaderResourceInput(uint32_t slot)
-    {
-        m_RenderState.tex2DsrvHandles[slot] = DescriptorIndex{};
-        m_RenderState.tex2DSRGBs[slot] = false;
-    }
-
-    void RenderInterfaceD3D12::ClearRandomReadWriteInput(uint32_t slot)
-    {
-        // TODO Might be super handy to have some sort of validation every few frames to check if we accidentially wrote something to the error texture in debug mode
-        m_RenderState.rwTex2DsrvHandles[slot] = DescriptorIndex{};
-    }
-
-    void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, void* data, uint32_t data_size)
+    void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size)
     {
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.cbvAddresses), "Up the amount of possible CBV addresses");
 
-        if (m_CurrentCBVAllocator == nullptr)
-        {
-            // Update the available allocators
-            {
-                auto itr = m_InFlightCBVAllocators.begin();
-                while (itr != m_InFlightCBVAllocators.end())
-                {
-                    if (m_Queue->IsFenceReached(itr->fenceValue))
-                    {
-                        itr->allocator->Reset();
-                        m_AvailableCBVAllocators.push(itr->allocator);
-                        itr = m_InFlightCBVAllocators.erase(itr);
-                    }
-                    else
-                    {
-                        ++itr;
-                    }
-                }
-            }
-
-            if (m_AvailableCBVAllocators.empty())
-            {
-                m_CurrentCBVAllocator = new UploadAllocator("CBV Upload Allocator", k64KB);
-            }
-            else
-            {
-                m_CurrentCBVAllocator = m_AvailableCBVAllocators.front();
-                m_AvailableCBVAllocators.pop();
-            }
-        }
-
-        UploadAllocation allocation = m_CurrentCBVAllocator->Allocate(data_size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+        UploadAllocation allocation = g_TransientCBVAllocator->Allocate(data_size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
         memcpy(allocation.cpuWriteAddress, data, data_size);
 
-        m_RenderState.cbvAddresses[slot] = allocation.address;
+        m_RenderState.cbvAddresses[slot] = allocation.gpuAddress;
     }
 
     void RenderInterfaceD3D12::SetVertexShader(uint32_t shader_index)
@@ -384,7 +412,7 @@ namespace RB::Graphics::D3D12
 
         // Delay the clears so that they can get batched together just before a draw/dispatch
 
-        // TODO Add UAV clear if possible on the resource (then also auto place UAV barriers if needed)
+        // TODO Add UAV clear if possible on the resource
         // (Will then also have to implement a non-shader visible SRV/UAV descriptor heap, or just do a clear in a compute shader?)
 
         if (tex->AllowedRenderTarget())
@@ -393,8 +421,14 @@ namespace RB::Graphics::D3D12
 
             PendingClear clear = {};
             clear.renderTarget = true;
-            clear.handle       = ((D3D12::Texture2DD3D12*)resource)->GetRenderTargetHandle();
             clear.color        = color;
+
+            if (tex->GetType() == RenderResourceType::Texture2D)
+                clear.handle = ((Texture2DD3D12*)tex)->GetRenderTargetHandle();
+            else if (tex->GetType() == RenderResourceType::Texture2DArray)
+                clear.handle = ((Texture2DArrayD3D12*)tex)->GetRenderTargetHandle();
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported for a clear");
 
             m_RenderState.pendingClears.push_back(clear);
         }
@@ -404,8 +438,14 @@ namespace RB::Graphics::D3D12
 
             PendingClear clear = {};
             clear.renderTarget = false;
-            clear.handle       = ((D3D12::Texture2DD3D12*)resource)->GetDepthStencilTargetHandle();
             clear.color        = color;
+
+            if (tex->GetType() == RenderResourceType::Texture2D)
+                clear.handle = ((Texture2DD3D12*)tex)->GetDepthStencilTargetHandle();
+            else if (tex->GetType() == RenderResourceType::Texture2DArray)
+                clear.handle = ((Texture2DArrayD3D12*)tex)->GetDepthStencilTargetHandle();
+            else
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported for a clear");
 
             m_RenderState.pendingClears.push_back(clear);
         }
@@ -423,7 +463,6 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::SetViewports(const Viewport* viewports, uint32_t total_viewports)
     {
         D3D12_VIEWPORT* sizes = ALLOC_STACKC(D3D12_VIEWPORT, total_viewports);
-        D3D12_RECT* rects = ALLOC_STACKC(D3D12_RECT, total_viewports);
 
         for (uint32_t i = 0; i < total_viewports; ++i)
         {
@@ -433,20 +472,34 @@ namespace RB::Graphics::D3D12
             sizes[i].Height     = viewports[i].height;
             sizes[i].MinDepth   = D3D12_MIN_DEPTH;
             sizes[i].MaxDepth   = D3D12_MAX_DEPTH;
-
-            // Hardcoded scissor rects for now
-            rects[i].left       = 0;
-            rects[i].right      = LONG_MAX;
-            rects[i].top        = 0;
-            rects[i].bottom     = LONG_MAX;
         }
 
-        m_CommandList->RSSetScissorRects(total_viewports, rects);
         m_CommandList->RSSetViewports(total_viewports, sizes);
 
-        m_RenderState.scissorSet = true;
         m_RenderState.viewportSet = true;
+        m_RenderState.psoDirty = true;
+    }
 
+    void RenderInterfaceD3D12::SetScissor(const Viewport& scissor)
+    {
+        SetScissors(&scissor, 1);
+    }
+
+    void RenderInterfaceD3D12::SetScissors(const Viewport* scissors, uint32_t total_scissors)
+    {
+        D3D12_RECT* rects = ALLOC_STACKC(D3D12_RECT, total_scissors);
+
+        for (uint32_t i = 0; i < total_scissors; ++i)
+        {
+            rects[i].left   = scissors[i].left;
+            rects[i].right  = scissors[i].left + scissors[i].width;
+            rects[i].top    = scissors[i].top;
+            rects[i].bottom = scissors[i].top + scissors[i].height;
+        }
+
+        m_CommandList->RSSetScissorRects(total_scissors, rects);
+
+        m_RenderState.scissorSet = true;
         m_RenderState.psoDirty = true;
     }
 
@@ -589,8 +642,6 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetIndexBuffer(RenderResource* index_resource)
     {
-        MarkResourceUsed(index_resource);
-
         IndexBufferD3D12* ib = (IndexBufferD3D12*)index_resource;
 
         m_CommandList->IASetIndexBuffer(&ib->GetView());
@@ -620,8 +671,6 @@ namespace RB::Graphics::D3D12
 
             VertexBufferD3D12* vbo = (VertexBufferD3D12*)vertex_resources[res_idx];
 
-            MarkResourceUsed(vbo);
-
             views[res_idx] = vbo->GetView();
 
             if (type != D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
@@ -641,7 +690,10 @@ namespace RB::Graphics::D3D12
 
         m_RenderState.vertexCountPerInstance = base_vbo->GetVertexElementCount();
 
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE current_type = m_RenderState.vertexBufferType;
+        uint32_t last_count = m_RenderState.vertexBufferCount;
+        m_RenderState.vertexBufferCount = resource_count;
+
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE last_type = m_RenderState.vertexBufferType;
 
         switch (base_vbo->GetTopologyType())
         {
@@ -654,53 +706,102 @@ namespace RB::Graphics::D3D12
             break;
         }
 
-        if (current_type != m_RenderState.vertexBufferType)
+        if (last_type != m_RenderState.vertexBufferType ||
+            last_count != m_RenderState.vertexBufferCount)
         {
             m_RenderState.psoDirty = true;
         }
     }
 
-    void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dest)
+    void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dst)
     {
-        if (src->GetType() != dest->GetType())
+        GpuResource* src_res = (GpuResource*)src->GetNativeResource();
+        GpuResource* dst_res = (GpuResource*)dst->GetNativeResource();
+
+        if (!m_CopyOperationsOnly)
         {
-            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Can not copy resource as the typed do not match");
-            return;
+            g_ResourceStateManager->TransitionResource(src_res, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            g_ResourceStateManager->TransitionResource(dst_res, D3D12_RESOURCE_STATE_COPY_DEST);
+            FlushResourceBarriers();
+        }
+        else
+        {
+            // We do not need to transition resources to the copy state when using a dedicated copy commandlist.
+            // The resources however MUST be in the COMMON state, so check for that here.
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src_res->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dst_res->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
         }
 
-        GpuResource* src_res = (GpuResource*)src->GetNativeResource();
-        GpuResource* dest_res = (GpuResource*)dest->GetNativeResource();
+        const RenderResourceType src_type = src->GetPrimitiveType();
+        const RenderResourceType dst_type = dst->GetPrimitiveType();
 
-        InternalCopy(src_res, dest_res, src->GetPrimitiveType());
+        if (src_type == RenderResourceType::Buffer && dst_type == RenderResourceType::Buffer)
+        {
+            m_CommandList->CopyResource(dst_res->GetResource(), src_res->GetResource());
+        }
+        else if (src_type == RenderResourceType::Texture && dst_type == RenderResourceType::Buffer)
+        {
+            Texture* tex = (Texture*)src;
+            D3D12_RESOURCE_DESC tex_desc = ((GpuResource*)tex->GetNativeResource())->GetResource()->GetDesc();
+
+            uint32_t first_subresource = D3D12CalcSubresource(tex->GetBaseMip(), tex->GetFirstArraySlice(), 0, tex->GetMipCount(), tex->GetArraySize());
+            uint32_t subresource_count = (tex->GetMipCount() * tex->GetArraySize()) - first_subresource;
+
+            List<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> layouts(subresource_count);
+            List<UINT> num_rows(subresource_count);
+            List<UINT64> row_sizes(subresource_count);
+            UINT64 totalBytes;
+            g_GraphicsDevice->Get()->GetCopyableFootprints(&tex_desc,
+                                                           first_subresource,
+                                                           subresource_count,
+                                                           0,
+                                                           layouts.data(),
+                                                           num_rows.data(),
+                                                           row_sizes.data(),
+                                                           &totalBytes);
+
+            for (uint32_t i = 0; i < subresource_count; ++i)
+            {
+                D3D12_TEXTURE_COPY_LOCATION src_loc = {};
+                src_loc.pResource           = src_res->GetResource();
+                src_loc.Type                = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                src_loc.SubresourceIndex    = first_subresource + i;
+
+                D3D12_TEXTURE_COPY_LOCATION dst_loc = {};
+                dst_loc.pResource            = dst_res->GetResource();
+                dst_loc.Type                 = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+                dst_loc.PlacedFootprint      = layouts[i];
+
+                m_CommandList->CopyTextureRegion(&dst_loc, 0, 0, 0, & src_loc, nullptr);
+            }
+        }
+        else
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Copy step not yet implemented");
+        }
+    }
+
+    void RenderInterfaceD3D12::Readback(RenderResource* src, ReadbackBuffer* dst)
+    {
+        CopyResource(src, dst);
+        m_SchedulesReadbacks.push_back(dst);
     }
 
     void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
     {
-        // TODO Create a big upload resource and keep it alive for a couple of frames so we don't have to create an upload resource for every upload 
-        // if we do 10 uploads after eachother (so suballocate an upload resource in the full resource). If we create such a big upload resource, 
-        // make sure that when doing texture uploads, the starting point of a allocation should be aligned by D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT!
-        // !!! REMOVE THE HACK IN ResourceManager.cpp WHEN THIS HAS BEEN IMPLEMENTED !!!
-
         RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
+
+        GpuResource* gpu_res = (GpuResource*)resource->GetNativeResource();
 
         switch (resource->GetPrimitiveType())
         {
         case RenderResourceType::Buffer:
         {
-            GpuResource* upload_res = new GpuResource();
-            g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", { data_size });
+            UploadAllocation upload_alloc = g_TransientUploadAllocator->Allocate(data_size);
 
-            char* mapped_mem;
-            RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
+            memcpy(upload_alloc.cpuWriteAddress, data, data_size);
 
-            memcpy(mapped_mem, data, data_size);
-
-            // Unmapping is unnecessary
-            //upload_res->Unmap(0, nullptr);
-
-            InternalCopy(upload_res, (GpuResource*)resource->GetNativeResource(), resource->GetPrimitiveType());
-
-            delete upload_res;
+            m_CommandList->CopyBufferRegion(gpu_res->GetResource(), 0, upload_alloc.resource->GetResource(), upload_alloc.offset, data_size);
         }
         break;
 
@@ -708,7 +809,7 @@ namespace RB::Graphics::D3D12
         {
             // Reference: https://alextardif.com/D3D11To12P3.html
 
-            D3D12_RESOURCE_DESC desc = ((GpuResource*)resource->GetNativeResource())->GetResource()->GetDesc();
+            D3D12_RESOURCE_DESC desc = gpu_res->GetResource()->GetDesc();
 
             uint64_t row_size = GetElementSizeFromFormat(resource->GetFormat()) * desc.Width;
 
@@ -720,11 +821,7 @@ namespace RB::Graphics::D3D12
 
             g_GraphicsDevice->Get()->GetCopyableFootprints(&desc, 0, (uint32_t)num_sub_resources, 0, layouts, num_rows, row_sizes_in_bytes, &tex_mem_size);
 
-            GpuResource* upload_res = new GpuResource();
-            g_ResourceManager->ScheduleCreateUploadResource(upload_res, "Upload resource", { tex_mem_size });
-
-            uint8_t* mapped_mem;
-            RB_ASSERT_FATAL_D3D(upload_res->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mapped_mem)), "Could not map the upload resource");
+            UploadAllocation upload_alloc = g_TransientUploadAllocator->Allocate(tex_mem_size, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 
             for (uint64_t array_index = 0; array_index < desc.DepthOrArraySize; array_index++)
             {
@@ -738,7 +835,7 @@ namespace RB::Graphics::D3D12
                     const uint64_t sub_resource_pitch = Math::AlignUp(sub_resourceLayout.Footprint.RowPitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
                     const uint64_t sub_resource_depth = sub_resourceLayout.Footprint.Depth;
 
-                    uint8_t* destination_sub_resource_memory = mapped_mem + sub_resourceLayout.Offset;
+                    uint8_t* destination_sub_resource_memory = upload_alloc.cpuWriteAddress + sub_resourceLayout.Offset;
 
                     for (uint64_t slice_index = 0; slice_index < sub_resource_depth; slice_index++)
                     {
@@ -761,23 +858,18 @@ namespace RB::Graphics::D3D12
             for (int sub_resource_index = 0; sub_resource_index < num_sub_resources; ++sub_resource_index)
             {
                 D3D12_TEXTURE_COPY_LOCATION src_loc = {};
-                src_loc.pResource               = upload_res->GetResource().Get();
+                src_loc.pResource               = upload_alloc.resource->GetResource();
                 src_loc.Type                    = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
                 src_loc.PlacedFootprint         = layouts[sub_resource_index];
-                src_loc.PlacedFootprint.Offset  = 0;
+                src_loc.PlacedFootprint.Offset  = upload_alloc.offset;
 
                 D3D12_TEXTURE_COPY_LOCATION dest_loc = {};
-                dest_loc.pResource          = ((GpuResource*)resource->GetNativeResource())->GetResource().Get();
+                dest_loc.pResource          = gpu_res->GetResource();
                 dest_loc.Type               = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dest_loc.SubresourceIndex   = sub_resource_index;
 
                 m_CommandList->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, nullptr);
             }
-
-            MarkResourceUsed(resource);
-            MarkResourceUsed(upload_res);
-
-            delete upload_res;
         }
         break;
 
@@ -787,7 +879,7 @@ namespace RB::Graphics::D3D12
         }
     }
 
-    void RenderInterfaceD3D12::DrawInternal()
+    void RenderInterfaceD3D12::PrepareDraw()
     {
         HandlePendingClears();
         FlushResourceBarriers();
@@ -803,6 +895,11 @@ namespace RB::Graphics::D3D12
         }
 
         BindResources(false);
+    }
+
+    void RenderInterfaceD3D12::DrawInternal()
+    {
+        PrepareDraw();
 
         if (m_RenderState.indexCountPerInstance > 0)
         {
@@ -814,11 +911,22 @@ namespace RB::Graphics::D3D12
         }
     }
 
+    void RenderInterfaceD3D12::DrawInstancedInternal(uint32_t instances)
+    {
+        PrepareDraw();
+
+        if (m_RenderState.indexCountPerInstance > 0)
+        {
+            m_CommandList->DrawIndexedInstanced(m_RenderState.indexCountPerInstance, 1, instances, 0, 0);
+        }
+        else
+        {
+            m_CommandList->DrawInstanced(m_RenderState.vertexCountPerInstance, 1, instances, 0);
+        }
+    }
+
     void RenderInterfaceD3D12::DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z)
     {
-        // TODO Auto place UAV barriers if needed (also when doing a UAV clear)
-        // Do this by storing when a resource was set as UAV on a dispatch and checking if, until the next dispatch with that resource as UAV, that resource got a barrier (so was bound as SRV for example)
-
         HandlePendingClears();
         FlushResourceBarriers();
 
@@ -845,7 +953,7 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::BindDescriptorHeaps()
     {
         uint32_t num_heaps;
-        auto heaps = g_DescriptorManager->GetHeaps(num_heaps);
+        auto heaps = g_DescriptorManager->GetPipelineHeaps(num_heaps);
         m_CommandList->SetDescriptorHeaps(num_heaps, heaps.data());
     }
 
@@ -869,57 +977,11 @@ namespace RB::Graphics::D3D12
             }
             else
             {
-                m_CommandList->ClearDepthStencilView(clear.handle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_DEPTH, clear.color.r, clear.color.g, 0, nullptr);
+                m_CommandList->ClearDepthStencilView(clear.handle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, clear.color.r, clear.color.g, 0, nullptr);
             }
         }
 
         m_RenderState.pendingClears.clear();
-    }
-
-    void RenderInterfaceD3D12::InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type)
-    {
-        MarkResourceUsed(src);
-        MarkResourceUsed(dst);
-
-        if (!m_CopyOperationsOnly)
-        {
-            g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
-            g_ResourceStateManager->TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST);
-            FlushResourceBarriers();
-        }
-        else
-        {
-            // We do not need to transition resources to the copy state when using a dedicated copy commandlist.
-            // The resources however MUST be in the COMMON state, so check for that here.
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dst->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
-        }
-
-        switch (primitive_type)
-        {
-        case RenderResourceType::Buffer: // Buffer -> Buffer copy
-        {
-            m_CommandList->CopyResource(dst->GetResource().Get(), src->GetResource().Get());
-        }
-        break;
-
-        default:
-            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
-            break;
-        }
-    }
-
-    void RenderInterfaceD3D12::MarkResourceUsed(RenderResource* resource)
-    {
-        MarkResourceUsed((GpuResource*)resource->GetNativeResource());
-    }
-
-    void RenderInterfaceD3D12::MarkResourceUsed(GpuResource* resource)
-    {
-        // Wait until the resource is created
-        resource->GetResource();
-
-        resource->MarkAsUsed(m_Queue);
     }
 
     void RenderInterfaceD3D12::SetRenderTargets()
@@ -947,115 +1009,81 @@ namespace RB::Graphics::D3D12
             vp.top      = 0;
             vp.width    = m_RenderState.width;
             vp.height   = m_RenderState.height;
-            SetViewport(vp);
+
+            if (!m_RenderState.viewportSet)
+                SetViewport(vp);
+            if (!m_RenderState.scissorSet)
+            SetScissor(vp);
         }
     }
 
     void RenderInterfaceD3D12::BindResources(bool compute)
     {
-        bool bind_textures;
-        if (compute)
-        {
-            bind_textures = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << kTexIndicesCB)) > 0;
-        }
-        else
-        {
-            bind_textures = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << kTexIndicesCB)) > 0 ||
-                             (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << kTexIndicesCB)) > 0);
-        }
+        uint32_t root_index = 0;
 
-        // Set the bindless SRV/UAV slots (only if the shader is actually using any textures)
-        if (bind_textures)
+        for (int i = 0; i < 3; i++)
         {
-            TextureIndices indices = {};
+            DescriptorIndex* handles;
+            if (i == 0)
+                handles = m_RenderState.vertexResourceHandles;
+            else if (i == 1)
+                handles = m_RenderState.pixelResourceHandles;
+            else
+                handles = m_RenderState.computeResourceHandles;
 
-            // Set the Texture2D's
-            for (int i = 0; i < _countof(indices.tex2D); ++i)
+            // Set the bindless SRV/UAV slots in the root constants
+            uint32_t values_to_set = 0;
+            uint32_t* descriptor_handle_values = ALLOC_STACKC(uint32_t, _countof(m_RenderState.vertexResourceHandles) * 2);
+            for (int i = 0; i < _countof(m_RenderState.vertexResourceHandles); i++)
             {
-                uint32_t& index  = indices.tex2D[i].tableID;
-                uint32_t& isSRGB = indices.tex2D[i].isSRGB;
-
-                if (m_RenderState.tex2DsrvHandles[i].isValid())
+                if (handles[i].isValid())
                 {
-                    index  = (uint32_t)m_RenderState.tex2DsrvHandles[i].heapIndex;
-                    isSRGB = m_RenderState.tex2DSRGBs[i];
-                }
-                else
-                {
-                    // Error texture
-                    index  = (uint32_t)((Texture2DD3D12*)g_TexDefaultError)->GetSrvHandle().heapIndex;
-                    isSRGB = false;
+                    descriptor_handle_values[values_to_set++] = handles[i].heapIndex;   // Resource heap index
+                    descriptor_handle_values[values_to_set++] = 0;                      // Sampler heap index (for Sampler2D)
                 }
             }
-
-            // Set the RwTexture2D's
-            for (int i = 0; i < _countof(indices.rwTex2D); ++i)
+            if (values_to_set > 0)
             {
-                uint32_t& index = indices.rwTex2D[i].tableID;
-                indices.rwTex2D[i].isSRGB = false;
-
-                if (m_RenderState.rwTex2DsrvHandles[i].isValid())
-                {
-                    index  = (uint32_t)m_RenderState.rwTex2DsrvHandles[i].heapIndex;
-                }
+                if (compute)
+                    m_CommandList->SetComputeRoot32BitConstants(root_index, values_to_set, descriptor_handle_values, 0);
                 else
-                {
-                    // Dummy
-                    index  = (uint32_t)g_DescriptorManager->GetDummyRwTex2DHandle().heapIndex;
-                }
-            }
+                    m_CommandList->SetGraphicsRoot32BitConstants(root_index, values_to_set, descriptor_handle_values, 0);
 
-            SetConstantShaderData(kTexIndicesCB, &indices, sizeof(TextureIndices)); // TODO Make the texture indices a root constant instead of a CBV
+                root_index++;
+            }
         }
 
         // Bind the CBV's
-        uint32_t root_index = 0;
         for (int i = 0; i < _countof(m_RenderState.cbvAddresses); ++i)
         {
             if (m_RenderState.cbvAddresses[i] > 0)
             {
                 if (compute)
                 {
-                    m_CommandList->SetComputeRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+                    m_CommandList->SetComputeRootConstantBufferView(root_index, m_RenderState.cbvAddresses[i]);
                 }
                 else
                 {
-                    m_CommandList->SetGraphicsRootConstantBufferView(CBV_ROOT_PARAMETER_INDEX_OFFSET + root_index, m_RenderState.cbvAddresses[i]);
+                    m_CommandList->SetGraphicsRootConstantBufferView(root_index, m_RenderState.cbvAddresses[i]);
                 }
                 root_index++;
             }
-
-#if RB_CONFIG_DEBUG
-            // Some extra debug checks
-            bool occupies_slot;
-            if (compute)
-            {
-                occupies_slot = (g_ShaderSystem->GetShaderResourceMask(m_RenderState.csShader).cbvMask & (1 << i)) > 0;
-            }
-            else
-            {
-                occupies_slot = ((g_ShaderSystem->GetShaderResourceMask(m_RenderState.vsShader).cbvMask & (1 << i)) > 0 ||
-                                 (g_ShaderSystem->GetShaderResourceMask(m_RenderState.psShader).cbvMask & (1 << i)) > 0);
-            }
-
-            RB_ASSERT(LOGTAG_GRAPHICS, m_RenderState.cbvAddresses[i] > 0 == occupies_slot, "The bounded CBV slot does not match the shader's used CBV slots");
-#endif
         }
     }
 
-    void RenderInterfaceD3D12::ClearSrvResources()
+    void RenderInterfaceD3D12::ClearResources()
     {
-        for (int i = 0; i < _countof(m_RenderState.tex2DsrvHandles); ++i)
+        for (int i = 0; i < _countof(m_RenderState.vertexResourceHandles); ++i)
         {
-            ClearShaderResourceInput(i);
+            m_RenderState.vertexResourceHandles[i] = DescriptorIndex{};
         }
-    }
-
-    void RenderInterfaceD3D12::ClearUavResources()
-    {
-        for (int i = 0; i < _countof(m_RenderState.rwTex2DsrvHandles); ++i)
+        for (int i = 0; i < _countof(m_RenderState.pixelResourceHandles); ++i)
         {
-            ClearRandomReadWriteInput(i);
+            m_RenderState.pixelResourceHandles[i] = DescriptorIndex{};
+        }
+        for (int i = 0; i < _countof(m_RenderState.computeResourceHandles); ++i)
+        {
+            m_RenderState.computeResourceHandles[i] = DescriptorIndex{};
         }
     }
 
@@ -1064,10 +1092,9 @@ namespace RB::Graphics::D3D12
         #define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
 
         CHECK_SET(m_RenderState.vertexBufferType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,    "Cannot draw, vertex buffer was not set")
-        CHECK_SET(m_RenderState.numRenderTargets > 0,                                           "Cannot draw, vertex buffer was not set")
         CHECK_SET(m_RenderState.scissorSet,                                                     "Cannot draw, scissor was not set")
         CHECK_SET(m_RenderState.viewportSet,                                                    "Cannot draw, viewport was not set")
-        CHECK_SET(m_RenderState.vsShader >= 0 && m_RenderState.psShader >= 0,                   "Cannot draw, vertex or pixel shader was not set yet")
+        CHECK_SET(m_RenderState.vsShader >= 0,                                                  "Cannot draw, vertex shader was not set yet")
         CHECK_SET(m_RenderState.blendingSet,                                                    "Cannot draw, blend mode was not set")
         CHECK_SET(m_RenderState.rasterizerSet,                                                  "Cannot draw, rasterizer was not set")
         CHECK_SET(m_RenderState.depthStencilSet,                                                "Cannot draw, depth stencil was not set")
@@ -1076,15 +1103,15 @@ namespace RB::Graphics::D3D12
 
         if (m_RenderState.rootSignatureDirty)
         {
-            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.vsShader, m_RenderState.psShader);
+            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_ShaderSystem, m_RenderState.vsShader, m_RenderState.psShader);
 
             m_RenderState.rootSignatureDirty = false;
         }
 
-        List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_RenderState.vsShader);
+        const List<D3D12_INPUT_ELEMENT_DESC> input_elements = g_PipelineManager->GetInputElementDesc(m_ShaderSystem, m_RenderState.vsShader, m_RenderState.vertexBufferCount);
 
-        CompiledShaderBlob* vs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.vsShader);
-        CompiledShaderBlob* ps_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.psShader);
+        const CompiledShaderBlob* vs_blob = m_ShaderSystem->GetCompiledShader(m_RenderState.vsShader);
+        const CompiledShaderBlob* ps_blob = m_ShaderSystem->GetCompiledShader(m_RenderState.psShader);
 
         DXGI_FORMAT formats[8];
         for (int i = 0; i < 8; i++)
@@ -1097,25 +1124,25 @@ namespace RB::Graphics::D3D12
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
         pso_desc.pRootSignature         = m_RenderState.rootSignature.Get();
-        pso_desc.VS                     = { vs_blob->shaderBlob, vs_blob->shaderBlobSize };
-        pso_desc.PS                     = { ps_blob->shaderBlob, ps_blob->shaderBlobSize };
-        //pso_desc.DS					= ;
-        //pso_desc.HS					= ;
-        //pso_desc.GS					= ;
-        //pso_desc.StreamOutput			= ;
+        pso_desc.VS                     = { vs_blob->blob, vs_blob->size };
+        pso_desc.PS                     = { ps_blob ? ps_blob->blob : nullptr, ps_blob ? ps_blob->size : 0 };
+        //pso_desc.DS                   = ;
+        //pso_desc.HS                   = ;
+        //pso_desc.GS                   = ;
+        //pso_desc.StreamOutput         = ;
         pso_desc.BlendState             = m_RenderState.blendDesc;
         pso_desc.SampleMask             = UINT_MAX;
         pso_desc.RasterizerState        = m_RenderState.rasterizerDesc;
         pso_desc.DepthStencilState      = m_RenderState.depthStencilDesc;
         pso_desc.InputLayout            = { input_elements.data(), (UINT)input_elements.size() };
-        //pso_desc.IBStripCutValue		= ;
+        //pso_desc.IBStripCutValue      = ;
         pso_desc.PrimitiveTopologyType  = m_RenderState.vertexBufferType;
         pso_desc.NumRenderTargets       = m_RenderState.numRenderTargets;
-        /*pso_desc.RTVFormats */		  memcpy(pso_desc.RTVFormats, formats, sizeof(DXGI_FORMAT) * 8);
+        /*pso_desc.RTVFormats */          memcpy(pso_desc.RTVFormats, formats, sizeof(DXGI_FORMAT) * 8);
         pso_desc.DSVFormat              = m_RenderState.dsvFormat;
         pso_desc.SampleDesc             = { 1, 0 };
         pso_desc.NodeMask               = 0;
-        //pso_desc.CachedPSO			= NULL;
+        //pso_desc.CachedPSO            = NULL;
         pso_desc.Flags                  = D3D12_PIPELINE_STATE_FLAG_NONE;
 
         GPtr<ID3D12PipelineState> pso = g_PipelineManager->GetGraphicsPipeline(pso_desc, m_RenderState.vsShader, m_RenderState.psShader);
@@ -1137,16 +1164,16 @@ namespace RB::Graphics::D3D12
 
         if (m_RenderState.rootSignatureDirty)
         {
-            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_RenderState.csShader);
+            m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_ShaderSystem, m_RenderState.csShader);
 
             m_RenderState.rootSignatureDirty = false;
         }
 
-        CompiledShaderBlob* cs_blob = g_ShaderSystem->GetCompilerShader(m_RenderState.csShader);
+        const CompiledShaderBlob* cs_blob = m_ShaderSystem->GetCompiledShader(m_RenderState.csShader);
 
         D3D12_COMPUTE_PIPELINE_STATE_DESC pso_desc = {};
         pso_desc.pRootSignature = m_RenderState.rootSignature.Get();
-        pso_desc.CS             = { cs_blob->shaderBlob, cs_blob->shaderBlobSize };
+        pso_desc.CS             = { cs_blob->blob, cs_blob->size };
         pso_desc.NodeMask       = 0;
         //pso_desc.CachedPSO    = NULL;
         pso_desc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;

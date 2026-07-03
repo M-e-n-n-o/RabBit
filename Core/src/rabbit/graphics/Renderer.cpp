@@ -5,12 +5,12 @@
 #include "Window.h"
 #include "View.h"
 #include "ResourceDefaults.h"
+#include "ShaderSystem.h"
 #include "ResourceStreamer.h"
 #include "RenderGraph.h"
 
 #include "codeGen/ShaderDefines.h"
 #include "shaders/shared/Common.h"
-#include "shaders/shared/ConstantBuffers.h"
 
 #include "app/Application.h"
 #include "app/FrameAllocator.h"
@@ -21,11 +21,17 @@
 #include "entity/components/Camera.h"
 #include "entity/components/Transform.h"
 
-#include "passes/GBuffer.h"
-#include "passes/DeferredLighting.h"
-
 #if RB_GRAPHICS_API_D3D12
 #include "platform/graphics/d3d12/RendererD3D12.h"
+#endif
+
+#if RB_GRAPHICS_API_VULKAN
+#include "platform/graphics/vulkan/RendererVK.h"
+#endif
+
+#if defined(RB_ENABLE_LOGS) && RB_PLATFORM_WINDOWS
+#define USE_PIX
+#include <pix3.h>
 #endif
 
 using namespace RB::Math;
@@ -37,8 +43,13 @@ namespace RB::Graphics
 
     struct RenderContext : public JobData
     {
+        FrameAllocator*                     frameAllocator;
+        FrameAllocationPageSet              lockedPageSet; // Filled in automatically when needed
+
         ViewContext*                        viewContexts;
-        uint32_t							totalViewContexts;
+        uint32_t                            totalViewContexts;
+
+        uint32_t*                           renderGraphSizeIDs;
 
         List<Renderer::BackBufferGuard>*    backBufferAvailabilityGuards;
 
@@ -52,21 +63,22 @@ namespace RB::Graphics
 
         VertexBuffer*                       backBufferCopyVB;
 
-        FrameAllocator*                     frameAllocator;
+        std::function<void()>               OnRenderFrameStart;
+        std::function<void()>               OnRenderFrameEnd;
+        std::function<void()>               SyncWithGpu;
+        std::function<void()>               ProcessEvents;
 
-        std::function<void()>				OnRenderFrameStart;
-        std::function<void()>				OnRenderFrameEnd;
-        std::function<void()>				SyncWithGpu;
-        std::function<void()>				ProcessEvents;
-
-        ~RenderContext()
+        RenderContext(FrameAllocator* allocator)
+            : frameAllocator(allocator)
         {
-            for (int i = 0; i < totalViewContexts; ++i)
-            {
-                renderGraphs[viewContexts[i].renderGraphType]->DestroyEntries(renderPassEntries[i]);
-            }
-            SAFE_FREE(renderPassEntries);
-            SAFE_FREE(viewContexts);
+            // Lock the frame data so it doesn't get overwritten.
+            // This gets unlocked again at the end of a job/when it is overwritten
+            lockedPageSet = frameAllocator->LockCurrentPageSet();
+        }
+
+        void OnDestroy(bool overwritten) override
+        {
+            frameAllocator->UnlockPageSet(lockedPageSet);
         }
     };
 
@@ -92,8 +104,9 @@ namespace RB::Graphics
     {
         m_IsShutdown = false;
 
-        m_RenderAllocator = new FrameAllocator("Rendering", 2, k1MB);
+        m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k8MB);
 
+        m_ShaderSystem = new ShaderSystem();
         m_ResourceStreamer = new ResourceStreamer();
 
         // Initialize default resources
@@ -105,7 +118,7 @@ namespace RB::Graphics
 
         if (m_MultiThreadingSupport)
         {
-            m_RenderThread = new WorkerThread(L"Render Thread", ThreadPriority::High);
+            m_RenderThread = new WorkerThread("Render Thread", ThreadPriority::High);
 
             m_RenderJobType = m_RenderThread->AddJobType(&RenderJob, true);
         }
@@ -115,15 +128,18 @@ namespace RB::Graphics
 
         m_RenderGraphContext = new RenderGraphContext();
         m_CurrentValidRenderGraphSizes = 0;
-
-        CreateRenderGraphs(Application::GetInstance()->GetGraphicsSettings());
+        m_RenderGraphSizeIDs = nullptr;
+        for (uint32_t i = 0; i < kRenderGraphType_Count; ++i)
+        {
+            m_RenderGraphs[i] = nullptr;
+        }
 
         float vertices[] =
-        {	// Pos			UV
-            -1.0f,  1.0f,	0.0f, 0.0f,
-             1.0f,  1.0f,	1.0f, 0.0f,
-            -1.0f, -1.0f,	0.0f, 1.0f,
-             1.0f, -1.0f,	1.0f, 1.0f,
+        {   // Pos          UV
+            -1.0f,  1.0f,   0.0f, 0.0f,
+             1.0f,  1.0f,   1.0f, 0.0f,
+            -1.0f, -1.0f,   0.0f, 1.0f,
+             1.0f, -1.0f,   1.0f, 1.0f,
         };
 
         m_BackBufferCopyVB = VertexBuffer::Create("BackBuffer copy VB", TopologyType::TriangleStrip, vertices, 4 * sizeof(float), sizeof(vertices));
@@ -134,6 +150,25 @@ namespace RB::Graphics
         if (!m_IsShutdown)
         {
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "Deleting renderer before shutting it down!");
+        }
+    }
+
+    void Renderer::SetAPI(RenderAPI api)
+    {
+        s_Api = api;
+
+        switch (s_Api)
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RB::Graphics::RenderAPI::D3D12:    RB_LOG(LOGTAG_GRAPHICS, "Graphics API: D3D12"); break;
+#endif
+#if RB_GRAPHICS_API_VULKAN
+        case RB::Graphics::RenderAPI::Vulkan:   RB_LOG(LOGTAG_GRAPHICS, "Graphics API: Vulkan"); break;
+#endif
+        case RB::Graphics::RenderAPI::None:
+        default:
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Did not choose a valid graphics API");
+            break;
         }
     }
 
@@ -154,16 +189,19 @@ namespace RB::Graphics
             SAFE_DELETE(m_RenderGraphs[i]);
         }
         SAFE_DELETE(m_RenderGraphContext);
+        SAFE_DELETE(m_RenderGraphSizeIDs);
 
-        SAFE_DELETE(m_BackBufferCopyVB);
-
-        delete m_ResourceStreamer;
+        m_BackBufferCopyVB.reset();
 
         // Delete default resources
         DeleteResourceDefaults();
 
+        delete m_ResourceStreamer;
+
         delete m_GraphicsInterface;
         delete m_CopyInterface;
+
+        delete m_ShaderSystem;
 
         delete m_RenderAllocator;
     }
@@ -177,26 +215,24 @@ namespace RB::Graphics
 
             UpdateRenderGraphSizes(view_contexts, total_view_contexts);
 
-            // TODO: Start making better use of the m_RenderAllocator in the Renderer and RenderGraph itself!
-
             // Gather the entries from all render passes for every view context
-            RenderPassEntry*** entries = (RenderPassEntry***) ALLOC_HEAP(sizeof(RenderPassEntry***) * total_view_contexts);
+            RenderPassEntry*** entries = (RenderPassEntry***) m_RenderAllocator->Allocate(sizeof(RenderPassEntry***) * total_view_contexts);
             for (int i = 0; i < total_view_contexts; ++i)
             {
-                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], m_RenderAllocator, scene);
+                entries[i] = m_RenderGraphs[view_contexts[i].renderGraphType]->SubmitEntry(&view_contexts[i], scene, m_RenderAllocator);
             }
 
-            RenderContext* context                  = new RenderContext();
+            RenderContext* context                  = new RenderContext(m_RenderAllocator);
             context->viewContexts                   = view_contexts;
             context->totalViewContexts              = total_view_contexts;
+            context->renderGraphSizeIDs             = m_RenderGraphSizeIDs;
             context->backBufferAvailabilityGuards   = &m_BackBufferAvailabilityGuards;
             context->graphContext                   = m_RenderGraphContext;
             context->renderGraphs                   = m_RenderGraphs;
             context->renderPassEntries              = entries;
             context->graphicsInterface              = m_GraphicsInterface;
             context->renderFrameIndex               = &m_RenderFrameIndex;
-            context->backBufferCopyVB               = m_BackBufferCopyVB;
-            context->frameAllocator                 = m_RenderAllocator;
+            context->backBufferCopyVB               = m_BackBufferCopyVB.get();
             context->OnRenderFrameStart             = std::bind(&Renderer::OnFrameStart, this);
             context->OnRenderFrameEnd               = std::bind(&Renderer::OnFrameEnd, this);
             context->SyncWithGpu                    = std::bind(&Renderer::SyncWithGpu, this);
@@ -248,10 +284,18 @@ namespace RB::Graphics
     {
         auto camera_components = scene->GetComponentsWithTypeOf<Entity::Camera>();
 
+        // Sort the camera's based on renderGraphType, which is going to be the render order
+        // Maybe a way to do the sort when inserting the camera in the scene instead of every frame?
+        std::sort(camera_components.begin(), camera_components.end(), [](const Entity::ObjectComponent* a, const Entity::ObjectComponent* b) -> bool
+            {
+                return ((const Entity::Camera*)a)->GetRenderGraphType() < ((const Entity::Camera*)b)->GetRenderGraphType();
+            });
+
         out_context_count = camera_components.size();
 
-        // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)  ?
-        ViewContext* contexts = (ViewContext*)ALLOC_HEAP(sizeof(ViewContext) * out_context_count);
+        // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)?
+        uint32_t size = sizeof(ViewContext) * out_context_count;
+        ViewContext* contexts = (ViewContext*)m_RenderAllocator->Allocate(size);
 
         uint32_t context_index = 0;
 
@@ -263,19 +307,10 @@ namespace RB::Graphics
 
             if (!camera->GetGameObject()->HasComponent<Entity::Transform>())
             {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object uses the default transform");
-            }
-
-            Window* window = Application::GetInstance()->FindWindow(camera->GetTargetWindowHandle());
-
-            if (window == nullptr)
-            {
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Target window index of Camera is invalid, skipping...");
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object does not have a transform");
                 out_context_count--;
                 continue;
             }
-
-            contexts[context_index] = {};
 
             if (!camera->IsEnabled())
             {
@@ -285,42 +320,53 @@ namespace RB::Graphics
                 continue;
             }
 
-            contexts[context_index].enabled = true;
+            contexts[context_index].enabled         = true;
+            contexts[context_index].camera          = camera;
+            contexts[context_index].cameraTransform = transform;
 
             contexts[context_index].viewport.left = 0; // TODO Add DRS support
             contexts[context_index].viewport.top = 0;
 
-            Texture2D* render_texture = camera->GetRenderTexture();
+            Shared<Texture2D> render_texture = camera->GetRenderTexture();
             if (render_texture == nullptr)
             {
+                Window* window = Application::GetInstance()->FindWindow(camera->GetTargetWindowHandle());
+            
+                if (window == nullptr)
+                {
+                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Target window index of Camera is invalid, skipping...");
+                    out_context_count--;
+                    continue;
+                }
+            
                 Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
-
+            
                 if (virtual_back_buffer == nullptr)
                 {
                     RB_LOG_WARN(LOGTAG_GRAPHICS, "Virutal back buffer of window invalid, skipping...");
                     out_context_count--;
                     continue;
                 }
-
+            
                 // Set window virtual backbuffer as finalColorTarget
-                contexts[context_index].isOffscreenContext  = false;
+                contexts[context_index].isOffscreen         = false;
                 contexts[context_index].windowIndex         = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
                 contexts[context_index].finalColorTarget    = virtual_back_buffer;
-                contexts[context_index].viewport.width      = virtual_back_buffer->GetWidth();
-                contexts[context_index].viewport.height     = virtual_back_buffer->GetHeight();
+                contexts[context_index].viewport.width      = virtual_back_buffer->GetViewportWidth();
+                contexts[context_index].viewport.height     = virtual_back_buffer->GetViewportHeight();
             }
             else
             {
-                contexts[context_index].isOffscreenContext  = true;
-                contexts[context_index].finalColorTarget    = render_texture;
-                contexts[context_index].viewport.width      = render_texture->GetWidth();
-                contexts[context_index].viewport.height     = render_texture->GetHeight();
+                contexts[context_index].isOffscreen         = true;
+                contexts[context_index].finalColorTarget    = render_texture.get();
+                contexts[context_index].viewport.width      = render_texture->GetViewportWidth();
+                contexts[context_index].viewport.height     = render_texture->GetViewportHeight();
             }
-
+            
             contexts[context_index].viewFrustum = {};
-            contexts[context_index].viewFrustum.SetTransform(transform->GetLocalToWorldMatrix());
-            contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetAspectRatio(), true);
-            //contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetAspectRatio(), 1, -1, true);
+            contexts[context_index].viewFrustum.SetTransform(transform->position, transform->rotation);
+            contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetViewportAspectRatio(), true);
+            //contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetViewportAspectRatio(), 1, -1, true);
 
             contexts[context_index].clearColor = camera->GetClearColor();
             contexts[context_index].renderGraphType = camera->GetRenderGraphType();
@@ -331,32 +377,7 @@ namespace RB::Graphics
         return contexts;
     }
 
-    void Renderer::CreateRenderGraphs(const GraphicsSettings& settings)
-    {
-        // Set the render passes
-        for (uint32_t i = 0; i < kRenderGraphType_Count; ++i)
-        {
-            m_RenderGraphs[i] = nullptr;
-        }
-
-        // TODO Later it would probably be better to set this rendergraph from user code (or atleast be able to)
-
-        m_RenderGraphs[kRenderGraphType_Normal] = RenderGraphBuilder()
-            // Passes
-            .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
-            .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
-
-            // Connections           (from)     ->      (to)
-            .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
-                                     0u,                0u,
-                                     1u,                1u)
-
-            // Finalize
-            .SetFinalPass(RenderPassType::DeferredLighting, 0)
-            .Build(kRenderGraphType_Normal, m_RenderGraphContext);
-    }
-
-    void Renderer::UpdateRenderGraphSizes(ViewContext* view_contexts, uint32_t context_count)
+    void Renderer::UpdateRenderGraphSizes(const ViewContext* view_contexts, uint32_t context_count)
     {
         if (m_CurrentValidRenderGraphSizes == context_count)
         {
@@ -370,14 +391,15 @@ namespace RB::Graphics
         m_RenderGraphContext->DeleteGraphResources();
         m_RenderGraphContext->DeleteSizes();
 
+        SAFE_DELETE(m_RenderGraphSizeIDs);
+        m_RenderGraphSizeIDs = ALLOC_HEAPC(uint32_t, context_count);
+
         for (uint32_t i = 0; i < context_count; ++i)
         {
             RenderGraphSize graph_size = {};
-            graph_size.size         = Math::Float2(view_contexts[i].viewport.width, view_contexts[i].viewport.height);
-            graph_size.uiSize       = graph_size.size; // TODO Add support for separate resolutions for UI (rendering the UI always at window resolution)
-            graph_size.upscaledSize = graph_size.size; // TODO Add support for upscalers
+            graph_size.size = Math::Float2(view_contexts[i].viewport.width, view_contexts[i].viewport.height);
 
-            m_RenderGraphContext->AddGraphSize(view_contexts[i].renderGraphType, graph_size);
+            m_RenderGraphSizeIDs[i] = m_RenderGraphContext->AddGraphSize(view_contexts[i].renderGraphType, graph_size);
         }
 
         // Make sure that the previous resources are done rendering and have been released before creating new ones
@@ -408,6 +430,12 @@ namespace RB::Graphics
                     m_RenderThread->SyncAll();
                 }
             }
+            else if (gpu_sync)
+            {
+                // When GPU syncing we are likely going to change some render arguments,
+                // so invalidate all the upcoming render tasks.
+                m_RenderThread->CancelAll();
+            }
         }
 
         if (gpu_sync)
@@ -415,8 +443,31 @@ namespace RB::Graphics
             SyncWithGpu();
         }
 
-        // Notify that we are done syncing
-        m_ForceSync.SetValue(kForceSyncState_None);
+        if (!m_RenderThread->IsCurrentThread())
+        {
+            // Notify that we are done syncing
+            m_ForceSync.SetValue(kForceSyncState_None);
+        }
+    }
+
+    void Renderer::SetRenderGraphs(const UnorderedMap<RenderGraphType, RenderGraphBuilder>& graphs)
+    {
+        SyncRenderer(true);
+
+        for (int i = 0; i < kRenderGraphType_Count; ++i)
+        {
+            SAFE_DELETE(m_RenderGraphs[i]);
+        }
+
+        m_RenderGraphContext->DeleteGraphResourceDescriptions();
+
+        for (const auto& pair : graphs)
+        {
+            m_RenderGraphs[pair.first] = pair.second.Build(pair.first, m_RenderGraphContext);
+        }
+
+        // Makes sure to recreate the render resources with the new graphs before rendering the next frame
+        m_CurrentValidRenderGraphSizes = 0;
     }
 
     uint64_t Renderer::GetRenderFrameIndex()
@@ -456,96 +507,80 @@ namespace RB::Graphics
             return true;
         };
 
-        if (event.IsInCategory(kEventCat_Window))
+        if (event.IsInCategory(kEventCat_Window) || event.IsInCategory(kEventCat_Application))
         {
-            WindowEvent* window_event = static_cast<WindowEvent*>(&event);
-
-            Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
-
-            if (window)
+            switch (event.GetEventType())
             {
-                switch (window_event->GetEventType())
-                {
-                case EventType::WindowResize:
-                {
-                    bool success = sync();
-                    if (!success)
-                    {
-                        return false;
-                    }
-
-                    // Recreate the render resources with the new sizes before rendering the next frame
-                    m_CurrentValidRenderGraphSizes = 0;
-                }
-                break;
-
-                case EventType::WindowCloseRequest:
-                {
-                    // Make sure that the next render jobs are canceled
-                    bool success = sync();
-                    if (!success)
-                    {
-                        return false;
-                    }
-                }
-                break;
-
-                case EventType::WindowCreated:
-                case EventType::WindowClose:
-                case EventType::WindowFocus:
-                case EventType::WindowLostFocus:
-                case EventType::WindowMoved:
-                case EventType::WindowFullscreenToggle: // Also toggles a window resize event after this
-                default:
-                    break;
-                }
-
-                // Actually process the event
-                window->ProcessEvent(*window_event);
-            }
-        }
-        else if (event.IsInCategory(kEventCat_Application))
-        {
-            BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& app_event)
+            case EventType::WindowResize:
+            case EventType::RenderOutputChanged:
             {
-                const GraphicsSettings& settings = app_event.GetNewSettings();
-
-                if (!settings.RequiresNewResources(app_event.GetOldSettings()))
-                {
-                    // We don't have to recreate the render resources on this setting change
-                    return true;
-                }
-
                 bool success = sync();
                 if (!success)
                 {
                     return false;
                 }
 
-                for (int i = 0; i < kRenderGraphType_Count; ++i)
-                {
-                    SAFE_DELETE(m_RenderGraphs[i]);
-                }
-
-                m_RenderGraphContext->DeleteGraphResourceDescriptions();
-
-                CreateRenderGraphs(settings);
-
-                // Makes sure to recreate the render resources with the new graphs before rendering the next frame
+                // Recreate the render resources with the new sizes before rendering the next frame
                 m_CurrentValidRenderGraphSizes = 0;
-            }, event);
+            }
+            break;
+
+            case EventType::WindowCloseRequest:
+            {
+                // Make sure that the next render jobs are canceled
+                bool success = sync();
+                if (!success)
+                {
+                    return false;
+                }
+            }
+            break;
+
+            case EventType::WindowCreated:
+            case EventType::WindowClose:
+            case EventType::WindowFocus:
+            case EventType::WindowLostFocus:
+            case EventType::WindowMoved:
+            case EventType::WindowFullscreenToggle: // Also toggles a window resize event after this
+            default:
+                break;
+            }
+
+            if (event.IsInCategory(kEventCat_Window))
+            {
+                WindowEvent* window_event = static_cast<WindowEvent*>(&event);
+                Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());
+
+                if (window)
+                {
+                    // Actually process the event
+                    window->ProcessEvent(*window_event);
+                }
+            }
         }
 
         return true;
     }
 
-    Renderer* Renderer::Create(bool enable_validation_layer)
+    Renderer* Renderer::Create(bool enable_validation_layer, bool load_pix_lib)
     {
+#if defined(RB_ENABLE_LOGS) && RB_PLATFORM_WINDOWS
+        if (load_pix_lib)
+        {
+            // Load PIX library so you can attach at runtime
+            PIXLoadLatestWinPixGpuCapturerLibrary();
+        }
+#endif
+
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
             return new D3D12::RendererD3D12(enable_validation_layer);
+#endif
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return new VK::RendererVK(enable_validation_layer);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the Renderer for the set graphics API");
@@ -561,7 +596,6 @@ namespace RB::Graphics
 
         uint64_t frame_index = context->renderFrameIndex->GetValue();
 
-        context->frameAllocator->Cycle();
         context->OnRenderFrameStart();
 
         {
@@ -590,14 +624,18 @@ namespace RB::Graphics
                 context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
 
                 // Render the different passes
-                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, context->frameAllocator, context->renderPassEntries[view_context_index], context->graphicsInterface, context->graphContext);
+                context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, 
+                                                                              context->renderPassEntries[view_context_index], 
+                                                                              context->graphicsInterface, 
+                                                                              context->graphContext, 
+                                                                              context->renderGraphSizeIDs[view_context_index]);
             }
         }
 
         // Prepare draw(s) to backbuffer(s)
         context->graphicsInterface->InvalidateState(false);
-        context->graphicsInterface->SetVertexShader(VS_Present);
-        context->graphicsInterface->SetPixelShader(PS_Present);
+        context->graphicsInterface->SetVertexShader(Shader::VS_Present);
+        context->graphicsInterface->SetPixelShader(Shader::PS_Present);
         context->graphicsInterface->SetCullMode(CullMode::Back);
         context->graphicsInterface->SetDepthMode(DepthMode::PassAll, false, false);
         context->graphicsInterface->SetVertexBuffer(context->backBufferCopyVB);
@@ -618,7 +656,7 @@ namespace RB::Graphics
         {
             ViewContext& view_context = context->viewContexts[view_context_index];
 
-            if (!view_context.enabled || view_context.isOffscreenContext)
+            if (!view_context.enabled || view_context.isOffscreen)
             {
                 continue;
             }
@@ -643,29 +681,36 @@ namespace RB::Graphics
 
                 if (guards[back_buffer_index])
                 {
-                    guards[back_buffer_index]->WaitUntilFinishedRendering();
+                    guards[back_buffer_index]->WaitUntilFinishedRendering(); // TODO Do I really need this sync point here?
                 }
             }
 
             Texture2D* back_buffer = window->GetCurrentBackBuffer();
+
+            if (back_buffer == nullptr)
+            {
+                continue;
+            }
+
             RenderRect rect = window->GetVirtualWindowRect();
 
-            PresentCB present_data = {};
+            Shader::PresentCB present_data = {};
             present_data.currSize           = Math::Float2(window->GetWidth(), window->GetHeight());
             present_data.texOffset          = Math::Float2(rect.left, rect.top);
             present_data.gammaValue         = window->GetGammaCorrection();
-            present_data.brightnessValue    = window->GetBrighness();
-
-            context->graphicsInterface->SetConstantShaderData(kInstanceCB, &present_data, sizeof(PresentCB));
-
-            context->graphicsInterface->SetShaderResourceInput(view_context.finalColorTarget, 0);
+            present_data.brightnessValue    = window->GetBrightness();
+            present_data.linearUpscale      = window->IsVirtualResolutionLinearUpscale();
+            
+            context->graphicsInterface->SetConstantShaderData(Shader::PresentGlobals_PresentCB, &present_data, sizeof(Shader::PresentCB));
+            
+            context->graphicsInterface->SetShaderResourceInput(Shader::PsPresent_Tex, view_context.finalColorTarget);
             context->graphicsInterface->PushRenderTarget(back_buffer, 0);
-
+            
             if (window->IsSemiTransparent())
             {
                 // Enable blending on a semi transparent window
                 context->graphicsInterface->SetBlendMode(BlendMode::SrcAlphaLerp);
-
+            
                 // Clear the backbuffer as we don't want to see the data of a previous frame
                 context->graphicsInterface->Clear(back_buffer, Math::Float4(0));
             }
@@ -673,7 +718,7 @@ namespace RB::Graphics
             {
                 context->graphicsInterface->SetBlendMode(BlendMode::None);
             }
-
+            
             // Backbuffer copy
             context->graphicsInterface->Draw();
 
@@ -700,7 +745,7 @@ namespace RB::Graphics
             uint32_t back_buffer_index = window_pairs[pair_index].window->GetCurrentBackBufferIndex();
             (*context->backBufferAvailabilityGuards)[window_pairs[pair_index].windowIndex].guards[back_buffer_index] = guard;
 
-            window_pairs[pair_index].window->Present(VsyncMode::On);
+            window_pairs[pair_index].window->Present();
         }
 
         context->OnRenderFrameEnd();

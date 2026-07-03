@@ -8,6 +8,10 @@
 #include "platform/windowing/windows/WindowWin.h"
 #endif
 
+#if RB_PLATFORM_LINUX_ES
+#include "platform/windowing/embeddedLinux/WindowLinES.h"
+#endif
+
 using namespace RB::Events;
 
 namespace RB::Graphics
@@ -43,7 +47,7 @@ namespace RB::Graphics
             m_VirtualBackBuffer = Texture2D::Create("Virtual backbuffer", GetBackBufferFormat(), GetVirtualWidth(), GetVirtualHeight(), true, true);
         }
 
-        return m_VirtualBackBuffer;
+        return m_VirtualBackBuffer.get();
     }
 
     void Window::Resize(uint32_t width, uint32_t height, int32_t x, int32_t y)
@@ -81,6 +85,11 @@ namespace RB::Graphics
     bool Window::InFocus() const
     {
         return m_InFocus;
+    }
+
+    bool Window::IsFullscreen() const
+    {
+        return m_IsFullscreen;
     }
 
     float Window::GetAspectRatio() const
@@ -125,8 +134,18 @@ namespace RB::Graphics
         m_NewVirtualResScale = resolution_scale;
         m_NewVirtualAspect = aspect;
 
-        Math::Float4 window_rect = GetWindowRectangle();
+        Math::Float4 window_rect = GetNativeWindowRectangle();
         Resize(window_rect.x, window_rect.y, window_rect.z, window_rect.w);
+    }
+
+    void Window::SetVirtualResolutionLinearUpscale(bool linear)
+    {
+        m_VirtualResLinearUpscale = linear;
+    }
+
+    bool Window::IsVirtualResolutionLinearUpscale() const
+    {
+        return m_VirtualResLinearUpscale;
     }
 
     void Window::SetGammaCorrection(float gamma)
@@ -144,7 +163,7 @@ namespace RB::Graphics
         return m_GammaCorrection;
     }
 
-    float Window::GetBrighness() const
+    float Window::GetBrightness() const
     {
         return m_Brightness;
     }
@@ -158,7 +177,7 @@ namespace RB::Graphics
         }
         else
         {
-            m_OriginalRect = GetWindowRectangle();
+            m_OriginalRect = GetNativeWindowRectangle();
 
             SetBorderless(true);
 
@@ -251,7 +270,7 @@ namespace RB::Graphics
                 ResizeBackBuffers(width, height);
 
                 // Delete the virtual backbuffer
-                SAFE_DELETE(m_VirtualBackBuffer);
+                m_VirtualBackBuffer.reset();
             }
             else
             {
@@ -276,7 +295,7 @@ namespace RB::Graphics
         case EventType::WindowCloseRequest:
         {
             DestroyWindow();
-            SAFE_DELETE(m_VirtualBackBuffer);
+            m_VirtualBackBuffer.reset();
         }
         break;
 
@@ -291,8 +310,10 @@ namespace RB::Graphics
         }
     }
 
-    Window* Window::Create(const char* window_name, Display* display, uint32_t window_style, float virtual_scale, float virtual_aspect)
+    Window* Window::Create(const char* window_name, Display* display, bool vsync, uint32_t window_style, float virtual_scale, float virtual_aspect)
     {
+        // TODO This currently doesn't actually place/create the window on the selected display
+
 #if RB_PLATFORM_WINDOWS
         Windows::WindowArgs args = {};
         args.className      = L"RabBit WindowClass";
@@ -300,28 +321,45 @@ namespace RB::Graphics
         args.fullscreen     = true;
         args.width          = display->GetResolution().x;
         args.height         = display->GetResolution().y;
+        args.vsync          = vsync;
         args.virtualScale   = virtual_scale;
         args.virtualAspect  = virtual_aspect;
         args.windowStyle    = window_style;
         args.windowName     = window_name;
-        args.format         = RenderResourceFormat::R8G8B8A8_UNORM; // TODO Do this based on the display
+        args.format         = RenderResourceFormat::B8G8R8A8_UNORM; // TODO Do this based on the display and just have a toggle for HDR
 
         return new Windows::WindowWin(args);
+#elif RB_PLATFORM_LINUX_ES
+        LinuxES::WindowArgs args = {};
+        //args.drmDeviceName  = "/dev/dri/card1"; // TODO Pass this in as a command line argument
+        args.display        = display;
+        args.width          = display->GetResolution().x;
+        args.height         = display->GetResolution().y;
+        args.vsync          = vsync;
+        args.virtualScale   = virtual_scale;
+        args.virtualAspect  = virtual_aspect;
+        args.format         = RenderResourceFormat::B8G8R8A8_UNORM; // TODO Do this based on the display and just have a toggle for HDR
+
+        return new LinuxES::WindowLinuxES(args);
 #else
         RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the platform");
         return nullptr;
 #endif
     }
 
-    Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, uint32_t window_style, RenderResourceFormat window_format, float virtual_scale, float virtual_aspect)
+    Window* Window::Create(const char* window_name, uint32_t window_width, uint32_t window_height, bool vsync, uint32_t window_style, RenderResourceFormat window_format, float virtual_scale, float virtual_aspect)
     {
 #if RB_PLATFORM_WINDOWS
+        wchar_t* wchar_class_name = new wchar_t[strlen(window_name) + 1];
+        CharToWchar(window_name, wchar_class_name);
+
         Windows::WindowArgs args = {};
-        args.className      = L"RabBit WindowClass";
+        args.className      = wchar_class_name;
         args.instance       = GetModuleHandle(nullptr);
         args.fullscreen     = false;
         args.width          = window_width;
         args.height         = window_height;
+        args.vsync          = vsync;
         args.virtualScale   = virtual_scale;
         args.virtualAspect  = virtual_aspect;
         args.windowStyle    = window_style;
@@ -329,6 +367,8 @@ namespace RB::Graphics
         args.format         = window_format;
 
         return new Windows::WindowWin(args);
+        
+        delete[] wchar_class_name;
 #else
         RB_LOG_CRITICAL(LOGTAG_WINDOWING, "Did not yet implement the window class for the platform");
         return nullptr;

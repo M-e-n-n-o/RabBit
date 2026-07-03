@@ -9,6 +9,21 @@
 
 namespace RB
 {
+    struct LoadedImage;
+    struct LoadedMesh;
+    struct LoadedFont;
+
+    namespace AssetManager
+    {
+        void Init(const char* asset_base_path);
+
+        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb);
+
+        bool LoadMesh(const char* path, LoadedMesh* out_mesh);
+
+        bool LoadFont(const char* path, LoadedFont* out_font, uint32_t font_size);
+    }
+
     struct LoadedImage
     {
         void*                           data;
@@ -16,27 +31,38 @@ namespace RB
         Graphics::RenderResourceFormat	format;
         int32_t					        width;
         int32_t					        height;
-        int32_t					        channels;
 
         LoadedImage();
         ~LoadedImage();
+
+    private:
+        bool loadedUsingStb;
+
+        friend bool AssetManager::LoadImage8Bit(const char*, LoadedImage*, bool);
+        friend bool AssetManager::LoadFont(const char*, LoadedFont*, uint32_t);
     };
 
     struct LoadedMesh
     {
         struct Vertex
         {
-            Math::Float3    position;
             Math::Float3    normal;
             Math::Float2    uv;
         };
 
         struct Submodel
         {
-            List<Vertex>    vertices;
-            List<uint16_t>  indices;
+            List<Math::Float3> positions;
+            List<Vertex>       vertices;
+            List<uint32_t>     indices;
+            Math::Float3       position;
+            Math::Float3       rotation;
+            Math::Float3       minBounds;
+            Math::Float3       maxBounds;
+            uint32_t           diffuseTexIndex;
         };
 
+        List<std::string>   diffuseColorTextures;
         List<Submodel>      models;
         void*               internalScene;
 
@@ -44,12 +70,26 @@ namespace RB
         ~LoadedMesh();
     };
 
-    namespace AssetManager
+    struct LoadedFont
     {
-        void Init(const char* asset_base_path);
+        struct Character
+        {
+            Math::Float4        imageUV;    // Texture UV coordinates for specific char in image
+            Math::Float2        size;       // Size of glyph
+            Math::Float2        bearing;    // Offset from baseline to left/top of glyph
+            uint32_t            advance;    // Offset to advance to next glyph
+        };
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, uint32_t force_channels = 0);
+        Map<char, Character>    characters;
+        LoadedImage             fontAtlas;
 
-        bool LoadMesh(const char* path, LoadedMesh* out_mesh);
-    }
+        LoadedFont();
+        ~LoadedFont();
+
+    private:
+        void* fontLibrary;
+        void* fontFace;
+
+        friend bool AssetManager::LoadFont(const char*, LoadedFont*, uint32_t);
+    };
 }

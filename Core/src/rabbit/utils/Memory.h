@@ -1,40 +1,35 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <wrl.h>
-
-#if defined(max)
-#undef max
-#endif
-
-#if defined(min)
-#undef min
-#endif
-
-#if defined(FindWindow)
-#undef FindWindow
-#endif
-
 #include <memory>
 
 namespace RB
 {
-    #define ALLOC_STACK(size)		    alloca((size))
+    #define kKB(x) (x * 1024)
+    #define kMB(x) (x * 1024 * 1024)
+    
+    #define k32KB   kKB(32)
+    #define k64KB   kKB(64)
+    #define k1MB    kMB(1)
+    #define k2MB    kMB(2)
+    #define k4MB    kMB(4)
+    #define k8MB    kMB(8)
+    #define k16MB   kMB(16)
+    #define k32MB   kMB(32)
+    #define k64MB   kMB(64)
+    #define k128MB  kMB(128)
+    #define k256MB  kMB(256)
+
+    #define ALLOC_STACK(size)           alloca((size))
     #define ALLOC_STACKC(type, count)   (type*)alloca(sizeof(type) * (count))
 
     // Try to use the FrameAllocator when allocating & freeing memory from the heap every frame!
-    #define ALLOC_HEAP(size)		    malloc((size))
-    #define ALLOC_HEAPC(type, count)	(type*)malloc(sizeof(type) * (count))
+    #define ALLOC_HEAP(size)            malloc((size))
+    #define ALLOC_HEAPC(type, count)    (type*)malloc(sizeof(type) * (count))
     
-    #define SAFE_RELEASE(obj)		    (obj)->Release();
-    #define SAFE_DELETE(obj)		    if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
-    #define SAFE_DELETE_ARR(obj)	    if ((obj) != nullptr) { delete[] (obj); (obj) = nullptr; }
-    #define SAFE_FREE(obj)			    if ((obj) != nullptr) { free(obj); (obj) = nullptr; }
-
-    // Custom graphics pointer
-    template<class T>
-    using GPtr = Microsoft::WRL::ComPtr<T>;
+    #define SAFE_RELEASE(obj)           (obj)->Release();
+    #define SAFE_DELETE(obj)            if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
+    #define SAFE_DELETE_ARR(obj)        if ((obj) != nullptr) { delete[] (obj); (obj) = nullptr; }
+    #define SAFE_FREE(obj)              if ((obj) != nullptr) { free(obj); (obj) = nullptr; }
 
     // Custom shared pointer
     template<typename T>

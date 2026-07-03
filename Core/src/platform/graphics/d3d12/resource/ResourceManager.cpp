@@ -6,130 +6,82 @@
 #include "ResourceManager.h"
 #include "ResourceStateManager.h"
 
+#include <d3dx12/d3dx12.h>
+
 namespace RB::Graphics::D3D12
 {
     void CreationJob(JobData* data);
+    void ReleaseJob(JobData* data);
 
     ResourceManager* g_ResourceManager = nullptr;
 
     ResourceManager::ResourceManager()
     {
-        InitializeCriticalSection(&m_CS);
+        m_CreationThread = new WorkerThread("Resource Manager", ThreadPriority::Medium);
 
-        m_CreationThread = new WorkerThread(L"Resource Creation Thread", ThreadPriority::Medium);
+        m_CurrentDeletionList = 0;
 
         m_CreationJob = m_CreationThread->AddJobType(&CreationJob, false);
+        m_DeletionJob = m_CreationThread->AddJobType(&ReleaseJob, false);
     }
 
     ResourceManager::~ResourceManager()
     {
+        FlushBookkeeping();
+
         // Waits until the thread is done with all tasks
         delete m_CreationThread;
-
-        // Wait until all objects can be release
-        for (auto itr = m_InFlight.begin(); itr != m_InFlight.end();)
-        {
-            itr->first->queue->CpuWaitForFenceValue(itr->first->fenceValue);
-            itr = m_InFlight.erase(itr);
-        }
-
-        DeleteCriticalSection(&m_CS);
     }
 
     void ResourceManager::UpdateBookkeeping()
     {
-        EnterCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
 
-        // TODO Future improvement would be to free the resources on the ResourceCreation thread as this can also be pretty expensive
+        m_CurrentDeletionList = (m_CurrentDeletionList + 1) % TRANSIENT_CYCLES;
 
-        // Check which resources have finished executing on the GPU
-        for (auto itr = m_InFlight.begin(); itr != m_InFlight.end();)
+        auto& list = m_ScheduledDeletions[m_CurrentDeletionList];
+
+        if (list.empty())
         {
-            if (itr->first->queue->IsFenceReached(itr->first->fenceValue))
-            {
-                delete itr->first;
-                itr = m_InFlight.erase(itr);
-            }
-            else
-            {
-                ++itr;
-            }
-        }
-
-        // Check which scheduled creations are completed
-        for (auto itr = m_ScheduledCreations.begin(); itr < m_ScheduledCreations.end();)
-        {
-            if (m_CreationThread->IsFinished(itr->jobID))
-            {
-                itr = m_ScheduledCreations.erase(itr);
-            }
-            else
-            {
-                ++itr;
-            }
-        }
-
-        LeaveCriticalSection(&m_CS);
-    }
-
-    void ResourceManager::MarkUsed(GpuResource* resource, DeviceQueue* queue)
-    {
-        if (!resource->IsValid())
-        {
-            RB_LOG_WARN(LOGTAG_GRAPHICS, "Resource cannot be set as used, not valid");
             return;
         }
 
-        EnterCriticalSection(&m_CS);
+        uint32_t size = sizeof(ID3D12Object*) * list.size();
 
-        auto itr = m_ScheduledUsages.find(queue);
+        ResourceDeletionDesc* desc = new ResourceDeletionDesc();
+        desc->objects = (ID3D12Object**)ALLOC_HEAP(size);
+        desc->count   = list.size();
 
-        if (itr == m_ScheduledUsages.end())
-        {
-            List<GPtr<ID3D12Object>> list;
-            list.push_back(resource->GetResource());
+        memcpy(desc->objects, list.data(), size);
 
-            m_ScheduledUsages.emplace(queue, list);
-        }
-        else
-        {
-            // Only add it if its not already in the list
-            if (std::find(itr->second.begin(), itr->second.end(), resource->GetResource()) == itr->second.end())
+        m_CreationThread->ScheduleJob(m_DeletionJob, desc);
+
+        list.clear();
+
+        std::erase_if(m_ScheduledCreations, [this](const auto& creation)
             {
-                itr->second.push_back(resource->GetResource());
-            }
-        }
+                return m_CreationThread->IsFinished(creation.jobID);
+            });
+    }
 
-        LeaveCriticalSection(&m_CS);
+    void ResourceManager::FlushBookkeeping()
+    {
+        for (int i = 0; i < TRANSIENT_CYCLES; ++i)
+        {
+            UpdateBookkeeping();
+        }
     }
 
     void ResourceManager::MarkForDelete(GpuResource* resource)
     {
-        // Don't need to do anything to delete at the right time. This because when the resource is currently in flight or still 
-        // has to be used by a command list, there is a reference being kept to it by the m_ScheduledUsages or the m_InFlight member.
+        // Get the resource before aquiring the lock as its possible that we have to wait until the resource is created
+        ID3D12Resource* res = resource->GetResource();
+
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledDeletions[m_CurrentDeletionList].push_back(res);
     }
 
-    void ResourceManager::OnCommandListExecute(DeviceQueue* queue, uint64_t fence_value)
-    {
-        EnterCriticalSection(&m_CS);
-
-        auto scheduled_use_itr = m_ScheduledUsages.find(queue);
-        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, scheduled_use_itr != m_ScheduledUsages.end(), "DeviceQueue was not yet registered for the scheduled usages queue");
-
-        FencePair* fence_pair = new FencePair();
-        fence_pair->queue       = queue;
-        fence_pair->fenceValue  = fence_value;
-
-        // Set all resources that were marked for use to this queue in flight
-        m_InFlight.emplace(fence_pair, scheduled_use_itr->second);
-
-        // Clear the scheduled usages for this queue
-        scheduled_use_itr->second.clear();
-
-        LeaveCriticalSection(&m_CS);
-    }
-
-    bool ResourceManager::WaitUntilResourceValid(GpuResource* resource)
+    bool ResourceManager::WaitUntilResourceValid(const GpuResource* resource)
     {
         if (m_CreationThread->IsCurrentThread())
         {
@@ -137,31 +89,25 @@ namespace RB::Graphics::D3D12
             return true;
         }
 
-        EnterCriticalSection(&m_CS);
-
-        // Find the scheduled creation
-        auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool {
-            return resource == scheduled.resource;
-            });
-
-        if (itr == m_ScheduledCreations.end())
+        JobID id = -1;
         {
-            LeaveCriticalSection(&m_CS);
-            return false;
+            RB_MUTEX_AUTO_LOCK(m_Mutex);
+
+            // Find the scheduled creation
+            auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool {
+                return resource == scheduled.resource;
+                });
+
+            if (itr == m_ScheduledCreations.end())
+            {
+                return false;
+            }
+
+            id = itr->jobID;
+
+            // Tell the thread to prioritize this resource creation as we are waiting for it
+            m_CreationThread->PrioritizeJob(id);
         }
-
-        JobID id = itr->jobID;
-
-        // HACK
-        // TODO Somehow the references to the upload resources from RenderInterfaceD3D12::UploadDataToResource are somehow getting mixed up in this list 
-        // and they start waiting on eachothers job (no clue why). To fix this for now just remove the job from the list when starting to wait on it.
-        // This can break when having multiple threads calling WaitUntilResourceValid and thus should be removed when the big upload resource has been implemented!
-        m_ScheduledCreations.erase(itr);
-
-        // Tell the thread to prioritize this resource creation as we are waiting for it
-        m_CreationThread->PrioritizeJob(id);
-
-        LeaveCriticalSection(&m_CS);
 
         // Sync until the job is completed
         m_CreationThread->Sync(id);
@@ -181,12 +127,28 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->buffer    = buffer_desc;
 
-        EnterCriticalSection(&m_CS);
+        JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledCreations.push_back({ resource, id });
+    }
+
+    void ResourceManager::ScheduleCreateReadbackResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
+    {
+        // Is deleted in destructor of ResourceCreationDesc
+        wchar_t* wname = new wchar_t[strlen(name) + 1];
+        CharToWchar(name, wname);
+
+        ResourceCreationDesc* desc = new ResourceCreationDesc();
+        desc->type      = ResourceType::Readback;
+        desc->resource  = resource;
+        desc->name      = wname;
+        desc->buffer    = buffer_desc;
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
-        m_ScheduledCreations.push_back({ resource, id });
 
-        LeaveCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledCreations.push_back({ resource, id });
     }
 
     void ResourceManager::ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
@@ -201,12 +163,10 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->buffer    = buffer_desc;
 
-        EnterCriticalSection(&m_CS);
-
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
-        m_ScheduledCreations.push_back({ resource, id });
 
-        LeaveCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledCreations.push_back({ resource, id });
     }
 
     void ResourceManager::ScheduleCreateIndexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
@@ -221,12 +181,10 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->buffer    = buffer_desc;
 
-        EnterCriticalSection(&m_CS);
-
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
-        m_ScheduledCreations.push_back({ resource, id });
 
-        LeaveCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledCreations.push_back({ resource, id });
     }
 
     void ResourceManager::ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& tex_desc)
@@ -241,21 +199,21 @@ namespace RB::Graphics::D3D12
         desc->name      = wname;
         desc->tex2D     = tex_desc;
 
-        EnterCriticalSection(&m_CS);
-
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
-        m_ScheduledCreations.push_back({ resource, id });
 
-        LeaveCriticalSection(&m_CS);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledCreations.push_back({ resource, id });
     }
 
-    GPtr<ID3D12Resource> ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,
+    ID3D12Resource* ResourceManager::CreateCommittedResource(const wchar_t* name, const D3D12_RESOURCE_DESC& resource_desc, D3D12_HEAP_TYPE heap_type,
         D3D12_HEAP_FLAGS heap_flags, D3D12_RESOURCE_STATES start_state, const D3D12_CLEAR_VALUE* optimized_clear_value)
     {
-        GPtr<ID3D12Resource> resource = nullptr;
+        ID3D12Resource* resource = nullptr;
+
+        auto props = CD3DX12_HEAP_PROPERTIES(heap_type);
 
         RB_ASSERT_FATAL_D3D(g_GraphicsDevice->Get()->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(heap_type),
+            &props,
             heap_flags,
             &resource_desc,
             start_state,
@@ -294,6 +252,21 @@ namespace RB::Graphics::D3D12
         }
         break;
 
+        case ResourceManager::ResourceType::Readback:
+        {
+            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COPY_DEST;
+
+            creation_desc->resource->SetResource(
+                g_ResourceManager->CreateCommittedResource(
+                    creation_desc->name,
+                    CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size),
+                    D3D12_HEAP_TYPE_READBACK,
+                    D3D12_HEAP_FLAG_NONE,
+                    state),
+                state);
+        }
+        break;
+
         case ResourceManager::ResourceType::Vertex:
         case ResourceManager::ResourceType::Index:
         {
@@ -312,7 +285,7 @@ namespace RB::Graphics::D3D12
 
         case ResourceManager::ResourceType::Texture2D:
         {
-            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COPY_DEST;
+            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
 
             // TODO Fill in the optimized clear value for RenderTargets and DepthStencil textures
 
@@ -333,6 +306,16 @@ namespace RB::Graphics::D3D12
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "Not yet implemented resource creation of this type");
         }
         break;
+        }
+    }
+
+    void ReleaseJob(JobData* data)
+    {
+        ResourceManager::ResourceDeletionDesc* deletion_desc = (ResourceManager::ResourceDeletionDesc*)data;
+
+        for (int i = 0; i < deletion_desc->count; ++i)
+        {
+            SAFE_RELEASE(deletion_desc->objects[i]);
         }
     }
 }

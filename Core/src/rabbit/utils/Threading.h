@@ -1,9 +1,24 @@
 #pragma once
 
 #include "RabBitCommon.h"
+#include "Timer.h"
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace RB
 {
+    // ---------------------------------------------------------------------------
+    //								    Mutex
+    // ---------------------------------------------------------------------------
+
+    // TODO In the future make a wrapper class for this and use SRWLock on Windows to improve performance
+    using Mutex             = std::recursive_mutex;
+    using ConditionVariable = std::condition_variable_any;
+
+    #define RB_MUTEX_AUTO_LOCK(m) std::lock_guard<Mutex> auto_locking_and_unlocking_mutex(m)
+
     // ---------------------------------------------------------------------------
     //								WorkerThread
     // ---------------------------------------------------------------------------
@@ -21,7 +36,11 @@ namespace RB
     // Make sure to do all your deletes and free's in the destructor!
     struct JobData
     {
+    public:
         virtual ~JobData() = default;
+
+        // Thread safe way to do some things on the data
+        virtual void OnDestroy(bool overwritten) {};
     };
 
     using JobTypeID     = uint32_t;
@@ -32,29 +51,29 @@ namespace RB
     class WorkerThread
     {
     public:
-        WorkerThread(const wchar_t* name, const ThreadPriority& priority = ThreadPriority::Default);
+        WorkerThread(const char* name, const ThreadPriority& priority = ThreadPriority::Default);
 
         ~WorkerThread();
 
         // If overwritable is true, only 1 of this type of job can be scheduled at a time.
         // So, if a job is scheduled that is already in the queue, the old job will be overwritten.
-        JobTypeID	AddJobType(JobFunction function, bool overwritable = false);
+        JobTypeID   AddJobType(JobFunction function, bool overwritable = false);
 
         // The JobData is deleted when the task is completed or has been overwritten (allocate the data with new!)
-        JobID		ScheduleJob(JobTypeID type_id, JobData* data);
+        JobID       ScheduleJob(JobTypeID type_id, JobData* data);
 
-        void		PrioritizeJob(JobID job_id);
+        void        PrioritizeJob(JobID job_id);
 
-        bool		IsFinished(JobID job_id);
-        bool		IsStalling(uint32_t stall_threshold_ms, JobID& out_id);
+        bool        IsFinished(JobID job_id);
+        bool        IsStalling(uint32_t stall_threshold_ms, JobID& out_id);
 
-        void		Sync(JobID job_id);
-        void		SyncAll();
+        void        Sync(JobID job_id);
+        void        SyncAll();
 
-        void		Cancel(JobID job_id);
-        void		CancelAll();
+        void        Cancel(JobID job_id);
+        void        CancelAll();
 
-        bool		IsCurrentThread();
+        bool        IsCurrentThread();
 
     private:
         struct Job
@@ -77,37 +96,37 @@ namespace RB
 
         struct SharedContext
         {
-            const wchar_t*      name;
+            const char*         name;
 
-            ThreadState			state;
-            CONDITION_VARIABLE	kickCV;
-            CRITICAL_SECTION	kickCS;
-            CONDITION_VARIABLE	syncCV;
-            CRITICAL_SECTION	syncCS;
-            CONDITION_VARIABLE	completedCV;
-            CRITICAL_SECTION	completedCS;
+            ThreadState         state;
+            ConditionVariable   kickCV;
+            Mutex               kickMutex;
+            ConditionVariable   syncCV;
+            Mutex               syncMutex;
+            ConditionVariable   completedCV;
+            Mutex	            completedMutex;
 
-            uint64_t			counterStart;
+            Timer               timer;
+            double              counterStart;
 
-            JobID				currentJob;
-            List<Job>			pendingJobs;
-            uint32_t			highPriorityInsertIndex;
-            uint64_t			startedJobsCount;
-            uint64_t			completedJobsCount;
+            JobID               currentJob;
+            List<Job>           pendingJobs;
+            uint32_t            highPriorityInsertIndex;
+            uint64_t            startedJobsCount;
+            JobID               lastCompletedJob;
         };
 
         struct JobType
         {
-            JobFunction			function;
-            bool				overwritable;
+            JobFunction         function;
+            bool                overwritable;
         };
 
-        HANDLE					m_ThreadHandle;
+        std::thread             m_ThreadHandle;            
         SharedContext*          m_SharedContext;
-        List<JobType>			m_JobTypes;
-        double					m_PerformanceFreqMs;
+        List<JobType>           m_JobTypes;
 
-        friend DWORD WINAPI WorkerThreadLoop(PVOID param);
+        friend void WorkerThreadLoop(SharedContext* context);
     };
 
     // ---------------------------------------------------------------------------
@@ -119,48 +138,40 @@ namespace RB
     {
     public:
         ThreadedVariable(const T& value);
-        ~ThreadedVariable();
+        ~ThreadedVariable() = default;
 
         void SetValue(const T& value);
-        T	 GetValue();
+        T    GetValue();
 
         void WaitUntilConditionMet(std::function<bool(const T&)> condition);
 
     private:
-        T					m_Variable;
-        CRITICAL_SECTION	m_CS;
-        CONDITION_VARIABLE	m_CV;
+        T                   m_Variable;
+        Mutex               m_Mutex;
+        ConditionVariable	m_CV;
     };
 
     template<typename T>
     inline ThreadedVariable<T>::ThreadedVariable(const T& value)
     {
         m_Variable = value;
-        InitializeCriticalSection(&m_CS);
-        InitializeConditionVariable(&m_CV);
-    }
-
-    template<typename T>
-    inline ThreadedVariable<T>::~ThreadedVariable()
-    {
-        DeleteCriticalSection(&m_CS);
     }
 
     template<typename T>
     inline void ThreadedVariable<T>::SetValue(const T& value)
     {
-        EnterCriticalSection(&m_CS);
+        m_Mutex.lock();
         m_Variable = value;
-        LeaveCriticalSection(&m_CS);
-        WakeAllConditionVariable(&m_CV);
+        m_Mutex.unlock();
+        m_CV.notify_all();
     }
 
     template<typename T>
     inline T ThreadedVariable<T>::GetValue()
     {
-        EnterCriticalSection(&m_CS);
+        m_Mutex.lock();
         const T& value = m_Variable;
-        LeaveCriticalSection(&m_CS);
+        m_Mutex.unlock();
 
         return value;
     }
@@ -168,13 +179,11 @@ namespace RB
     template<typename T>
     inline void ThreadedVariable<T>::WaitUntilConditionMet(std::function<bool(const T&)> condition)
     {
-        EnterCriticalSection(&m_CS);
+        std::unique_lock<Mutex> lock(m_Mutex);
 
         while (!condition(m_Variable))
         {
-            SleepConditionVariableCS(&m_CV, &m_CS, INFINITE);
+            m_CV.wait(lock);
         }
-
-        LeaveCriticalSection(&m_CS);
     }
 }

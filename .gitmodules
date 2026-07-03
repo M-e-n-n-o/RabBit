@@ -7,3 +7,10 @@
 [submodule "Core/external/ufbx"]
 	path = Core/external/ufbx
 	url = https://github.com/ufbx/ufbx
+[submodule "Core/external/VulkanHeaders"]
+	path = Core/external/VulkanHeaders
+	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "Editor/external/imgui/imgui"]
+	path = Editor/external/imgui/imgui
+	url = https://github.com/ocornut/imgui
+	branch = docking

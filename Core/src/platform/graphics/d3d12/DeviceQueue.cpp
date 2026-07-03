@@ -3,6 +3,7 @@
 #include "RabBitCommon.h"
 #include "DeviceQueue.h"
 #include "GraphicsDevice.h"
+#include "DeviceQueue.h"
 
 namespace RB::Graphics::D3D12
 {
@@ -83,19 +84,15 @@ namespace RB::Graphics::D3D12
 
     void DeviceQueue::UpdateAvailableCommandAllocators()
     {
-        auto itr = m_RunningCommandAllocators.begin();
-        while (itr != m_RunningCommandAllocators.end())
-        {
-            if (IsFenceReached(itr->fenceValue))
+        std::erase_if(m_RunningCommandAllocators, [this](const auto& allocator)
             {
-                m_AvailableCommandAllocators.push(itr->commandAllocator);
-                itr = m_RunningCommandAllocators.erase(itr);
-            }
-            else
-            {
-                ++itr;
-            }
-        }
+                if (IsFenceReached(allocator.fenceValue))
+                {
+                    m_AvailableCommandAllocators.push(allocator.commandAllocator);
+                    return true;
+                }
+                return false;
+            });
     }
 
     uint64_t DeviceQueue::ExecuteCommandList(GPtr<ID3D12GraphicsCommandList2> command_list)
@@ -158,7 +155,7 @@ namespace RB::Graphics::D3D12
         return fence_value_for_signal;
     }
 
-    bool DeviceQueue::IsFenceReached(uint64_t fence_value)
+    bool DeviceQueue::IsFenceReached(uint64_t fence_value) const
     {
         return m_Fence->GetCompletedValue() >= fence_value;
     }

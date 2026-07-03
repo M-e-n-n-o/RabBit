@@ -14,6 +14,8 @@
 #include "events/input/KeyCodes.h"
 #include "events/input/Input.h"
 
+#include "utils/Timer.h"
+
 using namespace RB::Graphics;
 using namespace RB::Events;
 using namespace RB::Entity;
@@ -24,7 +26,6 @@ namespace RB
 
     Application::Application(AppInfo& info)
         : EventListener(kEventCat_All)
-        , m_StartAppInfo(info)
         , m_Initialized(false)
         , m_ShouldStop(false)
         , m_FrameIndex(0)
@@ -34,8 +35,9 @@ namespace RB
         RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
         s_Instance = this;
 
-        RB_LOG_RELEASE(LOGTAG_MAIN, "Welcome to the RabBit Engine");
-        RB_LOG_RELEASE(LOGTAG_MAIN, "Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
+        m_StartAppInfo = new AppInfo(info);
+
+        RB_LOG_RELEASE(LOGTAG_MAIN, "RabBit Version: %s.%s.%s", RB_VERSION_MAJOR, RB_VERSION_MINOR, RB_VERSION_PATCH);
     }
 
     Application::~Application()
@@ -49,14 +51,20 @@ namespace RB
         RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
         RB_LOG(LOGTAG_MAIN, "");
 
+        RB_LOG(LOGTAG_MAIN, "Launch arguments: %s", launch_args)
+
         char asset_path[256];
         if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
         {
             std::string s = offset;
 
-            int start = s.find_first_of("\"") + 1;
+            int start = std::strlen("-assetPath") + 1;
             s = s.substr(start);
-            int end = s.find_first_of("\"");
+            int end = s.find_first_of(" ");
+            if (end == std::string::npos)
+            {
+                end = s.size(); // This is the final argument
+            }
 
             if (s[end-1] != '/' && s[end-1] != '\\')
             {
@@ -76,35 +84,48 @@ namespace RB
 
         AssetManager::Init(asset_path);
 
-#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+#if RB_GRAPHICS_API_D3D12
         Renderer::SetAPI(RenderAPI::D3D12);
+#elif RB_GRAPHICS_API_VULKAN
+        Renderer::SetAPI(RenderAPI::Vulkan);
 #else
         Renderer::SetAPI(RenderAPI::None);
 #endif
 
-        m_GraphicsSettings = {};
-        //m_GraphicsSettings.renderWidth = // What size to set here??
+        m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
 
-        m_GraphicsSettings.Print();
-
-        m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"));
+        m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
         m_Renderer->Init();
+        m_Renderer->SetRenderGraphs(m_StartAppInfo->renderGraphs);
 
         m_Displays = Display::CreateDisplays();
 
-        for (const AppInfo::Window& window : m_StartAppInfo.windows)
+        for (const AppInfo::Window& window : m_StartAppInfo->windows)
         {
-            if (window.fullscreen)
+            if (window.fullscreen && window.windowIndex >= 0)
             {
-                m_Windows.push_back(Window::Create(window.windowName, m_Displays[0], window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, window.renderScale, window.forcedRenderAspect));
+                RB_ASSERT(LOGTAG_MAIN, window.windowIndex < m_Displays.size(), "Specified window index is invalid");
+                int32_t index = Math::Min(window.windowIndex, (int32_t)m_Displays.size());
+
+                m_Windows.push_back(Window::Create(window.windowName, 
+                                                   m_Displays[index],
+                                                   window.vsync, 
+                                                   window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default,
+                                                   window.renderScale, window.forcedRenderAspect));
             }
             else
             {
-                m_Windows.push_back(Window::Create(window.windowName, window.windowWidth, window.windowHeight, window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, RenderResourceFormat::R8G8B8A8_UNORM, window.renderScale, window.forcedRenderAspect));
+                m_Windows.push_back(Window::Create(window.windowName, 
+                                                   window.windowWidth, window.windowHeight, 
+                                                   window.vsync, 
+                                                   window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, 
+                                                   RenderResourceFormat::B8G8R8A8_UNORM,
+                                                   window.renderScale, window.forcedRenderAspect));
             }
 
             (*(m_Windows.end()-1))->SetBrightness(window.brightness);
             (*(m_Windows.end()-1))->SetGammaCorrection(window.gammaCorrection);
+            (*(m_Windows.end()-1))->SetVirtualResolutionLinearUpscale(window.linearUpscale);
         }
 
         m_Scene = new Scene();
@@ -116,8 +137,10 @@ namespace RB
         RB_LOG(LOGTAG_MAIN, "");
 
         // Initialize app user
-        RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo.appName);
+        RB_LOG(LOGTAG_MAIN, "Starting user's application: %s", m_StartAppInfo->appName);
         OnStart();
+
+        SAFE_DELETE(m_StartAppInfo);
 
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "======== STARTING MAIN LOOP =========");
@@ -128,19 +151,16 @@ namespace RB
 
     void Application::Run()
     {
-        LARGE_INTEGER frequency;
-        if (!QueryPerformanceFrequency(&frequency))
-        {
-            RB_LOG_ERROR(LOGTAG_MAIN, "Could not retrieve value from QueryPerformanceFrequency");
-        }
-
-        LARGE_INTEGER prev_time, curr_time;
-        QueryPerformanceCounter(&prev_time);
+        Timer frame_timer;
+        float delta_time;
+        double curr_time;
+        double prev_time = frame_timer.ElapsedSeconds();
 
         while (!m_ShouldStop)
         {
-            QueryPerformanceCounter(&curr_time);
-            float delta_time = static_cast<float>(curr_time.QuadPart - prev_time.QuadPart) / frequency.QuadPart;
+            // Update delta time
+            curr_time = frame_timer.ElapsedSeconds();
+            delta_time = float(curr_time - prev_time);
             prev_time = curr_time;
 
             // Poll inputs and update windows
@@ -167,6 +187,9 @@ namespace RB
 
             // Submit the scene as context for rendering the next frame
             m_Renderer->SubmitFrame(m_Scene);
+            
+            // Cycle the allocated scene data for re-use
+            m_FrameAllocator->Cycle();
 
             // Check if there are any windows that should be closed/removed
             if (m_CheckWindows)
@@ -212,6 +235,9 @@ namespace RB
                 layer->OnUpdate(delta_time); 
             }
         }
+
+        // Maybe make the scene also just a ApplicationLayer?
+        m_Scene->UpdateScene();
     }
 
     void Application::Shutdown()
@@ -247,6 +273,8 @@ namespace RB
 
         m_Renderer->Shutdown();
         delete m_Renderer;
+
+        delete m_FrameAllocator;
 
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");
@@ -327,13 +355,9 @@ namespace RB
         return -1;
     }
 
-    void Application::ApplyNewGraphicsSettings(GraphicsSettings& settings)
+    void Application::AddWindow(Graphics::Window* window)
     {
-        settings.Validate();
-        settings.Print();
-
-        GraphicsSettingsChangedEvent e(settings, m_GraphicsSettings);
-        g_EventManager->InsertEvent(e);
+        m_Windows.push_back(window);
     }
 
     bool Application::OnEvent(Event& event)
@@ -386,12 +410,6 @@ namespace RB
         BindEvent<WindowCloseRequestEvent>([&](WindowCloseRequestEvent& close_event)
         {
             m_CheckWindows = true;
-        }, event);
-
-        
-        BindEvent<GraphicsSettingsChangedEvent>([&](GraphicsSettingsChangedEvent& settings_event)
-        {
-            m_GraphicsSettings = settings_event.GetNewSettings();
         }, event);
 
         if (passtrough_layers)

@@ -5,7 +5,7 @@ namespace RB::Graphics
 {
     struct DeferredLightingSettings : public RenderPassSettings
     {
-        // No settings
+        // Choose between Blinn-Phong or PBR lighting
     };
 
     class DeferredLightingPass : public RenderPass
@@ -15,7 +15,7 @@ namespace RB::Graphics
 
         RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
 
-        RenderPassEntry* SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Entity::Scene* const scene) override;
+        RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) override;
 
         void Render(RenderPassInput& inputs) override;
     };

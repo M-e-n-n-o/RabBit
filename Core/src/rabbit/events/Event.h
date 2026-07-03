@@ -10,7 +10,7 @@ namespace RB::Events
         WindowCreated, WindowCloseRequest, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved, WindowFullscreenToggle,
         KeyPressed, KeyReleased, KeyTyped,
         MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
-        GraphicsSettingsChanged
+        RenderOutputChanged
     };
 
     enum EventCategory
@@ -104,8 +104,8 @@ namespace RB::Events
     {
     public:
         // Enabling double queue's is better when processing an event on the
-        // listener that can take a very long time (maybe even block). 
-        // This way we won't block the main thread.
+        // listener that can take a very long time (maybe even block). This way 
+        // we won't block the main thread when its trying to add a new event.
         EventListener(int category, bool double_queue = false);
         virtual ~EventListener();
 
@@ -114,6 +114,7 @@ namespace RB::Events
             return (m_ListenerCategory & cat) > 0;
         }
 
+    protected:
         void ProcessEvents();
 
     private:
@@ -127,7 +128,7 @@ namespace RB::Events
         bool                m_QueueCycle;
         List<Event*>		m_QueuedEvents0;
         List<Event*>		m_QueuedEvents1;
-        CRITICAL_SECTION	m_CS;
+        Mutex               m_Mutex;
 
         friend class EventManager;
     };

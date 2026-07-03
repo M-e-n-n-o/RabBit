@@ -1,105 +1,184 @@
 #pragma once
 #include "RabBitCommon.h"
-#include "ComponentRegister.h"
+#include "BaseClasses.h"
+#include "components/Transform.h"
 
 namespace RB::Entity
 {
-	class ObjectComponent;
+    class ObjectComponent;
 
-	class GameObject
-	{
-	public:
-		GameObject(ComponentRegister* reg);
-		~GameObject();
+    template<typename Tuple, typename F, std::size_t... I>
+    void ForEachTypeImpl(F&& f, std::index_sequence<I...>)
+    {
+        (void)std::initializer_list<int>{(f(std::type_index(typeid(std::tuple_element_t<I, Tuple>))), 0)...};
+    }
 
-		void Update();
+    template<typename Tuple, typename F>
+    void ForEachType(F&& f) 
+    {
+        ForEachTypeImpl<Tuple>(std::forward<F>(f), std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+    }
 
-		template<class T, typename... Args>
-		T* AddComponent(Args... args);
+    class GameObject
+    {
+    public:
+        GameObject(const char* name);
+        ~GameObject();
 
-		template<class T>
-		bool HasComponent(uint32_t index = 0);
+        void Update();
 
-		template<class T>
-		T* GetComponent(uint32_t index = 0);
+        template<class T, typename... Args>
+        T* AddComponent(Args&&... args);
 
-		void AppendComponentsWithTypeOf(ComponentID comp_id, List<const ObjectComponent*>& list) const;
-		
-		// Pass in nullptr to detach the parent
-		void SetParent(GameObject* obj);
-		GameObject* GetParent();
+        // Check if a component of this type or any of its bases already exists
+        template<typename T>
+        bool HasComponent() const;
 
-	private:
-		void OnNewChildAttached(GameObject* obj);
-		void OnChildDetached(GameObject* obj);
+        template<class T>
+        T* GetComponent() const;
 
-		GameObject* m_Parent;
-		UnorderedSet<GameObject*> m_Children;
+        template<class T>
+        void GetComponentsInChildren(List<T*>& components) const;
 
-		UnorderedMap<ComponentID, List<ObjectComponent*>> m_Components;
+        template<class T>
+        uint32_t GetNumComponentsInChildren() const;
+        
+        template<typename T>
+        bool RemoveComponent();
 
-		ComponentRegister* m_Register;
-	};
+        const char* GetName() const { return m_Name.c_str(); }
 
-	template<class T, typename... Args>
-	inline T* GameObject::AddComponent(Args... args)
-	{
-		T* comp = new T(args...);
+        // Pass in nullptr to detach the parent
+        void SetParent(GameObject* new_parent);
+        GameObject* GetParent() const;
 
-		ComponentID tag = m_Register->RegisterComponent<T>();
+        const UnorderedSet<GameObject*>& GetChildren() const;
 
-		auto itr = m_Components.find(tag);
-		if (itr == m_Components.end())
-		{
-			List<ObjectComponent*> list;
-			list.push_back(comp);
+    private:
 
-			m_Components.emplace(tag, list);
-		}
-		else
-		{
-			itr->second.push_back(comp);
-		}
+        void OnNewChildAttached(GameObject* obj);
+        void OnChildDetached(GameObject* obj);
 
-		comp->OnAttachedToGameObject(this);
-		return comp;
-	}
+        std::string                                     m_Name;
+        GameObject*                                     m_Parent;
+        UnorderedSet<GameObject*>                       m_Children;
+        List<ObjectComponent*>                          m_Components;
+        UnorderedMap<std::type_index, ObjectComponent*> m_Map;
+    };
 
-	template<class T>
-	bool GameObject::HasComponent(uint32_t index)
-	{
-		ComponentID id = m_Register->GetComponentID<T>();
+    template<class T, typename... Args>
+    inline T* GameObject::AddComponent(Args&&... args)
+    {
+        RB_STATIC_ASSERT(std::is_base_of_v<ObjectComponent, T>, "T must derive from ObjectComponent");
 
-		auto itr = m_Components.find(id);
+        if (HasComponent<T>())
+        {
+            RB_LOG_ERROR("Failed to insert %s ObjectComponent! The GameObject already has this component type", typeid(T).name());
+            return nullptr;
+        }
 
-		if (itr == m_Components.end())
-		{
-			return false;
-		}
+        T* comp = new T(std::forward<Args>(args)...);
+        m_Components.push_back(comp);
 
-		return index < itr->second.size();
-	}
+        // Register under the concrete type
+        m_Map[std::type_index(typeid(T))] = comp;
 
-	template<class T>
-	T* GameObject::GetComponent(uint32_t index)
-	{
-		ComponentID id = m_Register->GetComponentID<T>();
+        // Register under all declared base types
+        using Bases = typename BaseClasses<T>::type;
+        ForEachType<Bases>([this, comp](std::type_index base) {
+            m_Map[base] = comp;
+        });
 
-		auto itr = m_Components.find(id);
+        comp->OnAttachedToGameObject(this);
 
-		if (itr == m_Components.end())
-		{
-			if constexpr (std::is_same<T, Transform>::value)
-			{
-				// A gameobject should always have a transform
-				return (T*)GetDefaultTransform();
-			}
+        return comp;
+    }
 
-			return nullptr;
-		}
+    template<typename T>
+    bool GameObject::HasComponent() const 
+    {
+        if (m_Map.find(std::type_index(typeid(T))) != m_Map.end())
+            return true;
 
-		index = Math::Min(index, (uint32_t)(itr->second.size() - 1));
+        bool found = false;
+        using Bases = typename BaseClasses<T>::type;
+        ForEachType<Bases>([&](std::type_index baseTI) {
+            if (m_Map.find(baseTI) != m_Map.end())
+                found = true;
+        });
 
-		return (T*) itr->second[index];
-	}
+        return found;
+    }
+
+    template<class T>
+    T* GameObject::GetComponent() const
+    {
+        RB_STATIC_ASSERT(std::is_base_of_v<ObjectComponent, T>, "T must derive from ObjectComponent");
+
+        auto it = m_Map.find(std::type_index(typeid(T)));
+        if (it == m_Map.end())
+        {
+            //if constexpr (std::is_same<T, Transform>::value)
+            //{
+            //  // A gameobject should always have a transform
+            //  return (T*)GetDefaultTransform();
+            //}
+
+            return nullptr;
+        }
+
+        return static_cast<T*>(it->second);
+    }
+
+    template<class T>
+    void GameObject::GetComponentsInChildren(List<T*>& components) const
+    {
+        RB_STATIC_ASSERT(std::is_base_of_v<ObjectComponent, T>, "T must derive from ObjectComponent");
+
+        if (auto comp = GetComponent<T>())
+            components.push_back(comp);
+
+        for (auto* child : m_Children)
+            child->GetComponentsInChildren<T>(components);
+    }
+
+    template<class T>
+    uint32_t GameObject::GetNumComponentsInChildren() const
+    {
+        RB_STATIC_ASSERT(std::is_base_of_v<ObjectComponent, T>, "T must derive from ObjectComponent");
+
+        uint32_t count = 0;
+        count += HasComponent<T>();
+
+        for (auto* child : m_Children)
+        {
+            count += child->GetNumComponentsInChildren<T>();
+        }
+
+        return count;
+    }
+
+    template<typename T>
+    bool GameObject::RemoveComponent() 
+    {
+        ObjectComponent* comp = GetComponent<T>();
+
+        if (!comp)
+            return false;
+
+        auto itr = std::find(m_Components.begin(), m_Components.end(), comp);
+        m_Components.erase(itr);
+
+        // Remove all mappings to this component
+        for (auto it = m_Map.begin(); it != m_Map.end();) 
+        {
+            if (it->second == comp) 
+                it = m_Map.erase(it);
+            else 
+                ++it;
+        }
+
+        delete comp;
+        return true;
+    }
 }

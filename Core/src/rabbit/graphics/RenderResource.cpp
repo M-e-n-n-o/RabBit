@@ -6,26 +6,30 @@
 #include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
 #endif
 
+#if RB_GRAPHICS_API_VULKAN
+#include "platform/graphics/vulkan/RenderResourceVK.h"
+#endif
+
 namespace RB::Graphics
 {
     uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format)
     {
         switch (format)
         {
-        case(RenderResourceFormat::R32G32B32A32_TYPELESS):
         case(RenderResourceFormat::R32G32B32A32_FLOAT):
             return 16;
         case(RenderResourceFormat::R32G32_FLOAT):
         case(RenderResourceFormat::R16G16B16A16_FLOAT):
             return 8;
         case(RenderResourceFormat::R32_UINT):
-        case(RenderResourceFormat::R8G8B8A8_TYPELESS):
         case(RenderResourceFormat::R8G8B8A8_SRGB):
+        case(RenderResourceFormat::B8G8R8A8_UNORM):
         case(RenderResourceFormat::R8G8B8A8_UNORM):
         case(RenderResourceFormat::R16G16_FLOAT):
         case(RenderResourceFormat::R16G16_UINT):
         case(RenderResourceFormat::R32_FLOAT):
         case(RenderResourceFormat::D32_FLOAT):
+        case(RenderResourceFormat::R32_TYPELESS):
             return 4;
         case(RenderResourceFormat::R16_FLOAT):
         case(RenderResourceFormat::R16_UINT):
@@ -36,9 +40,6 @@ namespace RB::Graphics
         case(RenderResourceFormat::R8_UNORM):
         case(RenderResourceFormat::R8_UINT):
             return 1;
-        case(RenderResourceFormat::Unkown):
-            return 0;
-        case(RenderResourceFormat::R11G11B10_FLOAT):
         default:
             RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
             return 0;
@@ -51,35 +52,43 @@ namespace RB::Graphics
         {
         case RenderResourceFormat::D32_FLOAT:
         case RenderResourceFormat::D16_UNORM:
+        case RenderResourceFormat::R32_TYPELESS:
             return true;
-
-        case RenderResourceFormat::R32G32B32A32_TYPELESS:
-        case RenderResourceFormat::R32G32B32A32_FLOAT:
-        case RenderResourceFormat::R16G16B16A16_FLOAT:
-        case RenderResourceFormat::R32G32_FLOAT:
-        case RenderResourceFormat::R8_UINT:
-        case RenderResourceFormat::R32_UINT:
-        case RenderResourceFormat::R8G8B8A8_TYPELESS:
-        case RenderResourceFormat::R8G8B8A8_UNORM:
-        case RenderResourceFormat::R8G8B8A8_SRGB:
-        case RenderResourceFormat::R11G11B10_FLOAT:
-        case RenderResourceFormat::R16G16_FLOAT:
-        case RenderResourceFormat::R16G16_UINT:
-        case RenderResourceFormat::R16_FLOAT:
-        case RenderResourceFormat::R16_UINT:
-        case RenderResourceFormat::R16_UNORM:
-        case RenderResourceFormat::R16_SNORM:
-        case RenderResourceFormat::R8_UNORM:
-        case RenderResourceFormat::R32_FLOAT:
-            return false;
         default:
             return false;
         }
     }
 
-    float Texture2D::GetAspectRatio() const
+    bool IsSRGBFormat(const RenderResourceFormat& format)
+    {
+        switch (format)
+        {
+        case RenderResourceFormat::R8G8B8A8_SRGB:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool IsTypelessFormat(const RenderResourceFormat& format)
+    {
+        switch (format)
+        {
+        case RenderResourceFormat::R32_TYPELESS:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    float Texture::GetAspectRatio() const
     {
         return (float)GetWidth() / (float)GetHeight();
+    }
+
+    float Texture::GetViewportAspectRatio() const
+    {
+        return (float)GetViewportWidth() / (float)GetViewportHeight();
     }
 
     RenderResourceType RenderResource::GetPrimitiveType() const
@@ -92,13 +101,113 @@ namespace RB::Graphics
         return (RenderResourceType)primitive_type;
     }
 
-    VertexBuffer* VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size)
+    Shared<VertexBuffer> VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
-            return new D3D12::VertexBufferD3D12(name, type, data, vertex_size, data_size);
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::VertexBufferD3D12>(name, type, data, vertex_size, data_size, transient);
+#endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return CreateShared<VK::VertexBufferVK>(name, type, data, vertex_size, data_size, transient);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<IndexBuffer> IndexBuffer::Create(const char* name, uint32_t* data, uint64_t elements)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::IndexBufferD3D12>(name, data, elements);
+#endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return CreateShared<VK::IndexBufferVK>(name, data, elements);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<ReadbackBuffer> ReadbackBuffer::Create(const char* name, uint64_t size)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::ReadbackBufferD3D12>(name, size);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<ReadbackBuffer> ReadbackBuffer::Create(const char* name, RenderResource* target_size)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::ReadbackBufferD3D12>(name, target_size);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<Texture2D> Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DD3D12>(name, format, width, height, is_render_target, random_read_write_access);
+#endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return CreateShared<VK::Texture2DVK>(name, format, width, height, is_render_target, random_read_write_access);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<Texture2D> Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DD3D12>(name, data, data_size, format, width, height, is_render_target, random_read_write_access);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
@@ -108,14 +217,20 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    IndexBuffer* IndexBuffer::Create(const char* name, uint16_t* data, uint64_t elements)
+    Shared<Texture2D> Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
-            return new D3D12::IndexBufferD3D12(name, data, elements);
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DD3D12>(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return CreateShared<VK::Texture2DVK>(name, internal_resource, format, width, height, is_render_target, random_read_write_access);
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -124,14 +239,20 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space)
+    Shared<Texture2D> Texture2D::Alias(const Shared<Texture2D>& original)
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
-            return new D3D12::Texture2DD3D12(name, format, width, height, is_render_target, random_read_write_access, color_space);
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DD3D12>((D3D12::Texture2DD3D12*)original.get());
 #endif
+
+#if RB_GRAPHICS_API_VULKAN
+        case RenderAPI::Vulkan:
+            return CreateShared<VK::Texture2DVK>((VK::Texture2DVK*)original.get());
+#endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -140,14 +261,15 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space)
+    Shared<Texture2DArray> Texture2DArray::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
-            return new D3D12::Texture2DD3D12(name, data, data_size, format, width, height, is_render_target, random_read_write_access, color_space);
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DArrayD3D12>(name, format, width, height, slices, is_render_target, random_read_write_access);
 #endif
+
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
             break;
@@ -156,13 +278,13 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Texture2D* Texture2D::Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access, TextureColorSpace color_space)
+    Shared<Texture2DArray> Texture2DArray::Alias(const Shared<Texture2DArray>& original)
     {
         switch (Renderer::GetAPI())
         {
-        case RenderAPI::D3D12:
 #if RB_GRAPHICS_API_D3D12
-            return new D3D12::Texture2DD3D12(name, internal_resource, format, width, height, is_render_target, random_read_write_access, color_space);
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DArrayD3D12>((D3D12::Texture2DArrayD3D12*)original.get());
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");

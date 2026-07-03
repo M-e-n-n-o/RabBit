@@ -15,28 +15,28 @@ namespace RB::Graphics::D3D12
     {
     public:
         GpuResource(std::function<void(GpuResource*)> on_resource_created_callback = nullptr);
-        GpuResource(GPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES state, bool transfer_ownership);
+        GpuResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES state, bool transfer_ownership);
         ~GpuResource();
 
         // Should only be called on the render thread!
-        GPtr<ID3D12Resource> GetResource();
+        ID3D12Resource* GetResource();
 
-        void SetResource(GPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES state);
+        void SetResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES state);
 
         bool IsValid() const;
-
-        void MarkAsUsed(DeviceQueue* queue);
 
         void UpdateState(D3D12_RESOURCE_STATES state);
         D3D12_RESOURCE_STATES GetState() const;
         bool IsInState(D3D12_RESOURCE_STATES state) const;
 
+        void AwaitValidation() const;
+
     private:
-        GPtr<ID3D12Resource>				m_Resource;
-        D3D12_RESOURCE_STATES				m_State;
-        bool								m_OwnsResource;
+        ID3D12Resource*                     m_Resource;
+        D3D12_RESOURCE_STATES               m_State;
+        bool                                m_OwnsResource;
         bool                                m_IsValid;
-        std::function<void(GpuResource*)>	m_OnCreationCallback;
+        std::function<void(GpuResource*)>   m_OnCreationCallback;
     };
 }
 #endif

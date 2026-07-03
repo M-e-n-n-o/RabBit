@@ -13,7 +13,7 @@
 
 // Agility SDK constants (update the version number if the SDK version is ever upgraded!)
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 613; }
-extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\"; }
+extern "C" { __declspec(dllexport) extern const char8_t* D3D12SDKPath = u8".\\D3D12\\"; }
 
 namespace RB::Graphics::D3D12
 {
@@ -30,14 +30,42 @@ namespace RB::Graphics::D3D12
     }
 #endif
 
+#if !defined(RB_CONFIG_DIST)
+    void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY category,
+                                        D3D12_MESSAGE_SEVERITY severity,
+                                        D3D12_MESSAGE_ID id,
+                                        LPCSTR description,
+                                        void* context)
+    {
+        switch (severity)
+        {
+        case D3D12_MESSAGE_SEVERITY_MESSAGE:
+            //RB_LOG(LOGTAG_GRAPHICS, "D3D12 validation message: %s", description);
+            break;
+        case D3D12_MESSAGE_SEVERITY_INFO:
+            //RB_LOG(LOGTAG_GRAPHICS, "D3D12 validation info: %s", description);
+            break;
+        case D3D12_MESSAGE_SEVERITY_WARNING:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "D3D12 validation warning: %s", description);
+            break;
+        case D3D12_MESSAGE_SEVERITY_ERROR:
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "D3D12 validation error: %s", description);
+            break;
+        case D3D12_MESSAGE_SEVERITY_CORRUPTION:
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "D3D12 validation corruption: %s", description);
+            break;
+        default:
+            break;
+        }
+    }
+#endif
+
     GraphicsDevice::GraphicsDevice(bool enable_debug_layer)
         : m_CopyQueue(nullptr)
         , m_ComputeQueue(nullptr)
         , m_GraphicsQueue(nullptr)
+        , m_InfoQueue(nullptr)
     {
-        // Tell Windows that this thread is DPI aware so it does not automatically apply scaling
-        SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
 #if !defined(RB_CONFIG_DIST)
         if (enable_debug_layer)
         {
@@ -62,6 +90,12 @@ namespace RB::Graphics::D3D12
         SAFE_DELETE(m_CopyQueue);
         SAFE_DELETE(m_ComputeQueue);
         SAFE_DELETE(m_GraphicsQueue);
+
+        if (m_InfoQueue)
+        {
+            m_InfoQueue->UnregisterMessageCallback(m_CallbackCookie);
+            m_InfoQueue->Release();
+        }
 
 #ifdef RB_CONFIG_DEBUG
         RB_LOG(LOGTAG_GRAPHICS, "Outputting live objects to console...");
@@ -233,18 +267,17 @@ namespace RB::Graphics::D3D12
             return;
         }
 
-        GPtr<ID3D12InfoQueue> info_queue;
-        if (FAILED(m_NativeDevice.As(&info_queue)))
+        if (FAILED(m_NativeDevice->QueryInterface(IID_PPV_ARGS(&m_InfoQueue))))
         {
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "Could not create D3D12 info queue, D3D12 debug messages will not be visible");
             return;
         }
 
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO, FALSE);
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, FALSE);
+        m_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION,  TRUE);
+        m_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,       TRUE);
+        m_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,     TRUE);
+        m_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,        FALSE);
+        m_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,     FALSE);
 
         // Suppress whole categories of messages
         // D3D12_MESSAGE_CATEGORY categories[] = 
@@ -272,12 +305,17 @@ namespace RB::Graphics::D3D12
         D3D12_INFO_QUEUE_FILTER filter = {};
         //filter.DenyList.NumCategories = _countof(categories);
         //filter.DenyList.pCategoryList = categories;
-        filter.DenyList.NumSeverities = _countof(severities);
-        filter.DenyList.pSeverityList = severities;
-        filter.DenyList.NumIDs = _countof(ids);
-        filter.DenyList.pIDList = ids;
+        filter.DenyList.NumSeverities   = _countof(severities);
+        filter.DenyList.pSeverityList   = severities;
+        filter.DenyList.NumIDs          = _countof(ids);
+        filter.DenyList.pIDList         = ids;
 
-        RB_ASSERT_FATAL_RELEASE_D3D(info_queue->PushStorageFilter(&filter), "Could not set the D3D12 message filter");
+        RB_ASSERT_FATAL_RELEASE_D3D(m_InfoQueue->PushStorageFilter(&filter), "Could not set the D3D12 message filter");
+
+        m_InfoQueue->RegisterMessageCallback(DebugMessageCallback,
+                                             D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+                                             nullptr,
+                                             &m_CallbackCookie);
 #endif
     }
 

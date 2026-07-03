@@ -10,9 +10,10 @@
 #include "entity/components/Transform.h"
 
 #include "graphics/shaders/shared/Common.h"
-#include "graphics/codeGen/ShaderDefines.h"
+#include "codeGen/ShaderDefines.h"
 
 using namespace RB::Entity;
+using namespace RB::Graphics::Shader;
 
 namespace RB::Graphics
 {
@@ -20,89 +21,120 @@ namespace RB::Graphics
     {
         struct ModelEntry
         {
-            VertexBuffer*   vb;
-            IndexBuffer*    ib;
-            Texture*        texture;
-            Math::Float4x4	modelMatrix;
+            Shared<VertexBuffer> vb_primary;
+            Shared<VertexBuffer> vb_secondary;
+            Shared<IndexBuffer>  ib;
+            Shared<Texture>      texture;
+            Math::Float4x4	     modelMatrix;
         };
 
         ModelEntry*         entries;
         uint32_t            entryCount;
-
-        ~GBufferEntry()
-        {
-        }
     };
 
     RenderPassConfig GBufferPass::GetConfiguration(const RenderPassSettings& setting)
     {
         const GBufferSettings& s = (const GBufferSettings&) setting;
 
-        return RenderPassConfig(
+        return RenderPassConfig
             {
                 // Dependencies
                 {
-                    RenderTextureInputDesc{"Depth", true, 2}, // In-/output
+                    RenderTextureInputDesc{"Depth", 2}, // In-/output
                 },
-                1,
 
                 // Working textures
                 {},
-                0,
 
                 // Output textures
                 {
-                    RenderTextureDesc{"GBuffer Color",  RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
-                    RenderTextureDesc{"GBuffer Normal", RenderResourceFormat::R32G32B32A32_FLOAT, kRTSize_Full, kRTSize_Full, kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph },
-                    RenderTextureDesc{"Hyper Depth",    RenderResourceFormat::D32_FLOAT,          kRTSize_Full, kRTSize_Full, kRTFlag_ClearBeforeGraph  },
+                    RenderResourceDesc {
+                        .name     = "GBuffer Color",
+                        .format   = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
+                    },
+
+                    RenderResourceDesc {
+                        .name     = "GBuffer Normal",
+                        .format   = RenderResourceFormat::R32G32B32A32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
+                    },
+
+                    RenderResourceDesc {
+                        .name     = "Hyper Depth",
+                        .format   = RenderResourceFormat::D32_FLOAT,
+                        .type     = RenderResourcePassType::Tex2D,
+                        .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
+                        .flags    = kRTFlag_ClearBeforeGraph
+                    }
                 },
-                3,
 
                 // Async compute compatible
                 false
-            });
+            };
     }
 
-    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, FrameAllocator* allocator, const Scene* const scene)
+    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
 
-        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderers.size());
+        uint32_t size = sizeof(GBufferEntry::ModelEntry) * mesh_renderers.size();
+        GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*)allocator->Allocate(size);
 
         uint32_t total_entries = 0;
 
         for (int i = 0; i < mesh_renderers.size(); ++i)
         {
+            // TODO: GameObjects that use the same static Mesh & Material should be instanced.
+            // It would be a good idea to add a SetInstancedData method to the ViewContext and macro's
+            // in the shaders so that it, for examply, automatically picks the correct instanced model matrix
+            // in the Transform helper functions.
+
             const MeshRenderer*     mesh_renderer   = (const MeshRenderer*)mesh_renderers[i];
             const Mesh*             mesh            = mesh_renderer->GetMesh();
             const Material*         mat             = mesh_renderer->GetMaterial();
-            const Mesh::VertexPair& vp              = mesh->GetVertexPair();
+            const Mesh::VertexPack& vp              = mesh->GetVertexPack();
 
-            if (!vp.vertexBuffer->ReadyToRender() || 
+            if (!vp.primaryBuffer || !vp.primaryBuffer->ReadyToRender() ||
+                (vp.secondaryBuffer && !vp.secondaryBuffer->ReadyToRender()) ||
                 (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()) ||
                 !mat->GetTexture()->ReadyToRender())
             {
                 continue;
             }
 
-            const Transform* transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Transform*     transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
+
+            if (mesh->HasValidAABB())
+            {
+                // We can do some frustum culling
+                const Math::AABB&    aabb       = mesh->GetAABB();
+                const Math::AABB     world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
+                const Math::Float4x4 vp         = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
+
+                if (!Frustum::IsInFrustum(world_aabb, vp))
+                {
+                    continue;
+                }
+            }
 
             GBufferEntry::ModelEntry entry = {};
-            entry.vb            = vp.vertexBuffer;
+            entry.vb_primary    = vp.primaryBuffer;
+            entry.vb_secondary  = vp.secondaryBuffer;
             entry.ib            = vp.indexBuffer;
             entry.texture       = mat->GetTexture();
-            entry.modelMatrix   = transform->GetLocalToWorldMatrix();
+            entry.modelMatrix   = model_mat;
 
             entries[total_entries] = entry;
             total_entries++;
         }
 
-        if (total_entries == 0)
-        {
-            return nullptr;
-        }
-
-        GBufferEntry* entry = new GBufferEntry();
+        GBufferEntry* entry = (GBufferEntry*)allocator->Allocate(sizeof(GBufferEntry));
         entry->entries      = entries;
         entry->entryCount   = total_entries;
 
@@ -118,9 +150,9 @@ namespace RB::Graphics
         in.ri->SetCullMode(CullMode::Back);
         in.ri->SetDepthMode(DepthMode::PassCloser, true, in.viewContext->viewFrustum.IsReversedDepth());
 
-        in.ri->PushRenderTarget(in.outputTextures[0], 0);
-        in.ri->PushRenderTarget(in.outputTextures[1], 1);
-        in.ri->SetDepthStencil(in.outputTextures[2]);
+        in.ri->PushRenderTarget(in.outputRes[0], 0);
+        in.ri->PushRenderTarget(in.outputRes[1], 1);
+        in.ri->SetDepthStencil(in.outputRes[2]);
 
         GBufferEntry* entry = (GBufferEntry*)in.entryContext;
 
@@ -131,16 +163,21 @@ namespace RB::Graphics
         {
             GBufferEntry::ModelEntry& model_entry = entry->entries[i];
 
-            in.ri->SetVertexBuffer(model_entry.vb);
+            RenderResource* vbos[2];
+            vbos[0] = model_entry.vb_primary.get();
+            if (model_entry.vb_secondary)
+                vbos[1] = model_entry.vb_secondary.get();
+
+            in.ri->SetVertexBuffers(vbos, model_entry.vb_secondary ? 2 : 1);
 
             if (model_entry.ib)
             {
-                in.ri->SetIndexBuffer(model_entry.ib);
+                in.ri->SetIndexBuffer(model_entry.ib.get());
             }
 
-            in.ri->SetConstantShaderData(kInstanceCB, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+            in.ri->SetConstantShaderData(GeometryGlobals_LocalToWorldMat, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
 
-            in.ri->SetShaderResourceInput(model_entry.texture, 1);
+            in.ri->SetShaderResourceInput(PsGbuffer_Albedo, model_entry.texture.get());
 
             in.ri->Draw();
         }

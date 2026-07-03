@@ -2,61 +2,66 @@
 #include "RabBitCommon.h"
 #include "entity/ObjectComponent.h"
 #include "graphics/RenderResource.h"
+#include "app/AssetManager.h"
 
 namespace RB::Entity
 {
     class Mesh
     {
     public:
-        struct VertexPair
+        struct VertexPack
         {
-            Graphics::VertexBuffer* vertexBuffer = nullptr;
-            Graphics::IndexBuffer*  indexBuffer = nullptr;
+            // The vertex buffers are split up in 2
+            // - The first one atleast contains all the position data (for shadow rendering)
+            // - The secondary one all the optional data (such as normals, UV, etc.)
+            Shared<Graphics::VertexBuffer> primaryBuffer = nullptr;
+            Shared<Graphics::VertexBuffer> secondaryBuffer = nullptr;
+            Shared<Graphics::IndexBuffer>  indexBuffer = nullptr;
         };
 
-        Mesh(const char* file_name);
-        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint16_t* index_data, uint64_t index_data_count);
+        Mesh(const char* name, LoadedMesh::Submodel& submodel);
+        Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data = nullptr, uint64_t index_data_count = 0);
 
-        ~Mesh()
+        const VertexPack& GetVertexPack() const
         {
-            SAFE_DELETE(m_VertexPair.vertexBuffer);
-            SAFE_DELETE(m_VertexPair.indexBuffer);
+            return m_VertexPack;
         }
 
-        const VertexPair& GetVertexPair() const
-        {
-            return m_VertexPair;
-        }
+        bool HasValidAABB() const { return m_ValidBounds; }
+        const Math::AABB& GetAABB() const { return m_Bounds; }
 
     private:
-        VertexPair m_VertexPair;
+        VertexPack m_VertexPack;
+        Math::AABB m_Bounds;
+        bool       m_ValidBounds;
+    };
+
+    enum class TextureColorSpace
+    {
+        Linear,
+        sRGB
     };
 
     class Material
     {
     public:
 
-        Material(const char* file_name, Graphics::TextureColorSpace color_space = Graphics::TextureColorSpace::sRGB);
+        Material();
+        Material(const char* name, LoadedImage* image);
+        Material(const char* file_name, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
-        ~Material()
-        {
-            delete m_Texture;
-        }
-
-        Graphics::Texture2D* GetTexture() const
+        Shared<Graphics::Texture2D> GetTexture() const
         {
             return m_Texture;
         }
 
     private:
-        Graphics::Texture2D* m_Texture;
+        Shared<Graphics::Texture2D> m_Texture;
     };
 
     class MeshRenderer : public ObjectComponent
     {
     public:
-        DEFINE_COMP_TAG("MeshRenderer");
-
         MeshRenderer(Mesh* mesh, Material* material)
         {
             m_Mesh = mesh;

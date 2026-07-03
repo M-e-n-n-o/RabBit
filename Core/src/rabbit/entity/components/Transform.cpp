@@ -8,16 +8,12 @@ namespace RB::Entity
     {
         const Math::Float3& world_rot = GetWorldRotation();
 
-        //static_assert(false);
-        // TODO: Bij de rotation moet een axis worden toegevoegd, zie Math.cpp (CreateModelMatrix) in ByteCat
-        // DOE DIT OOK BIJ HET MAKEN VAN DE VIEW MATRIX!!!! (Frustum::SetTransform)
-
         Math::Float4x4 m;
+        m.Scale(GetWorldScale());
         m.RotateAroundX(Math::DegreesToRadians(world_rot.x));
         m.RotateAroundY(Math::DegreesToRadians(world_rot.y));
         m.RotateAroundZ(Math::DegreesToRadians(world_rot.z));
         m.SetPosition(GetWorldPosition());
-        m.Scale(GetWorldScale());
 
         return m;
     }

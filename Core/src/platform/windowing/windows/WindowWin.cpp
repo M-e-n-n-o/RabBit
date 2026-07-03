@@ -1,49 +1,59 @@
-#if RB_PLATFORM_WINDOWS && RB_GRAPHICS_API_D3D12
+#if RB_PLATFORM_WINDOWS
 
 #include "RabBitCommon.h"
 #include "WindowWin.h"
-#include "SwapChain.h"
 #include "app/Application.h"
 #include "graphics/Display.h"
 #include "graphics/Renderer.h"
-#include "platform/graphics/d3d12/GraphicsDevice.h"
-#include "platform/graphics/d3d12/DeviceQueue.h"
-#include "platform/graphics/d3d12/UtilsD3D12.h"
-#include "platform/graphics/d3d12/resource/GpuResource.h"
-#include "platform/graphics/d3d12/resource/RenderResourceD3D12.h"
 
 #include "events/WindowEvent.h"
 #include "events/MouseEvent.h"
 #include "events/KeyEvent.h"
+#include "events/input/Input.h"
 
-#include <d3d12.h>
+#if RB_GRAPHICS_API_D3D12
+#include "platform/graphics/d3d12/SwapChainD3D12.h"
+#endif
+
+#if RB_GRAPHICS_API_VULKAN
+#include "platform/graphics/vulkan/SwapChainVK.h"
+#endif
 
 using namespace RB::Events;
-using namespace RB::Graphics::D3D12;
 
 namespace RB::Graphics::Windows
 {
     // Window callback function
     LRESULT CALLBACK WindowCallback(HWND, UINT, WPARAM, LPARAM);
 
-    WindowWin::WindowWin(const WindowArgs args)
+    WindowWin::WindowWin(const WindowArgs& args)
         : Window(false, args.virtualScale, args.virtualAspect)
         , m_WindowHandle(nullptr)
         , m_IsValid(true)
+        , m_BackBufferFormat(args.format)
     {
-        m_IsTearingSupported = g_GraphicsDevice->IsFeatureSupported(DXGI_FEATURE_PRESENT_ALLOW_TEARING);
+        // Make sure windows doesn't change the scale of our window
+        // (Apart from standard windows UI elements, which is part of V2)
+        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-        RegisterWindowCLass(args.instance, args.className);
+        RegisterWindowCLass(args.instance, args.className.c_str());
 
         DWORD style = WS_OVERLAPPEDWINDOW;
-        DWORD extended_style = NULL;
+        DWORD extended_style = WS_EX_APPWINDOW;
         
         m_IsSemiTransparent = false;
-
         if (args.windowStyle & kWindowStyle_SemiTransparent)
         {
             extended_style = WS_EX_NOREDIRECTIONBITMAP;
             m_IsSemiTransparent = true;
+        }
+
+        m_IsDraggableBorderless = false;
+        if (args.windowStyle & kWindowStyle_DraggableBorderless)
+        {
+            // Window snapping does not work with draggable borderless
+            style = WS_POPUP;
+            m_IsDraggableBorderless = true;
         }
 
         uint32_t width = args.width;
@@ -54,30 +64,53 @@ namespace RB::Graphics::Windows
             wchar_t* wchar_name = new wchar_t[strlen(args.windowName) + 1];
             CharToWchar(args.windowName, wchar_name);
 
-            CreateWindow(args.instance, args.className, wchar_name, width, height, extended_style, style);
+            CreateWindow(args.instance, args.className.c_str(), wchar_name, width, height, extended_style, style);
 
             delete[] wchar_name;
         }
 
         // Create swapchain
         {
+            bool transparency_support = (args.windowStyle & kWindowStyle_SemiTransparent) > 0;
+
             // TODO Add the option for an HDR swapchain
 
-            m_SwapChain = new SwapChain(
-                g_GraphicsDevice->GetFactory(),
-                g_GraphicsDevice->GetGraphicsQueue()->GetCommandQueue(),
-                m_WindowHandle,
-                width, height,
-                m_IsTearingSupported,
-                BACK_BUFFER_COUNT,
-                ConvertToDXGIFormat(args.format),
-                (bool)(args.windowStyle & kWindowStyle_SemiTransparent > 0)
-            );
-
-            for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
+            switch (Renderer::GetAPI())
             {
-                m_BackBuffers[i] = nullptr;
+#if RB_GRAPHICS_API_D3D12
+            case RenderAPI::D3D12:
+            {
+                m_SwapChain = new D3D12::SwapChainD3D12(
+                    m_WindowHandle,
+                    width, height,
+                    args.vsync,
+                    BACK_BUFFER_COUNT,
+                    args.format,
+                    transparency_support
+                );
             }
+            break;
+#endif
+#if RB_GRAPHICS_API_VULKAN
+            case RenderAPI::Vulkan:
+            {
+                m_SwapChain = new VK::SwapChainVK(
+                    m_WindowHandle, args.instance,
+                    width, height,
+                    args.vsync,
+                    BACK_BUFFER_COUNT,
+                    args.format,
+                    transparency_support
+                );
+            }
+            break;
+#endif
+
+            default:
+                RB_LOG_ERROR(LOGTAG_WINDOWING, "Did not yet implement a swapchain class for this graphics API");
+                break;
+            }
+
         }
 
         if (args.fullscreen)
@@ -98,6 +131,7 @@ namespace RB::Graphics::Windows
         RB_LOG(LOGTAG_WINDOWING, "Destroying window");
 
         ::DestroyWindow(m_WindowHandle);
+        //::UnregisterClassW(class_name, instance);
     }
 
     void WindowWin::Update()
@@ -110,16 +144,12 @@ namespace RB::Graphics::Windows
         }
     }
 
-    void WindowWin::Present(const VsyncMode& mode)
+    void WindowWin::Present()
     {
-        bool vsync_enabled = mode != VsyncMode::Off;
-        UINT sync_interval = (UINT)mode;
-        UINT present_flags = (m_IsTearingSupported && !vsync_enabled) ? DXGI_PRESENT_ALLOW_TEARING : 0; // DXGI_PRESENT_ALLOW_TEARING cannot be here in exclusive fullscreen!
-
-        m_SwapChain->Present(sync_interval, present_flags);
+        m_SwapChain->Present();
     }
 
-    Math::Float4 WindowWin::GetWindowRectangle() const
+    Math::Float4 WindowWin::GetNativeWindowRectangle() const
     {
         RECT window_rect;
         ::GetWindowRect(m_WindowHandle, &window_rect);
@@ -164,6 +194,11 @@ namespace RB::Graphics::Windows
         return m_IsSemiTransparent;
     }
 
+    bool WindowWin::IsDraggableBorderless() const
+    {
+        return m_IsDraggableBorderless;
+    }
+
     Display* WindowWin::GetParentDisplay()
     {
         List<Display*> displays = Application::GetInstance()->GetDisplays();
@@ -191,7 +226,17 @@ namespace RB::Graphics::Windows
         }
         else
         {
-            SetWindowLongPtr(m_WindowHandle, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+            LONG_PTR style = WS_VISIBLE;
+            if (m_IsDraggableBorderless)
+            {
+                style |= WS_POPUP;
+            }
+            else
+            {
+                style |= WS_OVERLAPPEDWINDOW;
+            }
+
+            SetWindowLongPtr(m_WindowHandle, GWL_STYLE, style);
         }
     }
 
@@ -212,7 +257,7 @@ namespace RB::Graphics::Windows
 
     RenderResourceFormat WindowWin::GetBackBufferFormat()
     {
-        return ConvertToEngineFormat(m_SwapChain->GetBackBufferFormat());
+        return m_BackBufferFormat;
     }
 
     uint32_t WindowWin::GetCurrentBackBufferIndex()
@@ -228,18 +273,7 @@ namespace RB::Graphics::Windows
             return nullptr;
         }
 
-        uint32_t index = m_SwapChain->GetCurrentBackBufferIndex();
-
-        if (m_BackBuffers[index] == nullptr)
-        {
-            std::string name = "Backbuffer resource " + std::to_string(index);
-            GPtr<ID3D12Resource> backbuffer = m_SwapChain->GetCurrentBackBuffer();
-            m_BackBuffers[index] = Texture2D::Create(name.c_str(), new GpuResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT, false), GetBackBufferFormat(), GetWidth(), GetHeight(), true, false);
-
-            ((Texture2DD3D12*)m_BackBuffers[index])->SetRenderTargetHandle(m_SwapChain->GetCurrentDescriptorHandleCPU());
-        }
-
-        return m_BackBuffers[index];
+        return m_SwapChain->GetCurrentBackBuffer();
     }
 
     void WindowWin::ResizeBackBuffers(uint32_t width, uint32_t height)
@@ -254,12 +288,6 @@ namespace RB::Graphics::Windows
         width = std::max(1u, width);
         height = std::max(1u, height);
 
-        // Release backbuffer references
-        for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
-        {
-            SAFE_DELETE(m_BackBuffers[i]);
-        }
-
         m_SwapChain->Resize(width, height);
     }
 
@@ -272,11 +300,6 @@ namespace RB::Graphics::Windows
         RB_LOG(LOGTAG_WINDOWING, "Scheduled destroy of window");
 
         m_IsValid = false;
-
-        for (int i = 0; i < BACK_BUFFER_COUNT; ++i)
-        {
-            SAFE_DELETE(m_BackBuffers[i]);
-        }
 
         delete m_SwapChain;
     }
@@ -298,8 +321,8 @@ namespace RB::Graphics::Windows
         window_class.lpszClassName  = class_name;
         window_class.hIconSm        = ::LoadIcon(instance, "0");			// MAKEINTRESOURCE(APP_ICON)
 
-        HRESULT result = ::RegisterClassExW(&window_class);
-        RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, SUCCEEDED(result), "Failed to register window");
+        ATOM result = ::RegisterClassExW(&window_class);
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, result != 0, "Failed to register window");
     }
 
     void WindowWin::CreateWindow(HINSTANCE instance, const wchar_t* class_name, const wchar_t* window_title, uint32_t width, uint32_t height, DWORD extendedStyle, DWORD style)
@@ -308,7 +331,7 @@ namespace RB::Graphics::Windows
         int screen_height = ::GetSystemMetrics(SM_CYSCREEN);
 
         RECT window_rect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
-        ::AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, FALSE);
+        ::AdjustWindowRect(&window_rect, style, FALSE);
 
         int window_width = window_rect.right - window_rect.left;
         int window_height = window_rect.bottom - window_rect.top;
@@ -335,8 +358,19 @@ namespace RB::Graphics::Windows
         RB_ASSERT_FATAL_RELEASE(LOGTAG_WINDOWING, m_WindowHandle, "Failed to create window");
     }
 
+    bool(*g_OnNativeWindowEventCallback)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) = nullptr;
+
+    void SetOnNativeWindowEventCallback(bool(*onEvent)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam))
+    {
+        g_OnNativeWindowEventCallback = onEvent;
+    }
+
     LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
+        if (g_OnNativeWindowEventCallback)
+            if (g_OnNativeWindowEventCallback(hwnd, message, wParam, lParam))
+                return 1;
+
         switch (message)
         {
         case WM_SYSKEYDOWN:
@@ -370,6 +404,58 @@ namespace RB::Graphics::Windows
         {
             WindowLostFocusEvent e(hwnd);
             g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_NCHITTEST:
+        {
+            auto* window = Application::GetInstance()->FindWindow(hwnd);
+
+            if (window->IsFullscreen())
+                return 0; // Should not able to resize using mouse
+
+            // Custom hit testing is only for draggable borderless windows
+            if (!window->IsDraggableBorderless())
+            {
+                DefWindowProcW(hwnd, message, wParam, lParam);
+            }
+
+            Math::Float2 mouse_pos = Events::GetMousePos();
+        
+            RECT rect;
+            ::GetWindowRect(hwnd, &rect);
+        
+            // TODO: Probably have to make these sizes customizable
+            const int border = 8;
+            const int title_bar_height = 25;
+            // Corner testing
+            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border &&
+                mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+                return HTTOPLEFT;
+            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right &&
+                mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+                return HTTOPRIGHT;
+            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border &&
+                mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+                return HTBOTTOMLEFT;
+            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right &&
+                mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+                return HTBOTTOMRIGHT;
+
+            // Side testing
+            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border)
+                return HTLEFT;
+            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right)
+                return HTRIGHT;
+            if (mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+                return HTTOP;
+            if (mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+                return HTBOTTOM;
+        
+            // Draggable area
+            if (mouse_pos.y < rect.top + title_bar_height && mouse_pos.x < rect.right - 80)
+                return HTCAPTION;
+
+            return HTCLIENT;
         }
         break;
         case WM_CLOSE:

@@ -18,6 +18,8 @@ private:
     Transform* m_Transform;
     Transform* m_Camera;
 
+    Font* m_Font;
+
 public:
     TestLayer() : ApplicationLayer("TestLayer") {}
 
@@ -25,26 +27,26 @@ public:
     {
         RB_LOG("Hoiii");
 
-        //float vertex_data[] = {
-        //    // Pos					Color				UV
-        //    -1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f,	0, 1,	// 0
-        //    -1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f,	0, 1,	// 1
-        //     1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f,	0, 1,	// 2
-        //     1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f,	0, 1,	// 3
-        //    -1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f,	0, 1,	// 4
-        //    -1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f,	0, 1,	// 5
-        //     1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	0, 1,	// 6
-        //     1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f,	0, 1,	// 7
-        //};
+        float vertex_data[] = {
+            // Pos					Color				UV
+            -1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f,	0, 1,	// 0
+            -1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f,	0, 1,	// 1
+             1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f,	0, 1,	// 2
+             1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f,	0, 1,	// 3
+            -1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f,	0, 1,	// 4
+            -1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f,	0, 1,	// 5
+             1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	0, 1,	// 6
+             1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f,	0, 1,	// 7
+        };
 
-        //uint32_t index_data[] = {
-        //    0, 1, 2, 0, 2, 3,
-        //    4, 6, 5, 4, 7, 6,
-        //    4, 5, 1, 4, 1, 0,
-        //    3, 2, 6, 3, 6, 7,
-        //    1, 5, 6, 1, 6, 2,
-        //    4, 0, 3, 4, 3, 7
-        //};
+        uint32_t index_data[] = {
+            0, 1, 2, 0, 2, 3,
+            4, 6, 5, 4, 7, 6,
+            4, 5, 1, 4, 1, 0,
+            3, 2, 6, 3, 6, 7,
+            1, 5, 6, 1, 6, 2,
+            4, 0, 3, 4, 3, 7
+        };
 
         //float vertex_data[] = {
         //	// Pos				Color
@@ -53,29 +55,99 @@ public:
         //	0.5f, -0.5f, 0,		0, 0, 1,
         //};
 
-        //m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        //m_Mesh = new Mesh("Sponza/source/Sponza.fbx");
-        m_Mesh = new Mesh("Bunny.fbx");
+        LoadedMesh mesh;
+        //bool success = AssetManager::LoadMesh("sponza/NewSponza_Main_Yup_003.fbx", &mesh);
+        bool success = AssetManager::LoadMesh("Bunny.fbx", &mesh);
+
+        m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
         m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
 
+        List<Material*> materials;
+        for (int i = 0; i < mesh.diffuseColorTextures.size(); i++)
+        {
+            materials.push_back(new Material(("sponza/" + mesh.diffuseColorTextures[i]).c_str()));
+        }
+
+        List<MeshRenderer*> meshes;
+        for (int i = 0; i < mesh.models.size(); i++)
+        {
+            if (mesh.models[i].positions.empty())
+                continue;
+
+            m_Mesh = new Mesh("Mesh", mesh.models[i]);
+
+            Material* mat = materials[mesh.models[i].diffuseTexIndex];
+
+            GameObject* object = scene->CreateGameObject();
+            meshes.push_back(object->AddComponent<MeshRenderer>(m_Mesh, mat));
+            Transform* t = object->AddComponent<Transform>();
+            t->position = mesh.models[i].position;
+            t->rotation = mesh.models[i].rotation;
+            t->scale = Math::Float3(1);
+            
+            m_Transform = t;
+        }
+
+        Mesh* ground = new Mesh("Ground", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
+
+        GameObject* ground_obj = scene->CreateGameObject();
+        ground_obj->AddComponent<MeshRenderer>(ground, m_Material);
+        auto* ground_t = ground_obj->AddComponent<Transform>();
+        ground_t->position.y = -5;
+        ground_t->scale = Float3(5, 0.1f, 5);
+
         void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
         //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
 
-        GameObject* object = scene->CreateGameObject();
-        object->AddComponent<MeshRenderer>(m_Mesh, m_Material);
-        Transform* t = object->AddComponent<Transform>();
-        t->position = Float3(0.0f, 0.0f, 600.0f);
-        t->rotation = Float3(0.0f, 180.0f, 0.0f);
-        t->scale = Float3(1.0f);
-
-        m_Transform = t;
 
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
-        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.01f, 1000.0f, 60.0f, window_handle0);
-        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.5f });
+        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, window_handle0);
+        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
+
+        auto* sun = scene->CreateGameObject();
+        sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
+
+        // UI
+        {
+            auto canvas = scene->CreateGameObject();
+            canvas->AddComponent<UICanvas>(cam_comp);
+        
+        
+            auto list = scene->CreateGameObject();
+            auto* list_box = list->AddComponent<UIBox>();
+            list_box->SetSize(UIUnit::IPCT, 10, 50);
+            list->AddComponent<ListView>(true, 15);
+            //auto list_t = list->AddComponent<Transform>();
+            //list_t->position.x = 0.0f;
+            //list_t->position.y = 0.0f;
+            list->SetParent(canvas);
+        
+            auto rect_obj = scene->CreateGameObject();
+            auto* rect_box = rect_obj->AddComponent<UIBox>();
+            //rect_box->SetStartPos(UIUnit::PX, 5, 5);
+            rect_box->SetPadding(UIUnit::PX, 5);
+            //rect_box->AddConstraint(UIConstraintType::Left);
+            //rect_box->AddConstraint(UIConstraintType::Right);
+            //rect_box->AddConstraint(UIConstraintType::Up);
+            //rect_box->AddConstraint(UIConstraintType::Down);
+            rect_box->SetSize(UIUnit::IPCT, 25, 25);
+            rect_obj->AddComponent<Rect2D>(Math::Float4(0.0f, 1.0f, 0.0f, 0.4f), 0);
+            rect_obj->SetParent(list);
+        
+            LoadedFont font;
+            AssetManager::LoadFont("TypoGraphica.otf", &font, 48);
+            
+            m_Font = new Font("Cool Font", font);
+            
+            auto text_obj = scene->CreateGameObject();
+            auto* text_box = text_obj->AddComponent<UIBox>();
+            text_box->SetSize(UIUnit::IPCT, 30, 10);
+            text_obj->AddComponent<Text2D>(m_Font, "Hoi Sylvia! (dit zie je niet)", 1.0f, 0);
+            text_obj->SetParent(list);
+        }
 
         //m_Obj2 = scene->CreateGameObject();
         //m_Obj2->AddComponent<Transform>();
@@ -93,33 +165,6 @@ public:
         {
             m_Transform->rotation.x += 25.0f * delta;
         }
-
-        Float3 movement(0);
-
-        if (IsKeyDown(KeyCode::W))
-        {
-            movement.z += 250.0f;
-        }
-        if (IsKeyDown(KeyCode::S))
-        {
-            movement.z -= 250.0f;
-        }
-        if (IsKeyDown(KeyCode::D))
-        {
-            movement.x += 250.0f;
-        }
-        if (IsKeyDown(KeyCode::A))
-        {
-            movement.x -= 250.0f;
-        }
-        if (IsKeyDown(KeyCode::Space))
-        {
-            movement.y += 250.0f;
-        }
-        if (IsKeyDown(KeyCode::LeftShift))
-        {
-            movement.y -= 250.0f;
-        }
         
         static Float2 last_pos = GetMousePos();
         Float2 new_pos = GetMousePos();
@@ -127,37 +172,52 @@ public:
         if (IsMouseKeyDown(MouseCode::ButtonRight))
         {
             Float2 vel = (new_pos - last_pos) * 0.2f;
-            m_Camera->rotation.x -= vel.y;
-            m_Camera->rotation.y -= vel.x;
+            m_Camera->rotation.x += vel.y;
+            m_Camera->rotation.y += vel.x;
         }
 
         last_pos = new_pos;
 
-  //      float dx = movement.z * Cos(DegreesToRadians(m_Camera->rotation.y + 90.0f));
-		//float dz = movement.z * Sin(DegreesToRadians(m_Camera->rotation.y + 90.0f));
-		//dx += movement.x * Cos(DegreesToRadians(m_Camera->rotation.y));
-		//dz += movement.x * Sin(DegreesToRadians(m_Camera->rotation.y));
-  //      
-		//m_Camera->position.x += (dx * delta);
-		//m_Camera->position.z += (dz * delta);
-		//m_Camera->position.y += (movement.y * delta);
+        m_Camera->rotation.x = Clamp(m_Camera->rotation.x, -89.0f, 89.0f);
 
-        float yawRad = DegreesToRadians(m_Camera->rotation.y);
+        float pitch = DegreesToRadians(-m_Camera->rotation.x);
+        float yaw   = DegreesToRadians(m_Camera->rotation.y);
 
-        // Direction vectors
-        float forwardX = Sin(yawRad);
-        float forwardZ = Cos(yawRad);
-        float rightX = Cos(yawRad);
-        float rightZ = -Sin(yawRad);
+        Float3 worldUp = Math::WorldUp;
 
-        // Blend directions
-        float dx = movement.z * forwardX + movement.x * rightX;
-        float dz = movement.z * forwardZ + movement.x * rightZ;
+        Float3 forward(
+            Cos(pitch) * Sin(yaw),
+            Sin(pitch),
+            Cos(pitch) * Cos(yaw)
+        );
 
-        // Apply movement
-        m_Camera->position.x += dx * delta;
-        m_Camera->position.z += dz * delta;
-        m_Camera->position.y += movement.y * delta;
+        Float3 right = Float3::Cross(worldUp, forward);
+        right.Normalize();
+
+        Float3 up = Float3::Cross(forward, right);
+
+
+        // Move forward/backward
+        if (IsKeyDown(KeyCode::W))
+            m_Camera->position = m_Camera->position + (forward * (50 * delta));
+        if (IsKeyDown(KeyCode::S))
+            m_Camera->position = m_Camera->position - (forward * (50 * delta));
+        
+        // Strafe left/right
+        if (IsKeyDown(KeyCode::A))
+            m_Camera->position = m_Camera->position - (right * (50 * delta));
+        if (IsKeyDown(KeyCode::D))
+            m_Camera->position = m_Camera->position + (right * (50 * delta));
+
+        // Move up/down
+        if (IsKeyDown(KeyCode::Space))
+            m_Camera->position = m_Camera->position + (up * (50 * delta));
+        if (IsKeyDown(KeyCode::LeftShift))
+            m_Camera->position = m_Camera->position - (up * (50 * delta));
+
+
+        //RB_LOG("Pos: %f, %f, %f", m_Camera->position.x, m_Camera->position.y, m_Camera->position.z);
+        //RB_LOG("Rot: %f, %f, %f", m_Camera->rotation.x, m_Camera->rotation.y, m_Camera->rotation.z);
     }
 
     bool OnEvent(const Event& event) override
@@ -184,5 +244,6 @@ public:
     {
         delete m_Mesh;
         delete m_Material;
+        delete m_Font;
     }
 };
