@@ -161,7 +161,8 @@ namespace RB::Graphics
     class ReadbackBuffer : public Buffer
     {
     public:
-        // Make sure that the memory parameter is at least the size of the entire buffer
+        // Make sure that the memory parameter is at least the size of the entire buffer.
+        // If should_block is false it will return older frames' data. You probably want this behaviour when doing readbacks every frame.
         virtual bool GetData(void* memory, bool should_block = false) = 0;
 
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }

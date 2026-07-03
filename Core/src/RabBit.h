@@ -77,8 +77,10 @@
 #include "rabbit/entity/components/Mesh.h"
 #include "rabbit/entity/components/UI.h"
 #include "rabbit/entity/components/Light.h"
+#include "rabbit/entity/components/ScreenCapturer.h"
 
 #include "rabbit/graphics/passes/GBuffer.h"
 #include "rabbit/graphics/passes/CascadedShadow.h"
 #include "rabbit/graphics/passes/DeferredLighting.h"
 #include "rabbit/graphics/passes/Overlay2D.h"
+#include "rabbit/graphics/passes/ScreenCapturePass.h"

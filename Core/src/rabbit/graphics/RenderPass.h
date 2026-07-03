@@ -21,6 +21,7 @@ namespace RB::Graphics
         CascadedShadow,
         DeferredLighting,
         Overlay2D,
+        ScreenCapture,
 
         Custom0,
 
