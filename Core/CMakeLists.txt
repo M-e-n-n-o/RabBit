@@ -4,13 +4,13 @@ project(RabBitEngine VERSION 0.0.1)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_compile_definitions(RB_PLATFORM_WINDOWS)
 
-    set(RABBIT_API_DX12     ON)
-    set(RABBIT_API_VULKAN   ON)
+    set(RABBIT_API_DX12 ON CACHE BOOL "Enable DX12")
+    set(RABBIT_API_VULKAN ON CACHE BOOL "Enable Vulkan")
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_compile_definitions(RB_PLATFORM_LINUX_ES)
 
-    set(RABBIT_API_VULKAN   ON)
+    set(RABBIT_API_VULKAN ON CACHE BOOL "Enable Vulkan")
 
     # Adds Microsoft extentions to the compiler (necessary for supporting anonymous structs in unions)
     # Does not work with the default Raspberry Pi GCC compiler, so use clang on this platform!
@@ -20,10 +20,7 @@ else()
     add_compile_definitions((RB_PLATFORM_UNKNOWN))
 endif()
 
-# Options
-option(RABBIT_BUILD_TESTS "Build tests"     ON)
-option(RABBIT_API_DX12    "Compile DX12"    OFF)
-option(RABBIT_API_VULKAN  "Compile Vulkan"  OFF)
+set(RABBIT_BUILD_TESTS ON CACHE BOOL "Build Unit Tests")
 
 # Source files
 file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
@@ -137,37 +134,30 @@ endif()
 
 
 # Copy libraries next to the final executable (should be called app side)
-function(RabBitCopyLibs)
+function(RabBitCopyLibs TARGET_NAME)
     # Create a lit of files to copy to the executable
+    set(DLLS_TO_COPY "")
+
     if(RABBIT_API_DX12)
         list (APPEND DLLS_TO_COPY
             "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
         )
 
         # Copy the D3D12 DLL's to a specific folder
-        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$ENV{D3D_PATH}/bin/x64/D3D12Core.dll"
-            "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/D3D12Core.dll")
-        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            "$<TARGET_FILE_DIR:${TARGET_NAME}>/D3D12/D3D12Core.dll")
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$ENV{D3D_PATH}/bin/x64/d3d12SDKLayers.dll"
-            "$<TARGET_FILE_DIR:${APP_NAME}>/D3D12/d3d12SDKLayers.dll")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        list (APPEND DLLS_TO_COPY
-        )
+            "$<TARGET_FILE_DIR:${TARGET_NAME}>/D3D12/d3d12SDKLayers.dll")
     endif()
 
-    foreach (file_i ${DLLS_TO_COPY})
-        if("${file_i}" STREQUAL "")
-            continue()
-        endif()
-
-        add_custom_command(TARGET ${APP_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${file_i}"
-            $<TARGET_FILE_DIR:${APP_NAME}>)
-    endforeach(file_i)
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${DLLS_TO_COPY}
+        $<TARGET_FILE_DIR:${TARGET_NAME}>)
 endfunction()
 
 

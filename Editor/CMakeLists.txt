@@ -40,9 +40,14 @@ target_include_directories(Editor PRIVATE
 
     # Own dependencies
     "src"
+
+    # ImGui
     "external/imgui"
     "external/imgui/imgui"
     "external/imgui/imgui/backends"
+
+    # FFmpeg
+    "external/ffmpeg/include"
 )
 
 target_link_directories(Editor PRIVATE 
@@ -56,7 +61,26 @@ target_link_libraries(Editor PRIVATE
     d3d12.lib
     dxgi.lib
     dxguid.lib
+
+    # FFmpeg
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/lib/avcodec.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/lib/avformat.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/lib/avutil.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/lib/swscale.lib"
 )
 
+set(FFMPEG_DLLS "")
+list (APPEND FFMPEG_DLLS
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/bin/avcodec-62.dll"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/bin/avformat-62.dll"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/bin/avutil-60.dll"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/ffmpeg/bin/swscale-9.dll"
+)
+
+add_custom_command(TARGET Editor POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${FFMPEG_DLLS}
+    $<TARGET_FILE_DIR:Editor>)
+
 # Add post build command to copy RabBit libraries to build location
-RabBitCopyLibs()
+RabBitCopyLibs(Editor)
