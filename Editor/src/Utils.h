@@ -5,7 +5,7 @@
 
 namespace Editor
 {
-    std::string FormatToString(const char* format, va_list args)
+    inline std::string FormatToString(const char* format, va_list args)
     {
         // Make a copy of args because vsnprintf consumes the va_list
         va_list args_copy;

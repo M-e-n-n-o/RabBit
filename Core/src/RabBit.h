@@ -62,6 +62,11 @@
 
 #include "rabbit/app/Application.h"
 
+#include "rabbit/events/ApplicationEvent.h"
+#include "rabbit/events/KeyEvent.h"
+#include "rabbit/events/MouseEvent.h"
+#include "rabbit/events/WindowEvent.h"
+
 #include "rabbit/events/input/Input.h"
 #include "rabbit/events/input/KeyCodes.h"
 #include "rabbit/events/input/MouseCodes.h"

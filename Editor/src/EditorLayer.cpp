@@ -50,6 +50,10 @@ namespace Editor
         m_Console = m_Window->AddPanel<ConsolePanel>();
         m_Hierarchy = m_Window->AddPanel<HierarchyPanel>();
         m_Window->AddPanel<TestWindowPanel>();
+
+        m_Recording = false;
+        m_Mp4Encoder = nullptr;
+        m_ScreenCaptureData = nullptr;
     }
 
     void EditorLayer::OnAttach()
@@ -64,6 +68,8 @@ namespace Editor
         game_cam_obj->AddComponent<Transform>();
         m_Camera = game_cam_obj->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_Viewport->GetSceneTexture(), kRenderGraphType_Normal);
         m_Camera->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
+
+        m_ScreenCapturer = game_cam_obj->AddComponent<ScreenCapturer>();
 
         float vertex_data[] = {
             // Pos              Normal      UV
@@ -95,10 +101,51 @@ namespace Editor
     {
         // Make sure to update the output texture for if it got updated
         m_Camera->SetRenderTexture(m_Viewport->GetSceneTexture());
+
+        if (m_Recording)
+        {
+            if (m_ScreenCapturer->ReadCapture())
+            {
+                m_Mp4Encoder->AddFrame(m_ScreenCaptureData);
+            }
+
+            m_ScreenCapturer->Capture(m_ScreenCaptureData);
+        }
     }
 
     bool EditorLayer::OnEvent(const Event& event)
     {
+        if (event.GetEventType() == EventType::KeyPressed)
+        {
+            if (((const KeyPressedEvent&)event).GetKeyCode() == KeyCode::P)
+            {
+                if (m_Recording)
+                {
+                    m_Mp4Encoder->Finish();
+                    SAFE_DELETE(m_Mp4Encoder);
+                    SAFE_FREE(m_ScreenCaptureData);
+                    m_Recording = false;
+                }
+                else
+                {
+                    Shared<Texture2D> tex = m_Viewport->GetSceneTexture();
+                    m_Mp4Encoder = new Mp4Encoder("RabBitRender.mp4", tex->GetWidth(), tex->GetHeight(), 60, 4000000, tex->GetFormat());
+
+                    if (m_Mp4Encoder->IsValid())
+                    {
+                        m_Recording = true;
+
+                        uint64_t size = m_ScreenCapturer->PrepareCapture(m_Viewport->GetSceneTexture().get());
+                        m_ScreenCaptureData = (uint8_t*)ALLOC_HEAP(size);
+                    }
+                    else
+                    {
+                        SAFE_DELETE(m_Mp4Encoder);
+                    }
+                }
+            }
+        }
+
         return false;
     }
 

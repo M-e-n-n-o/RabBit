@@ -2,11 +2,13 @@
 
 #include <rabbit/app/ApplicationLayer.h>
 
+#include "Mp4Encoder.h"
+#include "ImGuiManager.h"
+
 #include "panels/ViewportPanel.h"
 #include "panels/ConsolePanel.h"
 #include "panels/HierarchyPanel.h"
 #include "engine/EngineEditorWindow.h"
-#include "ImGuiManager.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_dx12.h"
@@ -29,15 +31,20 @@ namespace Editor
         bool CustomLogging(int mode, const char* text);
 
     private:
-        ImGuiContext* m_ImGuiRenderContext;
-        EngineEditorWindow* m_Window;
+        ImGuiContext*               m_ImGuiRenderContext;
+        EngineEditorWindow*         m_Window;
 
-        ViewportPanel* m_Viewport;
-        ConsolePanel* m_Console;
-        HierarchyPanel* m_Hierarchy;
+        ViewportPanel*              m_Viewport;
+        ConsolePanel*               m_Console;
+        HierarchyPanel*             m_Hierarchy;
 
-        RB::Entity::Camera* m_Camera;
-        RB::Entity::Mesh* m_TriangleMesh;
-        RB::Entity::Material* m_Material;
+        bool                        m_Recording;
+        Mp4Encoder*                 m_Mp4Encoder;
+        uint8_t*                    m_ScreenCaptureData;
+
+        RB::Entity::Camera*         m_Camera;
+        RB::Entity::Mesh*           m_TriangleMesh;
+        RB::Entity::Material*       m_Material;
+        RB::Entity::ScreenCapturer* m_ScreenCapturer;
     };
 }

@@ -66,6 +66,8 @@ namespace RB::Graphics
     {
         ScreenCaptureEntry* entry = (ScreenCaptureEntry*)inputs.entryContext;
 
+        // TODO: Should make sure that the outputted data is in sRGB format, as it is now just linear
+
         // Schedule a readback on the GPU
         inputs.ri->Readback(inputs.outputRes[0], entry->readback.get());
     }

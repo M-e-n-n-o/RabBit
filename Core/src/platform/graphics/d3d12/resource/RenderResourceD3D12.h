@@ -70,6 +70,7 @@ namespace RB::Graphics::D3D12
         void* GetNativeResource() const override { return m_Resource; }
 
         uint64_t GetSize() const override { return m_Size; }
+        uint64_t GetPackedSize() const override { return m_PackedSize; }
 
         void OnScheduledReadback(Shared<GpuGuardD3D12>& fence);
 
@@ -79,8 +80,13 @@ namespace RB::Graphics::D3D12
         GpuResource*                                m_Resource;
         uint8_t*                                    m_MappedMemory;
         uint64_t                                    m_Size;
-        List<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>    m_Layouts;
+        uint64_t                                    m_PackedSize;
         Queue<Shared<GpuGuardD3D12>>                m_Fences;
+
+        List<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>    m_Layouts;
+        List<UINT>                                  m_NumRows;
+        List<UINT64>                                m_RowSizes;
+        List<UINT64>                                m_PackedOffsets;
     };
 
     class Texture2DD3D12 : public Texture2D

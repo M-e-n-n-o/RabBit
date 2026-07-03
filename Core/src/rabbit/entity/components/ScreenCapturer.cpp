@@ -42,7 +42,7 @@ namespace RB::Entity
 
         m_ReadbackBuffer = Graphics::ReadbackBuffer::Create("ScreenCapture Readback", target);
 
-        return m_ReadbackBuffer->GetSize();
+        return m_ReadbackBuffer->GetPackedSize();
     }
 
     void ScreenCapturer::Capture(void* readback_data)

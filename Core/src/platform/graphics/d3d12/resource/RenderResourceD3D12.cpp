@@ -130,6 +130,7 @@ namespace RB::Graphics::D3D12
         case RenderResourceType::Buffer:
         {
             m_Size = ((Buffer*)target)->GetSize();
+            m_PackedSize = m_Size;
         }
         break;
 
@@ -141,8 +142,10 @@ namespace RB::Graphics::D3D12
             uint32_t subresource_count = tex->GetMipCount() * tex->GetArraySize();
 
             m_Layouts.resize(subresource_count);
-            List<UINT> num_rows(subresource_count);
-            List<UINT64> row_sizes(subresource_count);
+            m_NumRows.resize(subresource_count);
+            m_RowSizes.resize(subresource_count);
+            m_PackedOffsets.resize(subresource_count);
+
             UINT64 totalBytes;
             g_GraphicsDevice->Get()->GetCopyableFootprints(
                 &tex_desc,
@@ -150,11 +153,24 @@ namespace RB::Graphics::D3D12
                 subresource_count,
                 0,
                 m_Layouts.data(),
-                num_rows.data(),
-                row_sizes.data(),
+                m_NumRows.data(),
+                m_RowSizes.data(),
                 &totalBytes);
 
+            uint64_t current_offset = 0;
+            for (uint32_t subresource = 0; subresource < m_Layouts.size(); ++subresource)
+            {
+                m_PackedOffsets[subresource] = current_offset;
+
+                const uint64_t row_size = m_RowSizes[subresource];
+                const uint32_t num_rows = m_NumRows[subresource];
+                const uint32_t depth = m_Layouts[subresource].Footprint.Depth;
+
+                current_offset += row_size * num_rows * depth;
+            }
+
             m_Size = totalBytes;
+            m_PackedSize = current_offset;
         }
         break;
 
@@ -218,27 +234,33 @@ namespace RB::Graphics::D3D12
         }
         else
         {
-            for (uint32_t i = 0; i < m_Layouts.size(); i++)
+            for (uint32_t subresource = 0; subresource < m_Layouts.size(); ++subresource)
             {
-                const auto& layout = m_Layouts[i];
-                const auto& fp = layout.Footprint;
+                const auto& layout = m_Layouts[subresource];
 
-                uint8_t* src = (uint8_t*)m_MappedMemory + layout.Offset;
-                uint8_t* dst = (uint8_t*)memory + layout.Offset;
+                const uint64_t row_size = m_RowSizes[subresource];
+                const uint32_t num_rows = m_NumRows[subresource];
 
-                uint32_t row_pitch = layout.Footprint.RowPitch;
-                uint32_t slice_size = row_pitch * fp.Height;
+                const uint32_t row_pitch = layout.Footprint.RowPitch;
+                const uint32_t depth = layout.Footprint.Depth;
 
-                for (uint32_t z = 0; z < fp.Depth; z++)
+                const uint8_t* src = static_cast<const uint8_t*>(m_MappedMemory) + layout.Offset;
+
+                uint8_t* dst = (uint8_t*)memory + m_PackedOffsets[subresource];
+
+                const uint64_t src_slice_pitch = uint64_t(row_pitch) * num_rows;
+                const uint64_t dst_slice_pitch = row_size * num_rows;
+
+                for (uint32_t z = 0; z < depth; ++z)
                 {
-                    const uint8_t* src_slice = src + z * slice_size;
-                    uint8_t* dst_slice = dst + z * slice_size;
+                    const uint8_t* srcSlice = src + z * src_slice_pitch;
+                    uint8_t* dstSlice = dst + z * dst_slice_pitch;
 
-                    for (uint32_t y = 0; y < fp.Height; y++)
+                    for (uint32_t y = 0; y < num_rows; ++y)
                     {
-                        memcpy(dst_slice + y * row_pitch,
-                               src_slice + y * row_pitch,
-                               row_pitch);
+                        memcpy(dstSlice + y * row_size,
+                               srcSlice + y * row_pitch,
+                               row_size);
                     }
                 }
             }
