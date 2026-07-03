@@ -20,12 +20,12 @@ namespace RB::Graphics::D3D12
     public:
         GpuGuardD3D12(uint64_t fence_value, DeviceQueue* queue);
 
-        bool IsFinishedRendering() override;
+        bool IsFinishedRendering() const override;
         void WaitUntilFinishedRendering() override;
 
     private:
-        uint64_t				m_FenceValue;
-        DeviceQueue*            m_Queue;
+        uint64_t        m_FenceValue;
+        DeviceQueue*    m_Queue;
 
         friend class RenderInterfaceD3D12;
     };
@@ -78,6 +78,8 @@ namespace RB::Graphics::D3D12
         void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot) override;
 
         void CopyResource(RenderResource* src, RenderResource* dst) override;
+        
+        void Readback(RenderResource* src, ReadbackBuffer* dst) override;
 
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 
@@ -94,7 +96,6 @@ namespace RB::Graphics::D3D12
         void PrepareDraw();
 
         void HandlePendingClears();
-        void InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type);
 
         void SetRenderTargets();
 
@@ -157,6 +158,8 @@ namespace RB::Graphics::D3D12
         };
 
         RenderState                             m_RenderState;
+
+        List<ReadbackBuffer*>                   m_SchedulesReadbacks;
     };
 }
 #endif

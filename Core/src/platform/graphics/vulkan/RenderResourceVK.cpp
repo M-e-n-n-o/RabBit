@@ -15,7 +15,7 @@ namespace RB::Graphics::VK
     // ---------------------------------------------------------------------------
 
     VertexBufferVK::VertexBufferVK(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
-        : m_Name(name)
+        : VertexBuffer(name)
         , m_Type(type)
         , m_VertexSize(vertex_size)
         , m_Size(data_size)
@@ -46,7 +46,7 @@ namespace RB::Graphics::VK
     // ---------------------------------------------------------------------------
 
     IndexBufferVK::IndexBufferVK(const char* name, uint32_t* data, uint64_t elements)
-        : m_Name(name)
+        : IndexBuffer(name)
         , m_Elements(elements)
     {
         VkBufferCreateInfo info = {};
@@ -69,7 +69,7 @@ namespace RB::Graphics::VK
     // ---------------------------------------------------------------------------
 
     Texture2DVK::Texture2DVK(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
-        : m_Name(name)
+        : Texture2D(name)
         , m_Format(format)
         , m_Width(width)
         , m_Height(height)
@@ -107,7 +107,7 @@ namespace RB::Graphics::VK
     }
 
     Texture2DVK::Texture2DVK(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
-        : m_Name(name)
+        : Texture2D(name)
         , m_Resource((GpuResource*)internal_resource)
         , m_Format(format)
         , m_Width(width)
@@ -121,7 +121,7 @@ namespace RB::Graphics::VK
     }
 
     Texture2DVK::Texture2DVK(const Texture2DVK* other)
-        : m_Name(other->m_Name)
+        : Texture2D(other->m_Name.c_str())
         , m_Resource(other->m_Resource)
         , m_ImageView(other->m_ImageView)
         , m_Format(other->m_Format)

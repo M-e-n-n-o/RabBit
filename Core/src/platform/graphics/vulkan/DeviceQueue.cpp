@@ -172,7 +172,7 @@ namespace RB::Graphics::VK
         RB_ASSERT_FATAL_RELEASE_VK(vkQueueSubmit(m_Queue, 1, &submit_info, VK_NULL_HANDLE), "GPU wait failed");
     }
 
-    bool DeviceQueue::IsSubmissionComplete(uint64_t submission_value)
+    bool DeviceQueue::IsSubmissionComplete(uint64_t submission_value) const
     {
         uint64_t completed_value;
         RB_ASSERT_FATAL_RELEASE_VK(vkGetSemaphoreCounterValue(g_GraphicsDevice->Get(), m_TimelineSemaphore, &completed_value),

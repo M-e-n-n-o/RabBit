@@ -19,6 +19,7 @@ namespace RB::Graphics
 #endif
 
     class RenderResource;
+    class ReadbackBuffer;
     class RenderTargetBundle;
     enum class ResourceState;
 
@@ -47,7 +48,7 @@ namespace RB::Graphics
     public:
         virtual ~GpuGuard() = default;
 
-        virtual bool IsFinishedRendering() = 0;
+        virtual bool IsFinishedRendering() const = 0;
         virtual void WaitUntilFinishedRendering() = 0; // TODO Implement a timer functionality here to check how long we keep waiting here
 
     protected:
@@ -105,6 +106,7 @@ namespace RB::Graphics
 
         virtual void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) = 0;
         virtual void CopyResource(RenderResource* src, RenderResource* dst) = 0;
+        virtual void Readback(RenderResource* src, ReadbackBuffer* dst) = 0;
 
         void Draw();
         void DrawInstanced(uint32_t instances);

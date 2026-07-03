@@ -19,7 +19,7 @@ namespace RB::Graphics::D3D12
         D3D12_COMMAND_LIST_TYPE GetType() const { return m_Type; }
 
         uint64_t SignalFence();
-        bool IsFenceReached(uint64_t fence_value);
+        bool IsFenceReached(uint64_t fence_value) const;
         void CpuWaitForFenceValue(uint64_t fence_value, uint64_t max_duration_ms = std::numeric_limits<uint64_t>::max());
         void GpuWaitForFenceValue(uint64_t fence_value);
         void GpuWaitForFenceValue(GPtr<ID3D12Fence> fence, uint64_t fence_value);

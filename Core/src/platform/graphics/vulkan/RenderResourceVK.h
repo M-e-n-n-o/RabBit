@@ -17,16 +17,14 @@ namespace RB::Graphics::VK
         VertexBufferVK(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
         ~VertexBufferVK();
 
-        const char* GetName() const override { return m_Name; }
-
         void* GetNativeResource() const override { return m_Resource; }
 
+        uint32_t GetVertexSize() const override { return m_VertexSize; }
         uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
 
         TopologyType GetTopologyType() const override { return m_Type; }
 
     private:
-        const char*     m_Name;
         GpuResource*    m_Resource;
         VkBufferView    m_View;
         TopologyType	m_Type;
@@ -40,14 +38,11 @@ namespace RB::Graphics::VK
         IndexBufferVK(const char* name, uint32_t* data, uint64_t elements);
         ~IndexBufferVK();
 
-        const char* GetName() const override { return m_Name; }
-
         void* GetNativeResource() const override { return m_Resource; }
 
         uint64_t GetIndexCount() const override { return m_Elements; }
 
     private:
-        const char*     m_Name;
         GpuResource*    m_Resource;
         VkBufferView    m_View;
         uint64_t	    m_Elements;
@@ -60,8 +55,6 @@ namespace RB::Graphics::VK
         Texture2DVK(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         Texture2DVK(const Texture2DVK* other);
         ~Texture2DVK();
-
-        const char* GetName() const override { return m_Name; }
 
         void* GetNativeResource() const override { return m_Resource; }
 
@@ -91,7 +84,6 @@ namespace RB::Graphics::VK
         void SetView(VkImageView image_view);
 
     private:
-        const char*             m_Name;
         GpuResource*            m_Resource;
         VkImageView             m_ImageView;
         uint32_t                m_Width;

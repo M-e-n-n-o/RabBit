@@ -68,9 +68,9 @@ namespace RB::Graphics
         kLastPrimitiveType  = Texture,
 
         // Implementation types
-        StructuredBuffer    = (1 << 2) | Buffer,
-        VertexBuffer        = (1 << 3) | Buffer,
-        IndexBuffer         = (1 << 4) | Buffer,
+        VertexBuffer        = (1 << 2) | Buffer,
+        IndexBuffer         = (1 << 3) | Buffer,
+        ReadbackBuffer      = (1 << 4) | Buffer,
         Texture2D           = (1 << 5) | Texture,
         Texture2DArray      = (1 << 6) | Texture
     };
@@ -80,7 +80,7 @@ namespace RB::Graphics
     public:
         virtual ~RenderResource() = default;
 
-        virtual const char* GetName() const = 0;
+        virtual const char* GetName() const { return m_Name.c_str(); }
 
         virtual void* GetNativeResource() const = 0;
 
@@ -93,8 +93,9 @@ namespace RB::Graphics
         RenderResourceType GetPrimitiveType() const;
 
     protected:
-        RenderResource(RenderResourceType type) : m_Type(type), m_IsStreaming(false) {}
+        RenderResource(const char* name, RenderResourceType type) : m_Name(name), m_Type(type), m_IsStreaming(false) {}
 
+        std::string         m_Name;
         RenderResourceType	m_Type;
         bool				m_IsStreaming;
     };
@@ -104,14 +105,16 @@ namespace RB::Graphics
     public:
         virtual ~Buffer() = default;
 
+        virtual uint64_t GetSize() const = 0;
+
     protected:
-        Buffer(RenderResourceType type) : RenderResource(type) {}
+        Buffer(const char* name, RenderResourceType type) : RenderResource(name, type) {}
     };
 
-    class StructuredBuffer : public Buffer
-    {
+    //class StructuredBuffer : public Buffer
+    //{
 
-    };
+    //};
 
     enum class TopologyType
     {
@@ -126,13 +129,16 @@ namespace RB::Graphics
 
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
+        uint64_t GetSize() const override { return GetVertexElementCount() * GetVertexSize(); }
+
+        virtual uint32_t GetVertexSize() const = 0;
         virtual uint32_t GetVertexElementCount() const = 0;
         virtual TopologyType GetTopologyType() const = 0;
 
         static Shared<VertexBuffer> Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false);
 
     protected:
-        VertexBuffer() : Buffer(RenderResourceType::VertexBuffer) {}
+        VertexBuffer(const char* name) : Buffer(name, RenderResourceType::VertexBuffer) {}
     };
 
     class IndexBuffer : public Buffer
@@ -142,12 +148,29 @@ namespace RB::Graphics
 
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::R32_UINT; }
 
+        uint64_t GetSize() const override { return GetIndexCount() * 4; }
+
         virtual uint64_t GetIndexCount() const = 0;
 
         static Shared<IndexBuffer> Create(const char* name, uint32_t* data, uint64_t elements);
 
     protected:
-        IndexBuffer() : Buffer(RenderResourceType::IndexBuffer) {}
+        IndexBuffer(const char* name) : Buffer(name, RenderResourceType::IndexBuffer) {}
+    };
+
+    class ReadbackBuffer : public Buffer
+    {
+    public:
+        // Make sure that the memory parameter is at least the size of the entire buffer
+        virtual bool GetData(void* memory, bool should_block = false) = 0;
+
+        RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
+
+        static Shared<ReadbackBuffer> Create(const char* name, uint64_t size);
+        static Shared<ReadbackBuffer> Create(const char* name, RenderResource* target_size);
+
+    protected:
+        ReadbackBuffer(const char* name) : Buffer(name, RenderResourceType::ReadbackBuffer) {}
     };
 
     #define MAX_TEXTURE_SUBRESOURCE_COUNT 8
@@ -191,8 +214,8 @@ namespace RB::Graphics
         virtual void ResetView() = 0;
 
     protected:
-        Texture(RenderResourceType type) 
-            : RenderResource(type)
+        Texture(const char* name, RenderResourceType type)
+            : RenderResource(name, type)
         {}
     };
 
@@ -219,7 +242,7 @@ namespace RB::Graphics
         static Shared<Texture2D> Alias(const Shared<Texture2D>& original);
 
     protected:
-        Texture2D() : Texture(RenderResourceType::Texture2D) {}
+        Texture2D(const char* name) : Texture(name, RenderResourceType::Texture2D) {}
     };
 
     class Texture2DArray : public Texture
@@ -236,7 +259,7 @@ namespace RB::Graphics
         static Shared<Texture2DArray> Alias(const Shared<Texture2DArray>& original);
 
     protected:
-        Texture2DArray() : Texture(RenderResourceType::Texture2DArray) {}
+        Texture2DArray(const char* name) : Texture(name, RenderResourceType::Texture2DArray) {}
     };
 
     struct RenderTargetBundle

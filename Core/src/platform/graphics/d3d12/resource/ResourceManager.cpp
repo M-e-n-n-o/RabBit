@@ -133,6 +133,24 @@ namespace RB::Graphics::D3D12
         m_ScheduledCreations.push_back({ resource, id });
     }
 
+    void ResourceManager::ScheduleCreateReadbackResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
+    {
+        // Is deleted in destructor of ResourceCreationDesc
+        wchar_t* wname = new wchar_t[strlen(name) + 1];
+        CharToWchar(name, wname);
+
+        ResourceCreationDesc* desc = new ResourceCreationDesc();
+        desc->type      = ResourceType::Readback;
+        desc->resource  = resource;
+        desc->name      = wname;
+        desc->buffer    = buffer_desc;
+
+        JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledCreations.push_back({ resource, id });
+    }
+
     void ResourceManager::ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
     {
         // Is deleted in destructor of ResourceCreationDesc
@@ -228,6 +246,21 @@ namespace RB::Graphics::D3D12
                     creation_desc->name,
                     CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size),
                     D3D12_HEAP_TYPE_UPLOAD,
+                    D3D12_HEAP_FLAG_NONE,
+                    state),
+                state);
+        }
+        break;
+
+        case ResourceManager::ResourceType::Readback:
+        {
+            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COPY_DEST;
+
+            creation_desc->resource->SetResource(
+                g_ResourceManager->CreateCommittedResource(
+                    creation_desc->name,
+                    CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size),
+                    D3D12_HEAP_TYPE_READBACK,
                     D3D12_HEAP_FLAG_NONE,
                     state),
                 state);

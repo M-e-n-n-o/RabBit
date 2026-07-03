@@ -21,7 +21,7 @@ namespace RB::Graphics::VK
     {
     }
 
-    bool GpuGuardVK::IsFinishedRendering()
+    bool GpuGuardVK::IsFinishedRendering() const
     {
         return m_Queue->IsSubmissionComplete(m_SubmissionValue);
     }

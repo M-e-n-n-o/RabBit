@@ -155,7 +155,7 @@ namespace RB::Graphics::D3D12
         return fence_value_for_signal;
     }
 
-    bool DeviceQueue::IsFenceReached(uint64_t fence_value)
+    bool DeviceQueue::IsFenceReached(uint64_t fence_value) const
     {
         return m_Fence->GetCompletedValue() >= fence_value;
     }

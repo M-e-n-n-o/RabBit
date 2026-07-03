@@ -21,7 +21,7 @@ namespace RB::Graphics::VK
         void CpuWaitForSubmission(uint64_t submission_value, uint64_t max_duration_ms = UINT64_MAX);
         void GpuWaitForSubmission(VkSemaphore other_semaphore, uint64_t submission_value);
 
-        bool IsSubmissionComplete(uint64_t submission_value);
+        bool IsSubmissionComplete(uint64_t submission_value) const;
 
         VkQueue GetQueue() const { return m_Queue; }
         uint32_t GetQueueFamilyIndex() const { return m_QueueFamilyIndex; }

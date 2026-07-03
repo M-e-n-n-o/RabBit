@@ -145,6 +145,40 @@ namespace RB::Graphics
         return nullptr;
     }
 
+    Shared<ReadbackBuffer> ReadbackBuffer::Create(const char* name, uint64_t size)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::ReadbackBufferD3D12>(name, size);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<ReadbackBuffer> ReadbackBuffer::Create(const char* name, RenderResource* target_size)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::ReadbackBufferD3D12>(name, target_size);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
     Shared<Texture2D> Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())

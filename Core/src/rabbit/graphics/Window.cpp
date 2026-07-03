@@ -326,7 +326,7 @@ namespace RB::Graphics
         args.virtualAspect  = virtual_aspect;
         args.windowStyle    = window_style;
         args.windowName     = window_name;
-        args.format         = RenderResourceFormat::R8G8B8A8_UNORM; // TODO Do this based on the display and just have a toggle for HDR
+        args.format         = RenderResourceFormat::B8G8R8A8_UNORM; // TODO Do this based on the display and just have a toggle for HDR
 
         return new Windows::WindowWin(args);
 #elif RB_PLATFORM_LINUX_ES

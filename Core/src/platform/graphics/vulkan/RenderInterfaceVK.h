@@ -17,7 +17,7 @@ namespace RB::Graphics::VK
     public:
         GpuGuardVK(DeviceQueue* queue, uint64_t submission_value);
 
-        bool IsFinishedRendering() override;
+        bool IsFinishedRendering() const override;
         void WaitUntilFinishedRendering() override;
 
     private:
@@ -73,6 +73,8 @@ namespace RB::Graphics::VK
         void SetVertexBuffers(RenderResource** vertex_resources, uint32_t resource_count, uint32_t start_slot) override {}
 
         void CopyResource(RenderResource* src, RenderResource* dst) override;
+
+        void Readback(RenderResource* src, ReadbackBuffer* dst) override {}
 
         void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
 

@@ -45,6 +45,7 @@ namespace RB::Graphics::D3D12
         };
 
         void ScheduleCreateUploadResource(GpuResource* resource, const char* name, const BufferDesc& desc);
+        void ScheduleCreateReadbackResource(GpuResource* resource, const char* name, const BufferDesc& desc);
         void ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& desc);
         void ScheduleCreateIndexResource(GpuResource* resource, const char* name, const BufferDesc& desc);
         void ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& desc);
@@ -62,6 +63,7 @@ namespace RB::Graphics::D3D12
         enum class ResourceType
         {
             Upload,
+            Readback,
             Vertex,
             Index,
             Texture2D

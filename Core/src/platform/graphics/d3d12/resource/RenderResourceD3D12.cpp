@@ -8,6 +8,7 @@
 #include "graphics/ResourceStreamer.h"
 #include "platform/graphics/d3d12/UtilsD3D12.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
+#include "platform/graphics/d3d12/RenderInterfaceD3D12.h"
 #include "platform/graphics/d3d12/resource/UploadAllocator.h"
 
 namespace RB::Graphics::D3D12
@@ -17,7 +18,7 @@ namespace RB::Graphics::D3D12
     // ---------------------------------------------------------------------------
 
     VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
-        : m_Name(name)
+        : VertexBuffer(name)
         , m_Type(type)
         , m_VertexSize(vertex_size)
         , m_Size(data_size)
@@ -72,7 +73,7 @@ namespace RB::Graphics::D3D12
     // ---------------------------------------------------------------------------
 
     IndexBufferD3D12::IndexBufferD3D12(const char* name, uint32_t* data, uint64_t elements)
-        : m_Name(name)
+        : IndexBuffer(name)
         , m_Elements(elements)
         , m_Data(data)
         , m_View{}
@@ -104,6 +105,116 @@ namespace RB::Graphics::D3D12
         }
 
         return m_View;
+    }
+
+    // ---------------------------------------------------------------------------
+    //								ReadbackBuffer
+    // ---------------------------------------------------------------------------
+
+    ReadbackBufferD3D12::ReadbackBufferD3D12(const char* name, uint64_t size)
+        : ReadbackBuffer(name)
+        , m_Size(size)
+        , m_MappedMemory(nullptr)
+    {
+        m_Resource = new GpuResource();
+        g_ResourceManager->ScheduleCreateReadbackResource(m_Resource, name, { size });
+    }
+
+    ReadbackBufferD3D12::ReadbackBufferD3D12(const char* name, RenderResource* target)
+        : ReadbackBuffer(name)
+        , m_Size(0)
+        , m_MappedMemory(nullptr)
+    {
+        switch (target->GetPrimitiveType())
+        {
+        case RenderResourceType::Buffer:
+        {
+            m_Size = ((Buffer*)target)->GetSize();
+        }
+        break;
+
+        case RenderResourceType::Texture:
+        {
+            Texture* tex = (Texture*)target;
+            D3D12_RESOURCE_DESC tex_desc = ((GpuResource*)tex->GetNativeResource())->GetResource()->GetDesc();
+
+            uint32_t subresource_count = tex->GetMipCount() * tex->GetArraySize();
+
+            List<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> layouts(subresource_count);
+            List<UINT> num_rows(subresource_count);
+            List<UINT64> row_sizes(subresource_count);
+            UINT64 totalBytes;
+            g_GraphicsDevice->Get()->GetCopyableFootprints(
+                &tex_desc,
+                0,
+                subresource_count,
+                0,
+                layouts.data(),
+                num_rows.data(),
+                row_sizes.data(),
+                &totalBytes);
+
+            m_Size = totalBytes;
+        }
+        break;
+
+        default:
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Cannot make out size of resource to create a readback resource");
+            break;
+        }
+
+        if (m_Size != 0)
+        {
+            m_Resource = new GpuResource();
+            g_ResourceManager->ScheduleCreateReadbackResource(m_Resource, name, { m_Size });
+        }
+    }
+
+    ReadbackBufferD3D12::~ReadbackBufferD3D12()
+    {
+        SAFE_DELETE(m_Resource);
+    }
+
+    void ReadbackBufferD3D12::OnScheduledReadback(Shared<GpuGuardD3D12>& fence)
+    {
+        m_Fences.push(fence);
+    }
+
+    bool ReadbackBufferD3D12::GetData(void* memory, bool should_block)
+    {
+        // TODO: It would probably be safer to do this readback memcpy at the start of the frame to have a smaller chance the GPU is also writing to this resource
+
+        bool popped_one = false;
+
+        while (!m_Fences.empty())
+        {
+            if (m_Fences.front()->IsFinishedRendering())
+            {
+                m_Fences.pop();
+                popped_one = true;
+            }
+            else
+            {
+                if (popped_one)
+                    break;
+                else if (should_block)
+                    m_Fences.front()->WaitUntilFinishedRendering();
+            }
+        }
+
+        if (!popped_one)
+        {
+            return false;
+        }
+
+        if (m_MappedMemory == nullptr)
+        {
+            m_Resource->GetResource()->Map(0, nullptr, (void**)&m_MappedMemory);
+        }
+
+        memcpy(memory, m_MappedMemory, m_Size);
+
+        return true;
     }
 
     // ---------------------------------------------------------------------------
@@ -257,7 +368,7 @@ namespace RB::Graphics::D3D12
     // ---------------------------------------------------------------------------
 
     Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
-        : m_Name(name)
+        : Texture2D(name)
         , m_IsAlias(false)
         , m_Format(format)
         , m_Width(width)
@@ -316,7 +427,7 @@ namespace RB::Graphics::D3D12
     }
 
     Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
-        : m_Name(name)
+        : Texture2D(name)
         , m_Resource((GpuResource*)internal_resource)
         , m_IsAlias(false)
         , m_Format(format)
@@ -337,7 +448,7 @@ namespace RB::Graphics::D3D12
     }
 
     Texture2DD3D12::Texture2DD3D12(const Texture2DD3D12* other)
-        : m_Name(other->m_Name)
+        : Texture2D(other->m_Name.c_str())
         , m_Resource(other->m_Resource)
         , m_Format(other->m_Format)
         , m_Width(other->m_Width)
@@ -446,7 +557,7 @@ namespace RB::Graphics::D3D12
     // ---------------------------------------------------------------------------
 
     Texture2DArrayD3D12::Texture2DArrayD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access)
-        : m_Name(name)
+        : Texture2DArray(name)
         , m_IsAlias(false)
         , m_Format(format)
         , m_Width(width)
@@ -498,7 +609,7 @@ namespace RB::Graphics::D3D12
     }
 
     Texture2DArrayD3D12::Texture2DArrayD3D12(const Texture2DArrayD3D12* other)
-        : m_Name(other->m_Name)
+        : Texture2DArray(other->m_Name.c_str())
         , m_Resource(other->m_Resource)
         , m_Format(other->m_Format)
         , m_Width(other->m_Width)

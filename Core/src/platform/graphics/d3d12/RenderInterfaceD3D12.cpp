@@ -20,6 +20,8 @@
 #define USE_PIX
 #include <pix3.h>
 
+#include <d3dx12/d3dx12.h>
+
 namespace RB::Graphics::D3D12
 {
     // ---------------------------------------------------------------------------
@@ -32,7 +34,7 @@ namespace RB::Graphics::D3D12
     {
     }
 
-    bool GpuGuardD3D12::IsFinishedRendering()
+    bool GpuGuardD3D12::IsFinishedRendering() const
     {
         return m_Queue->IsFenceReached(m_FenceValue);
     }
@@ -98,7 +100,15 @@ namespace RB::Graphics::D3D12
         SetNewCommandList();
         InvalidateState(true);
 
-        return CreateShared<GpuGuardD3D12>(fence_value, m_Queue);
+        Shared<GpuGuardD3D12> guard = CreateShared<GpuGuardD3D12>(fence_value, m_Queue);
+
+        for (ReadbackBuffer* buf : m_SchedulesReadbacks)
+        {
+            ((ReadbackBufferD3D12*)buf)->OnScheduledReadback(guard);
+        }
+        m_SchedulesReadbacks.clear();
+
+        return guard;
     }
 
     void RenderInterfaceD3D12::GpuWaitOn(GpuGuard* guard)
@@ -705,16 +715,76 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::CopyResource(RenderResource* src, RenderResource* dst)
     {
-        if (src->GetType() != dst->GetType())
-        {
-            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Can not copy resource as the typed do not match");
-            return;
-        }
-
         GpuResource* src_res = (GpuResource*)src->GetNativeResource();
         GpuResource* dst_res = (GpuResource*)dst->GetNativeResource();
 
-        InternalCopy(src_res, dst_res, src->GetPrimitiveType());
+        if (!m_CopyOperationsOnly)
+        {
+            g_ResourceStateManager->TransitionResource(src_res, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            g_ResourceStateManager->TransitionResource(dst_res, D3D12_RESOURCE_STATE_COPY_DEST);
+            FlushResourceBarriers();
+        }
+        else
+        {
+            // We do not need to transition resources to the copy state when using a dedicated copy commandlist.
+            // The resources however MUST be in the COMMON state, so check for that here.
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src_res->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
+            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dst_res->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
+        }
+
+        const RenderResourceType src_type = src->GetPrimitiveType();
+        const RenderResourceType dst_type = dst->GetPrimitiveType();
+
+        if (src_type == RenderResourceType::Buffer && dst_type == RenderResourceType::Buffer)
+        {
+            m_CommandList->CopyResource(dst_res->GetResource(), src_res->GetResource());
+        }
+        else if (src_type == RenderResourceType::Texture && dst_type == RenderResourceType::Buffer)
+        {
+            Texture* tex = (Texture*)src;
+            D3D12_RESOURCE_DESC tex_desc = ((GpuResource*)tex->GetNativeResource())->GetResource()->GetDesc();
+
+            uint32_t first_subresource = D3D12CalcSubresource(tex->GetBaseMip(), tex->GetFirstArraySlice(), 0, tex->GetMipCount(), tex->GetArraySize());
+            uint32_t subresource_count = (tex->GetMipCount() * tex->GetArraySize()) - first_subresource;
+
+            List<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> layouts(subresource_count);
+            List<UINT> num_rows(subresource_count);
+            List<UINT64> row_sizes(subresource_count);
+            UINT64 totalBytes;
+            g_GraphicsDevice->Get()->GetCopyableFootprints(&tex_desc,
+                                                           first_subresource,
+                                                           subresource_count,
+                                                           0,
+                                                           layouts.data(),
+                                                           num_rows.data(),
+                                                           row_sizes.data(),
+                                                           &totalBytes);
+
+            for (uint32_t i = 0; i < subresource_count; ++i)
+            {
+                D3D12_TEXTURE_COPY_LOCATION src_loc = {};
+                src_loc.pResource           = src_res->GetResource();
+                src_loc.Type                = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                src_loc.SubresourceIndex    = first_subresource + i;
+
+                D3D12_TEXTURE_COPY_LOCATION dst_loc = {};
+                dst_loc.pResource            = dst_res->GetResource();
+                dst_loc.Type                 = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+                dst_loc.PlacedFootprint      = layouts[i];
+
+                m_CommandList->CopyTextureRegion(&dst_loc, 0, 0, 0, & src_loc, nullptr);
+            }
+        }
+        else
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Copy step not yet implemented");
+        }
+    }
+
+    void RenderInterfaceD3D12::Readback(RenderResource* src, ReadbackBuffer* dst)
+    {
+        CopyResource(src, dst);
+        m_SchedulesReadbacks.push_back(dst);
     }
 
     void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
@@ -912,36 +982,6 @@ namespace RB::Graphics::D3D12
         }
 
         m_RenderState.pendingClears.clear();
-    }
-
-    void RenderInterfaceD3D12::InternalCopy(GpuResource* src, GpuResource* dst, const RenderResourceType& primitive_type)
-    {
-        if (!m_CopyOperationsOnly)
-        {
-            g_ResourceStateManager->TransitionResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
-            g_ResourceStateManager->TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST);
-            FlushResourceBarriers();
-        }
-        else
-        {
-            // We do not need to transition resources to the copy state when using a dedicated copy commandlist.
-            // The resources however MUST be in the COMMON state, so check for that here.
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dst->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
-        }
-
-        switch (primitive_type)
-        {
-        case RenderResourceType::Buffer: // Buffer -> Buffer copy
-        {
-            m_CommandList->CopyResource(dst->GetResource(), src->GetResource());
-        }
-        break;
-
-        default:
-            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Not yet implemented");
-            break;
-        }
     }
 
     void RenderInterfaceD3D12::SetRenderTargets()

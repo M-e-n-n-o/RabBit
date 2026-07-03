@@ -12,6 +12,7 @@
 namespace RB::Graphics::D3D12
 {
     class GpuResource;
+    class GpuGuardD3D12;
 
     class VertexBufferD3D12 : public VertexBuffer
     {
@@ -19,10 +20,9 @@ namespace RB::Graphics::D3D12
         VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
         ~VertexBufferD3D12();
 
-        const char* GetName() const override { return m_Name; }
-
         void* GetNativeResource() const override { return m_Resource; }
 
+        uint32_t GetVertexSize() const override { return m_VertexSize; }
         uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
 
         TopologyType GetTopologyType() const override { return m_Type; }
@@ -30,7 +30,6 @@ namespace RB::Graphics::D3D12
         const D3D12_VERTEX_BUFFER_VIEW& GetView();
 
     private:
-        const char*                 m_Name;
         GpuResource*                m_Resource;
         D3D12_VERTEX_BUFFER_VIEW    m_View;
         TopologyType                m_Type;
@@ -47,8 +46,6 @@ namespace RB::Graphics::D3D12
         IndexBufferD3D12(const char* name, uint32_t* data, uint64_t elements);
         ~IndexBufferD3D12();
 
-        const char* GetName() const override { return m_Name; }
-
         void* GetNativeResource() const override { return m_Resource; }
 
         uint64_t GetIndexCount() const override { return m_Elements; }
@@ -56,11 +53,33 @@ namespace RB::Graphics::D3D12
         const D3D12_INDEX_BUFFER_VIEW& GetView();
 
     private:
-        const char*                 m_Name;
         GpuResource*                m_Resource;
         D3D12_INDEX_BUFFER_VIEW		m_View;
         uint64_t					m_Elements;
         void*                       m_Data;
+    };
+
+
+    class ReadbackBufferD3D12 : public ReadbackBuffer
+    {
+    public:
+        ReadbackBufferD3D12(const char* name, uint64_t size);
+        ReadbackBufferD3D12(const char* name, RenderResource* target_size);
+        ~ReadbackBufferD3D12();
+
+        void* GetNativeResource() const override { return m_Resource; }
+
+        uint64_t GetSize() const override { return m_Size; }
+
+        void OnScheduledReadback(Shared<GpuGuardD3D12>& fence);
+
+        bool GetData(void* memory, bool should_block) override;
+
+    private:
+        GpuResource*                    m_Resource;
+        uint8_t*                        m_MappedMemory;
+        uint64_t                        m_Size;
+        Queue<Shared<GpuGuardD3D12>>    m_Fences;
     };
 
     class Texture2DD3D12 : public Texture2D
@@ -71,8 +90,6 @@ namespace RB::Graphics::D3D12
         Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         Texture2DD3D12(const Texture2DD3D12* other);
         ~Texture2DD3D12();
-
-        const char* GetName() const override { return m_Name.c_str(); }
 
         void* GetNativeResource() const override { return m_Resource; }
 
@@ -109,7 +126,6 @@ namespace RB::Graphics::D3D12
     private:
         void CreateViews(GpuResource* resource);
 
-        std::string                     m_Name;
         GpuResource*                    m_Resource;
         bool                            m_IsAlias;
         uint32_t                        m_Width;
@@ -137,8 +153,6 @@ namespace RB::Graphics::D3D12
         Texture2DArrayD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t slices, bool is_render_target, bool random_read_write_access);
         Texture2DArrayD3D12(const Texture2DArrayD3D12* other);
         ~Texture2DArrayD3D12();
-
-        const char* GetName() const override { return m_Name.c_str(); }
 
         void* GetNativeResource() const override { return m_Resource; }
 
@@ -180,7 +194,6 @@ namespace RB::Graphics::D3D12
     private:
         void CreateViews(GpuResource* resource);
 
-        std::string                     m_Name;
         bool                            m_IsAlias;
         GpuResource*                    m_Resource;
         uint32_t                        m_Width;
