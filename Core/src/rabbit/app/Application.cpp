@@ -28,9 +28,10 @@ namespace RB
         : EventListener(kEventCat_All)
         , m_Initialized(false)
         , m_ShouldStop(false)
-        , m_FrameIndex(0)
         , m_CheckWindows(false)
         , m_PrimaryWindowIndex(0)
+        , m_FrameIndex(0)
+        , m_DeltaTime(0)
         , m_FixedTimeStep(-1)
     {
         RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
@@ -153,7 +154,6 @@ namespace RB
     void Application::Run()
     {
         Timer frame_timer;
-        float delta_time;
         double curr_time;
         double prev_time = frame_timer.ElapsedSeconds();
 
@@ -161,12 +161,12 @@ namespace RB
         {
             // Update delta time
             curr_time = frame_timer.ElapsedSeconds();
-            delta_time = float(curr_time - prev_time);
+            m_DeltaTime = float(curr_time - prev_time);
             prev_time = curr_time;
 
             if (m_FixedTimeStep > 0)
             {
-                delta_time = m_FixedTimeStep;
+                m_DeltaTime = m_FixedTimeStep;
             }
 
             // Poll inputs and update windows
@@ -186,10 +186,10 @@ namespace RB
             ProcessEvents();
 
             // Firstly update the engine itself
-            UpdateInternal(delta_time);
+            UpdateInternal(m_DeltaTime);
 
             // Secondly update the application
-            UpdateApp(delta_time);
+            UpdateApp(m_DeltaTime);
 
             // Submit the scene as context for rendering the next frame
             m_Renderer->SubmitFrame(m_Scene);
