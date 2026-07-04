@@ -24,7 +24,7 @@ jobs:
         submodules: recursive
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/out
+      run: cmake -B ${{github.workspace}}/out -DRABBIT_API_VULKAN=OFF # Vulkan cannot be loaded in GitHub Actions
 
     # Distribution
     - name: Build shader compiler
@@ -53,7 +53,7 @@ jobs:
         submodules: recursive
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/out
+      run: cmake -B ${{github.workspace}}/out -DRABBIT_API_VULKAN=OFF
 
     # Release
     - name: Build shaders
@@ -82,7 +82,7 @@ jobs:
         submodules: recursive
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/out
+      run: cmake -B ${{github.workspace}}/out -DRABBIT_API_VULKAN=OFF
 
     # Debug
     - name: Build shaders

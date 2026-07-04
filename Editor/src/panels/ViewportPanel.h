@@ -20,5 +20,10 @@ namespace Editor
         RB::Shared<RB::Graphics::Texture2D> m_SceneTexture;
         float m_Width;
         float m_Height;
+
+        static constexpr int c_HistoryLength = 500;
+        uint32_t m_DeltaIndex;
+        float m_MainThreadAverages[c_HistoryLength];
+        float m_RenderThreadAverages[c_HistoryLength];
     };
 }

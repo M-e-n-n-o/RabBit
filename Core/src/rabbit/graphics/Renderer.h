@@ -63,6 +63,7 @@ namespace RB::Graphics
         FrameAllocator*   GetAllocator() const { return m_RenderAllocator; }
 
         uint64_t GetRenderFrameIndex();
+        float GetLastFrameTime(); // In ms
 
         void Init();
 

@@ -65,7 +65,9 @@ namespace RB
         void        PrioritizeJob(JobID job_id);
 
         bool        IsFinished(JobID job_id);
-        bool        IsStalling(uint32_t stall_threshold_ms, JobID& out_id);
+        bool        IsStalling(uint32_t stall_threshold_ms, JobID& stalling_job);
+
+        float       GetLastJobTimeMs();
 
         void        Sync(JobID job_id);
         void        SyncAll();
@@ -108,6 +110,7 @@ namespace RB
 
             Timer               timer;
             double              counterStart;
+            float               lastJobTime;
 
             JobID               currentJob;
             List<Job>           pendingJobs;

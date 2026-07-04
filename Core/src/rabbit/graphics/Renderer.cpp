@@ -475,6 +475,11 @@ namespace RB::Graphics
         return m_RenderFrameIndex.GetValue();
     }
 
+    float Renderer::GetLastFrameTime()
+    {
+        return m_RenderThread->GetLastJobTimeMs();
+    }
+
     bool Renderer::OnEvent(Event& event)
     {
         auto sync = [this]() -> bool
@@ -681,7 +686,7 @@ namespace RB::Graphics
 
                 if (guards[back_buffer_index])
                 {
-                    guards[back_buffer_index]->WaitUntilFinishedRendering(); // TODO Do I really need this sync point here?
+                    guards[back_buffer_index]->WaitUntilFinishedRendering();
                 }
             }
 
@@ -754,7 +759,6 @@ namespace RB::Graphics
         context->ProcessEvents();
 
         // Update the render frame index
-        frame_index++;
-        context->renderFrameIndex->SetValue(frame_index);
+        context->renderFrameIndex->SetValue(frame_index + 1);
     }
 }

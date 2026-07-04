@@ -27,6 +27,7 @@ namespace RB
         m_SharedContext->startedJobsCount           = 0;
         m_SharedContext->lastCompletedJob           = UINT64_MAX;
         m_SharedContext->counterStart               = 0;
+        m_SharedContext->lastJobTime                = 0;
 
         m_ThreadHandle = std::thread(WorkerThreadLoop, m_SharedContext);
 
@@ -245,7 +246,7 @@ namespace RB
         });
     }
 
-    bool WorkerThread::IsStalling(uint32_t stall_threshold_ms, JobID& out_id)
+    bool WorkerThread::IsStalling(uint32_t stall_threshold_ms, JobID& stalling_job)
     {
         m_SharedContext->kickMutex.lock();
         ThreadState state           = m_SharedContext->state;
@@ -258,12 +259,19 @@ namespace RB
         {
             if ((current_time - counter_start) > stall_threshold_ms)
             {
-                out_id = current_job;
+                stalling_job = current_job;
                 return true;
             }
         }
 
         return false;
+    }
+
+    float WorkerThread::GetLastJobTimeMs()
+    {
+        RB_MUTEX_AUTO_LOCK(m_SharedContext->completedMutex);
+
+        return m_SharedContext->lastJobTime;
     }
 
     void WorkerThread::Cancel(JobID job_id)
@@ -382,6 +390,7 @@ namespace RB
             {
                 context->completedMutex.lock();
                 context->lastCompletedJob = current_job.id;
+                context->lastJobTime = context->timer.ElapsedMilliseconds() - context->counterStart;
                 context->completedMutex.unlock();
                 context->completedCV.notify_all();
             }

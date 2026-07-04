@@ -77,6 +77,10 @@ namespace RB
         Entity::Scene* GetScene() const { return m_Scene; }
 
         uint64_t GetFrameIndex() const { return m_FrameIndex; }
+        float GetDeltaTime() const { return m_DeltaTime; }
+
+        void EnableFixedTimeStep(float time_step) { m_FixedTimeStep = time_step; }
+        void DisableFixedTimeStep() { m_FixedTimeStep = -1; }
 
         FrameAllocator* GetAllocator() const { return m_FrameAllocator; }
 
@@ -96,8 +100,6 @@ namespace RB
         bool                        m_Initialized;
         bool                        m_ShouldStop;
 
-        uint64_t                    m_FrameIndex;
-
         List<Graphics::Display*>    m_Displays;
 
         List<Graphics::Window*>     m_Windows;
@@ -111,6 +113,10 @@ namespace RB
         FrameAllocator*             m_FrameAllocator;
 
         LayerStack                  m_LayerStack;
+
+        uint64_t                    m_FrameIndex;
+        float                       m_DeltaTime;
+        float                       m_FixedTimeStep;
 
         static Application*         s_Instance;
     };
