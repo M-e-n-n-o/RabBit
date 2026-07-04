@@ -31,6 +31,7 @@ namespace RB
         , m_FrameIndex(0)
         , m_CheckWindows(false)
         , m_PrimaryWindowIndex(0)
+        , m_FixedTimeStep(-1)
     {
         RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
         s_Instance = this;
@@ -162,6 +163,11 @@ namespace RB
             curr_time = frame_timer.ElapsedSeconds();
             delta_time = float(curr_time - prev_time);
             prev_time = curr_time;
+
+            if (m_FixedTimeStep > 0)
+            {
+                delta_time = m_FixedTimeStep;
+            }
 
             // Poll inputs and update windows
             for (Graphics::Window* window : m_Windows)

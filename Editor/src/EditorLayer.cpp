@@ -63,31 +63,34 @@ namespace Editor
         auto* context_obj = scene->CreateGameObject();
         context_obj->AddComponent<ImGuiManager>(m_ImGuiRenderContext);
 
-        // This camera renders the viewport
-        auto* game_cam_obj = scene->CreateGameObject();
-        game_cam_obj->AddComponent<Transform>();
-        m_Camera = game_cam_obj->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_Viewport->GetSceneTexture(), kRenderGraphType_Normal);
-        m_Camera->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
+        // Scene
+        {
+            // This camera renders the viewport
+            auto* game_cam_obj = scene->CreateGameObject();
+            game_cam_obj->AddComponent<Transform>();
+            m_Camera = game_cam_obj->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, m_Viewport->GetSceneTexture(), kRenderGraphType_Normal);
+            m_Camera->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
-        m_ScreenCapturer = game_cam_obj->AddComponent<ScreenCapturer>();
+            m_ScreenCapturer = game_cam_obj->AddComponent<ScreenCapturer>();
 
-        float vertex_data[] = {
-            // Pos              Normal      UV
-            -0.5f, -0.5f, 0,    0, 1, 0,    0, 1,
-             0,     0.5f, 0,    0, 1, 0,    0, 1,
-             0.5f, -0.5f, 0,    0, 1, 0,    0, 1
-        };
-        m_TriangleMesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data));
-        m_Material = new Material();
+            float vertex_data[] = {
+                // Pos              Normal      UV
+                -0.5f, -0.5f, 0,    0, 1, 0,    0, 1,
+                 0,     0.5f, 0,    0, 1, 0,    0, 1,
+                 0.5f, -0.5f, 0,    0, 1, 0,    0, 1
+            };
+            m_TriangleMesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data));
+            m_Material = new Material();
 
-        GameObject* triangle_obj = scene->CreateGameObject("Triangle");
-        triangle_obj->AddComponent<MeshRenderer>(m_TriangleMesh, m_Material);
-        auto* t = triangle_obj->AddComponent<Transform>();
-        t->position.z = 5;
+            GameObject* triangle_obj = scene->CreateGameObject("Triangle");
+            triangle_obj->AddComponent<MeshRenderer>(m_TriangleMesh, m_Material);
+            auto* t = triangle_obj->AddComponent<Transform>();
+            t->position.z = 5;
 
-        auto* sun = scene->CreateGameObject("Sun");
-        sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
-        sun->SetParent(triangle_obj);
+            auto* sun = scene->CreateGameObject("Sun");
+            sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
+            sun->SetParent(triangle_obj);
+        }
 
         // This camera just renders the ImGui stuff on the OS window
         auto* imgui_cam = scene->CreateGameObject();
@@ -125,11 +128,15 @@ namespace Editor
                     SAFE_DELETE(m_Mp4Encoder);
                     SAFE_FREE(m_ScreenCaptureData);
                     m_Recording = false;
+
+                    Application::GetInstance()->DisableFixedTimeStep();
                 }
                 else
                 {
+                    const float fps = 60.0f;
+
                     Shared<Texture2D> tex = m_Viewport->GetSceneTexture();
-                    m_Mp4Encoder = new Mp4Encoder("RabBitRender.mp4", tex->GetWidth(), tex->GetHeight(), 60, 4000000, tex->GetFormat());
+                    m_Mp4Encoder = new Mp4Encoder("RabBitRender.mp4", tex->GetWidth(), tex->GetHeight(), fps, 4000000, tex->GetFormat());
 
                     if (m_Mp4Encoder->IsValid())
                     {
@@ -137,6 +144,8 @@ namespace Editor
 
                         uint64_t size = m_ScreenCapturer->PrepareCapture(m_Viewport->GetSceneTexture().get());
                         m_ScreenCaptureData = (uint8_t*)ALLOC_HEAP(size);
+
+                        Application::GetInstance()->EnableFixedTimeStep(1.0f / fps);
                     }
                     else
                     {

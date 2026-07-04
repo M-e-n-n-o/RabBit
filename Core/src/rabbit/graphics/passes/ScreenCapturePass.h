@@ -10,7 +10,7 @@ namespace RB::Graphics
     class ScreenCapturePass : public RenderPass
     {
     public:
-        const char* GetName() override { return "ScreenCapturePass"; }
+        const char* GetName() override { return "ScreenCapture"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
 

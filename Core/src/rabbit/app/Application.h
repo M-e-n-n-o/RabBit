@@ -78,6 +78,9 @@ namespace RB
 
         uint64_t GetFrameIndex() const { return m_FrameIndex; }
 
+        void EnableFixedTimeStep(float time_step) { m_FixedTimeStep = time_step; }
+        void DisableFixedTimeStep() { m_FixedTimeStep = -1; }
+
         FrameAllocator* GetAllocator() const { return m_FrameAllocator; }
 
         static Application* GetInstance() { return s_Instance; }
@@ -111,6 +114,8 @@ namespace RB
         FrameAllocator*             m_FrameAllocator;
 
         LayerStack                  m_LayerStack;
+
+        float                       m_FixedTimeStep;
 
         static Application*         s_Instance;
     };
