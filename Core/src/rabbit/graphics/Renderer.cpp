@@ -686,7 +686,7 @@ namespace RB::Graphics
 
                 if (guards[back_buffer_index])
                 {
-                    guards[back_buffer_index]->WaitUntilFinishedRendering(); // TODO Do I really need this sync point here?
+                    guards[back_buffer_index]->WaitUntilFinishedRendering();
                 }
             }
 
