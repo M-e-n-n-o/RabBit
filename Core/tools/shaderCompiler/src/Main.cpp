@@ -63,4 +63,6 @@ int main(int argc, char* argv[])
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");
 	LOGW(L"Succesfully finished compiling the shaders");
+
+	return 0;
 }
