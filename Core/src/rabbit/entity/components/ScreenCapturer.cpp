@@ -52,9 +52,6 @@ namespace RB::Entity
         if (m_LastCapturedFrame >= frame_idx)
             return; // Capture already scheduled
 
-        // Make sure we are lock stepping with the RenderThread so we can not run ahead and let the RenderThread skip any frames!
-        Application::GetInstance()->GetRenderer()->SyncRenderer();
-
         m_ScheduledGpuCapture   = true;
         m_ReadingCapture        = true;
         m_LastCapturedFrame     = frame_idx;
@@ -66,7 +63,7 @@ namespace RB::Entity
         if (!m_ReadingCapture)
             return false;
 
-        // Keep lock stepping
+        // Make sure we are lock stepping with the RenderThread so we can not run ahead and let the RenderThread skip any frames!
         Application::GetInstance()->GetRenderer()->SyncRenderer();
 
         bool success = m_ReadbackBuffer->GetData(m_DestinationData, should_block);
