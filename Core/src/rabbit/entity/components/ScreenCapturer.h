@@ -17,10 +17,10 @@ namespace RB::Entity
         // Simply used to calculate the required readback size
         uint64_t PrepareCapture(Graphics::Texture2D* target);
 
-        void Capture(void* readback_data);
+        void Capture();
 
         // Should only be called a frame after the screenshot has been scheduled!
-        bool ReadCapture(bool should_block = true);
+        bool ReadCapture(void* readback_data, bool should_block = true);
 
         // For the Renderer
         bool ShouldMakeCapture() const { return m_ScheduledGpuCapture; }
@@ -31,6 +31,5 @@ namespace RB::Entity
         bool                               m_ReadingCapture;
         uint64_t                           m_LastCapturedFrame;
         Shared<Graphics::ReadbackBuffer>   m_ReadbackBuffer;
-        void*                              m_DestinationData;
     };
 }

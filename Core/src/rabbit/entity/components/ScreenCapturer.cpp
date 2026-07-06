@@ -10,7 +10,6 @@ namespace RB::Entity
         , m_ReadingCapture(false)
         , m_LastCapturedFrame(0)
         , m_ReadbackBuffer(nullptr)
-        , m_DestinationData(nullptr)
     {
     }
 
@@ -45,7 +44,7 @@ namespace RB::Entity
         return m_ReadbackBuffer->GetPackedSize();
     }
 
-    void ScreenCapturer::Capture(void* readback_data)
+    void ScreenCapturer::Capture()
     {
         uint64_t frame_idx = Application::GetInstance()->GetFrameIndex();
 
@@ -55,10 +54,9 @@ namespace RB::Entity
         m_ScheduledGpuCapture   = true;
         m_ReadingCapture        = true;
         m_LastCapturedFrame     = frame_idx;
-        m_DestinationData       = readback_data;
     }
 
-    bool ScreenCapturer::ReadCapture(bool should_block)
+    bool ScreenCapturer::ReadCapture(void* readback_data, bool should_block)
     {
         if (!m_ReadingCapture)
             return false;
@@ -66,7 +64,7 @@ namespace RB::Entity
         // Make sure we are lock stepping with the RenderThread so we can not run ahead and let the RenderThread skip any frames!
         Application::GetInstance()->GetRenderer()->SyncRenderer();
 
-        bool success = m_ReadbackBuffer->GetData(m_DestinationData, should_block);
+        bool success = m_ReadbackBuffer->GetData(readback_data, should_block);
 
         if (success)
             m_ReadingCapture = false;

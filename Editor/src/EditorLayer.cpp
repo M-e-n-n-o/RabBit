@@ -56,6 +56,8 @@ namespace Editor
         m_ScreenCaptureData = nullptr;
     }
 
+    Transform* Triangle;
+
     void EditorLayer::OnAttach()
     {
         Scene* scene = Application::GetInstance()->GetScene();
@@ -86,6 +88,7 @@ namespace Editor
             triangle_obj->AddComponent<MeshRenderer>(m_TriangleMesh, m_Material);
             auto* t = triangle_obj->AddComponent<Transform>();
             t->position.z = 5;
+            Triangle = t;
 
             auto* sun = scene->CreateGameObject("Sun");
             sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
@@ -105,14 +108,17 @@ namespace Editor
         // Make sure to update the output texture for if it got updated
         m_Camera->SetRenderTexture(m_Viewport->GetSceneTexture());
 
+        Triangle->rotation.y += delta * 150;
+
         if (m_Recording)
         {
-            if (m_ScreenCapturer->ReadCapture())
+            // Read last frame' capture
+            if (m_ScreenCapturer->ReadCapture(m_ScreenCaptureData))
             {
                 m_Mp4Encoder->AddFrame(m_ScreenCaptureData);
             }
 
-            m_ScreenCapturer->Capture(m_ScreenCaptureData);
+            m_ScreenCapturer->Capture();
         }
     }
 
