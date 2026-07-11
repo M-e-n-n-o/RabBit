@@ -104,7 +104,7 @@ namespace RB
             out_image->width            = header->width;
             out_image->height           = header->height;
             out_image->dataSize         = header->dataSize;
-            out_image->mipsToGenerate   = header->mipsToGenerate;
+            out_image->targetMips       = header->targetMips;
             out_image->loadedUsingStb   = false;
             switch (header->format)
             {

@@ -38,6 +38,20 @@ int main(int argc, char* argv[])
 {
     LOGW(L"---------------- Starting RabBit's texture converter ----------------");
 
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto now = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(now);
+
+    std::tm local_time{};
+#ifdef _WIN32
+    localtime_s(&local_time, &time);
+#else
+    localtime_r(&time, &local_time);
+#endif
+
+    LOG("Start time: " << std::put_time(&local_time, "%d-%m-%Y %H:%M:%S"));
+    LOG("");
+
     DEFINE_FIND_LAUNCH_ARG(argc, argv);
     DEFINE_HAS_LAUNCH_ARG(argc, argv);
 
@@ -198,7 +212,7 @@ int main(int argc, char* argv[])
         CompiledTextureHeader header = {};
         header.magic            = ValidMagic;
         header.format           = target_format;
-        header.mipsToGenerate   = mip_count;
+        header.targetMips       = mip_count;
         header.width            = width;
         header.height           = height;
         header.dataSize         = compressed_memory ? compressed_size : texture_size;
@@ -215,8 +229,12 @@ int main(int argc, char* argv[])
         output_stream.close();
     }
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> delta = end_time - start_time;
+
     LOGW(L"");
-    LOGW(L"-------------------------------------------------------------------------");
+    LOGW(L"Conversion time: " << delta.count() << " ms");
+    LOGW(L"---------------------------------------------------------------------");
     LOGW(L"Succesfully finished writing to the output file");
 
     if (compressed_memory)

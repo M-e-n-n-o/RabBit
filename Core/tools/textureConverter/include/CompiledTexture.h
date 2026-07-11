@@ -36,7 +36,7 @@ namespace RB::TextureConverter
         uint32_t                        magic;
         char                            name[30];
         uint8_t                         format;
-        uint8_t                         mipsToGenerate;
+        uint8_t                         targetMips;
         uint32_t                        width;
         uint32_t                        height;
         uint64_t                        dataSize;
