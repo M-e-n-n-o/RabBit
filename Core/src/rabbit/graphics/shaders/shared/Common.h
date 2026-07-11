@@ -24,8 +24,6 @@ namespace RB::Graphics::Shader
 #define PB public
 #endif
 
-
-
 // Global constant buffer structs
 // ---------------------------------------------------------------
 PB struct FrameConstants
@@ -70,6 +68,16 @@ PB struct ApplyLightingCB
     PB DirectionalLight    light;
 };
 ALIGN_CHECK(ApplyLightingCB);
+
+PB static const uint MIPS_PER_PASS = 4;
+
+PB struct MipGeneratorCB
+{
+    PB uint2 size;     // Size of the start mip level
+    PB uint  startMip; // The mip to read from
+    PB uint  mipCount; // For this dispatch (needs to be <= MIPS_PER_PASS)
+};
+ALIGN_CHECK(MipGeneratorCB);
 
 #if !SHADER
 } // namespace RB::Graphics::Shader
