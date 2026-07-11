@@ -41,7 +41,7 @@ namespace RB::Graphics
         case(RenderResourceFormat::R8_UINT):
             return 1;
         default:
-            RB_LOG_WARN(LOGTAG_GRAPHICS, "Format not yet supported");
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Format does not have an element size or is not yet supported");
             return 0;
         }
     }
@@ -75,6 +75,22 @@ namespace RB::Graphics
         switch (format)
         {
         case RenderResourceFormat::R32_TYPELESS:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool IsBlockCompressedFormat(const RenderResourceFormat& format)
+    {
+        switch (format)
+        {
+        case RenderResourceFormat::BC1_UNORM:
+        case RenderResourceFormat::BC1_SRGB:
+        case RenderResourceFormat::BC3_UNORM:
+        case RenderResourceFormat::BC3_SRGB:
+        case RenderResourceFormat::BC4_UNORM:
+        case RenderResourceFormat::BC5_UNORM:
             return true;
         default:
             return false;

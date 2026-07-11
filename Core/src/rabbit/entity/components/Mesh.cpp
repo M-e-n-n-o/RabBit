@@ -57,15 +57,20 @@ namespace RB::Entity
         m_Texture = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
     }
 
-    Material::Material(const char* file_name, TextureColorSpace color_space)
+    Material::Material(const char* file_name, bool converted_texture, TextureColorSpace color_space)
         : m_Texture(nullptr)
     {
         LoadedImage img;
-        bool success = AssetManager::LoadImage8Bit(file_name, &img, color_space == TextureColorSpace::sRGB);
+
+        bool success;
+        if (converted_texture)
+            success = AssetManager::LoadConvertedTexture(file_name, &img);
+        else
+            success = AssetManager::LoadTexture8Bit(file_name, &img, color_space == TextureColorSpace::sRGB);
 
         if (success)
         {
-            m_Texture = Graphics::Texture2D::Create(file_name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
+            m_Texture = Graphics::Texture2D::Create(img.name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
         }
         else
         {

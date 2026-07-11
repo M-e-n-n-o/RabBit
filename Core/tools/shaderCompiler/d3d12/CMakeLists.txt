@@ -1,3 +1,5 @@
+project(ShaderCompilerD3D12 VERSION 0.0.1)
+
 file(GLOB_RECURSE SC_SRC_FILES CONFIGURE_DEPENDS
     "../include/ShaderReflection.h"
     "../src/*.h"
@@ -6,7 +8,8 @@ file(GLOB_RECURSE SC_SRC_FILES CONFIGURE_DEPENDS
 
 add_executable(ShaderCompilerD3D12 ${SC_SRC_FILES})
 
-target_include_directories(ShaderCompilerD3D12 PUBLIC
+target_include_directories(ShaderCompilerD3D12 PRIVATE
+    "../../utils"
     "../../../external/slang/include"
 )
 

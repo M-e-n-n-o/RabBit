@@ -811,8 +811,6 @@ namespace RB::Graphics::D3D12
 
             D3D12_RESOURCE_DESC desc = gpu_res->GetResource()->GetDesc();
 
-            uint64_t row_size = GetElementSizeFromFormat(resource->GetFormat()) * desc.Width;
-
             uint64_t tex_mem_size = 0;
             uint32_t num_rows[MAX_TEXTURE_SUBRESOURCE_COUNT];
             uint64_t row_sizes_in_bytes[MAX_TEXTURE_SUBRESOURCE_COUNT];
@@ -841,9 +839,9 @@ namespace RB::Graphics::D3D12
                     {
                         //const DirectX::Image* sub_image = image_data->GetImage(mip_index, array_index, slice_index);
 
-                        // TODO This will break with more than 1 subresource, fix when implementing mips!
+                        // TODO This will break with more than 1 subresource, fix when trying to upload multiple mips!
                         const uint8_t* source_sub_resource_memory = ((uint8_t*)data);
-                        uint64_t sub_resource_row_pitch = row_size;
+                        uint64_t sub_resource_row_pitch = row_sizes_in_bytes[sub_resource_index];;
 
                         for (uint64_t height = 0; height < sub_resource_height; height++)
                         {

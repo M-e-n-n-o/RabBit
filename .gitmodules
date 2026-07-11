@@ -14,3 +14,6 @@
 	path = Editor/external/imgui/imgui
 	url = https://github.com/ocornut/imgui
 	branch = docking
+[submodule "Core/external/libsquish"]
+	path = Core/external/libsquish
+	url = https://github.com/oblivioncth/libsquish

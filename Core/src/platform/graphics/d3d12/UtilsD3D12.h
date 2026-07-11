@@ -109,6 +109,20 @@ namespace RB::Graphics::D3D12
         case(RenderResourceFormat::D16_UNORM):
             return DXGI_FORMAT_D16_UNORM;
 
+        // Block compressed formats
+        case(RenderResourceFormat::BC1_UNORM):
+            return DXGI_FORMAT_BC1_UNORM;
+        case(RenderResourceFormat::BC1_SRGB):
+            return DXGI_FORMAT_BC1_UNORM_SRGB;
+        case(RenderResourceFormat::BC3_UNORM):
+            return DXGI_FORMAT_BC3_UNORM;
+        case(RenderResourceFormat::BC3_SRGB):
+            return DXGI_FORMAT_BC3_UNORM_SRGB;
+        case(RenderResourceFormat::BC4_UNORM):
+            return DXGI_FORMAT_BC4_UNORM;
+        case(RenderResourceFormat::BC5_UNORM):
+            return DXGI_FORMAT_BC5_UNORM;
+
         // Typeless formats
         case(RenderResourceFormat::R32_TYPELESS):
         {

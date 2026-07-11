@@ -50,12 +50,21 @@ namespace RB::Graphics
 
         // Typeless formats (for example for both depth & regular read/write)
         R32_TYPELESS,
+
+        // Compressed formats
+        BC1_UNORM,
+        BC1_SRGB,
+        BC3_UNORM,
+        BC3_SRGB,
+        BC4_UNORM,
+        BC5_UNORM
     };
 
     uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
     bool IsDepthFormat(const RenderResourceFormat& format);
     bool IsSRGBFormat(const RenderResourceFormat& format);
     bool IsTypelessFormat(const RenderResourceFormat& format);
+    bool IsBlockCompressedFormat(const RenderResourceFormat& format);
 
     enum class RenderResourceType : uint32_t
     {

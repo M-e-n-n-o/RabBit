@@ -1,3 +1,5 @@
+project(ShaderCompilerVK VERSION 0.0.1)
+
 file(GLOB_RECURSE SC_SRC_FILES CONFIGURE_DEPENDS
     "../include/ShaderReflection.h"
     "../src/*.h"
@@ -6,7 +8,8 @@ file(GLOB_RECURSE SC_SRC_FILES CONFIGURE_DEPENDS
 
 add_executable(ShaderCompilerVK ${SC_SRC_FILES})
 
-target_include_directories(ShaderCompilerVK PUBLIC 
+target_include_directories(ShaderCompilerVK PRIVATE 
+    "../../utils"
     "../../../external/slang/include"
 )
 

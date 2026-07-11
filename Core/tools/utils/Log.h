@@ -1,6 +1,5 @@
 #pragma once
 #include <iostream>
-#include <string>
 
 #define LOGW(message) std::wcout << message << std::endl
 #define LOG(message) std::cout << message << std::endl

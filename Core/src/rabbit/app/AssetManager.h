@@ -17,7 +17,9 @@ namespace RB
     {
         void Init(const char* asset_base_path);
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb);
+        bool LoadConvertedTexture(const char* path, LoadedImage* out_image);
+
+        bool LoadTexture8Bit(const char* path, LoadedImage* out_image, bool srgb);
 
         bool LoadMesh(const char* path, LoadedMesh* out_mesh);
 
@@ -26,11 +28,13 @@ namespace RB
 
     struct LoadedImage
     {
+        char                            name[30];
         void*                           data;
-        uint32_t				        dataSize;
-        Graphics::RenderResourceFormat	format;
-        int32_t					        width;
-        int32_t					        height;
+        uint32_t                        dataSize;
+        Graphics::RenderResourceFormat  format;
+        int32_t                         width;
+        int32_t                         height;
+        uint32_t                        mipsToGenerate;
 
         LoadedImage();
         ~LoadedImage();
@@ -38,7 +42,8 @@ namespace RB
     private:
         bool loadedUsingStb;
 
-        friend bool AssetManager::LoadImage8Bit(const char*, LoadedImage*, bool);
+        friend bool AssetManager::LoadConvertedTexture(const char*, LoadedImage*);
+        friend bool AssetManager::LoadTexture8Bit(const char*, LoadedImage*, bool);
         friend bool AssetManager::LoadFont(const char*, LoadedFont*, uint32_t);
     };
 

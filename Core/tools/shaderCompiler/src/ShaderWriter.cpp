@@ -3,7 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include "ShaderWriter.h"
-#include "Utils.h"
+#include "Log.h"
 
 using namespace RB::ShaderCompiler;
 

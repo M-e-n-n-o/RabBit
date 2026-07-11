@@ -57,8 +57,10 @@ target_precompile_headers(RabBit PRIVATE "src/rabbit/RabBitCommon.h")
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
 target_include_directories(RabBit PRIVATE
-    # Shader compiler
+    # Custom tools
+    "tools/utils"
     "tools/shaderCompiler/include"
+    "tools/textureConverter/include"
 
     # STB
     "external/stb"
@@ -132,6 +134,9 @@ if(RABBIT_API_VULKAN)
     add_subdirectory(tools/shaderCompiler/vulkan)
 endif()
 
+# Texture converter
+add_subdirectory(external/libsquish)
+add_subdirectory(tools/textureConverter)
 
 # Copy libraries next to the final executable (should be called app side)
 function(RabBitCopyLibs TARGET_NAME)

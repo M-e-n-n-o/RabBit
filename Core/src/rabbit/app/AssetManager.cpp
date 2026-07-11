@@ -2,6 +2,10 @@
 #include "AssetManager.h"
 #include "utils/File.h"
 
+#include <filesystem>
+
+#include <CompiledTexture.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -68,7 +72,67 @@ namespace RB
         //								    Images
         // ---------------------------------------------------------------------------
 
-        bool LoadImage8Bit(const char* path, LoadedImage* out_image, bool srgb)
+        bool LoadConvertedTexture(const char* path, LoadedImage* out_image)
+        {
+            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+
+            RB_LOG(LOGTAG_MAIN, "Loading converted texture file: %s", final_path.c_str());
+
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
+
+            if (!file_handle->IsValid())
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load texture file \"%s\" from disk", final_path.c_str());
+                return false;
+            }
+
+            FileData data = file_handle->ReadFull();
+
+            if (data.size < sizeof(TextureConverter::CompiledTextureHeader))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Texture file is not a valid converted texture (too small)", final_path.c_str());
+                return false;
+            }
+
+            TextureConverter::CompiledTextureHeader* header = (TextureConverter::CompiledTextureHeader*)data.data;
+            if (header->magic != TextureConverter::ValidMagic)
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Texture file is not a valid converted texture, incorrect magic: %d", header->magic);
+                return false;
+            }
+
+            out_image->width            = header->width;
+            out_image->height           = header->height;
+            out_image->dataSize         = header->dataSize;
+            out_image->mipsToGenerate   = header->mipsToGenerate;
+            out_image->loadedUsingStb   = false;
+            switch (header->format)
+            {
+            case TextureConverter::kFormat_R8:          out_image->format = RenderResourceFormat::R8_UNORM; break;
+            case TextureConverter::kFormat_RGBA8:       out_image->format = RenderResourceFormat::R8G8B8A8_UNORM; break;
+            case TextureConverter::kFormat_RGBA8_SRGB:  out_image->format = RenderResourceFormat::R8G8B8A8_SRGB; break;
+            case TextureConverter::kFormat_BC1:         out_image->format = RenderResourceFormat::BC1_UNORM; break;
+            case TextureConverter::kFormat_BC1_SRGB:    out_image->format = RenderResourceFormat::BC1_SRGB; break;
+            case TextureConverter::kFormat_BC3:         out_image->format = RenderResourceFormat::BC3_UNORM; break;
+            case TextureConverter::kFormat_BC3_SRGB:    out_image->format = RenderResourceFormat::BC3_SRGB; break;
+            case TextureConverter::kFormat_BC4:         out_image->format = RenderResourceFormat::BC4_UNORM; break;
+            case TextureConverter::kFormat_BC5:         out_image->format = RenderResourceFormat::BC5_UNORM; break;
+            default:
+                RB_LOG_ERROR(LOGTAG_MAIN, "Did not recognize loaded texture format from file: %s", final_path.c_str());
+                return false;
+            }
+
+            memcpy(out_image->name, header->name, _countof(out_image->name));
+
+            out_image->data = ALLOC_HEAP(out_image->dataSize);
+            memcpy(out_image->data, data.data + sizeof(TextureConverter::CompiledTextureHeader), out_image->dataSize);
+
+            RB_LOG(LOGTAG_MAIN, "Loaded converted texture: %s", out_image->name);
+
+            return true;
+        }
+
+        bool LoadTexture8Bit(const char* path, LoadedImage* out_image, bool srgb)
         {
             std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
 
@@ -94,7 +158,7 @@ namespace RB
             }
 
             if (actual_channels == 3)
-                actual_channels = 4; // We don't support 3 channel alpha textures
+                actual_channels = 4; // We don't support 3 channel textures
 
             // Note that this loads a 8 bit per channel image (use stbi_load_16_from_memory or stbi_loadf_from_memory for 16 or 32 bit)
             int32_t original_channels;
@@ -128,6 +192,11 @@ namespace RB
             }
 
             out_image->dataSize = GetElementSizeFromFormat(out_image->format) * out_image->width * out_image->height;
+
+            std::filesystem::path file_path(path);
+            std::string file_path_name = file_path.stem().string();
+            memset(out_image->name, 0, _countof(out_image->name));
+            memcpy(out_image->name, file_path_name.data(), std::min(_countof(out_image->name), file_path_name.size()));
 
             return true;
         }
