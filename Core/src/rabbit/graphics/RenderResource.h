@@ -187,6 +187,8 @@ namespace RB::Graphics
 
     #define MAX_TEXTURE_SUBRESOURCE_COUNT 8
 
+    uint32_t CalculateMaxMips(uint32_t width, uint32_t height);
+
     class Texture : public RenderResource
     {
     public:
@@ -248,7 +250,9 @@ namespace RB::Graphics
         virtual void SetFirstArraySlice(uint32_t slice) override {}
 
         static Shared<Texture2D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access);
         static Shared<Texture2D> Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2D> Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access);
         static Shared<Texture2D> Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         // Copies the view on the resource but will not own the underlying resource
         static Shared<Texture2D> Alias(const Shared<Texture2D>& original);

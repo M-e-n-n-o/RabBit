@@ -60,6 +60,7 @@ namespace RB::Graphics::D3D12
         Array<ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> GetPipelineHeaps(uint32_t& num_heaps);
         DescriptorHeap* GetHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) const;
 
+        DescriptorIndex GetDummySrvTex2DHandle() const { return m_DummySrvTex2DHandle; }
         DescriptorIndex GetDummyRwTex2DHandle() const { return m_DummyRwTex2DHandle; }
 
     private:
@@ -67,6 +68,7 @@ namespace RB::Graphics::D3D12
         DescriptorHeap* m_RenderTargetHeap;
         DescriptorHeap* m_DepthStencilHeap;
 
+        DescriptorIndex m_DummySrvTex2DHandle;
         DescriptorIndex m_DummyRwTex2DHandle;
     };
 

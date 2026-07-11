@@ -93,7 +93,9 @@ namespace RB::Graphics::D3D12
     {
     public:
         Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access);
         Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access);
         Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         Texture2DD3D12(const Texture2DD3D12* other);
         ~Texture2DD3D12();
@@ -123,12 +125,12 @@ namespace RB::Graphics::D3D12
 
         void ResetView() override;
 
-        DescriptorIndex GetSrvHandle() const { return m_ReadHandle; }
-        DescriptorIndex GetUavHandle() const { return m_WriteHandle; }
+        DescriptorIndex GetSrvHandle() const;
+        DescriptorIndex GetUavHandle() const;
 
         void SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle);
-        D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetHandle() const { return m_RenderTargetDescriptor; }
-        D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilTargetHandle() const { return m_DepthStencilDescriptor; }
+        D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetHandle() const;
+        D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilTargetHandle() const;
 
     private:
         void CreateViews(GpuResource* resource);
@@ -140,6 +142,10 @@ namespace RB::Graphics::D3D12
         uint32_t                        m_VpWidth;
         uint32_t                        m_VpHeight;
         RenderResourceFormat            m_Format;
+
+        uint32_t                        m_MipCount;
+        uint32_t                        m_SetMipCount;
+        uint32_t                        m_BaseMip;
 
         bool                            m_IsRenderTarget;
         bool                            m_IsDepthStencil;

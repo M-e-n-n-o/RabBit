@@ -97,6 +97,20 @@ namespace RB::Graphics
         }
     }
 
+    uint32_t CalculateMaxMips(uint32_t width, uint32_t height)
+    {
+        uint32_t maxDim = Math::Max(width, height);
+
+        uint32_t mips = 1;
+        while (maxDim > 1)
+        {
+            maxDim >>= 1;
+            ++mips;
+        }
+
+        return mips;
+    }
+
     float Texture::GetAspectRatio() const
     {
         return (float)GetWidth() / (float)GetHeight();
@@ -217,6 +231,23 @@ namespace RB::Graphics
         return nullptr;
     }
 
+    Shared<Texture2D> Texture2D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DD3D12>(name, format, width, height, mips, is_render_target, random_read_write_access);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
     Shared<Texture2D> Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
@@ -224,6 +255,22 @@ namespace RB::Graphics
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
             return CreateShared<D3D12::Texture2DD3D12>(name, data, data_size, format, width, height, is_render_target, random_read_write_access);
+#endif
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<Texture2D> Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture2DD3D12>(name, data, data_size, format, width, height, mips, is_render_target, random_read_write_access);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");

@@ -420,6 +420,11 @@ namespace RB::Graphics::D3D12
     // ---------------------------------------------------------------------------
 
     Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+        : Texture2DD3D12(name, format, width, height, 1, is_render_target, random_read_write_access)
+    {
+    }
+
+    Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
         : Texture2D(name)
         , m_IsAlias(false)
         , m_Format(format)
@@ -427,6 +432,7 @@ namespace RB::Graphics::D3D12
         , m_Height(height)
         , m_VpWidth(width)
         , m_VpHeight(height)
+        , m_BaseMip(0)
         , m_IsRenderTarget(is_render_target)
         , m_AllowUAV(random_read_write_access)
         , m_ReadHandle({})
@@ -437,6 +443,9 @@ namespace RB::Graphics::D3D12
         , m_DepthStencilDescriptor({})
     {
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, width > 0 && height > 0, "Cannot create a texture with a width or height smaller than 1");
+
+        m_MipCount = Math::Min(mips, CalculateMaxMips(width, height));
+        m_SetMipCount = m_MipCount;
 
         m_Resource = new GpuResource(std::bind(&Texture2DD3D12::CreateViews, this, std::placeholders::_1));
 
@@ -455,26 +464,28 @@ namespace RB::Graphics::D3D12
                 flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
         }
 
-        // TODO Add mip support
-
         ResourceManager::Texture2DDesc desc = {};
         desc.format     = ConvertToDXGIFormat(m_Format, false);
         desc.width      = m_Width;
         desc.height     = m_Height;
         desc.arraySize  = 1;
-        desc.mipLevels  = 1;
+        desc.mipLevels  = m_MipCount;
         desc.flags      = flags;
-
         g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
     }
 
     Texture2DD3D12::Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
-        : Texture2DD3D12(name, format, width, height, is_render_target, random_read_write_access)
+        : Texture2DD3D12(name, data, data_size, format, width, height, 1, is_render_target, random_read_write_access)
+    {
+    }
+
+    Texture2DD3D12::Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
+        : Texture2DD3D12(name, format, width, height, mips, is_render_target, random_read_write_access)
     {
         Streamable streamable = {};
-        streamable.resource     = this;
-        streamable.uploadData   = data;
-        streamable.uploadSize   = data_size;
+        streamable.resource   = this;
+        streamable.uploadData = data;
+        streamable.uploadSize = data_size;
         Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
     }
 
@@ -487,6 +498,9 @@ namespace RB::Graphics::D3D12
         , m_Height(height)
         , m_VpWidth(width)
         , m_VpHeight(height)
+        , m_MipCount(1)
+        , m_SetMipCount(1)
+        , m_BaseMip(0)
         , m_IsRenderTarget(is_render_target)
         , m_AllowUAV(random_read_write_access)
         , m_ReadHandle({})
@@ -507,6 +521,9 @@ namespace RB::Graphics::D3D12
         , m_Height(other->m_Height)
         , m_VpWidth(other->m_VpWidth)
         , m_VpHeight(other->m_VpHeight)
+        , m_MipCount(other->m_MipCount)
+        , m_SetMipCount(other->m_SetMipCount)
+        , m_BaseMip(other->m_BaseMip)
         , m_IsRenderTarget(other->m_IsRenderTarget)
         , m_IsDepthStencil(other->m_IsDepthStencil)
         , m_AllowUAV(other->m_AllowUAV)
@@ -549,34 +566,52 @@ namespace RB::Graphics::D3D12
         m_VpHeight = height;
     }
 
-    // TODO: Setting any of the following methods will cause the GetXHandle methods
-    // to return a transient view using the newly set amount of mips.
-
     uint32_t Texture2DD3D12::GetMipCount() const
     {
-        // TODO Add mip support
-        return 1;
+        return m_SetMipCount;
     }
 
     uint32_t Texture2DD3D12::GetBaseMip() const
     {
-        // TODO Add mip support
-        return 0;
+        return m_BaseMip;
     }
 
     void Texture2DD3D12::SetBaseMip(uint32_t mip)
     {
-        // TODO Add mip support
+        m_BaseMip = Math::Min(mip, m_MipCount - 1);
     }
 
     void Texture2DD3D12::SetMipCount(uint32_t mips)
     {
-        // TODO Add mip support
+        m_SetMipCount = Math::Min(mips, m_MipCount);
     }
 
     void Texture2DD3D12::ResetView()
     {
-        // TODO Add mip support
+        m_BaseMip = 0;
+        m_SetMipCount = m_MipCount;
+    }
+
+    DescriptorIndex Texture2DD3D12::GetSrvHandle() const
+    {
+        if (m_ReadHandle.isValid() && (m_BaseMip > 0 || m_SetMipCount != m_MipCount))
+        {
+            // Create a transient descriptor with the set properties
+            return CreateSRV(m_Resource->GetResource(), m_IsDepthStencil, m_Typeless, m_MipCount, m_BaseMip, 1, 0, m_Format, true);
+        }
+
+        return m_ReadHandle;
+    }
+
+    DescriptorIndex Texture2DD3D12::GetUavHandle() const
+    {
+        if (m_WriteHandle.isValid() && m_BaseMip > 0)
+        {
+            // Create a transient descriptor with the set properties
+            return CreateUAV(m_Resource->GetResource(), m_AllowUAV, m_BaseMip, m_Format, true);
+        }
+
+        return m_WriteHandle;
     }
 
     void Texture2DD3D12::SetRenderTargetHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle)
@@ -589,11 +624,33 @@ namespace RB::Graphics::D3D12
         m_RenderTargetDescriptor = handle;
     }
 
+    D3D12_CPU_DESCRIPTOR_HANDLE Texture2DD3D12::GetRenderTargetHandle() const
+    {
+        if (m_RenderTargetHandle.isValid() && m_BaseMip > 0)
+        {
+            // Create a transient descriptor with the set properties
+            DescriptorIndex handle = CreateRTV(m_Resource->GetResource(), m_IsRenderTarget, m_BaseMip, m_Format, true);
+            return g_DescriptorManager->GetCpuHandle(handle);
+        }
+
+        return m_RenderTargetDescriptor;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE Texture2DD3D12::GetDepthStencilTargetHandle() const
+    {
+        if (m_DepthStencilHandle.isValid() && m_BaseMip > 0)
+        {
+            // Create a transient descriptor with the set properties
+            DescriptorIndex handle = CreateDSV(m_Resource->GetResource(), m_IsDepthStencil, m_BaseMip, m_Format, true);
+            return g_DescriptorManager->GetCpuHandle(handle);
+        }
+
+        return m_DepthStencilDescriptor;
+    }
+
     void Texture2DD3D12::CreateViews(GpuResource* /*resource*/)
     {
-        // TODO Add mip support
-
-        m_ReadHandle         = CreateSRV(m_Resource->GetResource(), m_IsDepthStencil, m_Typeless, 1, 0, m_Format, false);
+        m_ReadHandle         = CreateSRV(m_Resource->GetResource(), m_IsDepthStencil, m_Typeless, m_MipCount, 0, m_Format, false);
         m_WriteHandle        = CreateUAV(m_Resource->GetResource(), m_AllowUAV, 0, m_Format, false);
         m_RenderTargetHandle = CreateRTV(m_Resource->GetResource(), m_IsRenderTarget, 0, m_Format, false);
         m_DepthStencilHandle = CreateDSV(m_Resource->GetResource(), m_IsDepthStencil, 0, m_Format, false);

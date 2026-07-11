@@ -8,7 +8,8 @@ namespace RB::Math
 {
     #define kPI 3.14159265359
     
-    #define ALIGN_8(x) Math::AlignUp((x), 8)
+    #define ALIGN_8(x)  Math::AlignUp((x), 8)
+    #define ALIGN_16(x) Math::AlignUp((x), 16)
 
     struct AABB
     {

@@ -19,17 +19,28 @@ namespace RB::Graphics::D3D12
         m_RenderTargetHeap   = new DescriptorHeap(L"RenderTarget heap", false, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, RENDERTARGET_REGULAR_DESCRIPTORS, RTV_DSV_TRANSIENT_DESCRIPTORS_PER_CYCLE);
         m_DepthStencilHeap   = new DescriptorHeap(L"Depth Stencil heap", false, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DEPTHSTENCIL_REGULAR_DESCRIPTORS, RTV_DSV_TRANSIENT_DESCRIPTORS_PER_CYCLE);
 
-        D3D12_UNORDERED_ACCESS_VIEW_DESC dummy_desc = {};
-        dummy_desc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
-        dummy_desc.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
-        dummy_desc.Texture2D.MipSlice   = 0;
-        dummy_desc.Texture2D.PlaneSlice = 0;
+        D3D12_SHADER_RESOURCE_VIEW_DESC dummy_srv_desc = {};
+        dummy_srv_desc.Format                           = DXGI_FORMAT_R8G8B8A8_UNORM;
+        dummy_srv_desc.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURE2D;
+        dummy_srv_desc.Shader4ComponentMapping          = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        dummy_srv_desc.Texture2D.MipLevels              = 1;
+        dummy_srv_desc.Texture2D.PlaneSlice             = 0;
+        dummy_srv_desc.Texture2D.ResourceMinLODClamp    = 0.0f;
+        m_DummySrvTex2DHandle = CreateDescriptor(nullptr, dummy_srv_desc);
 
-        m_DummyRwTex2DHandle = CreateDescriptor(nullptr, dummy_desc);
+        D3D12_UNORDERED_ACCESS_VIEW_DESC dummy_uav_desc = {};
+        dummy_uav_desc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+        dummy_uav_desc.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
+        dummy_uav_desc.Texture2D.MipSlice   = 0;
+        dummy_uav_desc.Texture2D.PlaneSlice = 0;
+        m_DummyRwTex2DHandle = CreateDescriptor(nullptr, dummy_uav_desc);
     }
 
     DescriptorManager::~DescriptorManager()
     {
+        InvalidateDescriptor(m_DummySrvTex2DHandle);
+        InvalidateDescriptor(m_DummyRwTex2DHandle);
+
         SAFE_DELETE(m_BindlessSrvUavHeap);
         SAFE_DELETE(m_RenderTargetHeap);
         SAFE_DELETE(m_DepthStencilHeap);
