@@ -104,7 +104,7 @@ namespace RB
             out_image->width            = header->width;
             out_image->height           = header->height;
             out_image->dataSize         = header->dataSize;
-            out_image->targetMips       = header->targetMips;
+            out_image->mipCount         = header->mipCount;
             out_image->loadedUsingStb   = false;
             switch (header->format)
             {
@@ -191,6 +191,7 @@ namespace RB
                 break;
             }
 
+            out_image->mipCount = 1;
             out_image->dataSize = GetElementSizeFromFormat(out_image->format) * out_image->width * out_image->height;
 
             std::filesystem::path file_path(path);

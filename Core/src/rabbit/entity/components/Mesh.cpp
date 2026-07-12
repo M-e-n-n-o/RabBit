@@ -70,7 +70,7 @@ namespace RB::Entity
 
         if (success)
         {
-            m_Texture = Graphics::Texture2D::Create(img.name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
+            m_Texture = Graphics::Texture2D::Create(img.name, img.data, img.dataSize, img.format, img.width, img.height, img.mipCount, false, false);
         }
         else
         {

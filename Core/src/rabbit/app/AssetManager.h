@@ -34,7 +34,7 @@ namespace RB
         Graphics::RenderResourceFormat  format;
         int32_t                         width;
         int32_t                         height;
-        uint32_t                        targetMips;
+        uint32_t                        mipCount;
 
         LoadedImage();
         ~LoadedImage();

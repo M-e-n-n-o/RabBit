@@ -61,6 +61,7 @@ namespace RB::Graphics
     };
 
     uint32_t GetElementSizeFromFormat(const RenderResourceFormat& format);
+    uint32_t GetBytesPerBlockFromFormat(const RenderResourceFormat& format);
     bool IsDepthFormat(const RenderResourceFormat& format);
     bool IsSRGBFormat(const RenderResourceFormat& format);
     bool IsTypelessFormat(const RenderResourceFormat& format);
@@ -184,8 +185,6 @@ namespace RB::Graphics
     protected:
         ReadbackBuffer(const char* name) : Buffer(name, RenderResourceType::ReadbackBuffer) {}
     };
-
-    #define MAX_TEXTURE_SUBRESOURCE_COUNT 8
 
     uint32_t CalculateMaxMips(uint32_t width, uint32_t height);
 

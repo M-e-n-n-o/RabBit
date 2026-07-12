@@ -29,14 +29,13 @@ namespace RB::TextureConverter
     };
 
     inline constexpr uint32_t ValidMagic = Tools::CreateMagic('R', 'B', 'T', 'X');
-    inline constexpr int MaxMips = UINT8_MAX;
 
     struct CompiledTextureHeader
     {
         uint32_t                        magic;
         char                            name[30];
         uint8_t                         format;
-        uint8_t                         targetMips;
+        uint8_t                         mipCount;
         uint32_t                        width;
         uint32_t                        height;
         uint64_t                        dataSize;

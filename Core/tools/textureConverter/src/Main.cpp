@@ -8,7 +8,9 @@
 #include "CompiledTexture.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <stb_image.h>
+#include <stb_image_resize2.h>
 
 #include <squish/squish.h>
 
@@ -28,11 +30,31 @@ const char* FormatNames[] = {
 };
 static_assert(_countof(FormatNames) == kFormat_Count);
 
-std::string GetFilenameWithoutExtension(const char* path)
+const bool IsSRGB[] = {
+    false, // Invalid
+    false, // R8
+    false, // RGBA8
+    true,  // RGBA8 SRGB
+    false, // BC1
+    true,  // BC1 SRGB
+    false, // BC3
+    true,  // BC3 SRGB
+    false, // BC4
+    false  // BC5
+};
+static_assert(_countof(IsSRGB) == kFormat_Count);
+
+struct MipTexture
 {
-    std::filesystem::path file_path(path);
-    return file_path.stem().string();
-}
+    int width;
+    int height;
+    uint8_t* data;
+    uint32_t size;
+};
+
+std::vector<MipTexture> GenerateMipChain(const MipTexture& base, bool is_srgb, uint32_t channels, uint32_t* in_out_mips);
+
+std::string GetFilenameWithoutExtension(const char* path);
 
 int main(int argc, char* argv[])
 {
@@ -93,11 +115,15 @@ int main(int argc, char* argv[])
     if (mips_name)
     {
         if (std::strcmp(mips_name, "max") == 0)
-            mip_count = MaxMips;
+        {
+            mip_count = UINT32_MAX;
+            LOG("Mip count: Maximum");
+        }
         else
+        {
             mip_count = mips_name[0] - '0';
-
-        LOG("Mip count: " << mip_count);
+            LOG("Mip count: " << mip_count);
+        }
     }
     else
     {
@@ -124,54 +150,77 @@ int main(int argc, char* argv[])
     // Load image using STB
     int32_t width = 0;
     int32_t height = 0;
-    int32_t actual_channels = 0;
+    int32_t channels = 0;
     uint32_t texture_size = 0;
     uint8_t* texture_memory = nullptr;
     {
-        bool success = stbi_info_from_memory((stbi_uc*)file_buffer, file_length, &width, &height, &actual_channels);
+        bool success = stbi_info_from_memory((stbi_uc*)file_buffer, file_length, &width, &height, &channels);
         if (!success)
         {
             const char* error_msg = stbi_failure_reason();
             EXIT_ON_FAIL(false, "Failed to load info of texture, error message: " << error_msg);
         }
 
-        if ((target_format == kFormat_R8 || target_format == kFormat_BC4) && actual_channels != 1)
+        if ((target_format == kFormat_R8 || target_format == kFormat_BC4) && channels != 1)
         {
-            actual_channels = 1;
+            channels = 1;
             LOG("Input texture does not have 1 channel, forcing it...");
         } 
-        else if ((target_format == kFormat_RGBA8 || target_format == kFormat_RGBA8_SRGB) && actual_channels != 4)
+        else if ((target_format == kFormat_RGBA8 || target_format == kFormat_RGBA8_SRGB) && channels != 4)
         {
-            actual_channels = 4;
+            channels = 4;
             LOG("Input texture does not have 4 channels, forcing it...");
         }
         else if ((target_format == kFormat_BC1 || target_format == kFormat_BC1_SRGB || target_format == kFormat_BC3 || target_format == kFormat_BC3_SRGB) 
-            && (actual_channels != 3 && actual_channels != 4))
+            && (channels != 3 && channels != 4))
         {
-            actual_channels = 4;
+            channels = 4;
             LOG("Input texture does not have 3 or 4 channels, forcing it...");
         }
-        else if (target_format == kFormat_BC5 && actual_channels != 2)
+        else if (target_format == kFormat_BC5 && channels != 2)
         {
-            actual_channels = 2;
+            channels = 2;
             LOG("Input texture does not have 2 channels, forcing it...");
         }
 
         // !!! NOTE: This loads a 8 bit per channel image (use stbi_load_16_from_memory or stbi_loadf_from_memory for 16 or 32 bit) !!!
         int32_t original_channels;
-        texture_memory = stbi_load_from_memory((stbi_uc*)file_buffer, file_length, &width, &height, &original_channels, actual_channels);
+        texture_memory = stbi_load_from_memory((stbi_uc*)file_buffer, file_length, &width, &height, &original_channels, channels);
         if (texture_memory == NULL)
         {
             const char* error_msg = stbi_failure_reason();
             EXIT_ON_FAIL(false, "Failed to load texture, error message: " << error_msg);
         }
 
-        texture_size = size_t(width) * size_t(height) * size_t(actual_channels);
+        texture_size = size_t(width) * size_t(height) * size_t(channels);
         LOG("Decoded texture with size: " << (texture_size / (1024.0f * 1024.0f)) << " MiB");
     }
 
     input_stream.close();
     delete[] file_buffer;
+
+    // Generate mips
+    std::vector<MipTexture> mips;
+    {
+        MipTexture base_mip = {};
+        base_mip.width  = width;
+        base_mip.height = height;
+        base_mip.data   = texture_memory;
+        base_mip.size   = texture_size;
+
+        mips = GenerateMipChain(base_mip, IsSRGB[target_format], channels, &mip_count);
+
+        LOG("Generated mips: " << mip_count);
+
+        // Need to calculate the final texture size uncompressed
+        texture_size = 0;
+        for (const MipTexture& mip : mips)
+        {
+            texture_size += mip.size;
+        }
+
+        LOG("Size after mip generation: " << (texture_size / (1024.0f * 1024.0f)) << " MiB");
+    }
 
     // Compress
     int32_t compressed_size = 0;
@@ -192,10 +241,23 @@ int main(int argc, char* argv[])
             break;
         }
 
-        compressed_size = squish::GetStorageRequirements(width, height, flags);
+        int32_t* compressed_sizes = (int32_t*)alloca(sizeof(int32_t) * mips.size());
+        for (int i = 0; i < mips.size(); i++)
+        {
+            const MipTexture& mip = mips[i];
+            compressed_sizes[i] = squish::GetStorageRequirements(mip.width, mip.height, flags);
+            compressed_size += compressed_sizes[i];
+        }
 
         compressed_memory = new uint8_t[compressed_size];
-        squish::CompressImage(texture_memory, width, height, compressed_memory, flags);
+
+        int32_t offset = 0;
+        for (int i = 0; i < mips.size(); i++)
+        {
+            const MipTexture& mip = mips[i];
+            squish::CompressImage(mip.data, mip.width, mip.height, compressed_memory + offset, flags);
+            offset += compressed_sizes[i];
+        }
 
         LOG("Compressed image to size: " << (compressed_size / (1024.0f * 1024.0f)) << " MiB");
     }
@@ -212,7 +274,7 @@ int main(int argc, char* argv[])
         CompiledTextureHeader header = {};
         header.magic            = ValidMagic;
         header.format           = target_format;
-        header.targetMips       = mip_count;
+        header.mipCount         = mip_count;
         header.width            = width;
         header.height           = height;
         header.dataSize         = compressed_memory ? compressed_size : texture_size;
@@ -222,9 +284,17 @@ int main(int argc, char* argv[])
         output_stream.write((char*)&header, sizeof(CompiledTextureHeader));
 
         if (compressed_memory)
+        {
             output_stream.write((char*)compressed_memory, compressed_size);
+        }
         else
-            output_stream.write((char*)texture_memory, texture_size);
+        {
+            for (int i = 0; i < mips.size(); i++)
+            {
+                const MipTexture& mip = mips[i];
+                output_stream.write((char*)mip.data, mip.size);
+            }
+        }
 
         output_stream.close();
     }
@@ -239,7 +309,82 @@ int main(int argc, char* argv[])
 
     if (compressed_memory)
         delete[] compressed_memory;
+    for (int i = 1; i < mips.size(); i++)
+        delete[] mips[i].data;
     stbi_image_free(texture_memory);
 
     return 0;
+}
+
+MipTexture GenerateMip(const MipTexture& src, bool is_srgb, uint32_t channels, stbir_pixel_layout layout)
+{
+    MipTexture dst;
+
+    dst.width = std::max(1, src.width / 2);
+    dst.height = std::max(1, src.height / 2);
+
+    dst.size = dst.width * dst.height * channels;
+    dst.data = new uint8_t[dst.size];
+
+    if (is_srgb)
+    {
+        stbir_resize_uint8_srgb(src.data,
+                                src.width,
+                                src.height,
+                                0,
+                                dst.data,
+                                dst.width,
+                                dst.height,
+                                0,
+                                layout);
+    }
+    else
+    {
+        stbir_resize_uint8_linear(src.data,
+                                  src.width,
+                                  src.height,
+                                  0,
+                                  dst.data,
+                                  dst.width,
+                                  dst.height,
+                                  0,
+                                  layout);
+    }
+
+    return dst;
+}
+
+std::vector<MipTexture> GenerateMipChain(const MipTexture& base, bool is_srgb, uint32_t channels, uint32_t* in_out_mips)
+{
+    std::vector<MipTexture> result;
+    result.push_back(base);
+
+    stbir_pixel_layout layout;
+    switch (channels)
+    {
+    case 1: layout = STBIR_1CHANNEL; break;
+    case 2: layout = STBIR_2CHANNEL; break;
+    case 3: layout = STBIR_RGB; break;
+    case 4: layout = STBIR_RGBA; break;
+    default:
+        EXIT_ON_FAIL(false, "Mip chain generation does not support " << channels << " amount of channels");
+    }
+
+    MipTexture current = base;
+    while ((current.width > 1 || current.height > 1) && result.size() < *in_out_mips)
+    {
+        MipTexture next = GenerateMip(current, is_srgb, channels, layout);
+        result.push_back(next);
+        current = next;
+    }
+
+    *in_out_mips = result.size();
+
+    return result;
+}
+
+std::string GetFilenameWithoutExtension(const char* path)
+{
+    std::filesystem::path file_path(path);
+    return file_path.stem().string();
 }

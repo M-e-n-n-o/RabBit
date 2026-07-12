@@ -46,6 +46,24 @@ namespace RB::Graphics
         }
     }
 
+    uint32_t GetBytesPerBlockFromFormat(const RenderResourceFormat& format)
+    {
+        switch (format)
+        {
+        case RenderResourceFormat::BC1_UNORM:
+        case RenderResourceFormat::BC1_SRGB:
+        case RenderResourceFormat::BC4_UNORM:
+            return 8;
+        case RenderResourceFormat::BC3_UNORM:
+        case RenderResourceFormat::BC3_SRGB:
+        case RenderResourceFormat::BC5_UNORM:
+            return 16;
+        default:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Format does not have a block size or is not yet supported");
+            return 0;
+        }
+    }
+
     bool IsDepthFormat(const RenderResourceFormat& format)
     {
         switch (format)
@@ -99,12 +117,12 @@ namespace RB::Graphics
 
     uint32_t CalculateMaxMips(uint32_t width, uint32_t height)
     {
-        uint32_t maxDim = Math::Max(width, height);
+        uint32_t max_dim = Math::Max(width, height);
 
         uint32_t mips = 1;
-        while (maxDim > 1)
+        while (max_dim > 1)
         {
-            maxDim >>= 1;
+            max_dim >>= 1;
             ++mips;
         }
 
