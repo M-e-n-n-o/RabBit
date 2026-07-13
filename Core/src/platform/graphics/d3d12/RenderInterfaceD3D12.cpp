@@ -718,19 +718,12 @@ namespace RB::Graphics::D3D12
         GpuResource* src_res = (GpuResource*)src->GetNativeResource();
         GpuResource* dst_res = (GpuResource*)dst->GetNativeResource();
 
-        if (!m_CopyOperationsOnly)
-        {
+        // We do not need to transition resources to the copy state if we are in COMMON because of implicit state promotion.
+        if (!src_res->IsInState(D3D12_RESOURCE_STATE_COMMON))
             g_ResourceStateManager->TransitionResource(src_res, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        if (!dst_res->IsInState(D3D12_RESOURCE_STATE_COMMON))
             g_ResourceStateManager->TransitionResource(dst_res, D3D12_RESOURCE_STATE_COPY_DEST);
-            FlushResourceBarriers();
-        }
-        else
-        {
-            // We do not need to transition resources to the copy state when using a dedicated copy commandlist.
-            // The resources however MUST be in the COMMON state, so check for that here.
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, src_res->IsInState(D3D12_RESOURCE_STATE_COMMON), "Source resource was not in the common state before copying");
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, dst_res->IsInState(D3D12_RESOURCE_STATE_COMMON), "Destination resource was not in the common state before copying");
-        }
+        FlushResourceBarriers();
 
         const RenderResourceType src_type = src->GetPrimitiveType();
         const RenderResourceType dst_type = dst->GetPrimitiveType();
@@ -792,6 +785,9 @@ namespace RB::Graphics::D3D12
         RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
 
         GpuResource* gpu_res = (GpuResource*)resource->GetNativeResource();
+        
+        RB_ASSERT(LOGTAG_GRAPHICS, gpu_res->IsInState(D3D12_RESOURCE_STATE_COMMON) || gpu_res->IsInState(D3D12_RESOURCE_STATE_COPY_DEST), 
+            "Resource is not in the correct state to upload data to");
 
         switch (resource->GetPrimitiveType())
         {
@@ -807,66 +803,94 @@ namespace RB::Graphics::D3D12
 
         case RenderResourceType::Texture:
         {
-            // Reference: https://alextardif.com/D3D11To12P3.html
+            D3D12_RESOURCE_DESC desc             = gpu_res->GetResource()->GetDesc();
+            const bool          is_3d            = (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D);
+            const uint32_t      array_size       = is_3d ? 1 : desc.DepthOrArraySize;
+            const uint32_t      num_subresources = desc.MipLevels * array_size;
 
-            D3D12_RESOURCE_DESC desc = gpu_res->GetResource()->GetDesc();
+            D3D12_PLACED_SUBRESOURCE_FOOTPRINT* layouts   = ALLOC_STACKC(D3D12_PLACED_SUBRESOURCE_FOOTPRINT, num_subresources);
+            UINT*                               num_rows  = ALLOC_STACKC(UINT, num_subresources);
+            UINT64*                             row_sizes = ALLOC_STACKC(UINT64, num_subresources);
 
-            uint64_t tex_mem_size = 0;
-            uint32_t num_rows[MAX_TEXTURE_SUBRESOURCE_COUNT];
-            uint64_t row_sizes_in_bytes[MAX_TEXTURE_SUBRESOURCE_COUNT];
-            D3D12_PLACED_SUBRESOURCE_FOOTPRINT layouts[MAX_TEXTURE_SUBRESOURCE_COUNT];
-            const uint64_t num_sub_resources = desc.MipLevels * desc.DepthOrArraySize;
+            UINT64 total_bytes = 0;
+            g_GraphicsDevice->Get()->GetCopyableFootprints(&desc, 0, num_subresources, 0, layouts, num_rows, row_sizes, &total_bytes);
 
-            g_GraphicsDevice->Get()->GetCopyableFootprints(&desc, 0, (uint32_t)num_sub_resources, 0, layouts, num_rows, row_sizes_in_bytes, &tex_mem_size);
+            UploadAllocation upload_alloc = g_TransientUploadAllocator->Allocate(total_bytes, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 
-            UploadAllocation upload_alloc = g_TransientUploadAllocator->Allocate(tex_mem_size, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+            uint8_t* dst_base = upload_alloc.cpuWriteAddress;
+            uint8_t* src_cursor = (uint8_t*)data;
 
-            for (uint64_t array_index = 0; array_index < desc.DepthOrArraySize; array_index++)
+            const bool is_bc = IsBlockCompressedFormat(resource->GetFormat());
+            const uint32_t bytes_per_block = is_bc ? GetBytesPerBlockFromFormat(resource->GetFormat()) : 0;
+            const uint32_t bytes_per_pixel = is_bc ? 0 : GetElementSizeFromFormat(resource->GetFormat());
+
+            for (uint32_t array_slice = 0; array_slice < array_size; ++array_slice)
             {
-                for (uint64_t mip_index = 0; mip_index < desc.MipLevels; mip_index++)
+                for (uint32_t mip = 0; mip < desc.MipLevels; ++mip)
                 {
-                    const uint64_t sub_resource_index = mip_index + (array_index * desc.MipLevels);
+                    const uint32_t sub = D3D12CalcSubresource(mip, array_slice, 0, desc.MipLevels, array_size);
 
-                    const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& sub_resourceLayout = layouts[sub_resource_index];
+                    const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& fp = layouts[sub];
+                    const UINT   rows           = num_rows[sub];
+                    const UINT64 row_size_bytes = row_sizes[sub];
+                    const UINT   depth          = fp.Footprint.Depth;
 
-                    const uint64_t sub_resource_height = num_rows[sub_resource_index];
-                    const uint64_t sub_resource_pitch = Math::AlignUp(sub_resourceLayout.Footprint.RowPitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
-                    const uint64_t sub_resource_depth = sub_resourceLayout.Footprint.Depth;
+                    UINT w = Math::Max(1u, (UINT)desc.Width >> mip);
+                    UINT h = Math::Max(1u, (UINT)desc.Height >> mip);
 
-                    uint8_t* destination_sub_resource_memory = upload_alloc.cpuWriteAddress + sub_resourceLayout.Offset;
-
-                    for (uint64_t slice_index = 0; slice_index < sub_resource_depth; slice_index++)
+                    uint64_t src_row_pitch;
+                    uint64_t src_slice_pitch;
+                    if (is_bc)
                     {
-                        //const DirectX::Image* sub_image = image_data->GetImage(mip_index, array_index, slice_index);
+                        UINT blocks_wide = Math::Max(1u, (w + 3) / 4);
+                        UINT blocks_high = Math::Max(1u, (h + 3) / 4);
+                        src_row_pitch   = blocks_wide * bytes_per_block;
+                        src_slice_pitch = src_row_pitch * blocks_high;
+                    }
+                    else
+                    {
+                        src_row_pitch   = w * bytes_per_pixel;
+                        src_slice_pitch = src_row_pitch * h;
+                    }
 
-                        // TODO This will break with more than 1 subresource, fix when trying to upload multiple mips!
-                        const uint8_t* source_sub_resource_memory = ((uint8_t*)data);
-                        uint64_t sub_resource_row_pitch = row_sizes_in_bytes[sub_resource_index];;
+                    uint8_t* dst_subresource_base = dst_base + fp.Offset;
 
-                        for (uint64_t height = 0; height < sub_resource_height; height++)
+                    for (UINT z = 0; z < depth; ++z)
+                    {
+                        uint8_t* src_slice = src_cursor + z * src_slice_pitch;
+                        uint8_t* dst_slice = dst_subresource_base + z * fp.Footprint.RowPitch * rows;
+
+                        for (UINT row = 0; row < rows; ++row)
                         {
-                            memcpy(destination_sub_resource_memory, source_sub_resource_memory, Math::Min(sub_resource_pitch, sub_resource_row_pitch));
-                            destination_sub_resource_memory += sub_resource_pitch;
-                            source_sub_resource_memory += sub_resource_row_pitch;
+                            memcpy(dst_slice + row * fp.Footprint.RowPitch,
+                                   src_slice + row * src_row_pitch,
+                                   row_size_bytes);
                         }
                     }
+
+                    src_cursor += src_slice_pitch * depth;
                 }
             }
 
-            for (int sub_resource_index = 0; sub_resource_index < num_sub_resources; ++sub_resource_index)
+            for (uint32_t array_slice = 0; array_slice < array_size; ++array_slice)
             {
-                D3D12_TEXTURE_COPY_LOCATION src_loc = {};
-                src_loc.pResource               = upload_alloc.resource->GetResource();
-                src_loc.Type                    = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-                src_loc.PlacedFootprint         = layouts[sub_resource_index];
-                src_loc.PlacedFootprint.Offset  = upload_alloc.offset;
+                for (uint32_t mip = 0; mip < desc.MipLevels; ++mip)
+                {
+                    const uint32_t sub = D3D12CalcSubresource(mip, array_slice, 0, desc.MipLevels, array_size);
 
-                D3D12_TEXTURE_COPY_LOCATION dest_loc = {};
-                dest_loc.pResource          = gpu_res->GetResource();
-                dest_loc.Type               = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-                dest_loc.SubresourceIndex   = sub_resource_index;
+                    D3D12_TEXTURE_COPY_LOCATION src = {};
+                    src.pResource               = upload_alloc.resource->GetResource();
+                    src.Type                    = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+                    src.PlacedFootprint         = layouts[sub];
+                    src.PlacedFootprint.Offset += upload_alloc.offset;
 
-                m_CommandList->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, nullptr);
+                    D3D12_TEXTURE_COPY_LOCATION dst = {};
+                    dst.pResource        = gpu_res->GetResource();
+                    dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                    dst.SubresourceIndex = sub;
+
+                    m_CommandList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+                }
             }
         }
         break;

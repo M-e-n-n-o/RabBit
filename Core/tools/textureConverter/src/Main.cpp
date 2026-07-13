@@ -52,7 +52,7 @@ struct MipTexture
     uint32_t size;
 };
 
-std::vector<MipTexture> GenerateMipChain(const MipTexture& base, bool is_srgb, uint32_t channels, uint32_t* in_out_mips);
+std::vector<MipTexture> GenerateMipChain(const MipTexture& base, uint32_t* in_out_mips, bool is_srgb, uint32_t channels, bool tiled_texture, bool normal_texture);
 
 std::string GetFilenameWithoutExtension(const char* path);
 
@@ -88,6 +88,12 @@ int main(int argc, char* argv[])
     const char* target_format_name = FindLaunchArg("-format");
     EXIT_ON_FAIL(target_format_name != nullptr, "No -format specified");
         
+    const bool is_tiled = HasLaunchArg("-tiled");
+    LOG("Is tiled texture: " << is_tiled);
+
+    const bool is_normal = HasLaunchArg("-normal");
+    LOG("Contains normals: " << is_normal);
+
     int32_t target_format = kFormat_Invalid;
     if (std::strcmp(target_format_name, "R8") == 0)
         target_format = kFormat_R8;
@@ -208,7 +214,7 @@ int main(int argc, char* argv[])
         base_mip.data   = texture_memory;
         base_mip.size   = texture_size;
 
-        mips = GenerateMipChain(base_mip, IsSRGB[target_format], channels, &mip_count);
+        mips = GenerateMipChain(base_mip, &mip_count, IsSRGB[target_format], channels, is_tiled, is_normal);
 
         LOG("Generated mips: " << mip_count);
 
@@ -316,7 +322,8 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-MipTexture GenerateMip(const MipTexture& src, bool is_srgb, uint32_t channels, stbir_pixel_layout layout)
+MipTexture GenerateMip(const MipTexture& src, uint32_t channels, stbir_pixel_layout layout, 
+    stbir_datatype data_type, stbir_edge edge, stbir_filter filter)
 {
     MipTexture dst;
 
@@ -326,35 +333,25 @@ MipTexture GenerateMip(const MipTexture& src, bool is_srgb, uint32_t channels, s
     dst.size = dst.width * dst.height * channels;
     dst.data = new uint8_t[dst.size];
 
-    if (is_srgb)
-    {
-        stbir_resize_uint8_srgb(src.data,
-                                src.width,
-                                src.height,
-                                0,
-                                dst.data,
-                                dst.width,
-                                dst.height,
-                                0,
-                                layout);
-    }
-    else
-    {
-        stbir_resize_uint8_linear(src.data,
-                                  src.width,
-                                  src.height,
-                                  0,
-                                  dst.data,
-                                  dst.width,
-                                  dst.height,
-                                  0,
-                                  layout);
-    }
+    stbir_resize(src.data,
+                 src.width,
+                 src.height,
+                 0,
+                 dst.data,
+                 dst.width,
+                 dst.height,
+                 0,
+                 layout,
+                 data_type,
+                 edge,
+                 filter);
+
+    // TODO: Do renormalization on normal maps (also generate each mip from the top level rather than chaining to avoid renormalization errors)
 
     return dst;
 }
 
-std::vector<MipTexture> GenerateMipChain(const MipTexture& base, bool is_srgb, uint32_t channels, uint32_t* in_out_mips)
+std::vector<MipTexture> GenerateMipChain(const MipTexture& base, uint32_t* in_out_mips, bool is_srgb, uint32_t channels, bool tiled_texture, bool normal_texture)
 {
     std::vector<MipTexture> result;
     result.push_back(base);
@@ -370,10 +367,22 @@ std::vector<MipTexture> GenerateMipChain(const MipTexture& base, bool is_srgb, u
         EXIT_ON_FAIL(false, "Mip chain generation does not support " << channels << " amount of channels");
     }
 
+    stbir_datatype data_type = STBIR_TYPE_UINT8;
+    if (is_srgb)
+        data_type = STBIR_TYPE_UINT8_SRGB;
+    
+    stbir_edge edge = STBIR_EDGE_CLAMP;
+    if (tiled_texture)
+        edge = STBIR_EDGE_WRAP; // For example terrain textures
+
+    stbir_filter filter = STBIR_FILTER_MITCHELL;
+    if (normal_texture)
+        filter = STBIR_FILTER_CUBICBSPLINE;
+
     MipTexture current = base;
     while ((current.width > 1 || current.height > 1) && result.size() < *in_out_mips)
     {
-        MipTexture next = GenerateMip(current, is_srgb, channels, layout);
+        MipTexture next = GenerateMip(current, channels, layout, data_type, edge, filter);
         result.push_back(next);
         current = next;
     }
