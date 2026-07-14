@@ -346,7 +346,7 @@ MipTexture GenerateMip(const MipTexture& src, uint32_t channels, stbir_pixel_lay
                  edge,
                  filter);
 
-    // TODO: Do renormalization on normal maps (also generate each mip from the top level rather than chaining to avoid renormalization errors)
+    // TODO: Do renormalization on normal maps
 
     return dst;
 }
@@ -384,7 +384,9 @@ std::vector<MipTexture> GenerateMipChain(const MipTexture& base, uint32_t* in_ou
     {
         MipTexture next = GenerateMip(current, channels, layout, data_type, edge, filter);
         result.push_back(next);
-        current = next;
+
+        if (!normal_texture)
+            current = next; // For normal maps always use the top mip to generate the entire chain to avoid normal errors getting accumulated
     }
 
     *in_out_mips = result.size();
