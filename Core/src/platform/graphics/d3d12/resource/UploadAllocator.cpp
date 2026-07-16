@@ -95,7 +95,7 @@ namespace RB::Graphics::D3D12
         m_LastHighestPage = Math::Max(m_LastHighestPage, m_CurrentPage);
 
         // Every x resets, check if there are any pages not used, if so, delete them
-        if (m_ResetCounter == m_DeleteCheck)
+        if (m_ResetCounter >= m_DeleteCheck)
         {
             for (int i = m_LastHighestPage + 1; i < m_Pages.size(); ++i)
             {
