@@ -20,10 +20,10 @@ namespace Editor
     {
         switch (format)
         {
-        case RB::Graphics::RenderResourceFormat::R8G8B8A8_SRGB:
-        case RB::Graphics::RenderResourceFormat::B8G8R8A8_UNORM:
+        case RB::Graphics::RenderResourceFormat::RGBA8_SRGB:
+        case RB::Graphics::RenderResourceFormat::BGRA8_UNORM:
             return AV_PIX_FMT_BGRA;
-        case RB::Graphics::RenderResourceFormat::R8G8B8A8_UNORM:
+        case RB::Graphics::RenderResourceFormat::RGBA8_UNORM:
             return AV_PIX_FMT_RGBA;
         default:
             RB_LOG_ERROR("Cannot convert engine format to AVPixelFormat");

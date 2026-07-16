@@ -474,12 +474,12 @@ namespace RB::Graphics::D3D12
         g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
     }
 
-    Texture2DD3D12::Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    Texture2DD3D12::Texture2DD3D12(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
         : Texture2DD3D12(name, data, data_size, format, width, height, 1, is_render_target, random_read_write_access)
     {
     }
 
-    Texture2DD3D12::Texture2DD3D12(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
+    Texture2DD3D12::Texture2DD3D12(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
         : Texture2DD3D12(name, format, width, height, mips, is_render_target, random_read_write_access)
     {
         Streamable streamable = {};

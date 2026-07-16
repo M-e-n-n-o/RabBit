@@ -21,7 +21,7 @@ namespace Editor
         , m_Height(720)
         , m_DeltaIndex(0)
     {
-        m_SceneTexture = Texture2D::Create("Game scene", RenderResourceFormat::R8G8B8A8_UNORM, m_Width, m_Height, true, true);
+        m_SceneTexture = Texture2D::Create("Game scene", RenderResourceFormat::RGBA8_UNORM, m_Width, m_Height, true, true);
 
         for (int i = 0; i < c_HistoryLength; i++)
         {
@@ -58,7 +58,7 @@ namespace Editor
             Events::g_EventManager->InsertEvent(e);
 
             // Recreate the texture with the new size
-            m_SceneTexture = Texture2D::Create("Game scene", RenderResourceFormat::R8G8B8A8_UNORM, m_Width, m_Height, true, true);
+            m_SceneTexture = Texture2D::Create("Game scene", RenderResourceFormat::RGBA8_UNORM, m_Width, m_Height, true, true);
         }
 
         ImDrawList* dl = ImGui::GetWindowDrawList();

@@ -81,7 +81,7 @@ namespace RB::Graphics::D3D12
         
         void Readback(RenderResource* src, ReadbackBuffer* dst) override;
 
-        void UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size) override;
+        void UploadDataToResource(RenderResource* resource, const void* data, uint64_t data_size) override;
 
         void DrawInternal() override;
         void DrawInstancedInternal(uint32_t instances) override;

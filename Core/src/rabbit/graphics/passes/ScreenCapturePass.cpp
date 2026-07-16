@@ -33,7 +33,7 @@ namespace RB::Graphics
             {
                 RenderResourceDesc {
                     .name = "FinalColor",
-                    .format = RenderResourceFormat::R32G32B32A32_FLOAT,
+                    .format = RenderResourceFormat::RGBA32_FLOAT,
                     .type = RenderResourcePassType::Tex2D,
                     .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
                     .flags = kRTFlag_AllowRenderTarget

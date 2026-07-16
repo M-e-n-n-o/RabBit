@@ -126,7 +126,7 @@ namespace RB::Graphics::VK
         //TransitionResource();
     }
 
-    void RenderInterfaceVK::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
+    void RenderInterfaceVK::UploadDataToResource(RenderResource* resource, const void* data, uint64_t data_size)
     {
         switch (resource->GetPrimitiveType())
         {

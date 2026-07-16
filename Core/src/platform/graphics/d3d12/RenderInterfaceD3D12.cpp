@@ -410,8 +410,6 @@ namespace RB::Graphics::D3D12
 
         Texture* tex = ((Texture*)resource);
 
-        // Delay the clears so that they can get batched together just before a draw/dispatch
-
         // TODO Add UAV clear if possible on the resource
         // (Will then also have to implement a non-shader visible SRV/UAV descriptor heap, or just do a clear in a compute shader?)
 
@@ -780,7 +778,7 @@ namespace RB::Graphics::D3D12
         m_SchedulesReadbacks.push_back(dst);
     }
 
-    void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, void* data, uint64_t data_size)
+    void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, const void* data, uint64_t data_size)
     {
         RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
 

@@ -27,16 +27,17 @@ namespace RB::Graphics
         Unkown,
 
         // Regular format
-        R32G32B32A32_FLOAT,
-        R16G16B16A16_FLOAT,
-        R32G32_FLOAT,
+        RGBA32_FLOAT,
+        RGBA16_FLOAT,
+        RG32_FLOAT,
         R8_UINT,
         R32_UINT,
-        R8G8B8A8_UNORM,
-        B8G8R8A8_UNORM,
-        R8G8B8A8_SRGB,
-        R16G16_FLOAT,
-        R16G16_UINT,
+        RGBA8_UNORM,
+        BGRA8_UNORM,
+        RGBA8_SRGB,
+        R8G8_UNORM,
+        RG16_FLOAT,
+        RG16_UINT,
         R16_FLOAT,
         R16_UINT,
         R16_UNORM,
@@ -250,8 +251,8 @@ namespace RB::Graphics
 
         static Shared<Texture2D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         static Shared<Texture2D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access);
-        static Shared<Texture2D> Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
-        static Shared<Texture2D> Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2D> Create(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
+        static Shared<Texture2D> Create(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access);
         static Shared<Texture2D> Create(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access);
         // Copies the view on the resource but will not own the underlying resource
         static Shared<Texture2D> Alias(const Shared<Texture2D>& original);

@@ -109,8 +109,8 @@ namespace RB
             switch (header->format)
             {
             case TextureConverter::kFormat_R8:          out_image->format = RenderResourceFormat::R8_UNORM; break;
-            case TextureConverter::kFormat_RGBA8:       out_image->format = RenderResourceFormat::R8G8B8A8_UNORM; break;
-            case TextureConverter::kFormat_RGBA8_SRGB:  out_image->format = RenderResourceFormat::R8G8B8A8_SRGB; break;
+            case TextureConverter::kFormat_RGBA8:       out_image->format = RenderResourceFormat::RGBA8_UNORM; break;
+            case TextureConverter::kFormat_RGBA8_SRGB:  out_image->format = RenderResourceFormat::RGBA8_SRGB; break;
             case TextureConverter::kFormat_BC1:         out_image->format = RenderResourceFormat::BC1_UNORM; break;
             case TextureConverter::kFormat_BC1_SRGB:    out_image->format = RenderResourceFormat::BC1_SRGB; break;
             case TextureConverter::kFormat_BC3:         out_image->format = RenderResourceFormat::BC3_UNORM; break;
@@ -180,7 +180,7 @@ namespace RB
                     RB_LOG_WARN(LOGTAG_MAIN, "A single channel image cannot be in srgb space");
                 break;
             case 4:
-                out_image->format = srgb ? RenderResourceFormat::R8G8B8A8_SRGB : RenderResourceFormat::R8G8B8A8_UNORM; 
+                out_image->format = srgb ? RenderResourceFormat::RGBA8_SRGB : RenderResourceFormat::RGBA8_UNORM;
                 break;
             case 0:
             case 2:

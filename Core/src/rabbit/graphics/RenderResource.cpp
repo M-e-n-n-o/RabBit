@@ -16,21 +16,22 @@ namespace RB::Graphics
     {
         switch (format)
         {
-        case(RenderResourceFormat::R32G32B32A32_FLOAT):
+        case(RenderResourceFormat::RGBA32_FLOAT):
             return 16;
-        case(RenderResourceFormat::R32G32_FLOAT):
-        case(RenderResourceFormat::R16G16B16A16_FLOAT):
+        case(RenderResourceFormat::RG32_FLOAT):
+        case(RenderResourceFormat::RGBA16_FLOAT):
             return 8;
         case(RenderResourceFormat::R32_UINT):
-        case(RenderResourceFormat::R8G8B8A8_SRGB):
-        case(RenderResourceFormat::B8G8R8A8_UNORM):
-        case(RenderResourceFormat::R8G8B8A8_UNORM):
-        case(RenderResourceFormat::R16G16_FLOAT):
-        case(RenderResourceFormat::R16G16_UINT):
+        case(RenderResourceFormat::RGBA8_SRGB):
+        case(RenderResourceFormat::BGRA8_UNORM):
+        case(RenderResourceFormat::RGBA8_UNORM):
+        case(RenderResourceFormat::RG16_FLOAT):
+        case(RenderResourceFormat::RG16_UINT):
         case(RenderResourceFormat::R32_FLOAT):
         case(RenderResourceFormat::D32_FLOAT):
         case(RenderResourceFormat::R32_TYPELESS):
             return 4;
+        case(RenderResourceFormat::R8G8_UNORM):
         case(RenderResourceFormat::R16_FLOAT):
         case(RenderResourceFormat::R16_UINT):
         case(RenderResourceFormat::R16_UNORM):
@@ -81,7 +82,7 @@ namespace RB::Graphics
     {
         switch (format)
         {
-        case RenderResourceFormat::R8G8B8A8_SRGB:
+        case RenderResourceFormat::RGBA8_SRGB:
             return true;
         default:
             return false;
@@ -266,7 +267,7 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Shared<Texture2D> Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+    Shared<Texture2D> Texture2D::Create(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
@@ -282,7 +283,7 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Shared<Texture2D> Texture2D::Create(const char* name, void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
+    Shared<Texture2D> Texture2D::Create(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {

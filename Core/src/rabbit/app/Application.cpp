@@ -121,7 +121,7 @@ namespace RB
                                                    window.windowWidth, window.windowHeight, 
                                                    window.vsync, 
                                                    window.semiTransparent ? kWindowStyle_SemiTransparent : kWindowStyle_Default, 
-                                                   RenderResourceFormat::B8G8R8A8_UNORM,
+                                                   RenderResourceFormat::BGRA8_UNORM,
                                                    window.renderScale, window.forcedRenderAspect));
             }
 

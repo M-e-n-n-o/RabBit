@@ -31,7 +31,7 @@ namespace Editor
                 .virtualScale   = 1.0f,
                 .virtualAspect  = 0.0f,
                 .windowStyle    = kWindowStyle_DraggableBorderless,
-                .format         = RenderResourceFormat::R8G8B8A8_UNORM
+                .format         = RenderResourceFormat::RGBA8_UNORM
             })
         , m_Name(name)
     {

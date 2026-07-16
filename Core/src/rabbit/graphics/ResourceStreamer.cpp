@@ -25,7 +25,8 @@ namespace RB::Graphics
             for (int i = 0; i < itr->streamables.size(); ++i)
             {
                 // Free the upload data and set the resource as being finished with streaming
-                SAFE_FREE(itr->streamables[i].uploadData);
+                void* data = const_cast<void*>(itr->streamables[i].uploadData);
+                SAFE_FREE(data);
                 itr->streamables[i].resource->SetStreaming(false);
             }
         }
@@ -38,13 +39,14 @@ namespace RB::Graphics
         // Set the resource as streaming
         streamable.resource->SetStreaming(true);
 
+        // Memcpy over the data so the RenderResource does not need to keep it around
+        void* data_copy = ALLOC_HEAP(streamable.uploadSize);
+        memcpy(data_copy, streamable.uploadData, streamable.uploadSize);
+
         Streamable copy;
         copy.resource   = streamable.resource;
         copy.uploadSize = streamable.uploadSize;
-        copy.uploadData = ALLOC_HEAP(copy.uploadSize);
-
-        // Memcpy over the data so the RenderResource does not need to keep it around
-        memcpy(copy.uploadData, streamable.uploadData, copy.uploadSize);
+        copy.uploadData = data_copy;
 
         m_Streamables.push(copy);
     }
@@ -94,7 +96,8 @@ namespace RB::Graphics
                 for (int i = 0; i < itr->streamables.size(); ++i)
                 {
                     // Free the upload data and set the resource as being finished with streaming
-                    SAFE_FREE(itr->streamables[i].uploadData);
+                    void* data = const_cast<void*>(itr->streamables[i].uploadData);
+                    SAFE_FREE(data);
                     itr->streamables[i].resource->SetStreaming(false);
                 }
 

@@ -41,9 +41,9 @@ namespace RB::Graphics
 
     void InitResourceDefaults()
     {
-        g_TexDefaultError = Texture2D::Create("Default error texture 2D", g_TexDefaultErrorData, sizeof(g_TexDefaultErrorData), RenderResourceFormat::R8G8B8A8_UNORM, 4, 4, false, false);
-        g_TexDefaultWhite = Texture2D::Create("Default white texture 2D", g_TexDefaultWhiteData, sizeof(g_TexDefaultWhiteData), RenderResourceFormat::R8G8B8A8_UNORM, 1, 1, false, false);
-        g_TexDefaultBlack = Texture2D::Create("Default black texture 2D", g_TexDefaultBlackData, sizeof(g_TexDefaultBlackData), RenderResourceFormat::R8G8B8A8_UNORM, 1, 1, false, false);
+        g_TexDefaultError = Texture2D::Create("Default error texture 2D", g_TexDefaultErrorData, sizeof(g_TexDefaultErrorData), RenderResourceFormat::RGBA8_UNORM, 4, 4, false, false);
+        g_TexDefaultWhite = Texture2D::Create("Default white texture 2D", g_TexDefaultWhiteData, sizeof(g_TexDefaultWhiteData), RenderResourceFormat::RGBA8_UNORM, 1, 1, false, false);
+        g_TexDefaultBlack = Texture2D::Create("Default black texture 2D", g_TexDefaultBlackData, sizeof(g_TexDefaultBlackData), RenderResourceFormat::RGBA8_UNORM, 1, 1, false, false);
     }
 
     void DeleteResourceDefaults()

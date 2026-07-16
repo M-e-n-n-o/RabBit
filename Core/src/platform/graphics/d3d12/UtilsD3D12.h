@@ -72,23 +72,25 @@ namespace RB::Graphics::D3D12
     {
         switch (format)
         {
-        case(RenderResourceFormat::R32G32B32A32_FLOAT):
+        case(RenderResourceFormat::RGBA32_FLOAT):
             return DXGI_FORMAT_R32G32B32A32_FLOAT;
-        case(RenderResourceFormat::R16G16B16A16_FLOAT):
+        case(RenderResourceFormat::RGBA16_FLOAT):
             return DXGI_FORMAT_R16G16B16A16_FLOAT;
-        case(RenderResourceFormat::R32G32_FLOAT):
+        case(RenderResourceFormat::RG32_FLOAT):
             return DXGI_FORMAT_R32G32_FLOAT;
         case(RenderResourceFormat::R32_UINT):
             return DXGI_FORMAT_R32_UINT;
-        case(RenderResourceFormat::R8G8B8A8_SRGB):
+        case(RenderResourceFormat::RGBA8_SRGB):
             return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-        case(RenderResourceFormat::B8G8R8A8_UNORM):
+        case(RenderResourceFormat::BGRA8_UNORM):
             return DXGI_FORMAT_B8G8R8A8_UNORM;
-        case(RenderResourceFormat::R8G8B8A8_UNORM):
+        case(RenderResourceFormat::RGBA8_UNORM):
             return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case(RenderResourceFormat::R16G16_FLOAT):
+        case(RenderResourceFormat::R8G8_UNORM):
+            return DXGI_FORMAT_R8G8_UNORM;
+        case(RenderResourceFormat::RG16_FLOAT):
             return DXGI_FORMAT_R16G16_FLOAT;
-        case(RenderResourceFormat::R16G16_UINT):
+        case(RenderResourceFormat::RG16_UINT):
             return DXGI_FORMAT_R16G16_UINT;
         case(RenderResourceFormat::R16_FLOAT):
             return DXGI_FORMAT_R16_FLOAT;

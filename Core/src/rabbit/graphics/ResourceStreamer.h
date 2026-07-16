@@ -11,8 +11,8 @@ namespace RB::Graphics
     struct Streamable
     {
         RenderResource* resource;
-        void*           uploadData;
-        uint64_t		uploadSize;
+        const void*     uploadData;
+        uint64_t        uploadSize;
     };
 
     class ResourceStreamer
