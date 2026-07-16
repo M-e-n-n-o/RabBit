@@ -261,7 +261,7 @@ int main(int argc, char* argv[])
         for (int i = 0; i < mips.size(); i++)
         {
             const MipTexture& mip = mips[i];
-            squish::CompressImage(mip.data, mip.width, mip.height, compressed_memory + offset, flags);
+            squish::CompressImage(mip.data, mip.width, mip.height, mip.width * channels, compressed_memory + offset, flags);
             offset += compressed_sizes[i];
         }
 
