@@ -73,10 +73,10 @@ namespace RB::Graphics
         virtual bool            IsSameWindow(void* window_handle)   const = 0;
         virtual void*           GetNativeWindowHandle()             const = 0;
 
-        virtual RenderResourceFormat  GetBackBufferFormat() = 0;
-        virtual uint32_t              GetCurrentBackBufferIndex() = 0;
-        virtual Texture2D*            GetCurrentBackBuffer() = 0;
-        Texture2D*                    GetVirtualBackBuffer();
+        virtual RenderResourceFormat        GetBackBufferFormat() = 0;
+        virtual uint32_t                    GetCurrentBackBufferIndex() = 0;
+        virtual Texture2D*                  GetCurrentBackBuffer() = 0;
+        const Shared<Graphics::Texture2D>&  GetVirtualBackBuffer();
 
         void           Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1);
 

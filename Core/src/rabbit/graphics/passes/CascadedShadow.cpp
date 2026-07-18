@@ -71,8 +71,7 @@ namespace RB::Graphics
             return nullptr;
         }
 
-        uint32_t size = sizeof(CascadedShadowEntry::ModelEntry) * mesh_renderers.size();
-        CascadedShadowEntry::ModelEntry* entries = (CascadedShadowEntry::ModelEntry*)allocator->Allocate(size);
+        CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(mesh_renderers.size());
 
         const auto* light = (DirectionalLight*)list[0];
 
@@ -82,7 +81,7 @@ namespace RB::Graphics
         for (int i = 0; i < m_ShadowSlices; ++i)
         {
             float split;
-            frustums[i] = light->CalculateFrustum(*view_context->camera, *view_context->cameraTransform, i, m_ShadowSlices, &split);
+            frustums[i] = light->CalculateFrustum(view_context->camera, view_context->cameraTransform, i, m_ShadowSlices, &split);
         }
 
         uint32_t total_entries = 0;
@@ -135,7 +134,7 @@ namespace RB::Graphics
             return nullptr;
         }
 
-        CascadedShadowEntry* entry = (CascadedShadowEntry*)allocator->Allocate(sizeof(CascadedShadowEntry));
+        CascadedShadowEntry* entry = allocator->Allocate<CascadedShadowEntry>();
         entry->modelEntries = entries;
         entry->entryCount   = total_entries;
         entry->frustums     = frustums;

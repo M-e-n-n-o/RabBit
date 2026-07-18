@@ -12,10 +12,20 @@ namespace RB
         bool HasSpace(uint64_t size);
         void Reset();
 
+        void RegisterDestructor(void* object, uint64_t amount, void (*destructor)(void*, uint64_t));
+
     private:
-        uint8_t* m_MemoryBlock;
-        uint64_t m_Offset;
-        uint64_t m_Size;
+        struct DestructorEntry
+        {
+            void* object;
+            uint64_t amount;
+            void (*destructor)(void*, uint64_t);
+        };
+
+        List<DestructorEntry>  m_Destructors;
+        uint8_t*               m_MemoryBlock;
+        uint64_t               m_Offset;
+        uint64_t               m_Size;
     };
 
     using FrameAllocationPageSet = List<FrameAllocationPage*>;
@@ -26,6 +36,7 @@ namespace RB
         FrameAllocator(const char* name, uint32_t frame_cycles, uint64_t page_size);
         ~FrameAllocator();
 
+        // !!! BE AWARE that constructors & destructors are not called on objects that are allocated from this method !!!
         void* Allocate(uint64_t size, uint64_t align = 1);
 
         template<typename T>
@@ -37,6 +48,8 @@ namespace RB
         void Cycle();
 
     private:
+        void* Allocate(FrameAllocationPage*& out_used_page, uint64_t size, uint64_t align = 1);
+
         Deque<FrameAllocationPage>   m_AllPages;
         Queue<FrameAllocationPage*>  m_FreePages;
         List<FrameAllocationPageSet> m_UsedPageSets;
@@ -52,6 +65,27 @@ namespace RB
     template<typename T>
     inline T* FrameAllocator::Allocate(uint64_t amount)
     {
-        return (T*)Allocate(sizeof(T) * amount);
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+
+        FrameAllocationPage* used_page = nullptr;
+        void* memory = Allocate(used_page, sizeof(T) * amount, alignof(T));
+
+        T* objects = static_cast<T*>(memory);
+
+        for (uint64_t i = 0; i < amount; i++)
+        {
+            new (&objects[i]) T();
+        }
+
+        used_page->RegisterDestructor(objects, amount, [](void* ptr, uint64_t count)
+            {
+                T* array = static_cast<T*>(ptr);
+                for (uint64_t i = 0; i < count; i++)
+                {
+                    array[i].~T();
+                }
+            });
+
+        return objects;
     }
 }

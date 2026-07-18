@@ -120,7 +120,6 @@ namespace RB::Graphics
         bool                    asyncComputeCompatible  = false; // TODO Still unused
     };
 
-    // Make sure to do all your deletes and free's in the destructor!
     struct RenderPassEntry
     {
         virtual ~RenderPassEntry() = default;

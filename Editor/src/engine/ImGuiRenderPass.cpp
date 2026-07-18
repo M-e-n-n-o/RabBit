@@ -70,7 +70,7 @@ namespace Editor
             return nullptr;
         }
 
-        ImGuiRenderEntry* entry = allocator->Allocate<ImGuiRenderEntry>();
+        ImGuiRenderEntry* entry = (ImGuiRenderEntry*)allocator->Allocate(sizeof(ImGuiRenderEntry));
         memset(entry, 0, sizeof(ImGuiRenderEntry));
 
         auto* window = dynamic_cast<EngineEditorWindow*>(Application::GetInstance()->GetWindow(view_context->windowIndex));
@@ -88,7 +88,7 @@ namespace Editor
 
         // Create a snapshot of the render data for the RenderThread
         SetCurrentThreadImGuiAllocatorMode(AllocatorMode::RenderTransient);
-        entry->snapshot = allocator->Allocate<ImDrawDataSnapshot>();
+        entry->snapshot = (ImDrawDataSnapshot*)allocator->Allocate(sizeof(ImDrawDataSnapshot));
         entry->snapshot->SnapUsingCopy(draw_data, ImGui::GetTime());
         SetCurrentThreadImGuiAllocatorMode(AllocatorMode::Persistent);
 

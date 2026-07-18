@@ -14,7 +14,7 @@ namespace Editor
         void OnDestroy() override;
         void OnUpdate() override;
 
-        RB::Shared<RB::Graphics::Texture2D> GetSceneTexture() const { return m_SceneTexture; }
+        const RB::Shared<RB::Graphics::Texture2D>& GetSceneTexture() const { return m_SceneTexture; }
 
     private:
         RB::Shared<RB::Graphics::Texture2D> m_SceneTexture;

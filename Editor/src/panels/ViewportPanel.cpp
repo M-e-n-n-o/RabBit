@@ -46,8 +46,6 @@ namespace Editor
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImVec2 size = ImGui::GetContentRegionAvail();
 
-        ImGui::Image((ImTextureID)(D3D12::g_DescriptorManager->GetGpuHandle((std::static_pointer_cast<D3D12::Texture2DD3D12>(m_SceneTexture)->GetSrvHandle())).ptr), ImVec2(m_Width, m_Height));
-
         if ((Math::Abs(size.x - m_Width) > 0.01f || Math::Abs(size.y - m_Height) > 0.01f) &&
             size.x > 1.0f && size.y > 1.0f)
         {
@@ -59,6 +57,10 @@ namespace Editor
 
             // Recreate the texture with the new size
             m_SceneTexture = Texture2D::Create("Game scene", RenderResourceFormat::RGBA8_UNORM, m_Width, m_Height, true, true);
+        }
+        else
+        {
+            ImGui::Image((ImTextureID)(D3D12::g_DescriptorManager->GetGpuHandle((std::static_pointer_cast<D3D12::Texture2DD3D12>(m_SceneTexture)->GetSrvHandle())).ptr), ImVec2(m_Width, m_Height));
         }
 
         ImDrawList* dl = ImGui::GetWindowDrawList();

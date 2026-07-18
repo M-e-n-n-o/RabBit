@@ -59,10 +59,6 @@ namespace RB::Graphics
 
         Element* elements;
         uint32_t elementCount;
-
-        ~Overlay2DEntry()
-        {
-        }
     };
 
     RenderPassConfig Overlay2DPass::GetConfiguration(const RenderPassSettings& setting)
@@ -106,7 +102,7 @@ namespace RB::Graphics
         for (const ObjectComponent* obj : canvases)
         {
             const UICanvas* canvas = (const UICanvas*)obj;
-            if (canvas->GetTargetCamera() != view_context->camera || !canvas->IsEnabled())
+            if (/*canvas->GetTargetCamera() != view_context->camera ||*/ !canvas->IsEnabled())
             {
                 continue;
             }
@@ -120,7 +116,7 @@ namespace RB::Graphics
         for (const ObjectComponent* obj : canvases)
         {
             const UICanvas* canvas = (const UICanvas*)obj;
-            if (canvas->GetTargetCamera() != view_context->camera || !canvas->IsEnabled())
+            if (/*canvas->GetTargetCamera() != view_context->camera ||*/ !canvas->IsEnabled())
             {
                 continue;
             }
@@ -269,7 +265,7 @@ namespace RB::Graphics
             return a.renderOrder < b.renderOrder;
         });
 
-        Overlay2DEntry* entry = (Overlay2DEntry*)allocator->Allocate(sizeof(Overlay2DEntry));
+        Overlay2DEntry* entry = (Overlay2DEntry*)allocator->Allocate<Overlay2DEntry>();
         entry->elements = elements;
         entry->elementCount = element_count;
 

@@ -82,8 +82,7 @@ namespace RB::Graphics
     {
         auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
 
-        uint32_t size = sizeof(GBufferEntry::ModelEntry) * mesh_renderers.size();
-        GBufferEntry::ModelEntry* entries = (GBufferEntry::ModelEntry*)allocator->Allocate(size);
+        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderers.size());
 
         uint32_t total_entries = 0;
 
@@ -134,7 +133,7 @@ namespace RB::Graphics
             total_entries++;
         }
 
-        GBufferEntry* entry = (GBufferEntry*)allocator->Allocate(sizeof(GBufferEntry));
+        GBufferEntry* entry = allocator->Allocate<GBufferEntry>();
         entry->entries      = entries;
         entry->entryCount   = total_entries;
 

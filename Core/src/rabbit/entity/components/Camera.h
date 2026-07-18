@@ -10,6 +10,11 @@ namespace RB::Entity
     class Camera : public ObjectComponent
     {
     public:
+        Camera()
+            : Camera(0.1f, 1000.0f, 70.0f, nullptr)
+        {
+        }
+
         // FOV in degrees
         Camera(float near_plane, float far_plane, float vfov, void* target_window_handle, Graphics::RenderGraphType type = Graphics::kRenderGraphType_Normal)
             : m_Near(near_plane)
@@ -37,8 +42,8 @@ namespace RB::Entity
         uint32_t GetRenderGraphType() const { return m_RenderGraphType; }
 
         void* GetTargetWindowHandle() const { return m_TargetWindowHandle; }
-        Shared<Graphics::Texture2D> GetRenderTexture() const { return m_RenderTexture; }
-        void SetRenderTexture(Shared<Graphics::Texture2D> tex) { m_RenderTexture = tex; }
+        const Shared<Graphics::Texture2D>& GetRenderTexture() const { return m_RenderTexture; }
+        void SetRenderTexture(const Shared<Graphics::Texture2D>& tex) { m_RenderTexture = tex; }
         
         uint32_t GetRenderTargetWidth() const;
         uint32_t GetRenderTargetHeight() const;

@@ -21,8 +21,12 @@ namespace RB::Graphics
         // In future do most processing/calculations in SubmitEntry instead of Render method
         bool has_light;
         Entity::DirectionalLight light;
-        Entity::Camera camera;
-        Entity::Transform cameraTransform;
+
+        DeferredLightingEntry()
+            : has_light(false)
+            , light(Math::Float3(0), Math::Float3(0))
+        {
+        }
     };
 
     RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings& setting)
@@ -61,9 +65,7 @@ namespace RB::Graphics
     {
         const auto& list = scene->GetComponentsWithTypeOf<Entity::DirectionalLight>();
 
-        DeferredLightingEntry* entry = (DeferredLightingEntry*)allocator->Allocate(sizeof(DeferredLightingEntry));
-        entry->camera           = *view_context->camera;
-        entry->cameraTransform  = *view_context->cameraTransform;
+        DeferredLightingEntry* entry = allocator->Allocate<DeferredLightingEntry>();
 
         if (list.empty())
         {
@@ -106,7 +108,7 @@ namespace RB::Graphics
             for (int i = 0; i < cb.cascades; ++i)
             {
                 float split;
-                const auto frustum = entry->light.CalculateFrustum(entry->camera, entry->cameraTransform, i, cb.cascades, &split);
+                const auto frustum = entry->light.CalculateFrustum(inputs.viewContext->camera, inputs.viewContext->cameraTransform, i, cb.cascades, &split);
 
                 cb.shadowVPs[i]         = frustum.GetWorldToViewMatrix() * frustum.GetViewToClipMatrix();
                 cb.cascadeSplits.arr[i] = split;

@@ -293,9 +293,7 @@ namespace RB::Graphics
 
         out_context_count = camera_components.size();
 
-        // TODO Allocating these every frame is probably not super fast, can we maybe keep this memory around (FrameAllocator)?
-        uint32_t size = sizeof(ViewContext) * out_context_count;
-        ViewContext* contexts = (ViewContext*)m_RenderAllocator->Allocate(size);
+        ViewContext* contexts = m_RenderAllocator->Allocate<ViewContext>(out_context_count);
 
         uint32_t context_index = 0;
 
@@ -321,13 +319,13 @@ namespace RB::Graphics
             }
 
             contexts[context_index].enabled         = true;
-            contexts[context_index].camera          = camera;
-            contexts[context_index].cameraTransform = transform;
+            contexts[context_index].camera          = *camera;
+            contexts[context_index].cameraTransform = *transform;
 
             contexts[context_index].viewport.left = 0; // TODO Add DRS support
             contexts[context_index].viewport.top = 0;
 
-            Shared<Texture2D> render_texture = camera->GetRenderTexture();
+            const Shared<Texture2D>& render_texture = camera->GetRenderTexture();
             if (render_texture == nullptr)
             {
                 Window* window = Application::GetInstance()->FindWindow(camera->GetTargetWindowHandle());
@@ -339,7 +337,7 @@ namespace RB::Graphics
                     continue;
                 }
             
-                Texture2D* virtual_back_buffer = window->GetVirtualBackBuffer();
+                const Shared<Texture2D>& virtual_back_buffer = window->GetVirtualBackBuffer();
             
                 if (virtual_back_buffer == nullptr)
                 {
@@ -360,7 +358,7 @@ namespace RB::Graphics
             else
             {
                 contexts[context_index].isOffscreen           = true;
-                contexts[context_index].finalColorTarget      = render_texture.get();
+                contexts[context_index].finalColorTarget      = render_texture;
                 contexts[context_index].enableGammaCorrection = false;
                 contexts[context_index].brightness            = 1.0f;
                 contexts[context_index].viewport.width        = render_texture->GetViewportWidth();
@@ -621,7 +619,7 @@ namespace RB::Graphics
 
                 RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "ViewContext");
 
-                RenderResource* final_color_target = view_context.finalColorTarget;
+                const Shared<Texture2D>& final_color_target = view_context.finalColorTarget;
 
                 if (final_color_target == nullptr)
                 {
@@ -630,7 +628,7 @@ namespace RB::Graphics
                 }
 
                 // Clear the final target
-                context->graphicsInterface->Clear(final_color_target, view_context.clearColor);
+                context->graphicsInterface->Clear(final_color_target.get(), view_context.clearColor);
 
                 // Render the different passes
                 context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, 
@@ -710,7 +708,7 @@ namespace RB::Graphics
             
             context->graphicsInterface->SetConstantShaderData(Shader::PresentGlobals_PresentCB, &present_data, sizeof(Shader::PresentCB));
             
-            context->graphicsInterface->SetShaderResourceInput(Shader::PsPresent_Tex, view_context.finalColorTarget);
+            context->graphicsInterface->SetShaderResourceInput(Shader::PsPresent_Tex, view_context.finalColorTarget.get());
             context->graphicsInterface->PushRenderTarget(back_buffer, 0);
             
             if (window->IsSemiTransparent())

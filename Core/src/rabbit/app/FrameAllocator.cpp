@@ -22,6 +22,12 @@ namespace RB
     {
         RB_MUTEX_AUTO_LOCK(m_Mutex);
 
+        FrameAllocationPage* page_used = nullptr;
+        return Allocate(page_used, size, align);
+    }
+
+    void* FrameAllocator::Allocate(FrameAllocationPage*& out_used_page, uint64_t size, uint64_t align)
+    {
         RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, m_FrameCycles > 0, "Cannot allocate, there are no free pages left");
 
         uint64_t final_size = Math::AlignUp(size, align);
@@ -54,9 +60,11 @@ namespace RB
                 m_AllPages.emplace_back(m_PageSize);
                 to_use = &m_AllPages.back();
             }
-            
+
             m_UsedPageSets[m_CurrentPage].push_back(to_use);
         }
+
+        out_used_page = to_use;
 
         return to_use->Allocate(final_size);
     }
@@ -140,10 +148,21 @@ namespace RB
 
     void FrameAllocationPage::Reset()
     {
+        for (auto it = m_Destructors.rbegin(); it != m_Destructors.rend(); ++it)
+        {
+            it->destructor(it->object, it->amount);
+        }
+        m_Destructors.clear();
+
         m_Offset = 0;
 
 #ifdef RB_CONFIG_DEBUG
         memset(m_MemoryBlock, 0, m_Size);
 #endif
+    }
+
+    void FrameAllocationPage::RegisterDestructor(void* object, uint64_t amount, void(*destructor)(void*, uint64_t))
+    {
+        m_Destructors.emplace_back(object, amount, destructor);
     }
 }

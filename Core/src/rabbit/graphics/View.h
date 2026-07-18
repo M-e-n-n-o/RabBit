@@ -3,11 +3,8 @@
 #include "Frustum.h"
 #include "math/Vector.h"
 
-namespace RB::Entity
-{
-    class Camera;
-    class Transform;
-}
+#include "entity/components/Camera.h"
+#include "entity/components/Transform.h"
 
 namespace RB::Graphics
 {
@@ -26,23 +23,23 @@ namespace RB::Graphics
     class ViewContext
     {
     public:
-        bool         enabled;
-        bool         isOffscreen;
-        uint32_t     windowIndex;
-        Texture2D*   finalColorTarget;
-        bool         enableGammaCorrection;
-        float        brightness;
-        Math::Float4 clearColor;
-        uint32_t     renderGraphType;
-        uint32_t     renderGraphSizeID;
+        bool                enabled;
+        bool                isOffscreen;
+        uint32_t            windowIndex;
+        Shared<Texture2D>   finalColorTarget;
+        bool                enableGammaCorrection;
+        float               brightness;
+        Math::Float4        clearColor;
+        uint32_t            renderGraphType;
+        uint32_t            renderGraphSizeID;
 
         // RenderPasses can change the properties of the viewport if needed
         Viewport     viewport;
         Frustum      viewFrustum;
 
         // The camera this ViewContext is linked to
-        const Entity::Camera* camera;
-        const Entity::Transform* cameraTransform;
+        Entity::Camera camera;
+        Entity::Transform cameraTransform;
 
         void SetFrameConstants(uint32_t slot, RenderInterface* render_interface) const;
         void SetFrameConstants(uint32_t slot, RenderInterface* render_interface, Viewport vp, Frustum frustum) const;
