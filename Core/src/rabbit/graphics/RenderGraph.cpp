@@ -97,8 +97,22 @@ namespace RB::Graphics
                     int32_t id = m_RenderFlow[i].outputIDs[j];
                     if (id != VIEWCONTEXT_OUTPUT_ID && id != -1)
                     {
-                        disabled_inputs[disabled_idx] = id;
-                        disabled_idx++;
+                        bool is_pass_through = false;
+                        for (int param_id = 0; param_id < MAX_INOUT_RESOURCES_PER_RENDERPASS; ++param_id)
+                        {
+                            if (m_RenderFlow[i].parameterIDs[param_id] == id)
+                            {
+                                // Pass through in-outputs should not be disabled
+                                is_pass_through = true;
+                                break;
+                            }
+                        }
+
+                        if (!is_pass_through)
+                        {
+                            disabled_inputs[disabled_idx] = id;
+                            disabled_idx++;
+                        }
                     }
                 }
                 continue;
