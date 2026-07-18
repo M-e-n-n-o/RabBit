@@ -17,7 +17,7 @@ namespace RB::Graphics::D3D12
     //								VertexBuffer
     // ---------------------------------------------------------------------------
 
-    VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
+    VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
         : VertexBuffer(name)
         , m_Type(type)
         , m_VertexSize(vertex_size)
@@ -72,7 +72,7 @@ namespace RB::Graphics::D3D12
     //								IndexBuffer
     // ---------------------------------------------------------------------------
 
-    IndexBufferD3D12::IndexBufferD3D12(const char* name, uint32_t* data, uint64_t elements)
+    IndexBufferD3D12::IndexBufferD3D12(const char* name, const uint32_t* data, uint64_t elements)
         : IndexBuffer(name)
         , m_Elements(elements)
         , m_Data(data)

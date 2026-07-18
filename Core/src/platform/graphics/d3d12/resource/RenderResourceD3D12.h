@@ -17,7 +17,7 @@ namespace RB::Graphics::D3D12
     class VertexBufferD3D12 : public VertexBuffer
     {
     public:
-        VertexBufferD3D12(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
+        VertexBufferD3D12(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
         ~VertexBufferD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
@@ -35,7 +35,7 @@ namespace RB::Graphics::D3D12
         TopologyType                m_Type;
         uint32_t                    m_VertexSize;
         uint64_t                    m_Size;
-        void*                       m_Data;
+        const void*                 m_Data;
         bool                        m_Transient;
         D3D12_GPU_VIRTUAL_ADDRESS   m_GpuAddress;
     };
@@ -43,7 +43,7 @@ namespace RB::Graphics::D3D12
     class IndexBufferD3D12 : public IndexBuffer
     {
     public:
-        IndexBufferD3D12(const char* name, uint32_t* data, uint64_t elements);
+        IndexBufferD3D12(const char* name, const uint32_t* data, uint64_t elements);
         ~IndexBufferD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
@@ -56,7 +56,7 @@ namespace RB::Graphics::D3D12
         GpuResource*                m_Resource;
         D3D12_INDEX_BUFFER_VIEW		m_View;
         uint64_t					m_Elements;
-        void*                       m_Data;
+        const void*                 m_Data;
     };
 
 

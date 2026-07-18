@@ -134,7 +134,6 @@ namespace RB::Graphics::D3D12
             m_CommandListQueue.push(command_lists[i]);
         }
 
-
         return fence_value;
     }
 

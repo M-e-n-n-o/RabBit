@@ -286,13 +286,7 @@ namespace RB::Graphics
 
         // Initial propagation from final pass
         const RenderPassConfig& final_cfg = configs[m_FinalPassType];
-        for (uint32_t i = 0; i < _countof(final_cfg.outputResources); ++i)
-        {
-            if (i == (uint32_t)m_FinalResourceId)
-            {
-                PropagateViewOutput(m_FinalPassType, i);
-            }
-        }
+        PropagateViewOutput(m_FinalPassType, m_FinalResourceId);
 
 
         // Build render flow
@@ -351,11 +345,63 @@ namespace RB::Graphics
 
             const RenderPassConfig& config = configs[pass_type];
 
+            auto conn_it = m_Connections.find(pass_type);
+
+            // Figure out which outputs are aliased to a dependency that has an incoming link —
+            // those outputs should inherit the producer's resource instead of allocating a new one.
+            UnorderedMap<uint32_t, ResourceID> output_from_linked_dependency;
+            if (conn_it != m_Connections.end())
+            {
+                for (auto& from_pair : conn_it->second)
+                {
+                    RenderPassType producer = from_pair.first;
+                    const List<uint32_t>& flat = from_pair.second;
+
+                    for (size_t j = 0; j + 1 < flat.size(); j += 2)
+                    {
+                        uint32_t from_idx = flat[j];
+                        uint32_t to_idx = flat[j + 1];
+
+                        int32_t aliased_output = config.dependencies[to_idx].outputTextureIndex;
+                        if (aliased_output < 0)
+                            continue;
+
+                        int producerNode = -1;
+                        for (size_t k = 0; k < render_flow.size(); ++k)
+                        {
+                            if (render_flow[k].passID == (uint32_t)producer)
+                            {
+                                producerNode = (int)k;
+                                break;
+                            }
+                        }
+                        RB_ASSERT(LOGTAG_GRAPHICS, producerNode != -1, "Producer %d not added yet", from_idx);
+
+                        output_from_linked_dependency[aliased_output] = render_flow[producerNode].outputIDs[from_idx];
+                    }
+                }
+            }
+
             // Create outputs
             for (uint32_t i = 0; i < _countof(config.outputResources); ++i)
             {
                 if (config.outputResources[i].flags == UINT32_MAX)
                     break; // No more output textures
+
+                // This output is aliased to a dependency that's linked to a producer — reuse that
+                // resource directly instead of scheduling a new one (true in-place pass-through).
+                auto linked_itr = output_from_linked_dependency.find(i);
+                if (linked_itr != output_from_linked_dependency.end())
+                {
+                    output_ids[i] = linked_itr->second;
+                    if (output_ids[i] != VIEWCONTEXT_OUTPUT_ID)
+                    {
+                        const RenderResourceDesc& inherited = context->GetScheduledResource(output_ids[i]);
+                        RB_ASSERT(LOGTAG_GRAPHICS, inherited.format == config.outputResources[i].format, "Pass %d output %d aliases a linked resource of a different format", (uint32_t)pass_type, i);
+                        context->GetScheduledResource(output_ids[i]).CombineFlags(config.outputResources[i].flags);
+                    }
+                    continue;
+                }
 
                 if (IsViewOutput(pass_type, i))
                 {
@@ -374,7 +420,6 @@ namespace RB::Graphics
             }
 
             // Assign parameters
-            auto conn_it = m_Connections.find(pass_type);
             if (conn_it != m_Connections.end())
             {
                 for (auto& from_pair : conn_it->second)

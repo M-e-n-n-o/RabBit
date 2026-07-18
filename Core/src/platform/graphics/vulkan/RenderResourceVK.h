@@ -14,7 +14,7 @@ namespace RB::Graphics::VK
     class VertexBufferVK : public VertexBuffer
     {
     public:
-        VertexBufferVK(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
+        VertexBufferVK(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
         ~VertexBufferVK();
 
         void* GetNativeResource() const override { return m_Resource; }
@@ -35,7 +35,7 @@ namespace RB::Graphics::VK
     class IndexBufferVK : public IndexBuffer
     {
     public:
-        IndexBufferVK(const char* name, uint32_t* data, uint64_t elements);
+        IndexBufferVK(const char* name, const uint32_t* data, uint64_t elements);
         ~IndexBufferVK();
 
         void* GetNativeResource() const override { return m_Resource; }

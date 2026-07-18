@@ -27,7 +27,7 @@ namespace RB::Graphics::VK
             return VK_FORMAT_B8G8R8A8_UNORM;
         case(RenderResourceFormat::RGBA8_UNORM):
             return VK_FORMAT_R8G8B8A8_UNORM;
-        case(RenderResourceFormat::R8G8_UNORM):
+        case(RenderResourceFormat::RG8_UNORM):
             return VK_FORMAT_R8G8_UNORM;
         case(RenderResourceFormat::RG16_FLOAT):
             return VK_FORMAT_R16G16_SFLOAT;

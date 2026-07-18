@@ -2,20 +2,18 @@
 #include "View.h"
 #include "RenderInterface.h"
 
-// Shader code
 #include "shaders/shared/Common.h"
-#include "codeGen/ShaderDefines.h"
 
 using namespace RB::Math;
 
 namespace RB::Graphics
 {
-    void ViewContext::SetFrameConstants(RenderInterface* render_interface) const
+    void ViewContext::SetFrameConstants(uint32_t slot, RenderInterface* render_interface) const
     {
-        SetFrameConstants(render_interface, viewport, viewFrustum);
+        SetFrameConstants(slot, render_interface, viewport, viewFrustum);
     }
 
-    void ViewContext::SetFrameConstants(RenderInterface* render_interface, Viewport vp, Frustum frustum) const
+    void ViewContext::SetFrameConstants(uint32_t slot, RenderInterface* render_interface, Viewport vp, Frustum frustum) const
     {
         Shader::FrameConstants constants;
         constants.worldToViewMat = frustum.GetWorldToViewMatrix();
@@ -24,6 +22,6 @@ namespace RB::Graphics
         constants.clipToViewMat  = frustum.GetClipToViewMatrix();
         constants.dimensions     = Float4(vp.width, vp.height, 1.0f / (float)vp.width, 1.0f / (float)vp.height);
 
-        render_interface->SetConstantShaderData(Shader::CommonGlobals_FC, &constants, sizeof(constants));
+        render_interface->SetConstantShaderData(slot, &constants, sizeof(constants));
     }
 }

@@ -86,7 +86,7 @@ namespace RB::Graphics
                         .format   = RenderResourceFormat::RGBA32_FLOAT,
                         .type     = RenderResourcePassType::Tex2D,
                         .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
-                        .flags    = kRTFlag_AllowRenderTarget
+                        .flags    = kRTFlag_AllowRenderTarget | kRTFlag_ClearBeforeGraph
                     }
                 },
 
@@ -350,6 +350,8 @@ namespace RB::Graphics
         Overlay2DEntry* entry = (Overlay2DEntry*)in.entryContext;
         for (int i = 0; i < entry->elementCount; i++)
         {
+            in.ri->ClearConstantShaderData();
+
             switch (entry->elements[i].type)
             {
             case OverlayEntryType::Rectangle:

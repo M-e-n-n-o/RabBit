@@ -31,7 +31,7 @@ namespace RB::Graphics
         case(RenderResourceFormat::D32_FLOAT):
         case(RenderResourceFormat::R32_TYPELESS):
             return 4;
-        case(RenderResourceFormat::R8G8_UNORM):
+        case(RenderResourceFormat::RG8_UNORM):
         case(RenderResourceFormat::R16_FLOAT):
         case(RenderResourceFormat::R16_UINT):
         case(RenderResourceFormat::R16_UNORM):
@@ -150,7 +150,7 @@ namespace RB::Graphics
         return (RenderResourceType)primitive_type;
     }
 
-    Shared<VertexBuffer> VertexBuffer::Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
+    Shared<VertexBuffer> VertexBuffer::Create(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
     {
         switch (Renderer::GetAPI())
         {
@@ -172,7 +172,7 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Shared<IndexBuffer> IndexBuffer::Create(const char* name, uint32_t* data, uint64_t elements)
+    Shared<IndexBuffer> IndexBuffer::Create(const char* name, const uint32_t* data, uint64_t elements)
     {
         switch (Renderer::GetAPI())
         {

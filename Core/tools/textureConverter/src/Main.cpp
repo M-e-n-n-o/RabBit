@@ -261,7 +261,22 @@ int main(int argc, char* argv[])
         for (int i = 0; i < mips.size(); i++)
         {
             const MipTexture& mip = mips[i];
-            squish::CompressImage(mip.data, mip.width, mip.height, mip.width * channels, compressed_memory + offset, flags);
+
+            // Before compression, pad to RGBA regardless of source channel count as squish does not correctly read from the input data less than 4 channels
+            // (even when passing the correct pitch)
+            std::vector<uint8_t> rgba_buffer(size_t(mip.width) * mip.height * 4, 0);
+            for (int y = 0; y < mip.height; y++)
+            {
+                for (int x = 0; x < mip.width; x++)
+                {
+                    const uint8_t* src = mip.data + (size_t(y) * mip.width + x) * channels;
+                    uint8_t* dst = rgba_buffer.data() + (size_t(y) * mip.width + x) * 4;
+                    for (uint32_t c = 0; c < channels; c++)
+                        dst[c] = src[c];
+                }
+            }
+
+            squish::CompressImage(rgba_buffer.data(), mip.width, mip.height, compressed_memory + offset, flags);
             offset += compressed_sizes[i];
         }
 

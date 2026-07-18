@@ -96,7 +96,7 @@ namespace RB::Graphics::D3D12
             if (vs_size > 0)
             {
                 CD3DX12_ROOT_PARAMETER1 root_param_vs;
-                root_param_vs.InitAsConstants(vs_size / sizeof(uint32_t), 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+                root_param_vs.InitAsConstants(vs_size / sizeof(uint32_t), vs_reflection->entryParametersBindingIndex, 0, D3D12_SHADER_VISIBILITY_VERTEX);
                 parameters.push_back(root_param_vs);
             }
 
@@ -110,7 +110,7 @@ namespace RB::Graphics::D3D12
                 if (ps_size > 0)
                 {
                     CD3DX12_ROOT_PARAMETER1 root_param_ps;
-                    root_param_ps.InitAsConstants(ps_size / sizeof(uint32_t), 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+                    root_param_ps.InitAsConstants(ps_size / sizeof(uint32_t), ps_reflection->entryParametersBindingIndex, 0, D3D12_SHADER_VISIBILITY_PIXEL);
                     parameters.push_back(root_param_ps);
                 }
             }
@@ -216,7 +216,7 @@ namespace RB::Graphics::D3D12
             if (size > 0)
             {
                 CD3DX12_ROOT_PARAMETER1 root_param;
-                root_param.InitAsConstants(size / sizeof(uint32_t), 0, 0, D3D12_SHADER_VISIBILITY_ALL);
+                root_param.InitAsConstants(size / sizeof(uint32_t), reflection->entryParametersBindingIndex, 0, D3D12_SHADER_VISIBILITY_ALL);
                 parameters.push_back(root_param);
             }
         }
@@ -407,7 +407,7 @@ namespace RB::Graphics::D3D12
                 D3D12_STATIC_SAMPLER_DESC clamp_linear = {};
                 clamp_linear.ShaderRegister   = param.bindingIndex;
                 clamp_linear.RegisterSpace    = 0;
-                clamp_linear.Filter           = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+                clamp_linear.Filter           = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
                 clamp_linear.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
                 clamp_linear.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
                 clamp_linear.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -419,6 +419,24 @@ namespace RB::Graphics::D3D12
                 clamp_linear.MaxLOD           = D3D12_FLOAT32_MAX;
                 clamp_linear.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
                 static_samplers.push_back(clamp_linear);
+            }
+            else if (std::strstr(param.name.c_str(), "g_ClampLinearMipSampler"))
+            {
+                D3D12_STATIC_SAMPLER_DESC clamp_linear_mip = {};
+                clamp_linear_mip.ShaderRegister   = param.bindingIndex;
+                clamp_linear_mip.RegisterSpace    = 0;
+                clamp_linear_mip.Filter           = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+                clamp_linear_mip.AddressU         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_linear_mip.AddressV         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_linear_mip.AddressW         = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+                clamp_linear_mip.MipLODBias       = 0;
+                clamp_linear_mip.MaxAnisotropy    = 1;
+                clamp_linear_mip.ComparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+                clamp_linear_mip.BorderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+                clamp_linear_mip.MinLOD           = 0.0f;
+                clamp_linear_mip.MaxLOD           = D3D12_FLOAT32_MAX;
+                clamp_linear_mip.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+                static_samplers.push_back(clamp_linear_mip);
             }
             else if (std::strstr(param.name.c_str(), "g_WrapAnisoSampler"))
             {

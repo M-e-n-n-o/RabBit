@@ -5,7 +5,7 @@ namespace RB::Graphics
 {
     struct SmaaSettings : public RenderPassSettings
     {
-        // Choose between Blinn-Phong or PBR lighting
+        
     };
 
     class SmaaPass : public RenderPass

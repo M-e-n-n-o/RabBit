@@ -165,7 +165,7 @@ namespace RB::Graphics
             in.ri->SetDepthStencil(csm);
 
             // Use the custom frustum
-            in.viewContext->SetFrameConstants(in.ri, in.viewContext->viewport, entry->frustums[slice]);
+            in.viewContext->SetFrameConstants(Shader::SimpleGlobals_FC, in.ri, in.viewContext->viewport, entry->frustums[slice]);
 
             for (int i = 0; i < entry->entryCount; ++i)
             {

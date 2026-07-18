@@ -339,14 +339,9 @@ namespace RB::Graphics
         return new_id;
     }
 
-    RenderResourceDesc RenderGraphContext::GetScheduledResource(ResourceID id)
+    RenderResourceDesc& RenderGraphContext::GetScheduledResource(ResourceID id)
     {
-        if (id < 0 || id >= m_Descriptions.size())
-        {
-            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Trying to grab an invalid RenderTextureDesc from the RenderGraphContext");
-            return {};
-        }
-
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, id >= 0 && id < m_Descriptions.size(), "Trying to grab an invalid RenderTextureDesc from the RenderGraphContext");
         return m_Descriptions[id];
     }
 

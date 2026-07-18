@@ -113,6 +113,7 @@ void Compiler::CompileFiles(const char* base_path)
         CompilerOptionEntry options[] = 
         {
             { CompilerOptionName::WarningsAsErrors,         CompilerOptionValue{.kind = CompilerOptionValueKind::String,    .stringValue0   = "all"                             }},
+            { CompilerOptionName::PreserveParameters,       CompilerOptionValue{.kind = CompilerOptionValueKind::Int,       .intValue0      = true                              }},
             //{ CompilerOptionName::ForceDXLayout,            CompilerOptionValue{.kind = CompilerOptionValueKind::Int,       .intValue0      = true                              }},
 #if RB_CONFIG_DEBUG
             { CompilerOptionName::DebugInformation,         CompilerOptionValue{.kind = CompilerOptionValueKind::Int,       .intValue0      = SLANG_DEBUG_INFO_LEVEL_MAXIMAL    }},
@@ -138,6 +139,7 @@ void Compiler::CompileFiles(const char* base_path)
         std::vector<GlobalParameter> global_params;
         ReflectGlobalScope(program_layout->getGlobalParamsVarLayout(), &global_params);
 
+        uint32_t entry_params_binding_slot = 0;
         for (int entry_point_idx = 0; entry_point_idx < program_layout->getEntryPointCount(); entry_point_idx++)
         {
             EntryPointReflection* entry_point = program_layout->getEntryPointByIndex(entry_point_idx);
@@ -158,6 +160,7 @@ void Compiler::CompileFiles(const char* base_path)
             }
 
             ReflectEntryPointParameters(entry_point, &compiled_shader);
+            compiled_shader.entryParametersBindingIndex = compiled_shader.entryPointParameters.empty() ? UINT32_MAX : entry_params_binding_slot++;
 
             Slang::ComPtr<IBlob> shader_blob;
             program->getEntryPointCode(entry_point_idx, 0, shader_blob.writeRef(), diag_blob.writeRef());
@@ -167,34 +170,7 @@ void Compiler::CompileFiles(const char* base_path)
             m_Reflections.push_back(compiled_shader);
         }
 
-        // Get the global params of this single module only
-        std::vector<GlobalParameter> module_params;
-        ReflectGlobalScope(module->getLayout()->getGlobalParamsVarLayout(), &module_params);
-        m_ModuleParameters.emplace(module->getName(), module_params);
-    }
-
-    // Update the binding indices of each module param with the actual linked global params
-    {
-        std::unordered_map<std::string, uint32_t> binding_lookup;
-
-        for (const auto& reflection : m_Reflections)
-        {
-            for (const auto& global_param : reflection.globalParameters)
-            {
-                binding_lookup[global_param.name] = global_param.bindingIndex;
-            }
-        }
-
-        for (auto& [module_name, module_params] : m_ModuleParameters)
-        {
-            for (auto& param : module_params)
-            {
-                if (auto it = binding_lookup.find(param.name); it != binding_lookup.end())
-                {
-                    param.bindingIndex = it->second;
-                }
-            }
-        }
+        m_ModuleParameters.emplace(module->getName(), global_params);
     }
 }
 

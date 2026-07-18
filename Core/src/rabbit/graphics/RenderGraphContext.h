@@ -38,7 +38,7 @@ namespace RB::Graphics
         // created for a different RenderGraph and can be aliased.
         ResourceID ScheduleNewResource(const RenderResourceDesc& desc, uint32_t graph_id);
 
-        RenderResourceDesc GetScheduledResource(ResourceID id);
+        RenderResourceDesc& GetScheduledResource(ResourceID id);
         List<ResourceID> GetScheduledGraphResources(uint32_t graph_id);
 
         uint32_t GetTotalCreatedResources() const { return m_Resources.size(); }

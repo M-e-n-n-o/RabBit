@@ -88,4 +88,5 @@
 #include "rabbit/graphics/passes/CascadedShadow.h"
 #include "rabbit/graphics/passes/DeferredLighting.h"
 #include "rabbit/graphics/passes/Overlay2D.h"
+#include "rabbit/graphics/passes/Smaa.h"
 #include "rabbit/graphics/passes/ScreenCapturePass.h"

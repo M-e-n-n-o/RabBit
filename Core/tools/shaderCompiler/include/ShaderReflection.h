@@ -64,8 +64,9 @@ namespace RB::ShaderCompiler
 		std::string							entryName;
 		Stage								stage;
 		Blob								shaderBlob;
-		std::vector<GlobalParameter>		globalParameters;
+		uint32_t							entryParametersBindingIndex;
 		std::vector<EntryParameter>			entryPointParameters; // Push constants
+		std::vector<GlobalParameter>		globalParameters;
 		std::vector<VertexEntryParameter>	vertexParameters;
 	};
 }

@@ -157,7 +157,7 @@ namespace RB::Graphics
         GBufferEntry* entry = (GBufferEntry*)in.entryContext;
 
         // Set the frame constants
-        in.viewContext->SetFrameConstants(in.ri);
+        in.viewContext->SetFrameConstants(GeometryGlobals_FC, in.ri);
 
         for (int i = 0; i < entry->entryCount; ++i)
         {

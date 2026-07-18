@@ -21,6 +21,7 @@ namespace RB::Graphics
         CascadedShadow,
         DeferredLighting,
         Overlay2D,
+        Smaa,
         ScreenCapture,
 
         Custom0,
@@ -102,9 +103,9 @@ namespace RB::Graphics
     struct RenderTextureInputDesc
     {
         const char* name;
-        // Points to an optional output texture (useful for depth textures that we want to read from and write to)
+        // Points to an optional output texture (useful for pass through passes that want to read from a tex and modify it)
         // If this is set, then the dependencyTexture stays nullptr and the RenderPass should use the outputTexture
-        int32_t     outputTextureIndex;
+        int32_t     outputTextureIndex = -1;
     };
 
     #define MAX_INOUT_RESOURCES_PER_RENDERPASS      8

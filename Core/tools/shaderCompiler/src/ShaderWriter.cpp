@@ -153,23 +153,9 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 		reflection_output.append(std::to_string(shader.shaderBlob.offsetInFile));
 		reflection_output.append(",");
 		reflection_output.append(std::to_string(shader.shaderBlob.size));
-		reflection_output.append("},{");
-
-		for (int i = 0; i < shader.globalParameters.size(); i++)
-		{
-			const GlobalParameter& par = shader.globalParameters[i];
-			reflection_output.append("{\"");
-			reflection_output.append(par.name);
-			reflection_output.append("\",(ParamType)");
-			reflection_output.append(std::to_string((uint32_t)par.type));
-			reflection_output.append(",");
-			reflection_output.append(std::to_string(par.bindingIndex));
-			reflection_output.append(",");
-			reflection_output.append(std::to_string(par.size));
-			reflection_output.append("},");
-		}
-
-		reflection_output.append("},{");
+		reflection_output.append("},");
+		reflection_output.append(std::to_string((uint32_t)shader.entryParametersBindingIndex));
+		reflection_output.append(",{");
 
 		for (int i = 0; i < shader.entryPointParameters.size(); i++)
 		{
@@ -194,7 +180,26 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 			reflection_output.append(std::to_string(par.size));
 			reflection_output.append("},");
 		}
+
 		reflection_output.append("},{");
+
+		for (int i = 0; i < shader.globalParameters.size(); i++)
+		{
+			const GlobalParameter& par = shader.globalParameters[i];
+
+			reflection_output.append("{\"");
+			reflection_output.append(par.name);
+			reflection_output.append("\",(ParamType)");
+			reflection_output.append(std::to_string((uint32_t)par.type));
+			reflection_output.append(",");
+			reflection_output.append(std::to_string(par.bindingIndex));
+			reflection_output.append(",");
+			reflection_output.append(std::to_string(par.size));
+			reflection_output.append("},");
+		}
+
+		reflection_output.append("},{");
+
 		for (int i = 0; i < shader.vertexParameters.size(); i++)
 		{
 			const VertexEntryParameter& par = shader.vertexParameters[i];

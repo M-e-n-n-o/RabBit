@@ -82,7 +82,8 @@ namespace RB::Graphics::D3D12
             BindDescriptorHeaps();
         }
 
-        ClearResources();
+        ClearConstantShaderData();
+        ClearResourceInputs();
         ClearRenderTargets();
     }
 
@@ -363,6 +364,22 @@ namespace RB::Graphics::D3D12
         }
     }
 
+    void RenderInterfaceD3D12::ClearResourceInputs()
+    {
+        for (int i = 0; i < _countof(m_RenderState.vertexResourceHandles); ++i)
+        {
+            m_RenderState.vertexResourceHandles[i] = DescriptorIndex{};
+        }
+        for (int i = 0; i < _countof(m_RenderState.pixelResourceHandles); ++i)
+        {
+            m_RenderState.pixelResourceHandles[i] = DescriptorIndex{};
+        }
+        for (int i = 0; i < _countof(m_RenderState.computeResourceHandles); ++i)
+        {
+            m_RenderState.computeResourceHandles[i] = DescriptorIndex{};
+        }
+    }
+
     void RenderInterfaceD3D12::SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size)
     {
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.cbvAddresses), "Up the amount of possible CBV addresses");
@@ -372,6 +389,11 @@ namespace RB::Graphics::D3D12
         memcpy(allocation.cpuWriteAddress, data, data_size);
 
         m_RenderState.cbvAddresses[slot] = allocation.gpuAddress;
+    }
+
+    void RenderInterfaceD3D12::ClearConstantShaderData()
+    {
+        memset(m_RenderState.cbvAddresses, 0, _countof(m_RenderState.cbvAddresses) * sizeof(D3D12_GPU_VIRTUAL_ADDRESS));
     }
 
     void RenderInterfaceD3D12::SetVertexShader(uint32_t shader_index)
@@ -1039,7 +1061,7 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::BindResources(bool compute)
     {
-        uint32_t root_index = 0;
+        uint32_t next_root_index = 0;
 
         for (int i = 0; i < 3; i++)
         {
@@ -1065,11 +1087,11 @@ namespace RB::Graphics::D3D12
             if (values_to_set > 0)
             {
                 if (compute)
-                    m_CommandList->SetComputeRoot32BitConstants(root_index, values_to_set, descriptor_handle_values, 0);
+                    m_CommandList->SetComputeRoot32BitConstants(next_root_index, values_to_set, descriptor_handle_values, 0);
                 else
-                    m_CommandList->SetGraphicsRoot32BitConstants(root_index, values_to_set, descriptor_handle_values, 0);
+                    m_CommandList->SetGraphicsRoot32BitConstants(next_root_index, values_to_set, descriptor_handle_values, 0);
 
-                root_index++;
+                next_root_index++;
             }
         }
 
@@ -1079,31 +1101,12 @@ namespace RB::Graphics::D3D12
             if (m_RenderState.cbvAddresses[i] > 0)
             {
                 if (compute)
-                {
-                    m_CommandList->SetComputeRootConstantBufferView(root_index, m_RenderState.cbvAddresses[i]);
-                }
+                    m_CommandList->SetComputeRootConstantBufferView(next_root_index, m_RenderState.cbvAddresses[i]);
                 else
-                {
-                    m_CommandList->SetGraphicsRootConstantBufferView(root_index, m_RenderState.cbvAddresses[i]);
-                }
-                root_index++;
-            }
-        }
-    }
+                    m_CommandList->SetGraphicsRootConstantBufferView(next_root_index, m_RenderState.cbvAddresses[i]);
 
-    void RenderInterfaceD3D12::ClearResources()
-    {
-        for (int i = 0; i < _countof(m_RenderState.vertexResourceHandles); ++i)
-        {
-            m_RenderState.vertexResourceHandles[i] = DescriptorIndex{};
-        }
-        for (int i = 0; i < _countof(m_RenderState.pixelResourceHandles); ++i)
-        {
-            m_RenderState.pixelResourceHandles[i] = DescriptorIndex{};
-        }
-        for (int i = 0; i < _countof(m_RenderState.computeResourceHandles); ++i)
-        {
-            m_RenderState.computeResourceHandles[i] = DescriptorIndex{};
+                next_root_index++;
+            }
         }
     }
 
@@ -1111,7 +1114,7 @@ namespace RB::Graphics::D3D12
     {
         #define CHECK_SET(check, message) if (!(check)) { RB_LOG_ERROR(LOGTAG_GRAPHICS, message); return; }
 
-        CHECK_SET(m_RenderState.vertexBufferType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,    "Cannot draw, vertex buffer was not set")
+        CHECK_SET(m_RenderState.vertexBufferType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,    "Cannot draw, vertex buffer type was not set")
         CHECK_SET(m_RenderState.scissorSet,                                                     "Cannot draw, scissor was not set")
         CHECK_SET(m_RenderState.viewportSet,                                                    "Cannot draw, viewport was not set")
         CHECK_SET(m_RenderState.vsShader >= 0,                                                  "Cannot draw, vertex shader was not set yet")

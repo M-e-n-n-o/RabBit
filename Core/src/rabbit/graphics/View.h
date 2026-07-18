@@ -42,7 +42,7 @@ namespace RB::Graphics
         const Entity::Camera* camera;
         const Entity::Transform* cameraTransform;
 
-        void SetFrameConstants(RenderInterface* render_interface) const;
-        void SetFrameConstants(RenderInterface* render_interface, Viewport vp, Frustum frustum) const;
+        void SetFrameConstants(uint32_t slot, RenderInterface* render_interface) const;
+        void SetFrameConstants(uint32_t slot, RenderInterface* render_interface, Viewport vp, Frustum frustum) const;
     };
 }

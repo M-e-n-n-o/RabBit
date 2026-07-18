@@ -35,7 +35,7 @@ namespace RB::Graphics
         RGBA8_UNORM,
         BGRA8_UNORM,
         RGBA8_SRGB,
-        R8G8_UNORM,
+        RG8_UNORM,
         RG16_FLOAT,
         RG16_UINT,
         R16_FLOAT,
@@ -146,7 +146,7 @@ namespace RB::Graphics
         virtual uint32_t GetVertexElementCount() const = 0;
         virtual TopologyType GetTopologyType() const = 0;
 
-        static Shared<VertexBuffer> Create(const char* name, const TopologyType& type, void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false);
+        static Shared<VertexBuffer> Create(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false);
 
     protected:
         VertexBuffer(const char* name) : Buffer(name, RenderResourceType::VertexBuffer) {}
@@ -163,7 +163,7 @@ namespace RB::Graphics
 
         virtual uint64_t GetIndexCount() const = 0;
 
-        static Shared<IndexBuffer> Create(const char* name, uint32_t* data, uint64_t elements);
+        static Shared<IndexBuffer> Create(const char* name, const uint32_t* data, uint64_t elements);
 
     protected:
         IndexBuffer(const char* name) : Buffer(name, RenderResourceType::IndexBuffer) {}

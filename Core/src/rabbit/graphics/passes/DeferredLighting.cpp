@@ -48,7 +48,7 @@ namespace RB::Graphics
                         .format   = RenderResourceFormat::RGBA32_FLOAT,
                         .type     = RenderResourcePassType::Tex2D,
                         .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
-                        .flags    = kRTFlag_AllowRandomReadWrites
+                        .flags    = kRTFlag_AllowRandomReadWrites | kRTFlag_ClearBeforeGraph
                     }
                 },
 
@@ -81,7 +81,7 @@ namespace RB::Graphics
 
     void DeferredLightingPass::Render(RenderPassInput& inputs)
     {
-        inputs.viewContext->SetFrameConstants(inputs.ri);
+        inputs.viewContext->SetFrameConstants(ApplyLightingGlobals_FC, inputs.ri);
 
         inputs.ri->SetComputeShader(CS_ApplyLightingDeferred);
         

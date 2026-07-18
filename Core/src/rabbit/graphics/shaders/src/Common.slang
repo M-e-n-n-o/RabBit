@@ -11,4 +11,5 @@ public uniform ConstantBuffer<FrameConstants> g_FC;
 public uniform SamplerState g_ClampAnisoSampler;
 public uniform SamplerState g_ClampPointSampler;
 public uniform SamplerState g_ClampLinearSampler;
+public uniform SamplerState g_ClampLinearMipSampler;
 public uniform SamplerState g_WrapAnisoSampler;

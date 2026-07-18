@@ -54,8 +54,10 @@ namespace RB::Graphics::D3D12
 
         void SetShaderResourceInput(uint32_t handle, RenderResource* resource) override;
         void SetRandomReadWriteInput(uint32_t handle, RenderResource* resource) override;
+        void ClearResourceInputs() override;
 
         void SetConstantShaderData(uint32_t slot, const void* data, uint32_t data_size) override;
+        void ClearConstantShaderData() override;
 
         void SetVertexShader(uint32_t shader_index) override;
         void SetPixelShader(uint32_t shader_index) override;
@@ -101,7 +103,6 @@ namespace RB::Graphics::D3D12
 
         void BindDescriptorHeaps();
         void BindResources(bool compute);
-        void ClearResources();
 
         void SetGraphicsPipelineState();
         void SetComputePipelineState();

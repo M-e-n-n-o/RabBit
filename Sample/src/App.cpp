@@ -58,6 +58,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
             .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
             .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
+            .AddPass<SmaaPass>              (RenderPassType::Smaa,              RenderPassSettings{})
 
             // Connections           (from)     ->      (to)
             .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
@@ -70,8 +71,11 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
                                         0u,                0u)
 
+            .AddLink(RenderPassType::Overlay2D,         RenderPassType::Smaa,
+                                        0u,                0u)
+
             // Finalize
-            .SetFinalPass(RenderPassType::Overlay2D, 0)
+            .SetFinalPass(RenderPassType::Smaa, 0)
         }
     };
 
