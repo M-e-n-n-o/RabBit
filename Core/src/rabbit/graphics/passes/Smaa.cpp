@@ -3,6 +3,7 @@
 
 #include "graphics/RenderResource.h"
 #include "graphics/RenderInterface.h"
+#include "graphics/ResourceDefaults.h"
 #include "graphics/View.h"
 
 #include "entity/Scene.h"
@@ -90,16 +91,6 @@ namespace RB::Graphics
         RenderResource* edges_tex  = i.workingRes[0];
         RenderResource* blend_tex  = i.workingRes[1];
 
-        static const float triangle_data[] =
-        {
-            // Pos          UV
-            -1.0f, -1.0f,   0.0f,  1.0f,
-            -1.0f,  3.0f,   0.0f, -1.0f,
-             3.0f, -1.0f,   2.0f,  1.0f 
-        };
-
-        auto triangle_vb = VertexBuffer::Create("Text Element", TopologyType::TriangleList, triangle_data, sizeof(float) * 4, sizeof(triangle_data), true);
-
         i.viewContext->SetFrameConstants(SMAAGlobals_FC, i.ri);
 
         i.ri->SetBlendMode(BlendMode::None);
@@ -114,7 +105,7 @@ namespace RB::Graphics
             i.ri->SetShaderResourceInput(PsSmaaEdgeDetection_ColorTex, input_tex);
             i.ri->PushRenderTarget(edges_tex);
 
-            i.ri->SetVertexBuffer(triangle_vb.get());
+            i.ri->SetVertexBuffer(g_FullscreenTriangle.get());
 
             i.ri->Draw();
         }
@@ -131,7 +122,7 @@ namespace RB::Graphics
             i.ri->SetShaderResourceInput(PsSmaaBlendWeight_SearchTex, m_SearchTex.get());
             i.ri->PushRenderTarget(blend_tex);
 
-            i.ri->SetVertexBuffer(triangle_vb.get());
+            i.ri->SetVertexBuffer(g_FullscreenTriangle.get());
 
             i.ri->Draw();
         }
@@ -147,7 +138,7 @@ namespace RB::Graphics
             i.ri->SetShaderResourceInput(PsSmaaNeighborBlending_BlendTex, blend_tex);
             i.ri->PushRenderTarget(output_tex);
 
-            i.ri->SetVertexBuffer(triangle_vb.get());
+            i.ri->SetVertexBuffer(g_FullscreenTriangle.get());
 
             i.ri->Draw();
         }

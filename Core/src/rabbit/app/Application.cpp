@@ -126,7 +126,7 @@ namespace RB
             }
 
             (*(m_Windows.end()-1))->SetBrightness(window.brightness);
-            (*(m_Windows.end()-1))->SetGammaCorrection(window.gammaCorrection);
+            (*(m_Windows.end()-1))->SetGammaCorrectionPreference(window.requestGammaCorrection);
             (*(m_Windows.end()-1))->SetVirtualResolutionLinearUpscale(window.linearUpscale);
         }
 

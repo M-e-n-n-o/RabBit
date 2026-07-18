@@ -22,6 +22,7 @@ namespace RB::Graphics
         DeferredLighting,
         Overlay2D,
         Smaa,
+        ToneMapping,
         ScreenCapture,
 
         Custom0,

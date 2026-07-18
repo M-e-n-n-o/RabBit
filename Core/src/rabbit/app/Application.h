@@ -26,18 +26,18 @@ namespace RB
     {
         struct Window
         {
-            const char* windowName          = "RabBit App";
-            bool        fullscreen          = false;
-            int32_t     windowIndex         = -1;
-            uint32_t    windowWidth         = 1280;
-            uint32_t    windowHeight        = 720;
-            bool        vsync               = true;
-            float       forcedRenderAspect  = 0.0f;
-            float       renderScale         = 1.0f;
-            bool        linearUpscale       = true;
-            float       gammaCorrection     = 2.2f;
-            float       brightness          = 1.0f;
-            bool        semiTransparent     = false;
+            const char* windowName             = "RabBit App";
+            bool        fullscreen             = false;
+            int32_t     windowIndex            = -1;
+            uint32_t    windowWidth            = 1280;
+            uint32_t    windowHeight           = 720;
+            bool        vsync                  = true;
+            float       forcedRenderAspect     = 0.0f;
+            float       renderScale            = 1.0f;
+            bool        linearUpscale          = true;
+            bool        requestGammaCorrection = true; // Only picked up if read by a RenderPass
+            float       brightness             = 1.0f; // Only picked up if read by a RenderPass
+            bool        semiTransparent        = false;
         };
 
         const char*                     appName;

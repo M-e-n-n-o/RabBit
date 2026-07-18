@@ -48,8 +48,5 @@ float4 Present(v2p input, uniform PixelUniforms u) : SV_TARGET
     else
         color = u.tex.Sample(g_ClampPointSampler, tex_uv);
 
-    // Apply gamma correction & brightness
-    color.rgb = g_PresentCB.brightnessValue * pow(color.rgb, 1.0f / g_PresentCB.gammaValue);
-
     return color;
 }

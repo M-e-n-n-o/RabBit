@@ -23,7 +23,7 @@ namespace RB::Graphics
         , m_VirtualBackBuffer(nullptr)
         , m_NewVirtualResScale(virtual_scale)
         , m_NewVirtualAspect(virtual_aspect)
-        , m_GammaCorrection(2.2f)
+        , m_GammaCorrection(true)
         , m_Brightness(1.0f)
     {
     }
@@ -148,19 +148,19 @@ namespace RB::Graphics
         return m_VirtualResLinearUpscale;
     }
 
-    void Window::SetGammaCorrection(float gamma)
+    void Window::SetGammaCorrectionPreference(bool enable)
     {
-        m_GammaCorrection = gamma;
+        m_GammaCorrection = enable;
+    }
+
+    bool Window::GetGammaCorrectionPreference() const
+    {
+        return m_GammaCorrection;
     }
 
     void Window::SetBrightness(float brightness)
     {
         m_Brightness = brightness;
-    }
-
-    float Window::GetGammaCorrection() const
-    {
-        return m_GammaCorrection;
     }
 
     float Window::GetBrightness() const

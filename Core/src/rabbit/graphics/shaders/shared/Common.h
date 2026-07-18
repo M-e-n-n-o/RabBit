@@ -42,10 +42,8 @@ PB struct PresentCB
 {
     PB float2 texOffset;
     PB float2 currSize;
-    PB float  brightnessValue;
-    PB float  gammaValue;
     PB uint   linearUpscale;
-    PB float  padding;
+    PB float3 padding;
 };
 ALIGN_CHECK(PresentCB);
 
@@ -70,6 +68,14 @@ PB struct ApplyLightingCB
     PB DirectionalLight    light;
 };
 ALIGN_CHECK(ApplyLightingCB);
+
+PB struct ToneMapCB
+{
+    PB float4 clearColor;
+    PB float  brightnessValue;
+    PB float  gammaValue;
+    PB float2 padding;
+};
 
 #if !SHADER
 } // namespace RB::Graphics::Shader
