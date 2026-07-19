@@ -14,9 +14,9 @@ namespace RB::Graphics
         Shared<ReadbackBuffer>     readback;
     };
 
-    RenderPassConfig ScreenCapturePass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig ScreenCapturePass::GetConfiguration(const RenderPassSettings* setting)
     {
-        const ScreenCaptureSettings& s = (const ScreenCaptureSettings&)setting;
+        const ScreenCaptureSettings* s = (const ScreenCaptureSettings*)setting;
 
         return RenderPassConfig
         {

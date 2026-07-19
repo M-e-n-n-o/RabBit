@@ -156,7 +156,7 @@ namespace RB::Graphics
 
         virtual const char* GetName() = 0;
 
-        virtual RenderPassConfig GetConfiguration(const RenderPassSettings& settings) = 0;
+        virtual RenderPassConfig GetConfiguration(const RenderPassSettings* settings) = 0;
 
         // Executed on the main thread after the game logic update. This method just gives the needed context of the 
         // current frame' viewcontext to the renderpass (as the renderpass will run next frame as it is ~1 frame behind). 

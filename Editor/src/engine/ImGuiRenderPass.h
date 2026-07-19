@@ -15,7 +15,7 @@ namespace Editor
     public:
         const char* GetName() override { return "ImGuiRenderer"; }
 
-        RB::Graphics::RenderPassConfig GetConfiguration(const RB::Graphics::RenderPassSettings& settings) override;
+        RB::Graphics::RenderPassConfig GetConfiguration(const RB::Graphics::RenderPassSettings* settings) override;
 
         RB::Graphics::RenderPassEntry* SubmitEntry(const RB::Graphics::ViewContext* view_context, const RB::Entity::Scene* const scene, RB::FrameAllocator* allocator) override;
 

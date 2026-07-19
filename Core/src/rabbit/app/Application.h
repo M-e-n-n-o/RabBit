@@ -35,8 +35,6 @@ namespace RB
             float       forcedRenderAspect     = 0.0f;
             float       renderScale            = 1.0f;
             bool        linearUpscale          = true;
-            bool        requestGammaCorrection = true; // Only picked up if read by a RenderPass
-            float       brightness             = 1.0f; // Only picked up if read by a RenderPass
             bool        semiTransparent        = false;
         };
 
@@ -95,7 +93,7 @@ namespace RB
         void OnNewLayerPushed(ApplicationLayer* layer);
         bool OnEvent(Events::Event& event) override;
 
-        const AppInfo*              m_StartAppInfo;
+        AppInfo*                    m_StartAppInfo;
 
         bool                        m_Initialized;
         bool                        m_ShouldStop;

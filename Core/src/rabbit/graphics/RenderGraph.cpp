@@ -207,7 +207,7 @@ namespace RB::Graphics
                 RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "RenderPass %d has no settings", (uint32_t)p.first);
                 return nullptr;
             }
-            configs[p.first] = p.second->GetConfiguration(settings_itr->second);
+            configs[p.first] = p.second->GetConfiguration(settings_itr->second.get());
         }
 
 
@@ -509,5 +509,17 @@ namespace RB::Graphics
         }
 
         return graph;
+    }
+
+    void RenderGraphBuilder::Reset()
+    {
+        m_FinalPassType = RenderPassType::None;
+        m_FinalResourceId = 0;
+        m_Passes.clear();
+        m_Passes.rehash(0);
+        m_PassSettings.clear();
+        m_PassSettings.rehash(0);
+        m_Connections.clear();
+        m_Connections.rehash(0);
     }
 }

@@ -29,9 +29,9 @@ namespace RB::Graphics
         }
     };
 
-    RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig DeferredLightingPass::GetConfiguration(const RenderPassSettings* setting)
     {
-        const DeferredLightingSettings& s = (const DeferredLightingSettings&)setting;
+        const DeferredLightingSettings* s = (const DeferredLightingSettings*)setting;
 
         return RenderPassConfig
             {

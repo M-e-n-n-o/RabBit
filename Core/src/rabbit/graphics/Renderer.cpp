@@ -350,8 +350,6 @@ namespace RB::Graphics
                 contexts[context_index].isOffscreen           = false;
                 contexts[context_index].windowIndex           = Application::GetInstance()->FindWindowIndex(camera->GetTargetWindowHandle());
                 contexts[context_index].finalColorTarget      = virtual_back_buffer;
-                contexts[context_index].enableGammaCorrection = window->GetGammaCorrectionPreference();
-                contexts[context_index].brightness            = window->GetBrightness();
                 contexts[context_index].viewport.width        = virtual_back_buffer->GetViewportWidth();
                 contexts[context_index].viewport.height       = virtual_back_buffer->GetViewportHeight();
             }
@@ -359,8 +357,6 @@ namespace RB::Graphics
             {
                 contexts[context_index].isOffscreen           = true;
                 contexts[context_index].finalColorTarget      = render_texture;
-                contexts[context_index].enableGammaCorrection = false;
-                contexts[context_index].brightness            = 1.0f;
                 contexts[context_index].viewport.width        = render_texture->GetViewportWidth();
                 contexts[context_index].viewport.height       = render_texture->GetViewportHeight();
             }

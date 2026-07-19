@@ -32,9 +32,9 @@ namespace RB::Graphics
         uint32_t            entryCount;
     };
 
-    RenderPassConfig GBufferPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig GBufferPass::GetConfiguration(const RenderPassSettings* setting)
     {
-        const GBufferSettings& s = (const GBufferSettings&) setting;
+        const GBufferSettings* s = (const GBufferSettings*) setting;
 
         return RenderPassConfig
             {

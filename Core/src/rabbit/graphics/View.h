@@ -27,8 +27,6 @@ namespace RB::Graphics
         bool                isOffscreen;
         uint32_t            windowIndex;
         Shared<Texture2D>   finalColorTarget;
-        bool                enableGammaCorrection;
-        float               brightness;
         Math::Float4        clearColor;
         uint32_t            renderGraphType;
         uint32_t            renderGraphSizeID;

@@ -18,11 +18,9 @@ namespace RB::Graphics
     {
     };
 
-    RenderPassConfig ToneMappingPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig ToneMappingPass::GetConfiguration(const RenderPassSettings* setting)
     {
-        const ToneMappingSettings& s = (const ToneMappingSettings&)setting;
-
-        m_ApplyClearColor = s.applyClearColor;
+        m_Settings = *(const ToneMappingSettings*)setting;
 
         return RenderPassConfig
         {
@@ -62,9 +60,9 @@ namespace RB::Graphics
         i.ri->SetComputeShader(CS_ToneMap);
 
         Shader::ToneMapCB cb = {};
-        cb.clearColor       = m_ApplyClearColor ? i.viewContext->clearColor : Math::Float4(0);
-        cb.brightnessValue  = i.viewContext->brightness;
-        cb.gammaValue       = i.viewContext->enableGammaCorrection ? 2.2f : 1.0f;
+        cb.clearColor       = m_Settings.applyClearColor ? i.viewContext->clearColor : Math::Float4(0);
+        cb.brightnessValue  = m_Settings.brightness;
+        cb.gammaValue       = m_Settings.applyGamma ? 2.2f : 1.0f;
 
         i.ri->SetConstantShaderData(ApplyLightingGlobals_ApplyLighting, &cb, sizeof(Shader::ToneMapCB));
 

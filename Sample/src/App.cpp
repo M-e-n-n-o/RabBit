@@ -59,7 +59,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
             .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
             .AddPass<SmaaPass>              (RenderPassType::Smaa,              RenderPassSettings{})
-            .AddPass<ToneMappingPass>       (RenderPassType::ToneMapping,       RenderPassSettings{})
+            .AddPass<ToneMappingPass>       (RenderPassType::ToneMapping,       ToneMappingSettings{})
 
             // Connections           (from)     ->      (to)
             .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 

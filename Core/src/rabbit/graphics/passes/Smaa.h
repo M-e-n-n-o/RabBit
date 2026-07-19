@@ -15,7 +15,7 @@ namespace RB::Graphics
 
         const char* GetName() override { return "SMAA"; }
 
-        RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
+        RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 
         RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) override;
 

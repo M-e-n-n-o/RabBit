@@ -5,7 +5,15 @@ namespace RB::Graphics
 {
     struct ToneMappingSettings : public RenderPassSettings
     {
-        bool applyClearColor;
+        float brightness = 1.0f;
+        bool  applyGamma = true;
+        bool  applyClearColor = false;
+
+        ToneMappingSettings(float brightness = 1.0f, float applyGamma = true, float applyClearColor = false)
+            : brightness(brightness)
+            , applyGamma(applyGamma)
+            , applyClearColor(applyClearColor)
+        {}
     };
 
     class ToneMappingPass : public RenderPass
@@ -13,13 +21,13 @@ namespace RB::Graphics
     public:
         const char* GetName() override { return "ToneMapping"; }
 
-        RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
+        RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 
         RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) override;
 
         void Render(RenderPassInput& inputs) override;
 
     private:
-        bool m_ApplyClearColor;
+        ToneMappingSettings m_Settings;
     };
 }

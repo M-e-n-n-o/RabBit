@@ -23,8 +23,6 @@ namespace RB::Graphics
         , m_VirtualBackBuffer(nullptr)
         , m_NewVirtualResScale(virtual_scale)
         , m_NewVirtualAspect(virtual_aspect)
-        , m_GammaCorrection(true)
-        , m_Brightness(1.0f)
     {
     }
 
@@ -146,26 +144,6 @@ namespace RB::Graphics
     bool Window::IsVirtualResolutionLinearUpscale() const
     {
         return m_VirtualResLinearUpscale;
-    }
-
-    void Window::SetGammaCorrectionPreference(bool enable)
-    {
-        m_GammaCorrection = enable;
-    }
-
-    bool Window::GetGammaCorrectionPreference() const
-    {
-        return m_GammaCorrection;
-    }
-
-    void Window::SetBrightness(float brightness)
-    {
-        m_Brightness = brightness;
-    }
-
-    float Window::GetBrightness() const
-    {
-        return m_Brightness;
     }
 
     void Window::ToggleFullscreen()

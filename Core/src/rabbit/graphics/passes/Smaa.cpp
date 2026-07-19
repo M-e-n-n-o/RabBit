@@ -27,9 +27,9 @@ namespace RB::Graphics
     {
     }
 
-    RenderPassConfig SmaaPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig SmaaPass::GetConfiguration(const RenderPassSettings* setting)
     {
-        const SmaaSettings& s = (const SmaaSettings&)setting;
+        const SmaaSettings* s = (const SmaaSettings*)setting;
 
         return RenderPassConfig
         {

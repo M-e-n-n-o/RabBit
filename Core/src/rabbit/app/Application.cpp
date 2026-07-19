@@ -99,6 +99,11 @@ namespace RB
         m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
         m_Renderer->Init();
         m_Renderer->SetRenderGraphs(m_StartAppInfo->renderGraphs);
+        for (auto& [ type, graph ] : m_StartAppInfo->renderGraphs)
+        {
+            // Remove all memory usage from the graphs as they are now fully built
+            graph.Reset();
+        }
 
         m_Displays = Display::CreateDisplays();
 
@@ -125,8 +130,6 @@ namespace RB
                                                    window.renderScale, window.forcedRenderAspect));
             }
 
-            (*(m_Windows.end()-1))->SetBrightness(window.brightness);
-            (*(m_Windows.end()-1))->SetGammaCorrectionPreference(window.requestGammaCorrection);
             (*(m_Windows.end()-1))->SetVirtualResolutionLinearUpscale(window.linearUpscale);
         }
 

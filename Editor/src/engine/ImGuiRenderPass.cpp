@@ -27,7 +27,7 @@ namespace Editor
         ImDrawDataSnapshot* snapshot;
     };
 
-    RenderPassConfig ImGuiRenderPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig ImGuiRenderPass::GetConfiguration(const RenderPassSettings* setting)
     {
         return RenderPassConfig
         {

@@ -53,11 +53,6 @@ namespace RB::Graphics
         void                    SetVirtualResolutionLinearUpscale(bool linear);
         bool                    IsVirtualResolutionLinearUpscale() const;
 
-        void                    SetGammaCorrectionPreference(bool enable);
-        bool                    GetGammaCorrectionPreference() const;
-        void                    SetBrightness(float brightness);
-        float                   GetBrightness() const;
-
         virtual bool            IsMinimized()           const = 0;
         virtual bool            IsValid()               const = 0;
         virtual bool            IsSemiTransparent()     const = 0;
@@ -99,10 +94,6 @@ namespace RB::Graphics
         void CalculateVirtualSize();
 
         bool               m_InFocus;
-                           
-        bool               m_GammaCorrection;
-        float              m_Brightness;
-                           
         bool               m_IsFullscreen;
         Math::Float4       m_OriginalRect;
                            

@@ -61,9 +61,9 @@ namespace RB::Graphics
         uint32_t elementCount;
     };
 
-    RenderPassConfig Overlay2DPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig Overlay2DPass::GetConfiguration(const RenderPassSettings* setting)
     {
-        const Overlay2DSettings& s = (const Overlay2DSettings&)setting;
+        const Overlay2DSettings* s = (const Overlay2DSettings*)setting;
 
         return RenderPassConfig
             {

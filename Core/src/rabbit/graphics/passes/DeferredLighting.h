@@ -13,7 +13,7 @@ namespace RB::Graphics
     public:
         const char* GetName() override { return "DeferredLighting"; }
 
-        RenderPassConfig GetConfiguration(const RenderPassSettings& settings) override;
+        RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 
         RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) override;
 

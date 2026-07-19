@@ -72,7 +72,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
                 .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
                 .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
                 .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
-                .AddPass<ToneMappingPass>       (RenderPassType::ToneMapping,       RenderPassSettings{})
+                .AddPass<ToneMappingPass>       (RenderPassType::ToneMapping,       ToneMappingSettings{})
                 .AddPass<SmaaPass>              (RenderPassType::Smaa,              RenderPassSettings{})
                 .AddPass<ScreenCapturePass>     (RenderPassType::ScreenCapture,     RenderPassSettings{})
 

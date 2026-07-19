@@ -32,9 +32,9 @@ namespace RB::Graphics
         uint32_t    totalSlices;
     };
 
-    RenderPassConfig CascadedShadowPass::GetConfiguration(const RenderPassSettings& setting)
+    RenderPassConfig CascadedShadowPass::GetConfiguration(const RenderPassSettings* setting)
     {
-        const CascadedShadowSettings& s = (const CascadedShadowSettings&)setting;
+        const CascadedShadowSettings* s = (const CascadedShadowSettings*)setting;
 
         return RenderPassConfig
             {

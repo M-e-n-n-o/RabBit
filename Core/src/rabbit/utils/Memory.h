@@ -34,6 +34,7 @@ namespace RB
     // Custom shared pointer
     template<typename T>
     using Shared = std::shared_ptr<T>;
+
     template<typename T, typename ... Args>
     constexpr Shared<T> CreateShared(Args&& ... args)
     {
@@ -49,6 +50,7 @@ namespace RB
     // Custom unique pointer
     template<typename T>
     using Unique = std::unique_ptr<T>;
+
     template<typename T, typename ... Args>
     constexpr Unique<T> CreateUnique(Args&& ... args)
     {

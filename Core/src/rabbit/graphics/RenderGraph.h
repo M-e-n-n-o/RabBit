@@ -55,8 +55,8 @@ namespace RB::Graphics
     public:
         RenderGraphBuilder();
 
-        template<class Pass>
-        RenderGraphBuilder& AddPass(RenderPassType type, const RenderPassSettings& settings);
+        template<class Pass, class Settings>
+        RenderGraphBuilder& AddPass(RenderPassType type, Settings&& settings);
 
         RenderGraphBuilder& SetFinalPass(RenderPassType type, uint32_t output_id);
 
@@ -74,6 +74,8 @@ namespace RB::Graphics
         // Allocates a RenderGraph using new when succeeded! 
         RenderGraph* Build(uint32_t graph_id, RenderGraphContext* context) const;
 
+        void Reset();
+
     private:
         using ResourceConnections = List<uint32_t>;
 
@@ -81,13 +83,13 @@ namespace RB::Graphics
         RenderPassType                                                                  m_FinalPassType;
         uint32_t                                                                        m_FinalResourceId;
         UnorderedMap<RenderPassType, RenderPass*>                                       m_Passes;
-        UnorderedMap<RenderPassType, RenderPassSettings>                                m_PassSettings;
+        UnorderedMap<RenderPassType, Shared<RenderPassSettings>>                        m_PassSettings;
         //           To                           From            Resources
         UnorderedMap<RenderPassType, UnorderedMap<RenderPassType, ResourceConnections>> m_Connections;
     };
 
-    template<class Pass>
-    inline RenderGraphBuilder& RenderGraphBuilder::AddPass(RenderPassType type, const RenderPassSettings& settings)
+    template<class Pass, class Settings>
+    inline RenderGraphBuilder& RenderGraphBuilder::AddPass(RenderPassType type, Settings&& settings)
     {
         RenderPass* pass = new Pass();
 
@@ -95,7 +97,7 @@ namespace RB::Graphics
 
         if (itr.second)
         {
-            m_PassSettings.emplace(type, settings);
+            m_PassSettings.emplace(type, std::make_shared<std::decay_t<Settings>>(std::forward<Settings>(settings)));
         }
         else
         {
