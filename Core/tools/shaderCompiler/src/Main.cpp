@@ -6,6 +6,7 @@
 #include "Compiler.h"
 #include "ShaderWriter.h"
 #include "Log.h"
+#include "ArgParsing.h"
 
 /*
 
@@ -23,33 +24,32 @@ int main(int argc, char* argv[])
 	LOGW(L"---------------- Starting RabBit's vulkan shader compiler ----------------");
 #endif
 
-	std::string shader_bin_dir;
+	DEFINE_FIND_LAUNCH_ARG(argc, argv);
 
-	for (int i = 0; i < argc; i++)
-	{
-		if (std::strstr("-shadersBin", argv[i]))
-		{
-			if (i + 1 < argc)
-			{
-				shader_bin_dir = argv[i + 1];
-			}
-		}
-	}
+	const char* extra_source_dir = FindLaunchArg("-extraSrc");
+	const char* shader_bin_dir = FindLaunchArg("-shadersBin");
 
-	LOG("Shader files directory: " << RB_SHADER_SOURCE);
+	std::vector<std::string> source_dirs;
+	source_dirs.push_back(RB_SHADER_SOURCE);
+	if (extra_source_dir != nullptr)
+		source_dirs.push_back(extra_source_dir);
 
-	if (shader_bin_dir.empty())
+	LOG("Shader files directory: ");
+	for (const auto& path : source_dirs)
+		LOG("\t" << path);
+
+	if (shader_bin_dir == nullptr)
 	{
 		LOGW(L"Did not find the shader bin directory from the launch arguments, using default");
 		shader_bin_dir = RB_OUTPUT_FOLDER;
 	}
 
-	LOGW(L"Shader bin directory: " << shader_bin_dir.c_str());
+	LOGW(L"Shader bin directory: " << shader_bin_dir);
 
 	LOGW(L"");
 
 	Compiler compiler;
-	compiler.CompileFiles(RB_SHADER_SOURCE);
+	compiler.CompileFiles(source_dirs);
 
 	auto reflection = compiler.GetShaderReflection();
 	auto blobs = compiler.GetShaderBlobs();

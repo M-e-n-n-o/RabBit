@@ -1,6 +1,7 @@
 #define RB_DEFINE_ENTRY_POINT
 #include <RabBit.h>
 #include "TestLayer.h"
+#include "RayMarcherPass.h"
 
 using namespace RB;
 using namespace RB::Events;
@@ -55,6 +56,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             RenderGraphBuilder()
             // Passes
             .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
+            .AddPass<RayMarcherPass>        (RenderPassType::Custom0,           RayMarcherSettings{})
             .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
             .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
             .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
@@ -62,7 +64,11 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             .AddPass<ToneMappingPass>       (RenderPassType::ToneMapping,       ToneMappingSettings{})
 
             // Connections           (from)     ->      (to)
-            .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
+            .AddLink(RenderPassType::GBuffer,           RenderPassType::Custom0,
+                                        0u,                0u,
+                                        1u,                1u)
+
+            .AddLink(RenderPassType::Custom0,           RenderPassType::DeferredLighting,
                                         0u,                0u,
                                         1u,                1u)
 

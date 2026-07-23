@@ -322,6 +322,11 @@ Float4::Float4(float x, float y, float z, float w)
 {
 }
 
+Float4::Float4(const Float3& xyz, float w)
+    : x(xyz.x), y(xyz.y), z(xyz.x), w(w)
+{
+}
+
 Float4 Float4::operator+(const Float4& other) const
 {
     return Float4(

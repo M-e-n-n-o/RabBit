@@ -79,11 +79,13 @@ namespace RB::Graphics
         kLastPrimitiveType  = Texture,
 
         // Implementation types
-        VertexBuffer        = (1 << 2) | Buffer,
-        IndexBuffer         = (1 << 3) | Buffer,
-        ReadbackBuffer      = (1 << 4) | Buffer,
-        Texture2D           = (1 << 5) | Texture,
-        Texture2DArray      = (1 << 6) | Texture
+        GenericBuffer       = (1 << 2) | Buffer,
+        VertexBuffer        = (1 << 3) | Buffer,
+        IndexBuffer         = (1 << 4) | Buffer,
+        ReadbackBuffer      = (1 << 5) | Buffer,
+        Texture2D           = (1 << 6) | Texture,
+        Texture2DArray      = (1 << 7) | Texture,
+        Texture3D           = (1 << 8) | Texture
     };
 
     class RenderResource
@@ -96,6 +98,8 @@ namespace RB::Graphics
         virtual void* GetNativeResource() const = 0;
 
         virtual RenderResourceFormat GetFormat() const = 0;
+
+        virtual bool AllowedRandomReadWrites() const = 0;
 
         bool ReadyToRender() const { return !m_IsStreaming; } // TODO Make this thread safe
         void SetStreaming(bool is_streaming) { m_IsStreaming = is_streaming; } // TODO Make this thread safe
@@ -111,6 +115,10 @@ namespace RB::Graphics
         bool				m_IsStreaming;
     };
 
+    // -----------------------------------------------------------------------------------------------
+    //							                    Buffers
+    // -----------------------------------------------------------------------------------------------
+
     class Buffer : public RenderResource
     {
     public:
@@ -122,10 +130,15 @@ namespace RB::Graphics
         Buffer(const char* name, RenderResourceType type) : RenderResource(name, type) {}
     };
 
-    //class StructuredBuffer : public Buffer
-    //{
+    class GenericBuffer : public Buffer
+    {
+    public:
+        static Shared<GenericBuffer> Create(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access);
+        static Shared<GenericBuffer> Create(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access);
 
-    //};
+    protected:
+        GenericBuffer(const char* name) : Buffer(name, RenderResourceType::GenericBuffer) {}
+    };
 
     enum class TopologyType
     {
@@ -139,6 +152,8 @@ namespace RB::Graphics
         virtual ~VertexBuffer() = default;
 
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
+
+        bool AllowedRandomReadWrites() const override { return false; };
 
         uint64_t GetSize() const override { return GetVertexElementCount() * GetVertexSize(); }
 
@@ -158,6 +173,8 @@ namespace RB::Graphics
         virtual ~IndexBuffer() = default;
 
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::R32_UINT; }
+
+        bool AllowedRandomReadWrites() const override { return false; };
 
         uint64_t GetSize() const override { return GetIndexCount() * 4; }
 
@@ -180,12 +197,18 @@ namespace RB::Graphics
 
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
+        bool AllowedRandomReadWrites() const override { return false; };
+
         static Shared<ReadbackBuffer> Create(const char* name, uint64_t size);
         static Shared<ReadbackBuffer> Create(const char* name, RenderResource* target_size);
 
     protected:
         ReadbackBuffer(const char* name) : Buffer(name, RenderResourceType::ReadbackBuffer) {}
     };
+
+    // -----------------------------------------------------------------------------------------------
+    //							                    Textures
+    // -----------------------------------------------------------------------------------------------
 
     uint32_t CalculateMaxMips(uint32_t width, uint32_t height);
 
@@ -209,7 +232,6 @@ namespace RB::Graphics
         virtual void SetViewportDepth(uint32_t depth) = 0;
 
         virtual bool AllowedRenderTarget() const = 0;
-        virtual bool AllowedRandomReadWrites() const = 0;
         virtual bool AllowedDepthStencil() const = 0;
 
         virtual uint32_t GetMipCount() const = 0;
@@ -276,6 +298,25 @@ namespace RB::Graphics
 
     protected:
         Texture2DArray(const char* name) : Texture(name, RenderResourceType::Texture2DArray) {}
+    };
+
+    class Texture3D : public Texture
+    {
+    public:
+        virtual ~Texture3D() = default;
+
+        virtual bool AllowedDepthStencil() const override { return false; }
+
+        virtual uint32_t GetArraySize() const override { return 1; }
+        virtual uint32_t GetFirstArraySlice() const override { return 0; }
+
+        virtual void SetArraySize(uint32_t size) override {}
+        virtual void SetFirstArraySlice(uint32_t slice) override {}
+
+        static Shared<Texture3D> Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t depth, bool is_render_target, bool random_read_write_access);
+
+    protected:
+        Texture3D(const char* name) : Texture(name, RenderResourceType::Texture3D) {}
     };
 
     struct RenderTargetBundle

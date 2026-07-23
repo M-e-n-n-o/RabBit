@@ -265,11 +265,12 @@ namespace RB::Graphics::D3D12
         // Descriptor handle takes up a uint2 in Slang
         uint32_t slot = binding_offset / sizeof(uint64_t);
 
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
+
         switch (resource->GetType())
         {
         case RenderResourceType::Texture2D:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
 
             switch (stage)
             {
@@ -285,8 +286,6 @@ namespace RB::Graphics::D3D12
 
         case RenderResourceType::Texture2DArray:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
-
             switch (stage)
             {
             case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
@@ -299,6 +298,22 @@ namespace RB::Graphics::D3D12
         }
         break;
 
+        case RenderResourceType::GenericBuffer:
+        {
+            switch (stage)
+            {
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetSrvHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetSrvHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
+                break;
+            }
+        }
+        break;
+
+
+
         default:
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a shader input");
             break;
@@ -307,6 +322,12 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetRandomReadWriteInput(uint32_t handle, RenderResource* resource)
     {
+        if (!resource->AllowedRandomReadWrites())
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Resource cannot be set as random read/write input");
+            return;
+        }
+
         TransitionResource(resource, ResourceState::UNORDERED_ACCESS);
 
         uint32_t binding_offset = (handle >> 3) & 0x1FFFFFFF;
@@ -315,46 +336,49 @@ namespace RB::Graphics::D3D12
         // Descriptor handle takes up a uint2 in Slang
         uint32_t slot = binding_offset / sizeof(uint64_t);
 
-        switch (resource->GetPrimitiveType())
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "UAV input slot out of range");
+
+        switch (resource->GetType())
         {
-        case RenderResourceType::Texture:
+        case RenderResourceType::Texture2D:
         {
-            RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "UAV input slot out of range");
-
-            Texture* tex = (Texture*)resource;
-
-            if (!tex->AllowedRandomReadWrites())
+            switch (stage)
             {
-                RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "Resource cannot be set as random read/write input");
-                return;
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
+                break;
             }
+        }
+        break;
 
-            if (tex->GetType() == RenderResourceType::Texture2D)
+        case RenderResourceType::Texture2DArray:
+        {
+            switch (stage)
             {
-                switch (stage)
-                {
-                case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
-                case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
-                case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
-                default:
-                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
-                    break;
-                }
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
+                break;
             }
-            else if (tex->GetType() == RenderResourceType::Texture2DArray)
+        }
+        break;
+
+        case RenderResourceType::GenericBuffer:
+        {
+            switch (stage)
             {
-                switch (stage)
-                {
-                case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
-                case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
-                case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
-                default:
-                    RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
-                    break;
-                }
+            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetUavHandle(); break;
+            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetUavHandle(); break;
+            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetUavHandle(); break;
+            default:
+                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
+                break;
             }
-            else
-                RB_LOG_ERROR(LOGTAG_GRAPHICS, "ResourceType not yet supported as random read write input");
         }
         break;
 
@@ -1062,7 +1086,6 @@ namespace RB::Graphics::D3D12
     void RenderInterfaceD3D12::BindResources(bool compute)
     {
         uint32_t next_root_index = 0;
-
         for (int i = 0; i < 3; i++)
         {
             DescriptorIndex* handles;
@@ -1095,17 +1118,25 @@ namespace RB::Graphics::D3D12
             }
         }
 
+        uint32_t cbv_offset = 0;
+        if (compute)
+            cbv_offset = g_PipelineManager->GetRootSignatureCbvBindingOffset(m_RenderState.csShader);
+        else
+            cbv_offset = g_PipelineManager->GetRootSignatureCbvBindingOffset(m_RenderState.vsShader, m_RenderState.psShader);
+
+        // Need to account for any CBV's that are in the root signature of this shader but not actually being used
+        // (since Slang does not remove unused CBV's from the compiled code)
+        uint32_t root_constants_offset = cbv_offset - next_root_index;
+
         // Bind the CBV's
         for (int i = 0; i < _countof(m_RenderState.cbvAddresses); ++i)
         {
             if (m_RenderState.cbvAddresses[i] > 0)
             {
                 if (compute)
-                    m_CommandList->SetComputeRootConstantBufferView(next_root_index, m_RenderState.cbvAddresses[i]);
+                    m_CommandList->SetComputeRootConstantBufferView(i - root_constants_offset, m_RenderState.cbvAddresses[i]);
                 else
-                    m_CommandList->SetGraphicsRootConstantBufferView(next_root_index, m_RenderState.cbvAddresses[i]);
-
-                next_root_index++;
+                    m_CommandList->SetGraphicsRootConstantBufferView(i - root_constants_offset, m_RenderState.cbvAddresses[i]);
             }
         }
     }

@@ -23,6 +23,9 @@ namespace RB::Graphics::D3D12
 
         List<D3D12_INPUT_ELEMENT_DESC> GetInputElementDesc(const ShaderSystem* ss, uint32_t vs_identifier, uint32_t vertex_buffers_count);
 
+        uint32_t GetRootSignatureCbvBindingOffset(uint32_t vs_identifier, int32_t ps_identifier) const;
+        uint32_t GetRootSignatureCbvBindingOffset(uint32_t cs_identifier) const;
+
     private:        
         uint64_t GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
         uint64_t GetPipelineHash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash);
@@ -33,6 +36,7 @@ namespace RB::Graphics::D3D12
         UnorderedMap<uint64_t, GPtr<ID3D12PipelineState>>       m_GraphicsPipelines;
 
         UnorderedMap<uint64_t, GPtr<ID3D12RootSignature>>       m_RootSignatures;
+        UnorderedMap<uint64_t, uint32_t>                        m_CbvOffsets;
         UnorderedMap<uint64_t, List<D3D12_INPUT_ELEMENT_DESC>>  m_InputElementDescriptions;
     };
 

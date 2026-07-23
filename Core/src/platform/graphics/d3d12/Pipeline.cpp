@@ -36,7 +36,7 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12PipelineState> pso;
         RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&pso)), "Could not create compute pso");
 
-        m_ComputePipelines.insert({ hash, pso });
+        m_ComputePipelines.emplace(hash, pso);
 
         return pso;
     }
@@ -63,7 +63,7 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12PipelineState> pso;
         RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pso)), "Could not create graphics pso");
 
-        m_GraphicsPipelines.insert({ hash, pso });
+        m_GraphicsPipelines.emplace(hash, pso);
 
         return pso;
     }
@@ -116,13 +116,22 @@ namespace RB::Graphics::D3D12
             }
         }
 
+        int32_t cbv_offset = -1;
+
         // All inline CBV's
         {
             uint64_t vs_cbv_mask = 0;
             for (int i = 0; i < vs_reflection->globalParameters.size(); i++)
             {
                 if (vs_reflection->globalParameters[i].type == ParamType::kConstantBuffer)
+                {
+                    if (cbv_offset < 0)
+                    {
+                        cbv_offset = vs_reflection->globalParameters[i].bindingIndex;
+                    }
+
                     vs_cbv_mask |= (1 << vs_reflection->globalParameters[i].bindingIndex);
+                }
             }
             uint64_t ps_cbv_mask = 0;
             if (ps_reflection)
@@ -130,7 +139,14 @@ namespace RB::Graphics::D3D12
                 for (int i = 0; i < ps_reflection->globalParameters.size(); i++)
                 {
                     if (ps_reflection->globalParameters[i].type == ParamType::kConstantBuffer)
+                    {
+                        if (cbv_offset < 0)
+                        {
+                            cbv_offset = ps_reflection->globalParameters[i].bindingIndex;
+                        }
+
                         ps_cbv_mask |= (1 << ps_reflection->globalParameters[i].bindingIndex);
+                    }
                 }
             }
 
@@ -185,7 +201,8 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12RootSignature> signature;
         RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&signature)), "Could not create root signature");
 
-        m_RootSignatures.insert({ hash, signature });
+        m_RootSignatures.emplace(hash, signature);
+        m_CbvOffsets.emplace(hash, (uint32_t)cbv_offset);
 
         return signature;
     }
@@ -221,6 +238,8 @@ namespace RB::Graphics::D3D12
             }
         }
 
+        int32_t cbv_offset = -1;
+
         // All inline CBV's
         {
             for (int i = 0; i < reflection->globalParameters.size(); i++)
@@ -229,6 +248,11 @@ namespace RB::Graphics::D3D12
                 if (param.type != ParamType::kConstantBuffer)
                 {
                     continue;
+                }
+
+                if (cbv_offset < 0)
+                {
+                    cbv_offset = param.bindingIndex;
                 }
 
                 CD3DX12_ROOT_PARAMETER1 root_param;
@@ -265,9 +289,43 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12RootSignature> signature;
         RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&signature)), "Could not create root signature");
 
-        m_RootSignatures.insert({ hash, signature });
+        m_RootSignatures.emplace(hash, signature);
+        m_CbvOffsets.emplace(hash, (uint32_t)cbv_offset);
 
         return signature;
+    }
+
+    uint32_t PipelineManager::GetRootSignatureCbvBindingOffset(uint32_t vs_identifier, int32_t ps_identifier) const
+    {
+        uint64_t hash = 0;
+        HashCombine(hash, vs_identifier);
+        HashCombine(hash, ps_identifier);
+
+        auto found = m_CbvOffsets.find(hash);
+
+        if (found != m_CbvOffsets.end())
+        {
+            return found->second;
+        }
+
+        RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "CBV offset has not (yet) been calculated for this vertex/pixel shader pair");
+        return 0;
+    }
+
+    uint32_t PipelineManager::GetRootSignatureCbvBindingOffset(uint32_t cs_identifier) const
+    {
+        uint64_t hash = 0;
+        HashCombine(hash, cs_identifier);
+
+        auto found = m_CbvOffsets.find(hash);
+
+        if (found != m_CbvOffsets.end())
+        {
+            return found->second;
+        }
+
+        RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "CBV offset has not (yet) been calculated for this compute shader");
+        return 0;
     }
 
     uint64_t PipelineManager::GetPipelineHash(const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc, uint64_t root_signature_hash)

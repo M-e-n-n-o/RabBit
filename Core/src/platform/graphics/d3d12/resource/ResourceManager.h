@@ -32,6 +32,8 @@ namespace RB::Graphics::D3D12
         struct BufferDesc
         {
             uint64_t                size;
+            D3D12_HEAP_TYPE         heapType;
+            D3D12_RESOURCE_FLAGS    flags;
         };
 
         struct Texture2DDesc
@@ -44,11 +46,19 @@ namespace RB::Graphics::D3D12
             D3D12_RESOURCE_FLAGS    flags;
         };
 
-        void ScheduleCreateUploadResource(GpuResource* resource, const char* name, const BufferDesc& desc);
-        void ScheduleCreateReadbackResource(GpuResource* resource, const char* name, const BufferDesc& desc);
-        void ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& desc);
-        void ScheduleCreateIndexResource(GpuResource* resource, const char* name, const BufferDesc& desc);
+        struct Texture3DDesc
+        {
+            DXGI_FORMAT             format;
+            uint64_t                width;
+            uint64_t                height;
+            uint64_t                depth;
+            uint16_t                mipLevels;
+            D3D12_RESOURCE_FLAGS    flags;
+        };
+
+        void ScheduleCreateBufferResource(GpuResource* resource, const char* name, const BufferDesc& desc);
         void ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& desc);
+        void ScheduleCreateTexture3DResource(GpuResource* resource, const char* name, const Texture3DDesc& desc);
 
         bool WaitUntilResourceValid(const GpuResource* resource);
 
@@ -62,11 +72,9 @@ namespace RB::Graphics::D3D12
 
         enum class ResourceType
         {
-            Upload,
-            Readback,
-            Vertex,
-            Index,
-            Texture2D
+            Buffer,
+            Texture2D,
+            Texture3D
         };
 
         struct ResourceCreationDesc : public JobData
@@ -79,6 +87,7 @@ namespace RB::Graphics::D3D12
             {
                 BufferDesc      buffer;
                 Texture2DDesc   tex2D;
+                Texture3DDesc   tex3D;
             };
 
             ~ResourceCreationDesc()

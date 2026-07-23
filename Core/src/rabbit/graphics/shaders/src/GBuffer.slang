@@ -20,6 +20,12 @@ public struct GBufferTexHandles
     Texture2D<float4>.Handle gbuf1;
 };
 
+public struct GBufferRwTexHandles
+{
+    RWTexture2D<float4>.Handle gbuf0;
+    RWTexture2D<float4>.Handle gbuf1;
+};
+
 public GBufferEncoded EncodeGBuffer(GBuffer gbuf)
 {
     GBufferEncoded enc;
@@ -52,6 +58,21 @@ public GBuffer SampleGBuffer(GBufferTexHandles handles, uint2 screen_coord)
     enc.gbuf0 = handles.gbuf0.Load(int3(screen_coord, 0));
     enc.gbuf1 = handles.gbuf1.Load(int3(screen_coord, 0));
     return DecodeGBuffer(enc);
+}
+
+public GBuffer SampleRwGBuffer(GBufferRwTexHandles handles, uint2 screen_coord)
+{
+    GBufferEncoded enc;
+    enc.gbuf0 = handles.gbuf0[screen_coord];
+    enc.gbuf1 = handles.gbuf1[screen_coord];
+    return DecodeGBuffer(enc);
+}
+
+public void WriteGBuffer(GBufferRwTexHandles handles, GBuffer gbuf, uint2 screen_coord)
+{
+    GBufferEncoded enc = EncodeGBuffer(gbuf);
+    handles.gbuf0[screen_coord] = enc.gbuf0;
+    handles.gbuf1[screen_coord] = enc.gbuf1;
 }
 
 // --------------------------------------------------------------

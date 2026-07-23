@@ -303,6 +303,7 @@ namespace RB::Math
         Float4();
         Float4(float xyzw);
         Float4(float x, float y, float z, float w);
+        Float4(const Float3& xyz, float w = 0.0f);
         ~Float4() = default;
 
         //	void Normalize();

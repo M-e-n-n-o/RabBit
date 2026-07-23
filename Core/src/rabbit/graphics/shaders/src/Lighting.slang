@@ -126,7 +126,7 @@ public void GetDisneyBRDF(in float3 N,
     float FH = SchlickFresnel(LdotH);
     float3 F = lerp(specular_color, 1.0f.xxx, FH);
     float G = SmithGGXAnisotropy(NdotL, alpha) * SmithGGXAnisotropy(NdotV, alpha);
-    float3 spec_term = (D * G * F) / max(4.0f * NdotV * NdotL, 1e-5f);
+    float3 spec_term = D * G * F;
 
     specular = spec_term * NdotL * light_color;
 
@@ -134,7 +134,7 @@ public void GetDisneyBRDF(in float3 N,
     float Dr = Gtr1(NdotH, 0.01f);
     float Fr = lerp(0.04f, 1.0f, FH);
     float Gr = SmithGGX(NdotL, 0.25f) * SmithGGX(NdotV, 0.25f);
-    float clearcoat = clearcoat_strength * 0.25f * Dr * Fr * Gr / max(4.0f * NdotV * NdotL, 1e-5f);
+    float clearcoat = clearcoat_strength * 0.25f * Dr * Fr * Gr;
 
     specular += clearcoat * NdotL * light_color;
 }

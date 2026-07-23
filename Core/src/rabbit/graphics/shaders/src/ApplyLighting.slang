@@ -107,10 +107,10 @@ void ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
 
         float3 diffuse_out;
         float3 specular_out;
-        float3 ambient = albedo * 0.01f;
+        float3 ambient = albedo * 0.003f;
 
         // Calculate BRDF
-        //GetBlinnPhongBRDF(N, V, L,
+        // GetBlinnPhongBRDF(N, V, L,
         //                  diff_color,
         //                  spec_color,
         //                  RoughnessToShininess(roughness),

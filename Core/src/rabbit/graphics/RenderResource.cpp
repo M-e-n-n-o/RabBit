@@ -150,6 +150,40 @@ namespace RB::Graphics
         return (RenderResourceType)primitive_type;
     }
 
+    Shared<GenericBuffer> GenericBuffer::Create(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::GenericBufferD3D12>(name, format, elements, random_read_write_access);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<GenericBuffer> GenericBuffer::Create(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::GenericBufferD3D12>(name, element_size, elements, random_read_write_access);
+#endif
+
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
     Shared<VertexBuffer> VertexBuffer::Create(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
     {
         switch (Renderer::GetAPI())
@@ -367,6 +401,22 @@ namespace RB::Graphics
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
             return CreateShared<D3D12::Texture2DArrayD3D12>((D3D12::Texture2DArrayD3D12*)original.get());
+#endif
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
+
+    Shared<Texture3D> Texture3D::Create(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t depth, bool is_render_target, bool random_read_write_access)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::Texture3DD3D12>(name, format, width, height, depth, is_render_target, random_read_write_access);
 #endif
         default:
             RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");

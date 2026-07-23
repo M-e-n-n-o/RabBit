@@ -14,6 +14,34 @@ namespace RB::Graphics::D3D12
     class GpuResource;
     class GpuGuardD3D12;
 
+    class GenericBufferD3D12 : public GenericBuffer
+    {
+    public:
+        GenericBufferD3D12(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access);
+        GenericBufferD3D12(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access);
+        ~GenericBufferD3D12();
+
+        void* GetNativeResource() const override { return m_Resource; }
+
+        RenderResourceFormat GetFormat() const override { return m_Format; }
+        uint64_t GetSize() const override { return m_Elements * m_ElementSize; }
+
+        bool AllowedRandomReadWrites() const override { return m_RandomReadWrite; }
+
+        DescriptorIndex GetSrvHandle();
+        DescriptorIndex GetUavHandle();
+
+    private:
+        GpuResource*            m_Resource;
+        RenderResourceFormat    m_Format;
+        uint32_t                m_ElementSize;
+        uint32_t                m_Elements;
+        bool                    m_RandomReadWrite;
+
+        DescriptorIndex         m_SRV;
+        DescriptorIndex         m_UAV;
+    };
+
     class VertexBufferD3D12 : public VertexBuffer
     {
     public:
@@ -229,6 +257,61 @@ namespace RB::Graphics::D3D12
         D3D12_CPU_DESCRIPTOR_HANDLE     m_RenderTargetDescriptor;
         DescriptorIndex                 m_DepthStencilHandle;
         D3D12_CPU_DESCRIPTOR_HANDLE     m_DepthStencilDescriptor;
+    };
+
+    class Texture3DD3D12 : public Texture3D
+    {
+    public:
+        Texture3DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t depth, bool is_render_target, bool random_read_write_access);
+        ~Texture3DD3D12();
+
+        void* GetNativeResource() const override { return m_Resource; }
+
+        RenderResourceFormat GetFormat() const override { return m_Format; }
+
+        bool AllowedRandomReadWrites() const override { return m_AllowUAV; }
+
+        uint32_t GetWidth() const override { return m_Width; }
+        uint32_t GetHeight() const override { return m_Height; }
+        uint32_t GetDepth() const override { return m_Depth; }
+        uint32_t GetViewportWidth() const override { return m_VpWidth; }
+        uint32_t GetViewportHeight() const override { return m_VpHeight; }
+        uint32_t GetViewportDepth() const override { return m_VpDepth; }
+
+        void SetViewportWidth(uint32_t width) override;
+        void SetViewportHeight(uint32_t height) override;
+        void SetViewportDepth(uint32_t depth) override;
+
+        bool AllowedRenderTarget() const override { return m_IsRenderTarget; }
+
+        uint32_t GetMipCount() const override;
+        uint32_t GetBaseMip() const override;
+
+        void SetBaseMip(uint32_t mip) override;
+        void SetMipCount(uint32_t mips) override;
+
+        void ResetView() override;
+
+    private:
+        void CreateViews(GpuResource* resource);
+
+        GpuResource*                    m_Resource;
+        RenderResourceFormat            m_Format;
+                                        
+        uint32_t                        m_Width;
+        uint32_t                        m_Height;
+        uint32_t                        m_Depth;
+        uint32_t                        m_VpWidth;
+        uint32_t                        m_VpHeight;
+        uint32_t                        m_VpDepth;
+                                        
+        bool                            m_IsRenderTarget;
+        bool                            m_AllowUAV;
+
+        DescriptorIndex                 m_ReadHandle;
+        DescriptorIndex                 m_UavHandle;
+        DescriptorIndex                 m_RenderTargetHandle;
+        D3D12_CPU_DESCRIPTOR_HANDLE     m_RenderTargetDescriptor;
     };
 }
 #endif

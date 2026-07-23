@@ -33,7 +33,7 @@ ShaderWriter::ShaderWriter()
 {
 }
 
-void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std::string& bin_folder, 
+void ShaderWriter::WriteOutShaders(const char* defines_folder, const char* bin_folder, 
 	std::vector<ShaderReflection>& shaders, const std::vector<Slang::ComPtr<slang::IBlob>>& blobs, const ModuleParams& module_parameters)
 {
 	// Bin file
@@ -42,7 +42,7 @@ void ShaderWriter::WriteOutShaders(const std::string& defines_folder, const std:
 		bin_filename.append("/");
 		bin_filename.append(OBJ_FILE_LOCATION);
 
-		std::filesystem::create_directories(bin_folder.c_str());
+		std::filesystem::create_directories(bin_folder);
 
 		std::ofstream bin_file;
 		bin_file.open(bin_filename.c_str(), std::fstream::out | std::fstream::trunc | std::fstream::binary);

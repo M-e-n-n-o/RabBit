@@ -12,7 +12,7 @@ set_target_properties(${APP_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TA
 # Link RabBit
 target_include_directories(${APP_NAME} PUBLIC
     "${PROJECT_SOURCE_DIR}/Core/src"
-    "../Core/external"
+    "${PROJECT_SOURCE_DIR}/Core/tools/shaderCompiler/include" # Needed to access shaderDefines from custom added shaders
 )
 target_link_directories(${APP_NAME} PUBLIC RabBit)
 target_link_libraries(${APP_NAME} RabBit)

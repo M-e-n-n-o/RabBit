@@ -72,6 +72,8 @@ namespace RB::Graphics::D3D12
     {
         switch (format)
         {
+        case(RenderResourceFormat::Unkown):
+            return DXGI_FORMAT_UNKNOWN;
         case(RenderResourceFormat::RGBA32_FLOAT):
             return DXGI_FORMAT_R32G32B32A32_FLOAT;
         case(RenderResourceFormat::RGBA16_FLOAT):

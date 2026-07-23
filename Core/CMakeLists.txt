@@ -48,7 +48,6 @@ target_compile_definitions(RabBit PRIVATE RB_CORE_ACCESS)
 target_include_directories(RabBit PUBLIC
     "src"
     "src/rabbit"
-    "external"
 )
 
 # Set precompiled header
@@ -57,6 +56,8 @@ target_precompile_headers(RabBit PRIVATE "src/rabbit/RabBitCommon.h")
 set(EXTERNAL_PATH "${PROJECT_SOURCE_DIR}/external")
 
 target_include_directories(RabBit PRIVATE
+    "external"
+
     # Custom tools
     "tools/utils"
     "tools/shaderCompiler/include"

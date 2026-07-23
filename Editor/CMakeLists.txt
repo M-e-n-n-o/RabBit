@@ -33,7 +33,6 @@ add_compile_definitions(
 
 target_include_directories(Editor PRIVATE
     "${PROJECT_SOURCE_DIR}/Core/src"
-    "${PROJECT_SOURCE_DIR}/Core/external"
 
     # D3D12
     "${PROJECT_SOURCE_DIR}/Core/external/D3D12/include"

@@ -49,7 +49,7 @@ namespace RB::Graphics
                 // Output textures
                 {
                     RenderResourceDesc {
-                        .name     = "GBuffer Color",
+                        .name     = "GBuffer0",
                         .format   = RenderResourceFormat::RGBA32_FLOAT,
                         .type     = RenderResourcePassType::Tex2D,
                         .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },
@@ -57,7 +57,7 @@ namespace RB::Graphics
                     },
 
                     RenderResourceDesc {
-                        .name     = "GBuffer Normal",
+                        .name     = "GBuffer1",
                         .format   = RenderResourceFormat::RGBA32_FLOAT,
                         .type     = RenderResourcePassType::Tex2D,
                         .typeDesc = { kRTSize_Full, kRTSize_Full, 1 },

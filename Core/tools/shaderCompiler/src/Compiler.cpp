@@ -20,26 +20,31 @@ Compiler::Compiler()
     createGlobalSession(&desc, m_GlobalSession.writeRef());
 }
 
-void Compiler::FindFiles(const char* base_path, std::vector<std::string>& dirs, std::vector<std::filesystem::path>& files)
+void Compiler::FindFiles(std::vector<std::string> source_dirs, std::vector<std::string>& dirs, std::vector<std::filesystem::path>& files)
 {
-    for (const auto& entry : std::filesystem::directory_iterator(base_path))
+    for (const auto& base_path : source_dirs)
     {
-        if (entry.is_directory())
+        dirs.push_back(base_path);
+
+        for (const auto& entry : std::filesystem::directory_iterator(base_path))
         {
-            dirs.push_back(entry.path().string());
-            FindFiles(entry.path().string().c_str(), dirs, files);
-        }
-        else
-        {
-            if (std::wstring(entry.path().c_str()).find(L".slang") != std::wstring::npos)
+            if (entry.is_directory())
             {
-                files.push_back(entry.path());
+                std::vector<std::string> new_path = { entry.path().string() };
+                FindFiles(new_path, dirs, files);
+            }
+            else
+            {
+                if (std::wstring(entry.path().c_str()).find(L".slang") != std::wstring::npos)
+                {
+                    files.push_back(entry.path());
+                }
             }
         }
     }
 }
 
-void Compiler::CompileFiles(const char* base_path)
+void Compiler::CompileFiles(std::vector<std::string> source_dirs)
 {
     TargetDesc session_target = {};
 #if RB_SHADER_COMPILER_D3D12
@@ -52,7 +57,7 @@ void Compiler::CompileFiles(const char* base_path)
     
     std::vector<std::string> dirs;
     std::vector<std::filesystem::path> files;
-    FindFiles(base_path, dirs, files);
+    FindFiles(source_dirs, dirs, files);
 
     std::vector<const char*> search_paths;
     for (const auto& path : dirs)

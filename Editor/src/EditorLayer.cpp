@@ -148,7 +148,7 @@ namespace Editor
                     {
                         m_Recording = true;
 
-                        uint64_t size = m_ScreenCapturer->PrepareCapture(m_Viewport->GetSceneTexture().get());
+                        uint64_t size = m_ScreenCapturer->PrepareCapture(tex.get());
                         m_ScreenCaptureData = (uint8_t*)ALLOC_HEAP(size);
 
                         Application::GetInstance()->EnableFixedTimeStep(1.0f / fps);

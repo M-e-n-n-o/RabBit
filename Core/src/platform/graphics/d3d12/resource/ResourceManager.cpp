@@ -115,68 +115,14 @@ namespace RB::Graphics::D3D12
         return true;
     }
 
-    void ResourceManager::ScheduleCreateUploadResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
+    void ResourceManager::ScheduleCreateBufferResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
     {
         // Is deleted in destructor of ResourceCreationDesc
         wchar_t* wname = new wchar_t[strlen(name) + 1];
         CharToWchar(name, wname);
 
         ResourceCreationDesc* desc = new ResourceCreationDesc();
-        desc->type      = ResourceType::Upload;
-        desc->resource  = resource;
-        desc->name      = wname;
-        desc->buffer    = buffer_desc;
-
-        JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
-
-        RB_MUTEX_AUTO_LOCK(m_Mutex);
-        m_ScheduledCreations.push_back({ resource, id });
-    }
-
-    void ResourceManager::ScheduleCreateReadbackResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
-    {
-        // Is deleted in destructor of ResourceCreationDesc
-        wchar_t* wname = new wchar_t[strlen(name) + 1];
-        CharToWchar(name, wname);
-
-        ResourceCreationDesc* desc = new ResourceCreationDesc();
-        desc->type      = ResourceType::Readback;
-        desc->resource  = resource;
-        desc->name      = wname;
-        desc->buffer    = buffer_desc;
-
-        JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
-
-        RB_MUTEX_AUTO_LOCK(m_Mutex);
-        m_ScheduledCreations.push_back({ resource, id });
-    }
-
-    void ResourceManager::ScheduleCreateVertexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
-    {
-        // Is deleted in destructor of ResourceCreationDesc
-        wchar_t* wname = new wchar_t[strlen(name) + 1];
-        CharToWchar(name, wname);
-
-        ResourceCreationDesc* desc = new ResourceCreationDesc();
-        desc->type      = ResourceType::Vertex;
-        desc->resource  = resource;
-        desc->name      = wname;
-        desc->buffer    = buffer_desc;
-
-        JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
-
-        RB_MUTEX_AUTO_LOCK(m_Mutex);
-        m_ScheduledCreations.push_back({ resource, id });
-    }
-
-    void ResourceManager::ScheduleCreateIndexResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
-    {
-        // Is deleted in destructor of ResourceCreationDesc
-        wchar_t* wname = new wchar_t[strlen(name) + 1];
-        CharToWchar(name, wname);
-
-        ResourceCreationDesc* desc = new ResourceCreationDesc();
-        desc->type      = ResourceType::Index;
+        desc->type      = ResourceType::Buffer;
         desc->resource  = resource;
         desc->name      = wname;
         desc->buffer    = buffer_desc;
@@ -198,6 +144,24 @@ namespace RB::Graphics::D3D12
         desc->resource  = resource;
         desc->name      = wname;
         desc->tex2D     = tex_desc;
+
+        JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+
+        RB_MUTEX_AUTO_LOCK(m_Mutex);
+        m_ScheduledCreations.push_back({ resource, id });
+    }
+
+    void ResourceManager::ScheduleCreateTexture3DResource(GpuResource* resource, const char* name, const Texture3DDesc& tex_desc)
+    {
+        // Is deleted in destructor of ResourceCreationDesc
+        wchar_t* wname = new wchar_t[strlen(name) + 1];
+        CharToWchar(name, wname);
+
+        ResourceCreationDesc* desc = new ResourceCreationDesc();
+        desc->type      = ResourceType::Texture3D;
+        desc->resource  = resource;
+        desc->name      = wname;
+        desc->tex3D     = tex_desc;
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
 
@@ -237,47 +201,18 @@ namespace RB::Graphics::D3D12
 
         switch (creation_desc->type)
         {
-        case ResourceManager::ResourceType::Upload:
+        case ResourceManager::ResourceType::Buffer:
         {
             D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+            if (creation_desc->buffer.heapType == D3D12_HEAP_TYPE_READBACK)
+                state = D3D12_RESOURCE_STATE_COPY_DEST;
 
             creation_desc->resource->SetResource(
                 g_ResourceManager->CreateCommittedResource(
                     creation_desc->name,
-                    CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size),
-                    D3D12_HEAP_TYPE_UPLOAD,
+                    CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size, creation_desc->buffer.flags),
+                    creation_desc->buffer.heapType,
                     D3D12_HEAP_FLAG_NONE,
-                    state),
-                state);
-        }
-        break;
-
-        case ResourceManager::ResourceType::Readback:
-        {
-            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COPY_DEST;
-
-            creation_desc->resource->SetResource(
-                g_ResourceManager->CreateCommittedResource(
-                    creation_desc->name,
-                    CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size),
-                    D3D12_HEAP_TYPE_READBACK,
-                    D3D12_HEAP_FLAG_NONE,
-                    state),
-                state);
-        }
-        break;
-
-        case ResourceManager::ResourceType::Vertex:
-        case ResourceManager::ResourceType::Index:
-        {
-            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON; //D3D12_RESOURCE_STATE_COPY_DEST // Buffers are always created in the common state
-
-            creation_desc->resource->SetResource(
-                g_ResourceManager->CreateCommittedResource(
-                    creation_desc->name,
-                    CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size),
-                    D3D12_HEAP_TYPE_DEFAULT,
-                    D3D12_HEAP_FLAG_NONE, //D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, // This flag is not allowed for commited resources as they are set automatically
                     state),
                 state);
         }
@@ -294,6 +229,22 @@ namespace RB::Graphics::D3D12
                     creation_desc->name,
                     CD3DX12_RESOURCE_DESC::Tex2D(creation_desc->tex2D.format, creation_desc->tex2D.width, creation_desc->tex2D.height,
                         creation_desc->tex2D.arraySize, creation_desc->tex2D.mipLevels, 1, 0, creation_desc->tex2D.flags, D3D12_TEXTURE_LAYOUT_UNKNOWN, 0),
+                    D3D12_HEAP_TYPE_DEFAULT,
+                    D3D12_HEAP_FLAG_NONE,
+                    state),
+                state);
+        }
+        break;
+
+        case ResourceManager::ResourceType::Texture3D:
+        {
+            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+
+            creation_desc->resource->SetResource(
+                g_ResourceManager->CreateCommittedResource(
+                    creation_desc->name,
+                    CD3DX12_RESOURCE_DESC::Tex3D(creation_desc->tex3D.format, creation_desc->tex3D.width, creation_desc->tex3D.height, creation_desc->tex3D.depth, 
+                        creation_desc->tex3D.mipLevels, creation_desc->tex3D.flags, D3D12_TEXTURE_LAYOUT_UNKNOWN, 0),
                     D3D12_HEAP_TYPE_DEFAULT,
                     D3D12_HEAP_FLAG_NONE,
                     state),

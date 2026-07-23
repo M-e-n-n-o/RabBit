@@ -76,6 +76,7 @@ PB struct ToneMapCB
     PB float  gammaValue;
     PB float2 padding;
 };
+ALIGN_CHECK(ToneMapCB);
 
 #if !SHADER
 } // namespace RB::Graphics::Shader

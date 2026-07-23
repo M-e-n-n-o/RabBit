@@ -14,6 +14,96 @@
 namespace RB::Graphics::D3D12
 {
     // ---------------------------------------------------------------------------
+    //								GenericBuffer
+    // ---------------------------------------------------------------------------
+
+    GenericBufferD3D12::GenericBufferD3D12(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access)
+        : GenericBuffer(name)
+        , m_Format(format)
+        , m_RandomReadWrite(random_read_write_access)
+        , m_Elements(elements)
+        , m_SRV{}
+        , m_UAV{}
+    {
+        m_ElementSize = GetElementSizeFromFormat(format);
+        
+        m_Resource = new GpuResource();
+
+        ResourceManager::BufferDesc desc = {};
+        desc.size       = m_Elements * m_ElementSize;
+        desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
+        desc.flags      = random_read_write_access ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
+        g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
+    }
+
+    GenericBufferD3D12::GenericBufferD3D12(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access)
+        : GenericBuffer(name)
+        , m_Format(RenderResourceFormat::Unkown)
+        , m_RandomReadWrite(random_read_write_access)
+        , m_Elements(elements)
+        , m_ElementSize(element_size)
+        , m_SRV{}
+        , m_UAV{}
+    {
+        m_Resource = new GpuResource();
+
+        ResourceManager::BufferDesc desc = {};
+        desc.size       = m_Elements * m_ElementSize;
+        desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
+        desc.flags      = random_read_write_access ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
+        g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
+    }
+
+    GenericBufferD3D12::~GenericBufferD3D12()
+    {
+        SAFE_DELETE(m_Resource);
+    }
+
+    DescriptorIndex GenericBufferD3D12::GetSrvHandle()
+    {
+        if (!m_SRV.isValid())
+        {
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+            desc.Format                     = ConvertToDXGIFormat(m_Format);
+            desc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
+            desc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            desc.Buffer.FirstElement        = 0;
+            desc.Buffer.NumElements         = m_Elements;
+            desc.Buffer.StructureByteStride = m_Format == RenderResourceFormat::Unkown ? m_ElementSize : 0;
+            desc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_NONE;
+
+            m_SRV = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
+        }
+
+        return m_SRV;
+    }
+
+    DescriptorIndex GenericBufferD3D12::GetUavHandle()
+    {
+        if (!m_RandomReadWrite)
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "GenericBuffer does not have random read write access");
+            return DescriptorIndex{};
+        }
+
+        if (!m_UAV.isValid())
+        {
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+            desc.Format                      = ConvertToDXGIFormat(m_Format);
+            desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
+            desc.Buffer.FirstElement         = 0;
+            desc.Buffer.NumElements          = m_Elements;
+            desc.Buffer.StructureByteStride  = m_Format == RenderResourceFormat::Unkown ? m_ElementSize : 0;
+            desc.Buffer.CounterOffsetInBytes = 0;
+            desc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
+
+            m_UAV = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
+        }
+
+        return m_UAV;
+    }
+
+    // ---------------------------------------------------------------------------
     //								VertexBuffer
     // ---------------------------------------------------------------------------
 
@@ -38,7 +128,12 @@ namespace RB::Graphics::D3D12
         else
         {
             m_Resource = new GpuResource();
-            g_ResourceManager->ScheduleCreateVertexResource(m_Resource, name, { data_size });
+
+            ResourceManager::BufferDesc desc = {};
+            desc.size       = data_size;
+            desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
+            desc.flags      = D3D12_RESOURCE_FLAG_NONE;
+            g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
 
             Streamable streamable = {};
             streamable.resource     = this;
@@ -81,7 +176,12 @@ namespace RB::Graphics::D3D12
         uint64_t size = m_Elements * GetElementSizeFromFormat(GetFormat());
 
         m_Resource = new GpuResource();
-        g_ResourceManager->ScheduleCreateIndexResource(m_Resource, name, { size });
+
+        ResourceManager::BufferDesc desc = {};
+        desc.size       = size;
+        desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
+        desc.flags      = D3D12_RESOURCE_FLAG_NONE;
+        g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
 
         Streamable streamable = {};
         streamable.resource     = this;
@@ -117,7 +217,12 @@ namespace RB::Graphics::D3D12
         , m_MappedMemory(nullptr)
     {
         m_Resource = new GpuResource();
-        g_ResourceManager->ScheduleCreateReadbackResource(m_Resource, name, { size });
+
+        ResourceManager::BufferDesc desc = {};
+        desc.size       = size;
+        desc.heapType   = D3D12_HEAP_TYPE_READBACK;
+        desc.flags      = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
     }
 
     ReadbackBufferD3D12::ReadbackBufferD3D12(const char* name, RenderResource* target)
@@ -182,7 +287,12 @@ namespace RB::Graphics::D3D12
         if (m_Size != 0)
         {
             m_Resource = new GpuResource();
-            g_ResourceManager->ScheduleCreateReadbackResource(m_Resource, name, { m_Size });
+
+            ResourceManager::BufferDesc desc = {};
+            desc.size       = m_Size;
+            desc.heapType   = D3D12_HEAP_TYPE_READBACK;
+            desc.flags      = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+            g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
         }
     }
 
@@ -313,6 +423,19 @@ namespace RB::Graphics::D3D12
         return g_DescriptorManager->CreateDescriptor(res, desc, transient);
     }
 
+    DescriptorIndex CreateSRV3D(ID3D12Resource* res, uint32_t mip_levels, uint32_t base_mip, RenderResourceFormat format, bool transient)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+        desc.Format                         = ConvertToDXGIFormat(format);
+        desc.ViewDimension                  = D3D12_SRV_DIMENSION_TEXTURE3D;
+        desc.Shader4ComponentMapping        = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        desc.Texture3D.MipLevels            = mip_levels;
+        desc.Texture3D.MostDetailedMip      = base_mip;
+        desc.Texture3D.ResourceMinLODClamp  = 0.0f;
+
+        return g_DescriptorManager->CreateDescriptor(res, desc, transient);
+    }
+
     DescriptorIndex CreateUAV(ID3D12Resource* res, bool allow_uav, uint32_t mip_slice, RenderResourceFormat format, bool transient)
     {
         if (!allow_uav)
@@ -347,6 +470,23 @@ namespace RB::Graphics::D3D12
         return g_DescriptorManager->CreateDescriptor(res, desc, transient);
     }
 
+    DescriptorIndex CreateUAV3D(ID3D12Resource* res, bool allow_uav, uint32_t mip_slice, uint32_t first_w_slice, uint32_t w_size, RenderResourceFormat format, bool transient)
+    {
+        if (!allow_uav)
+        {
+            return DescriptorIndex{};
+        }
+
+        D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+        desc.Format                 = ConvertToDXGIFormat(format);
+        desc.ViewDimension          = D3D12_UAV_DIMENSION_TEXTURE3D;
+        desc.Texture3D.MipSlice     = mip_slice;
+        desc.Texture3D.FirstWSlice  = first_w_slice;
+        desc.Texture3D.WSize        = w_size;
+
+        return g_DescriptorManager->CreateDescriptor(res, desc, transient);
+    }
+
     DescriptorIndex CreateRTV(ID3D12Resource* res, bool is_rendertarget, uint32_t mip_slice, RenderResourceFormat format, bool transient)
     {
         if (!is_rendertarget)
@@ -377,6 +517,23 @@ namespace RB::Graphics::D3D12
         desc.Texture2DArray.FirstArraySlice = base_slice;
         desc.Texture2DArray.ArraySize       = slices;
         desc.Texture2DArray.PlaneSlice      = 0;
+
+        return g_DescriptorManager->CreateDescriptor(res, desc, transient);
+    }
+
+    DescriptorIndex CreateRTV3D(ID3D12Resource* res, bool is_rendertarget, uint32_t mip_slice, uint32_t first_w_slice, uint32_t w_size, RenderResourceFormat format, bool transient)
+    {
+        if (!is_rendertarget)
+        {
+            return DescriptorIndex{};
+        }
+
+        D3D12_RENDER_TARGET_VIEW_DESC desc = {};
+        desc.Format                 = ConvertToDXGIFormat(format);
+        desc.ViewDimension          = D3D12_RTV_DIMENSION_TEXTURE3D;
+        desc.Texture3D.MipSlice     = mip_slice;
+        desc.Texture3D.FirstWSlice  = first_w_slice;
+        desc.Texture3D.WSize        = w_size;
 
         return g_DescriptorManager->CreateDescriptor(res, desc, transient);
     }
@@ -878,6 +1035,109 @@ namespace RB::Graphics::D3D12
             m_RenderTargetDescriptor = g_DescriptorManager->GetCpuHandle(m_RenderTargetHandle);
         if (m_DepthStencilHandle.isValid())
             m_DepthStencilDescriptor = g_DescriptorManager->GetCpuHandle(m_DepthStencilHandle);
+    }
+
+    // ---------------------------------------------------------------------------
+    //								    Texture3D
+    // ---------------------------------------------------------------------------
+
+    Texture3DD3D12::Texture3DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t depth, bool is_render_target, bool random_read_write_access)
+        : Texture3D(name)
+        , m_Format(format)
+        , m_Width(width)
+        , m_Height(height)
+        , m_Depth(depth)
+        , m_VpWidth(width)
+        , m_VpHeight(height)
+        , m_VpDepth(depth)
+        , m_IsRenderTarget(is_render_target)
+        , m_AllowUAV(random_read_write_access)
+    {
+        RB_ASSERT_FATAL(LOGTAG_GRAPHICS, width > 0 && height > 0 && depth > 0, "Cannot create a 3D texture with a width, height or depth smaller than 1");
+
+        m_Resource = new GpuResource(std::bind(&Texture3DD3D12::CreateViews, this, std::placeholders::_1));
+
+        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+        if (m_IsRenderTarget)
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        if (m_AllowUAV)
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+        // TODO Add mip support
+
+        ResourceManager::Texture3DDesc desc = {};
+        desc.format     = ConvertToDXGIFormat(m_Format, false);
+        desc.width      = m_Width;
+        desc.height     = m_Height;
+        desc.depth      = m_Depth;
+        desc.mipLevels  = 1;
+        desc.flags      = flags;
+
+        g_ResourceManager->ScheduleCreateTexture3DResource(m_Resource, name, desc);
+    }
+    
+    Texture3DD3D12::~Texture3DD3D12()
+    {
+        g_DescriptorManager->InvalidateDescriptor(m_ReadHandle);
+        g_DescriptorManager->InvalidateDescriptor(m_UavHandle);
+        g_DescriptorManager->InvalidateDescriptor(m_RenderTargetHandle);
+
+        SAFE_DELETE(m_Resource);
+    }
+    
+    void Texture3DD3D12::SetViewportWidth(uint32_t width)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, width <= m_Width, "The viewport width cannot be bigger than the actual resource width");
+        m_VpWidth = width;
+    }
+    
+    void Texture3DD3D12::SetViewportHeight(uint32_t height)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, height <= m_Height, "The viewport height cannot be bigger than the actual resource height");
+        m_VpHeight = height;
+    }
+    
+    void Texture3DD3D12::SetViewportDepth(uint32_t depth)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, depth <= m_Depth, "The viewport depth cannot be bigger than the actual resource depth");
+        m_VpDepth = depth;
+    }
+    
+    uint32_t Texture3DD3D12::GetMipCount() const
+    {
+        // TODO Add mip support
+        return 1;
+    }
+
+    uint32_t Texture3DD3D12::GetBaseMip() const
+    {
+        // TODO Add mip support
+        return 0;
+    }
+
+    void Texture3DD3D12::SetBaseMip(uint32_t mip)
+    {
+        // TODO Add mip support
+    }
+
+    void Texture3DD3D12::SetMipCount(uint32_t mips)
+    {
+        // TODO Add mip support
+    }
+
+    void Texture3DD3D12::ResetView()
+    {
+        // TODO Add mip support
+    }
+
+    void Texture3DD3D12::CreateViews(GpuResource* resource)
+    {
+        m_ReadHandle         = CreateSRV3D(m_Resource->GetResource(), 1, 0, m_Format, false);
+        m_UavHandle          = CreateUAV3D(m_Resource->GetResource(), m_AllowUAV, 0, 0, m_VpDepth, m_Format, false);
+        m_RenderTargetHandle = CreateRTV3D(m_Resource->GetResource(), m_IsRenderTarget, 0, 0, m_VpDepth, m_Format, false);
+
+        if (m_RenderTargetHandle.isValid())
+            m_RenderTargetDescriptor = g_DescriptorManager->GetCpuHandle(m_RenderTargetHandle);
     }
 }
 #endif
