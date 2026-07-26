@@ -25,5 +25,6 @@ namespace Editor
         uint32_t m_DeltaIndex;
         float m_MainThreadAverages[c_HistoryLength];
         float m_RenderThreadAverages[c_HistoryLength];
+        float m_PresentAverages[c_HistoryLength];
     };
 }

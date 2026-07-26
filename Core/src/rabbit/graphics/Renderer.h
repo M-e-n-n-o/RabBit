@@ -63,7 +63,8 @@ namespace RB::Graphics
         FrameAllocator*   GetAllocator() const { return m_RenderAllocator; }
 
         uint64_t GetRenderFrameIndex();
-        float GetLastFrameTime(); // In ms
+        float GetLastRenderTime(); // In ms
+        float GetLastPresentInverval();  // In ms
 
         void Init();
 
@@ -102,6 +103,10 @@ namespace RB::Graphics
 
         ThreadedVariable<uint64_t>  m_RenderFrameIndex;
         ThreadedVariable<uint32_t>  m_ForceSync;
+
+        Timer                       m_PresentTimer;
+        double                      m_PresentTimeInverval;
+        Mutex                       m_PresentTimerMutex;
 
         Shared<VertexBuffer>        m_BackBufferCopyVB;
 

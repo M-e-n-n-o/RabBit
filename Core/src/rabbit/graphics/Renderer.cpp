@@ -61,6 +61,10 @@ namespace RB::Graphics
 
         ThreadedVariable<uint64_t>*         renderFrameIndex;
 
+        Timer*                              presentTimer;
+        double*                             presentTimeInverval;
+        Mutex*                              presentTimerMutex;
+
         VertexBuffer*                       backBufferCopyVB;
 
         std::function<void()>               OnRenderFrameStart;
@@ -96,6 +100,7 @@ namespace RB::Graphics
         , m_MultiThreadingSupport(multi_threading_support)
         , m_RenderFrameIndex(0)
         , m_ForceSync(kForceSyncState_None)
+        , m_PresentTimeInverval(0)
     {
 
     }
@@ -232,6 +237,9 @@ namespace RB::Graphics
             context->renderPassEntries              = entries;
             context->graphicsInterface              = m_GraphicsInterface;
             context->renderFrameIndex               = &m_RenderFrameIndex;
+            context->presentTimer                   = &m_PresentTimer;
+            context->presentTimeInverval            = &m_PresentTimeInverval;
+            context->presentTimerMutex              = &m_PresentTimerMutex;
             context->backBufferCopyVB               = m_BackBufferCopyVB.get();
             context->OnRenderFrameStart             = std::bind(&Renderer::OnFrameStart, this);
             context->OnRenderFrameEnd               = std::bind(&Renderer::OnFrameEnd, this);
@@ -473,9 +481,15 @@ namespace RB::Graphics
         return m_RenderFrameIndex.GetValue();
     }
 
-    float Renderer::GetLastFrameTime()
+    float Renderer::GetLastRenderTime()
     {
         return m_RenderThread->GetLastJobTimeMs();
+    }
+
+    float Renderer::GetLastPresentInverval()
+    {
+        RB_MUTEX_AUTO_LOCK(m_PresentTimerMutex);
+        return m_PresentTimeInverval;
     }
 
     bool Renderer::OnEvent(Event& event)
@@ -747,6 +761,12 @@ namespace RB::Graphics
             (*context->backBufferAvailabilityGuards)[window_pairs[pair_index].windowIndex].guards[back_buffer_index] = guard;
 
             window_pairs[pair_index].window->Present();
+        }
+
+        {
+            RB_MUTEX_AUTO_LOCK(*context->presentTimerMutex);
+            *context->presentTimeInverval = context->presentTimer->ElapsedMilliseconds();
+            context->presentTimer->Reset();
         }
 
         context->OnRenderFrameEnd();

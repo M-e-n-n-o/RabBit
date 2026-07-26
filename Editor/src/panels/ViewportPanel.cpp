@@ -73,30 +73,39 @@ namespace Editor
 
         const ImU32 main_color = IM_COL32(0, 255, 0, 255);
         const ImU32 render_color = IM_COL32(255, 0, 0, 255);
+        const ImU32 fps_color = IM_COL32(0, 0, 255, 255);
 
         // Background
         dl->AddRectFilled(panel_min, ImVec2(graph_pos.x + graph_size.x, graph_pos.y + graph_size.y), IM_COL32(0, 0, 0, 127), 5.0f);
 
         float main_average = 0;
         float render_average = 0;
+        float present_average = 0;
         {
             m_DeltaIndex = (m_DeltaIndex + 1) % c_HistoryLength;
             m_MainThreadAverages[m_DeltaIndex] = Application::GetInstance()->GetDeltaTime() * 1000.0f;
-            m_RenderThreadAverages[m_DeltaIndex] = Application::GetInstance()->GetRenderer()->GetLastFrameTime();
+            m_RenderThreadAverages[m_DeltaIndex] = Application::GetInstance()->GetRenderer()->GetLastRenderTime();
+            m_PresentAverages[m_DeltaIndex] = Application::GetInstance()->GetRenderer()->GetLastPresentInverval();
 
-            int count = Math::Min(50, c_HistoryLength);
+            int count = Math::Min(100, c_HistoryLength);
             for (int i = 0; i < count; i++)
             {
                 int idx = (m_DeltaIndex - i + c_HistoryLength) % c_HistoryLength;
                 main_average += m_MainThreadAverages[idx];
                 render_average += m_RenderThreadAverages[idx];
+                present_average += m_PresentAverages[idx];
             }
             main_average /= count;
             render_average /= count;
+            present_average /= count;
         }
 
-        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 8), main_color, std::format("Main thread: {:.1f}ms", main_average).c_str());
-        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 20), render_color, std::format("Render thread: {:.1f}ms", render_average).c_str());
+        float final_fps = 1000.0f / present_average;
+
+        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 8), main_color,    std::format("Main thread:    {:.2f}ms", main_average).c_str());
+        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 20), render_color, std::format("Render thread:  {:.2f}ms", render_average).c_str());
+        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 32), fps_color,    std::format("Frame time:     {:.2f}ms", present_average).c_str());
+        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 44), fps_color,    std::format("FPS:            {:.1f}", final_fps).c_str());
 
         auto PlotGraph = [&](float* timings, ImU32 color)
             {
