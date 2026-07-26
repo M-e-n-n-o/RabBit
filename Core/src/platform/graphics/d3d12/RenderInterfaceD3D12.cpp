@@ -257,6 +257,8 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetShaderResourceInput(uint32_t handle, RenderResource* resource)
     {
+        RB_ASSERT(LOGTAG_GRAPHICS, resource->ReadyToRender(true), "Failed to properly wait until resource %s was ready to render", resource->GetName());
+
         TransitionResource(resource, ResourceState::READ);
 
         uint32_t binding_offset = (handle >> 3) & 0x1FFFFFFF;

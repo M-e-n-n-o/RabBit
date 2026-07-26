@@ -91,7 +91,7 @@ namespace RB::Graphics
     class RenderResource
     {
     public:
-        virtual ~RenderResource() = default;
+        virtual ~RenderResource();
 
         virtual const char* GetName() const { return m_Name.c_str(); }
 
@@ -101,18 +101,27 @@ namespace RB::Graphics
 
         virtual bool AllowedRandomReadWrites() const = 0;
 
-        bool ReadyToRender() const { return !m_IsStreaming; } // TODO Make this thread safe
-        void SetStreaming(bool is_streaming) { m_IsStreaming = is_streaming; } // TODO Make this thread safe
+        bool ReadyToRender(bool block_until_ready = false);
 
         RenderResourceType GetType() const { return m_Type; }
         RenderResourceType GetPrimitiveType() const;
 
     protected:
-        RenderResource(const char* name, RenderResourceType type) : m_Name(name), m_Type(type), m_IsStreaming(false) {}
+        RenderResource(const char* name, RenderResourceType type) 
+            : m_Name(name)
+            , m_Type(type)
+            , m_IsStreaming(nullptr)
+        {}
 
         std::string         m_Name;
         RenderResourceType	m_Type;
-        bool				m_IsStreaming;
+    
+    private:
+        void SetStreaming(bool is_streaming);
+
+        ThreadedVariable<bool>* m_IsStreaming;
+
+        friend class ResourceStreamer;
     };
 
     // -----------------------------------------------------------------------------------------------
