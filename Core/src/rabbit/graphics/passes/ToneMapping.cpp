@@ -64,9 +64,9 @@ namespace RB::Graphics
         cb.brightnessValue  = m_Settings.brightness;
         cb.gammaValue       = m_Settings.applyGamma ? 2.2f : 1.0f;
 
-        i.ri->SetConstantShaderData(ApplyLightingGlobals_ApplyLighting, &cb, sizeof(Shader::ToneMapCB));
+        i.ri->SetConstantShaderData(ToneMapGlobals_ToneMapCB, &cb, sizeof(Shader::ToneMapCB));
 
-        i.ri->SetRandomReadWriteInput(CsApplyLightingDeferred_Output, i.outputRes[0]);
+        i.ri->SetRandomReadWriteInput(CsToneMap_Output, i.outputRes[0]);
 
         i.ri->Dispatch(ALIGN_8(i.viewContext->viewport.width) / 8, ALIGN_8(i.viewContext->viewport.height) / 8, 1);
     }

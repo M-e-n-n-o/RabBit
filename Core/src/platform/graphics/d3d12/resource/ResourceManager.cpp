@@ -37,6 +37,11 @@ namespace RB::Graphics::D3D12
     {
         RB_MUTEX_AUTO_LOCK(m_Mutex);
 
+        std::erase_if(m_ScheduledCreations, [this](const auto& creation)
+            {
+                return m_CreationThread->IsFinished(creation.jobID);
+            });
+
         m_CurrentDeletionList = (m_CurrentDeletionList + 1) % TRANSIENT_CYCLES;
 
         auto& list = m_ScheduledDeletions[m_CurrentDeletionList];
@@ -57,11 +62,6 @@ namespace RB::Graphics::D3D12
         m_CreationThread->ScheduleJob(m_DeletionJob, desc);
 
         list.clear();
-
-        std::erase_if(m_ScheduledCreations, [this](const auto& creation)
-            {
-                return m_CreationThread->IsFinished(creation.jobID);
-            });
     }
 
     void ResourceManager::FlushBookkeeping()
@@ -94,8 +94,9 @@ namespace RB::Graphics::D3D12
             RB_MUTEX_AUTO_LOCK(m_Mutex);
 
             // Find the scheduled creation
-            auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool {
-                return resource == scheduled.resource;
+            auto itr = std::find_if(m_ScheduledCreations.begin(), m_ScheduledCreations.end(), [resource](const Scheduled& scheduled) -> bool 
+                {
+                    return resource == scheduled.resource;
                 });
 
             if (itr == m_ScheduledCreations.end())
