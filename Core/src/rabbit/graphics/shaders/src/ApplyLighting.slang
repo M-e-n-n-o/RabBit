@@ -81,7 +81,7 @@ void ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
                                       1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
             // Sample shadow map
-            shadow = SampleShadowPCF3X3(handles.shadowSlices, shadow_uv, shadow_ndc.z, cascade_idx, 0.001f);
+            shadow = SampleShadowPCF3X3(handles.shadowSlices, shadow_uv, shadow_ndc.z, cascade_idx, 0.005f);
         }
     }
 
