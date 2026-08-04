@@ -10,14 +10,18 @@
 #include "resource/Descriptor.h"
 #include "Pipeline.h"
 
+#include "graphics/RenderInterface.h"
+
 namespace RB::Graphics::D3D12
 {
     RendererD3D12::RendererD3D12(bool enable_debug_layer)
         : Renderer(true)
     {
         g_GraphicsDevice            = new GraphicsDevice(enable_debug_layer);
+        m_UploadInterface           = RenderInterface::Create(true);
+
         g_DescriptorManager         = new DescriptorManager();
-        g_ResourceManager           = new ResourceManager();
+        g_ResourceManager           = new ResourceManager(m_UploadInterface);
         g_ResourceStateManager      = new ResourceStateManager();
         g_TransientCBVAllocator     = new TransientUploadBuffer("Transient CBV Allocation", k64KB);
         g_TransientVBAllocator      = new TransientUploadBuffer("Transient VB Allocation",  k64KB);
@@ -34,6 +38,7 @@ namespace RB::Graphics::D3D12
         delete g_ResourceStateManager;
         delete g_ResourceManager;
         delete g_DescriptorManager;
+        delete m_UploadInterface;
         delete g_GraphicsDevice;
     }
 

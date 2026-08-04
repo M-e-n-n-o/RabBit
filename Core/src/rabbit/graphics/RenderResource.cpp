@@ -140,51 +140,6 @@ namespace RB::Graphics
         return (float)GetViewportWidth() / (float)GetViewportHeight();
     }
 
-    RenderResource::~RenderResource()
-    {
-        SAFE_DELETE(m_IsStreaming);
-    }
-
-    bool RenderResource::ReadyToRender(bool block_until_ready)
-    {
-        // TODO: This method is not safe for multiple threads to enter at the same time!
-        // (which currently does not happen because there is only 1 render thread, but maybe in the future a problem)
-
-        if (m_IsStreaming == nullptr)
-            return true;
-
-        if (block_until_ready)
-        {
-            m_IsStreaming->WaitUntilConditionMet([](const bool& streaming) -> bool
-                {
-                    return streaming == false;
-                });
-            SAFE_DELETE(m_IsStreaming);
-            return true;
-        }
-        else if (m_IsStreaming->GetValue() == false)
-        {
-            SAFE_DELETE(m_IsStreaming);
-            return true;
-        }
-
-        return false;
-    }
-
-    void RenderResource::SetStreaming(bool is_streaming)
-    {
-        if (is_streaming)
-        {
-            RB_ASSERT(LOGTAG_GRAPHICS, m_IsStreaming == nullptr, "This resource was already set as streaming before. Its not valid to do it again!");
-            m_IsStreaming = new ThreadedVariable<bool>(true);
-        }
-        else
-        {
-            RB_ASSERT(LOGTAG_GRAPHICS, m_IsStreaming != nullptr, "This resource was not yet set as streaming");
-            m_IsStreaming->SetValue(false);
-        }
-    }
-
     RenderResourceType RenderResource::GetPrimitiveType() const
     {
         uint32_t last_primitive = (uint32_t)RenderResourceType::kLastPrimitiveType;

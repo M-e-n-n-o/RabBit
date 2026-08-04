@@ -92,8 +92,8 @@ namespace RB::Graphics
             const Mesh*             mesh            = mesh_renderer->GetMesh();
             const Mesh::VertexPack& vp              = mesh->GetVertexPack();
 
-            if (!vp.primaryBuffer || !vp.primaryBuffer->ReadyToRender() ||
-                (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()))
+            if (!vp.primaryBuffer || !vp.primaryBuffer->ContentsReady() ||
+                (vp.indexBuffer && !vp.indexBuffer->ContentsReady()))
             {
                 continue;
             }

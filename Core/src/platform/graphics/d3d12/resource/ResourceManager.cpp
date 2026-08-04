@@ -2,9 +2,12 @@
 
 #include "ResourceManager.h"
 #include "RabBitCommon.h"
-#include "../GraphicsDevice.h"
-#include "ResourceManager.h"
 #include "ResourceStateManager.h"
+
+#include "../GraphicsDevice.h"
+#include "../UtilsD3D12.h"
+
+#include "graphics/RenderInterface.h"
 
 #include <d3dx12/d3dx12.h>
 
@@ -15,7 +18,8 @@ namespace RB::Graphics::D3D12
 
     ResourceManager* g_ResourceManager = nullptr;
 
-    ResourceManager::ResourceManager()
+    ResourceManager::ResourceManager(RenderInterface* render_interface)
+        : m_RenderInterface(render_interface)
     {
         m_CreationThread = new WorkerThread("Resource Manager", ThreadPriority::Medium);
 
@@ -81,7 +85,7 @@ namespace RB::Graphics::D3D12
         m_ScheduledDeletions[m_CurrentDeletionList].push_back(res);
     }
 
-    bool ResourceManager::WaitUntilResourceValid(const GpuResource* resource)
+    bool ResourceManager::WaitUntilResourceCreated(const GpuResource* resource)
     {
         if (m_CreationThread->IsCurrentThread())
         {
@@ -116,9 +120,10 @@ namespace RB::Graphics::D3D12
         return true;
     }
 
-    void ResourceManager::ScheduleCreateBufferResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc)
+    void ResourceManager::ScheduleCreateBufferResource(GpuResource* resource, const char* name, const BufferDesc& buffer_desc, const void* data, uint64_t data_size)
     {
-        // Is deleted in destructor of ResourceCreationDesc
+        // Memory is free'd in the destructor of ResourceCreationDesc
+
         wchar_t* wname = new wchar_t[strlen(name) + 1];
         CharToWchar(name, wname);
 
@@ -127,16 +132,37 @@ namespace RB::Graphics::D3D12
         desc->resource  = resource;
         desc->name      = wname;
         desc->buffer    = buffer_desc;
+        desc->data      = nullptr;
+        desc->dataSize  = data_size;
+        desc->ri        = m_RenderInterface;
 
-        JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+        if (data && data_size > 0)
+        {
+            void* data_copy = ALLOC_HEAP(data_size);
+            memcpy(data_copy, data, data_size);
+            desc->data = data_copy;
+        }
 
-        RB_MUTEX_AUTO_LOCK(m_Mutex);
-        m_ScheduledCreations.push_back({ resource, id });
+        if (m_CreationThread->IsCurrentThread())
+        {
+            // If the creation thread itself tries to create a resource (an upload buffer) we just instantly create it
+            CreationJob(desc);
+            desc->OnDestroy(false);
+            delete desc;
+        }
+        else
+        {
+            JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
+
+            RB_MUTEX_AUTO_LOCK(m_Mutex);
+            m_ScheduledCreations.push_back({ resource, id });
+        }
     }
 
-    void ResourceManager::ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& tex_desc)
+    void ResourceManager::ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& tex_desc, const void* data, uint64_t data_size)
     {
-        // Is deleted in destructor of ResourceCreationDesc
+        // Memory is free'd in the destructor of ResourceCreationDesc
+
         wchar_t* wname = new wchar_t[strlen(name) + 1];
         CharToWchar(name, wname);
 
@@ -145,6 +171,16 @@ namespace RB::Graphics::D3D12
         desc->resource  = resource;
         desc->name      = wname;
         desc->tex2D     = tex_desc;
+        desc->data      = nullptr;
+        desc->dataSize  = data_size;
+        desc->ri        = m_RenderInterface;
+        
+        if (data && data_size > 0)
+        {
+            void* data_copy = ALLOC_HEAP(data_size);
+            memcpy(data_copy, data, data_size);
+            desc->data = data_copy;
+        }
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
 
@@ -152,9 +188,10 @@ namespace RB::Graphics::D3D12
         m_ScheduledCreations.push_back({ resource, id });
     }
 
-    void ResourceManager::ScheduleCreateTexture3DResource(GpuResource* resource, const char* name, const Texture3DDesc& tex_desc)
+    void ResourceManager::ScheduleCreateTexture3DResource(GpuResource* resource, const char* name, const Texture3DDesc& tex_desc, const void* data, uint64_t data_size)
     {
-        // Is deleted in destructor of ResourceCreationDesc
+        // Memory is free'd in the destructor of ResourceCreationDesc
+
         wchar_t* wname = new wchar_t[strlen(name) + 1];
         CharToWchar(name, wname);
 
@@ -163,6 +200,16 @@ namespace RB::Graphics::D3D12
         desc->resource  = resource;
         desc->name      = wname;
         desc->tex3D     = tex_desc;
+        desc->data      = nullptr;
+        desc->dataSize  = data_size;
+        desc->ri        = m_RenderInterface;
+        
+        if (data && data_size > 0)
+        {
+            void* data_copy = ALLOC_HEAP(data_size);
+            memcpy(data_copy, data, data_size);
+            desc->data = data_copy;
+        }
 
         JobID id = m_CreationThread->ScheduleJob(m_CreationJob, desc);
 
@@ -200,56 +247,52 @@ namespace RB::Graphics::D3D12
     {
         ResourceManager::ResourceCreationDesc* creation_desc = (ResourceManager::ResourceCreationDesc*)data;
 
+        ID3D12Resource* resource = nullptr;
+        D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
         switch (creation_desc->type)
         {
         case ResourceManager::ResourceType::Buffer:
         {
-            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+            state = D3D12_RESOURCE_STATE_COMMON;
             if (creation_desc->buffer.heapType == D3D12_HEAP_TYPE_READBACK)
                 state = D3D12_RESOURCE_STATE_COPY_DEST;
 
-            creation_desc->resource->SetResource(
-                g_ResourceManager->CreateCommittedResource(
-                    creation_desc->name,
-                    CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size, creation_desc->buffer.flags),
-                    creation_desc->buffer.heapType,
-                    D3D12_HEAP_FLAG_NONE,
-                    state),
-                state);
+            resource = g_ResourceManager->CreateCommittedResource(creation_desc->name,
+                                                                  CD3DX12_RESOURCE_DESC::Buffer(creation_desc->buffer.size, creation_desc->buffer.flags),
+                                                                  creation_desc->buffer.heapType,
+                                                                  D3D12_HEAP_FLAG_NONE,
+                                                                  state);
         }
         break;
 
         case ResourceManager::ResourceType::Texture2D:
         {
-            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+            state = D3D12_RESOURCE_STATE_COMMON;
 
             // TODO Fill in the optimized clear value for RenderTargets and DepthStencil textures
 
-            creation_desc->resource->SetResource(
-                g_ResourceManager->CreateCommittedResource(
-                    creation_desc->name,
-                    CD3DX12_RESOURCE_DESC::Tex2D(creation_desc->tex2D.format, creation_desc->tex2D.width, creation_desc->tex2D.height,
-                        creation_desc->tex2D.arraySize, creation_desc->tex2D.mipLevels, 1, 0, creation_desc->tex2D.flags, D3D12_TEXTURE_LAYOUT_UNKNOWN, 0),
-                    D3D12_HEAP_TYPE_DEFAULT,
-                    D3D12_HEAP_FLAG_NONE,
-                    state),
-                state);
+            resource = g_ResourceManager->CreateCommittedResource(creation_desc->name,
+                                                                  CD3DX12_RESOURCE_DESC::Tex2D(ConvertToDXGIFormat(creation_desc->tex2D.format, false), 
+                                                                      creation_desc->tex2D.width, creation_desc->tex2D.height,
+                                                                      creation_desc->tex2D.arraySize, creation_desc->tex2D.mipLevels, 1, 0, 
+                                                                      creation_desc->tex2D.flags, D3D12_TEXTURE_LAYOUT_UNKNOWN, 0),
+                                                                  D3D12_HEAP_TYPE_DEFAULT,
+                                                                  D3D12_HEAP_FLAG_NONE,
+                                                                  state);
         }
         break;
 
         case ResourceManager::ResourceType::Texture3D:
         {
-            D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+            state = D3D12_RESOURCE_STATE_COMMON;
 
-            creation_desc->resource->SetResource(
-                g_ResourceManager->CreateCommittedResource(
-                    creation_desc->name,
-                    CD3DX12_RESOURCE_DESC::Tex3D(creation_desc->tex3D.format, creation_desc->tex3D.width, creation_desc->tex3D.height, creation_desc->tex3D.depth, 
-                        creation_desc->tex3D.mipLevels, creation_desc->tex3D.flags, D3D12_TEXTURE_LAYOUT_UNKNOWN, 0),
-                    D3D12_HEAP_TYPE_DEFAULT,
-                    D3D12_HEAP_FLAG_NONE,
-                    state),
-                state);
+            resource = g_ResourceManager->CreateCommittedResource(creation_desc->name,
+                                                                  CD3DX12_RESOURCE_DESC::Tex3D(ConvertToDXGIFormat(creation_desc->tex3D.format, false), 
+                                                                      creation_desc->tex3D.width, creation_desc->tex3D.height, creation_desc->tex3D.depth,
+                                                                      creation_desc->tex3D.mipLevels, creation_desc->tex3D.flags, D3D12_TEXTURE_LAYOUT_UNKNOWN, 0),
+                                                                  D3D12_HEAP_TYPE_DEFAULT,
+                                                                  D3D12_HEAP_FLAG_NONE,
+                                                                  state);
         }
         break;
 
@@ -258,6 +301,34 @@ namespace RB::Graphics::D3D12
             RB_LOG_ERROR(LOGTAG_GRAPHICS, "Not yet implemented resource creation of this type");
         }
         break;
+        }
+
+        // Upload data to the resources
+        if (creation_desc->data != nullptr && creation_desc->dataSize > 0)
+        {
+            switch (creation_desc->type)
+            {
+            case ResourceManager::ResourceType::Buffer: 
+                creation_desc->ri->UploadDataToResource(resource, RenderResourceType::Buffer, RenderResourceFormat::Unkown, creation_desc->data, creation_desc->dataSize);
+                break;
+            case ResourceManager::ResourceType::Texture2D:
+                creation_desc->ri->UploadDataToResource(resource, RenderResourceType::Texture, creation_desc->tex2D.format, creation_desc->data, creation_desc->dataSize);
+                break;
+            case ResourceManager::ResourceType::Texture3D: 
+                creation_desc->ri->UploadDataToResource(resource, RenderResourceType::Texture, creation_desc->tex3D.format, creation_desc->data, creation_desc->dataSize);
+                break;
+            default:
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "Not yet implemented resource upload of this type");
+                break;
+            }
+
+            // Bit bad to have an execute for every upload, but this was easiest and cleanest for now, TODO: Batch uploads together!
+            Shared<GpuGuard> guard = creation_desc->ri->ExecuteOnGpu();
+            creation_desc->resource->SetResource(resource, state, guard);
+        }
+        else
+        {
+            creation_desc->resource->SetResource(resource, state, nullptr);
         }
     }
 

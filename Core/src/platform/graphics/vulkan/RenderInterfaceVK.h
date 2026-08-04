@@ -79,6 +79,7 @@ namespace RB::Graphics::VK
         void Readback(RenderResource* src, ReadbackBuffer* dst) override {}
 
         void UploadDataToResource(RenderResource* resource, const void* data, uint64_t data_size) override;
+        void UploadDataToResource(void* native_resource, RenderResourceType prim_type, RenderResourceFormat format, const void* data, uint64_t data_size) override;
 
         void DrawInternal() override {}
         void DrawInstancedInternal(uint32_t instances) override {}

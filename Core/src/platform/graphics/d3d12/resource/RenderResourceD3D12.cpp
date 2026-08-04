@@ -5,7 +5,6 @@
 #include "ResourceManager.h"
 #include "app/Application.h"
 #include "graphics/Renderer.h"
-#include "graphics/ResourceStreamer.h"
 #include "platform/graphics/d3d12/UtilsD3D12.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
 #include "platform/graphics/d3d12/RenderInterfaceD3D12.h"
@@ -133,13 +132,7 @@ namespace RB::Graphics::D3D12
             desc.size       = data_size;
             desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
             desc.flags      = D3D12_RESOURCE_FLAG_NONE;
-            g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
-
-            Streamable streamable = {};
-            streamable.resource     = this;
-            streamable.uploadData   = data;
-            streamable.uploadSize   = data_size;
-            Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
+            g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc, data, data_size);
         }
     }
 
@@ -181,13 +174,7 @@ namespace RB::Graphics::D3D12
         desc.size       = size;
         desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
         desc.flags      = D3D12_RESOURCE_FLAG_NONE;
-        g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
-
-        Streamable streamable = {};
-        streamable.resource     = this;
-        streamable.uploadData   = data;
-        streamable.uploadSize   = size;
-        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
+        g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc, data, size);
     }
 
     IndexBufferD3D12::~IndexBufferD3D12()
@@ -577,11 +564,21 @@ namespace RB::Graphics::D3D12
     // ---------------------------------------------------------------------------
 
     Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
-        : Texture2DD3D12(name, format, width, height, 1, is_render_target, random_read_write_access)
+        : Texture2DD3D12(name, nullptr, 0, format, width, height, 1, is_render_target, random_read_write_access)
     {
     }
 
     Texture2DD3D12::Texture2DD3D12(const char* name, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
+        : Texture2DD3D12(name, nullptr, 0, format, width, height, mips, is_render_target, random_read_write_access)
+    {
+    }
+
+    Texture2DD3D12::Texture2DD3D12(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
+        : Texture2DD3D12(name, data, data_size, format, width, height, 1, is_render_target, random_read_write_access)
+    {
+    }
+
+    Texture2DD3D12::Texture2DD3D12(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
         : Texture2D(name)
         , m_IsAlias(false)
         , m_Format(format)
@@ -622,28 +619,13 @@ namespace RB::Graphics::D3D12
         }
 
         ResourceManager::Texture2DDesc desc = {};
-        desc.format     = ConvertToDXGIFormat(m_Format, false);
+        desc.format     = m_Format;
         desc.width      = m_Width;
         desc.height     = m_Height;
         desc.arraySize  = 1;
         desc.mipLevels  = m_MipCount;
         desc.flags      = flags;
-        g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc);
-    }
-
-    Texture2DD3D12::Texture2DD3D12(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
-        : Texture2DD3D12(name, data, data_size, format, width, height, 1, is_render_target, random_read_write_access)
-    {
-    }
-
-    Texture2DD3D12::Texture2DD3D12(const char* name, const void* data, uint64_t data_size, RenderResourceFormat format, uint32_t width, uint32_t height, uint32_t mips, bool is_render_target, bool random_read_write_access)
-        : Texture2DD3D12(name, format, width, height, mips, is_render_target, random_read_write_access)
-    {
-        Streamable streamable = {};
-        streamable.resource   = this;
-        streamable.uploadData = data;
-        streamable.uploadSize = data_size;
-        Application::GetInstance()->GetRenderer()->GetStreamer()->ScheduleUpload(streamable);
+        g_ResourceManager->ScheduleCreateTexture2DResource(m_Resource, name, desc, data, data_size);
     }
 
     Texture2DD3D12::Texture2DD3D12(const char* name, void* internal_resource, RenderResourceFormat format, uint32_t width, uint32_t height, bool is_render_target, bool random_read_write_access)
@@ -864,7 +846,7 @@ namespace RB::Graphics::D3D12
         // TODO Add mip support
 
         ResourceManager::Texture2DDesc desc = {};
-        desc.format     = ConvertToDXGIFormat(m_Format, false);
+        desc.format     = m_Format;
         desc.width      = m_Width;
         desc.height     = m_Height;
         desc.arraySize  = slices;
@@ -1066,7 +1048,7 @@ namespace RB::Graphics::D3D12
         // TODO Add mip support
 
         ResourceManager::Texture3DDesc desc = {};
-        desc.format     = ConvertToDXGIFormat(m_Format, false);
+        desc.format     = m_Format;
         desc.width      = m_Width;
         desc.height     = m_Height;
         desc.depth      = m_Depth;

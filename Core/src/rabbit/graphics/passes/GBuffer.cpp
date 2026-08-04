@@ -98,10 +98,10 @@ namespace RB::Graphics
             const Material*         mat             = mesh_renderer->GetMaterial();
             const Mesh::VertexPack& vp              = mesh->GetVertexPack();
 
-            if (!vp.primaryBuffer || !vp.primaryBuffer->ReadyToRender() ||
-                (vp.secondaryBuffer && !vp.secondaryBuffer->ReadyToRender()) ||
-                (vp.indexBuffer && !vp.indexBuffer->ReadyToRender()) ||
-                !mat->GetTexture()->ReadyToRender())
+            if (!vp.primaryBuffer || !vp.primaryBuffer->ContentsReady() ||
+                (vp.secondaryBuffer && !vp.secondaryBuffer->ContentsReady()) ||
+                (vp.indexBuffer && !vp.indexBuffer->ContentsReady()) ||
+                !mat->GetTexture()->ContentsReady())
             {
                 continue;
             }

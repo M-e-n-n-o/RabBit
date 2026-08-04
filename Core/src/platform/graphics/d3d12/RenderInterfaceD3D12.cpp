@@ -51,9 +51,8 @@ namespace RB::Graphics::D3D12
     RenderInterfaceD3D12::RenderInterfaceD3D12(bool allow_only_copy_operations)
         : m_CopyOperationsOnly(allow_only_copy_operations)
         , m_RenderState()
+        , m_ShaderSystem(nullptr) // Defer set this as the shader system might not be created yet
     {
-        m_ShaderSystem = Application::GetInstance()->GetRenderer()->GetShaderSystem();
-
         if (allow_only_copy_operations)
             m_Queue = g_GraphicsDevice->GetCopyQueue();
         else
@@ -257,7 +256,7 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::SetShaderResourceInput(uint32_t handle, RenderResource* resource)
     {
-        RB_ASSERT(LOGTAG_GRAPHICS, resource->ReadyToRender(true), "Failed to properly wait until resource %s was ready to render", resource->GetName());
+        RB_ASSERT(LOGTAG_GRAPHICS, resource->ContentsReady(true), "Failed to properly wait until resource %s was ready to render", resource->GetName());
 
         TransitionResource(resource, ResourceState::READ);
 
@@ -828,14 +827,21 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::UploadDataToResource(RenderResource* resource, const void* data, uint64_t data_size)
     {
-        RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
+        GpuResource* gpu_res = (GpuResource*)resource;
 
-        GpuResource* gpu_res = (GpuResource*)resource->GetNativeResource();
-        
-        RB_ASSERT(LOGTAG_GRAPHICS, gpu_res->IsInState(D3D12_RESOURCE_STATE_COMMON) || gpu_res->IsInState(D3D12_RESOURCE_STATE_COPY_DEST), 
+        RB_ASSERT(LOGTAG_GRAPHICS, gpu_res->IsInState(D3D12_RESOURCE_STATE_COMMON) || gpu_res->IsInState(D3D12_RESOURCE_STATE_COPY_DEST),
             "Resource is not in the correct state to upload data to");
 
-        switch (resource->GetPrimitiveType())
+        UploadDataToResource(gpu_res->GetResource(), resource->GetPrimitiveType(), resource->GetFormat(), data, data_size);
+    }
+
+    void RenderInterfaceD3D12::UploadDataToResource(void* native_resource, RenderResourceType prim_type, RenderResourceFormat format, const void* data, uint64_t data_size)
+    {
+        RB_ASSERT(LOGTAG_GRAPHICS, m_CopyOperationsOnly, "This operation should only be done on a Copy Queue!");
+
+        ID3D12Resource* d3d12_res = (ID3D12Resource*)native_resource;
+
+        switch (prim_type)
         {
         case RenderResourceType::Buffer:
         {
@@ -843,13 +849,13 @@ namespace RB::Graphics::D3D12
 
             memcpy(upload_alloc.cpuWriteAddress, data, data_size);
 
-            m_CommandList->CopyBufferRegion(gpu_res->GetResource(), 0, upload_alloc.resource->GetResource(), upload_alloc.offset, data_size);
+            m_CommandList->CopyBufferRegion(d3d12_res, 0, upload_alloc.resource->GetResource(), upload_alloc.offset, data_size);
         }
         break;
 
         case RenderResourceType::Texture:
         {
-            D3D12_RESOURCE_DESC desc             = gpu_res->GetResource()->GetDesc();
+            D3D12_RESOURCE_DESC desc             = d3d12_res->GetDesc();
             const bool          is_3d            = (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D);
             const uint32_t      array_size       = is_3d ? 1 : desc.DepthOrArraySize;
             const uint32_t      num_subresources = desc.MipLevels * array_size;
@@ -866,9 +872,9 @@ namespace RB::Graphics::D3D12
             uint8_t* dst_base = upload_alloc.cpuWriteAddress;
             uint8_t* src_cursor = (uint8_t*)data;
 
-            const bool is_bc = IsBlockCompressedFormat(resource->GetFormat());
-            const uint32_t bytes_per_block = is_bc ? GetBytesPerBlockFromFormat(resource->GetFormat()) : 0;
-            const uint32_t bytes_per_pixel = is_bc ? 0 : GetElementSizeFromFormat(resource->GetFormat());
+            const bool is_bc = IsBlockCompressedFormat(format);
+            const uint32_t bytes_per_block = is_bc ? GetBytesPerBlockFromFormat(format) : 0;
+            const uint32_t bytes_per_pixel = is_bc ? 0 : GetElementSizeFromFormat(format);
 
             for (uint32_t array_slice = 0; array_slice < array_size; ++array_slice)
             {
@@ -931,7 +937,7 @@ namespace RB::Graphics::D3D12
                     src.PlacedFootprint.Offset += upload_alloc.offset;
 
                     D3D12_TEXTURE_COPY_LOCATION dst = {};
-                    dst.pResource        = gpu_res->GetResource();
+                    dst.pResource        = d3d12_res;
                     dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                     dst.SubresourceIndex = sub;
 
@@ -1157,6 +1163,11 @@ namespace RB::Graphics::D3D12
 
         #undef CHECK_SET
 
+        if (m_ShaderSystem == nullptr)
+        {
+            m_ShaderSystem = Application::GetInstance()->GetRenderer()->GetShaderSystem();
+        }
+
         if (m_RenderState.rootSignatureDirty)
         {
             m_RenderState.rootSignature = g_PipelineManager->GetRootSignature(m_ShaderSystem, m_RenderState.vsShader, m_RenderState.psShader);
@@ -1217,6 +1228,11 @@ namespace RB::Graphics::D3D12
         CHECK_SET(m_RenderState.csShader >= 0,      "Cannot Dispatch, compute shader was not set yet")
 
         #undef CHECK_SET
+
+        if (m_ShaderSystem == nullptr)
+        {
+            m_ShaderSystem = Application::GetInstance()->GetRenderer()->GetShaderSystem();
+        }
 
         if (m_RenderState.rootSignatureDirty)
         {

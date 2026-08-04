@@ -23,7 +23,6 @@ namespace RB::Graphics
     class RenderInterface;
     class GpuGuard;
     class ViewContext;
-    class ResourceStreamer;
     class ShaderSystem;
     class VertexBuffer;
 
@@ -58,7 +57,6 @@ namespace RB::Graphics
 
         void SetRenderGraphs(const UnorderedMap<RenderGraphType, RenderGraphBuilder>& graphs);
 
-        ResourceStreamer* GetStreamer() const { return m_ResourceStreamer; }
         ShaderSystem*     GetShaderSystem() const { return m_ShaderSystem; }
         FrameAllocator*   GetAllocator() const { return m_RenderAllocator; }
 
@@ -94,8 +92,7 @@ namespace RB::Graphics
         WorkerThread*               m_RenderThread;
         JobTypeID                   m_RenderJobType;
 
-        RenderInterface*            m_GraphicsInterface; // Used by the render graphs
-        RenderInterface*            m_CopyInterface;	 // Used for resource streaming 
+        RenderInterface*            m_GraphicsInterface;
         RenderGraph*                m_RenderGraphs[kRenderGraphType_Count];
         RenderGraphContext*         m_RenderGraphContext;
         uint32_t                    m_CurrentValidRenderGraphSizes;
@@ -112,7 +109,6 @@ namespace RB::Graphics
 
         bool                        m_MultiThreadingSupport;
 
-        ResourceStreamer*           m_ResourceStreamer;
         ShaderSystem*               m_ShaderSystem;
 
         FrameAllocator*             m_RenderAllocator;

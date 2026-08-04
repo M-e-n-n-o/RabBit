@@ -9,6 +9,11 @@
 
 #include <d3d12.h>
 
+namespace RB::Graphics
+{
+    class RenderInterface;
+}
+
 namespace RB::Graphics::D3D12
 {
     /*
@@ -21,7 +26,7 @@ namespace RB::Graphics::D3D12
     class ResourceManager
     {
     public:
-        ResourceManager();
+        ResourceManager(RenderInterface* render_interface);
         ~ResourceManager();
 
         void UpdateBookkeeping();
@@ -38,7 +43,7 @@ namespace RB::Graphics::D3D12
 
         struct Texture2DDesc
         {
-            DXGI_FORMAT             format;
+            RenderResourceFormat    format;
             uint64_t                width;
             uint64_t                height;
             uint16_t                arraySize;
@@ -48,7 +53,7 @@ namespace RB::Graphics::D3D12
 
         struct Texture3DDesc
         {
-            DXGI_FORMAT             format;
+            RenderResourceFormat    format;
             uint64_t                width;
             uint64_t                height;
             uint64_t                depth;
@@ -56,11 +61,11 @@ namespace RB::Graphics::D3D12
             D3D12_RESOURCE_FLAGS    flags;
         };
 
-        void ScheduleCreateBufferResource(GpuResource* resource, const char* name, const BufferDesc& desc);
-        void ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& desc);
-        void ScheduleCreateTexture3DResource(GpuResource* resource, const char* name, const Texture3DDesc& desc);
+        void ScheduleCreateBufferResource(GpuResource* resource, const char* name, const BufferDesc& desc, const void* data = nullptr, uint64_t data_size = 0);
+        void ScheduleCreateTexture2DResource(GpuResource* resource, const char* name, const Texture2DDesc& desc, const void* data = nullptr, uint64_t data_size = 0);
+        void ScheduleCreateTexture3DResource(GpuResource* resource, const char* name, const Texture3DDesc& desc, const void* data = nullptr, uint64_t data_size = 0);
 
-        bool WaitUntilResourceValid(const GpuResource* resource);
+        bool WaitUntilResourceCreated(const GpuResource* resource);
 
     private:
 
@@ -83,6 +88,9 @@ namespace RB::Graphics::D3D12
             GpuResource*    resource;
             const wchar_t*  name;
 
+            const void*     data;
+            uint64_t        dataSize;
+
             union
             {
                 BufferDesc      buffer;
@@ -90,9 +98,16 @@ namespace RB::Graphics::D3D12
                 Texture3DDesc   tex3D;
             };
 
+            RenderInterface* ri;
+
             ~ResourceCreationDesc()
             {
                 delete[] name;
+                if (data)
+                {
+                    void* d = const_cast<void*>(data);
+                    SAFE_FREE(d);
+                }
             }
         };
 
@@ -109,10 +124,11 @@ namespace RB::Graphics::D3D12
 
         struct Scheduled
         {
-            GpuResource* resource;
-            JobID        jobID;
+            GpuResource*        resource;
+            JobID               jobID;
         };
 
+        RenderInterface*    m_RenderInterface;
         WorkerThread*       m_CreationThread;
         JobTypeID           m_CreationJob;
         JobTypeID           m_DeletionJob;

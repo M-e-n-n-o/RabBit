@@ -91,17 +91,17 @@ namespace RB::Graphics
     class RenderResource
     {
     public:
-        virtual ~RenderResource();
+        virtual ~RenderResource() = default;
 
         virtual const char* GetName() const { return m_Name.c_str(); }
 
         virtual void* GetNativeResource() const = 0;
+        // Is data upload completed?
+        virtual bool ContentsReady(bool block_until_ready = false) = 0;
 
         virtual RenderResourceFormat GetFormat() const = 0;
 
         virtual bool AllowedRandomReadWrites() const = 0;
-
-        bool ReadyToRender(bool block_until_ready = false);
 
         RenderResourceType GetType() const { return m_Type; }
         RenderResourceType GetPrimitiveType() const;
@@ -110,18 +110,10 @@ namespace RB::Graphics
         RenderResource(const char* name, RenderResourceType type) 
             : m_Name(name)
             , m_Type(type)
-            , m_IsStreaming(nullptr)
         {}
 
         std::string         m_Name;
         RenderResourceType	m_Type;
-    
-    private:
-        void SetStreaming(bool is_streaming);
-
-        ThreadedVariable<bool>* m_IsStreaming;
-
-        friend class ResourceStreamer;
     };
 
     // -----------------------------------------------------------------------------------------------
@@ -207,6 +199,8 @@ namespace RB::Graphics
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
         bool AllowedRandomReadWrites() const override { return false; };
+
+        bool ContentsReady(bool block_until_ready) override { return true; }
 
         static Shared<ReadbackBuffer> Create(const char* name, uint64_t size);
         static Shared<ReadbackBuffer> Create(const char* name, RenderResource* target_size);

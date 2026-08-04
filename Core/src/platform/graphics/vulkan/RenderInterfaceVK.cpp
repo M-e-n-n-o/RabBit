@@ -168,6 +168,11 @@ namespace RB::Graphics::VK
         }
     }
 
+    void RenderInterfaceVK::UploadDataToResource(void* native_resource, RenderResourceType prim_type, RenderResourceFormat format, const void* data, uint64_t data_size)
+    {
+        // TODO
+    }
+
     void RenderInterfaceVK::SetNewCommandBuffer()
     {
         m_CommandBuffer = m_Queue->GetCommandBuffer();

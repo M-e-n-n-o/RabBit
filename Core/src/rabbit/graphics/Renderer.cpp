@@ -6,7 +6,6 @@
 #include "View.h"
 #include "ResourceDefaults.h"
 #include "ShaderSystem.h"
-#include "ResourceStreamer.h"
 #include "RenderGraph.h"
 
 #include "codeGen/ShaderDefines.h"
@@ -112,13 +111,10 @@ namespace RB::Graphics
         m_RenderAllocator = new FrameAllocator("Render Allocator", 3, k8MB);
 
         m_ShaderSystem = new ShaderSystem();
-        m_ResourceStreamer = new ResourceStreamer();
 
         // Initialize default resources
         InitResourceDefaults();
 
-        // TODO Maybe change this to a compute queue so that it can generate mip maps
-        m_CopyInterface = RenderInterface::Create(true);
         m_GraphicsInterface = RenderInterface::Create(false);
 
         if (m_MultiThreadingSupport)
@@ -201,10 +197,7 @@ namespace RB::Graphics
         // Delete default resources
         DeleteResourceDefaults();
 
-        delete m_ResourceStreamer;
-
         delete m_GraphicsInterface;
-        delete m_CopyInterface;
 
         delete m_ShaderSystem;
 
@@ -255,20 +248,6 @@ namespace RB::Graphics
                 RenderJob(context);
                 delete context;
             }
-        }
-
-        // Stream resources to the GPU on the main thread 
-        // (maybe in the future do this on a different thread?)
-        {
-            Shared<GpuGuard> guard = m_ResourceStreamer->Stream(m_CopyInterface);
-
-            // No need to place a GPU barrier as we do not use resources 
-            // on the graphics interface that are being streamed.
-            //if (guard != nullptr)
-            //{
-            //	// Place a GPU barrier on the graphics queue to wait on the streaming
-            //	m_GraphicsInterface->GpuWaitOn(guard.get());
-            //}
         }
 
         if (m_MultiThreadingSupport)

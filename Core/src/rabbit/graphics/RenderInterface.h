@@ -107,6 +107,7 @@ namespace RB::Graphics
         virtual void ClearDepth(RenderResource* resource, bool reversed_depth);
 
         virtual void UploadDataToResource(RenderResource* resource, const void* data, uint64_t data_size) = 0;
+        virtual void UploadDataToResource(void* native_resource, RenderResourceType prim_type, RenderResourceFormat format, const void* data, uint64_t data_size) = 0;
         virtual void CopyResource(RenderResource* src, RenderResource* dst) = 0;
         virtual void Readback(RenderResource* src, ReadbackBuffer* dst) = 0;
 

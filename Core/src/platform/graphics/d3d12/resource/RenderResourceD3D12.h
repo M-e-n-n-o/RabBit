@@ -4,14 +4,13 @@
 
 #include "RabBitCommon.h"
 #include "Descriptor.h"
+#include "GpuResource.h"
 #include "graphics/RenderResource.h"
 
-// DirectX 12 specific headers.
 #include <d3d12.h>
 
 namespace RB::Graphics::D3D12
 {
-    class GpuResource;
     class GpuGuardD3D12;
 
     class GenericBufferD3D12 : public GenericBuffer
@@ -22,6 +21,7 @@ namespace RB::Graphics::D3D12
         ~GenericBufferD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return m_Resource->IsDataUploadComplete(block_until_ready); }
 
         RenderResourceFormat GetFormat() const override { return m_Format; }
         uint64_t GetSize() const override { return m_Elements * m_ElementSize; }
@@ -49,6 +49,7 @@ namespace RB::Graphics::D3D12
         ~VertexBufferD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return m_Resource->IsDataUploadComplete(block_until_ready); }
 
         uint32_t GetVertexSize() const override { return m_VertexSize; }
         uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
@@ -75,6 +76,7 @@ namespace RB::Graphics::D3D12
         ~IndexBufferD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return m_Resource->IsDataUploadComplete(block_until_ready); }
 
         uint64_t GetIndexCount() const override { return m_Elements; }
 
@@ -129,6 +131,7 @@ namespace RB::Graphics::D3D12
         ~Texture2DD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return m_Resource->IsDataUploadComplete(block_until_ready); }
 
         RenderResourceFormat GetFormat() const override { return m_Format; }
 
@@ -196,6 +199,7 @@ namespace RB::Graphics::D3D12
         ~Texture2DArrayD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return m_Resource->IsDataUploadComplete(block_until_ready); }
 
         RenderResourceFormat GetFormat() const override { return m_Format; }
 
@@ -266,6 +270,7 @@ namespace RB::Graphics::D3D12
         ~Texture3DD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return m_Resource->IsDataUploadComplete(block_until_ready); }
 
         RenderResourceFormat GetFormat() const override { return m_Format; }
 

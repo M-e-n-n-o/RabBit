@@ -18,6 +18,7 @@ namespace RB::Graphics::VK
         ~VertexBufferVK();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return true; } // TODO
 
         uint32_t GetVertexSize() const override { return m_VertexSize; }
         uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
@@ -39,6 +40,7 @@ namespace RB::Graphics::VK
         ~IndexBufferVK();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return true; } // TODO
 
         uint64_t GetIndexCount() const override { return m_Elements; }
 
@@ -57,6 +59,7 @@ namespace RB::Graphics::VK
         ~Texture2DVK();
 
         void* GetNativeResource() const override { return m_Resource; }
+        bool ContentsReady(bool block_until_ready) override { return true; } // TODO
 
         RenderResourceFormat GetFormat() const override { return m_Format; }
 

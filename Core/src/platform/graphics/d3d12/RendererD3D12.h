@@ -22,6 +22,9 @@ namespace RB::Graphics::D3D12
         void OnFrameEnd() override;
 
         void SyncWithGpu() override;
+
+    private:
+        RenderInterface* m_UploadInterface;
     };
 }
 #endif
