@@ -1,6 +1,7 @@
 #include "RabBitCommon.h"
 #include "Application.h"
 #include "AssetManager.h"
+#include "PlatformService.h"
 
 #include "graphics/Window.h"
 #include "graphics/RenderInterface.h"
@@ -33,6 +34,7 @@ namespace RB
         , m_FrameIndex(0)
         , m_DeltaTime(0)
         , m_FixedTimeStep(-1)
+        , m_PlatformService(nullptr)
     {
         RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
         s_Instance = this;
@@ -86,17 +88,25 @@ namespace RB
 
         AssetManager::Init(asset_path);
 
+#ifdef RB_STEAM_API
+        if (std::strstr(launch_args, "-noSteam") == nullptr)
+            m_PlatformService = PlatformService::Create(PlatformAPI::Steamworks);
+#endif
+        if (m_PlatformService && !m_PlatformService->IsInitialized())
+            SAFE_DELETE(m_PlatformService);
+
+
 #if RB_GRAPHICS_API_D3D12
-        Renderer::SetAPI(RenderAPI::D3D12);
+        RenderAPI api = RenderAPI::D3D12;
 #elif RB_GRAPHICS_API_VULKAN
-        Renderer::SetAPI(RenderAPI::Vulkan);
+        RenderAPI api = RenderAPI::Vulkan;
 #else
-        Renderer::SetAPI(RenderAPI::None);
+        RenderAPI api = RenderAPI::None;
 #endif
 
         m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
 
-        m_Renderer = Renderer::Create(std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
+        m_Renderer = Renderer::Create(api, std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
         m_Renderer->Init();
         m_Renderer->SetRenderGraphs(m_StartAppInfo->renderGraphs);
         for (auto& [ type, graph ] : m_StartAppInfo->renderGraphs)
@@ -170,6 +180,11 @@ namespace RB
             if (m_FixedTimeStep > 0)
             {
                 m_DeltaTime = m_FixedTimeStep;
+            }
+
+            if (m_PlatformService)
+            {
+                m_PlatformService->Update();
             }
 
             // Poll inputs and update windows
@@ -284,6 +299,8 @@ namespace RB
         delete m_Renderer;
 
         delete m_FrameAllocator;
+
+        SAFE_DELETE(m_PlatformService);
 
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "========= SHUTDOWN COMPLETE =========");

@@ -21,6 +21,7 @@ else()
 endif()
 
 set(RABBIT_BUILD_TESTS ON CACHE BOOL "Build Unit Tests")
+set(RABBIT_STEAM ON CACHE BOOL "Enable Steam API")
 
 # Source files
 file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
@@ -77,6 +78,20 @@ target_link_libraries(RabBit PRIVATE
     # FreeType
     "${EXTERNAL_PATH}/freetype/lib/x64/freetype.lib"
 )
+
+if(RABBIT_STEAM)
+    add_compile_definitions(RB_STEAM_API)
+
+    set(ENV{STEAM_PATH} "${EXTERNAL_PATH}/steamworks/165")
+
+    target_include_directories(RabBit PRIVATE
+        "$ENV{STEAM_PATH}/public"
+    )
+
+    target_link_libraries(RabBit PRIVATE
+        "$ENV{STEAM_PATH}/redistributable_bin/win64/steam_api64.lib"
+    )
+endif()
 
 # DX12 specific includes and libraries
 if(RABBIT_API_DX12)
@@ -143,6 +158,12 @@ add_subdirectory(tools/textureConverter)
 function(RabBitCopyLibs TARGET_NAME)
     # Create a lit of files to copy to the executable
     set(DLLS_TO_COPY "")
+
+    if(RABBIT_STEAM)
+        list (APPEND DLLS_TO_COPY
+            "$ENV{STEAM_PATH}/redistributable_bin/win64/steam_api64.dll"
+        )
+    endif()
 
     if(RABBIT_API_DX12)
         list (APPEND DLLS_TO_COPY

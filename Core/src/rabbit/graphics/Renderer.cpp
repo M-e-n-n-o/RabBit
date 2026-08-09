@@ -154,25 +154,6 @@ namespace RB::Graphics
         }
     }
 
-    void Renderer::SetAPI(RenderAPI api)
-    {
-        s_Api = api;
-
-        switch (s_Api)
-        {
-#if RB_GRAPHICS_API_D3D12
-        case RB::Graphics::RenderAPI::D3D12:    RB_LOG(LOGTAG_GRAPHICS, "Graphics API: D3D12"); break;
-#endif
-#if RB_GRAPHICS_API_VULKAN
-        case RB::Graphics::RenderAPI::Vulkan:   RB_LOG(LOGTAG_GRAPHICS, "Graphics API: Vulkan"); break;
-#endif
-        case RB::Graphics::RenderAPI::None:
-        default:
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Did not choose a valid graphics API");
-            break;
-        }
-    }
-
     void Renderer::Shutdown()
     {
         m_IsShutdown = true;
@@ -558,7 +539,7 @@ namespace RB::Graphics
         return true;
     }
 
-    Renderer* Renderer::Create(bool enable_validation_layer, bool load_pix_lib)
+    Renderer* Renderer::Create(RenderAPI api, bool enable_validation_layer, bool load_pix_lib)
     {
 #if defined(RB_ENABLE_LOGS) && RB_PLATFORM_WINDOWS
         if (load_pix_lib)
@@ -568,18 +549,21 @@ namespace RB::Graphics
         }
 #endif
 
-        switch (Renderer::GetAPI())
+        s_Api = api;
+        switch (s_Api)
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
+            RB_LOG(LOGTAG_GRAPHICS, "Graphics API: D3D12");
             return new D3D12::RendererD3D12(enable_validation_layer);
 #endif
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
+            RB_LOG(LOGTAG_GRAPHICS, "Graphics API: Vulkan");
             return new VK::RendererVK(enable_validation_layer);
 #endif
         default:
-            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not yet implement the Renderer for the set graphics API");
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Did not choose a valid graphics API");
             break;
         }
 

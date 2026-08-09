@@ -157,7 +157,7 @@ namespace RB
         m_Offset = 0;
 
 #ifdef RB_CONFIG_DEBUG
-        memset(m_MemoryBlock, 0, m_Size);
+        //memset(m_MemoryBlock, 0, m_Size);
 #endif
     }
 

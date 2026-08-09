@@ -45,7 +45,6 @@ namespace RB::Graphics
     public:
         virtual ~Renderer();
 
-        static void SetAPI(RenderAPI api);
         inline static RenderAPI GetAPI() { return s_Api; }
 
         // Submits current frame relevant information of the scene to the renderer
@@ -69,7 +68,7 @@ namespace RB::Graphics
         // Also syncs with the render thread and GPU
         void Shutdown();
 
-        static Renderer* Create(bool enable_validation_layer, bool load_pix_lib);
+        static Renderer* Create(RenderAPI api, bool enable_validation_layer, bool load_pix_lib);
 
     protected:
         Renderer(bool multi_threading_support);

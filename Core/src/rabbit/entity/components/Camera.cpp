@@ -10,6 +10,11 @@ namespace RB::Entity
         if (m_TargetWindowHandle != nullptr)
         {
             auto* window = Application::GetInstance()->FindWindow(m_TargetWindowHandle);
+            if (window == nullptr)
+            {
+                return 0;
+            }
+
             return window->GetVirtualWidth();
         }
 
@@ -21,6 +26,11 @@ namespace RB::Entity
         if (m_TargetWindowHandle != nullptr)
         {
             auto* window = Application::GetInstance()->FindWindow(m_TargetWindowHandle);
+            if (window == nullptr)
+            {
+                return 0;
+            }
+
             return window->GetVirtualHeight();
         }
 

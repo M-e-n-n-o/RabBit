@@ -7,9 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Used for VS extensions
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Set RabBit options
-set(RABBIT_BUILD_TESTS ON)
-
 # Set RabBit configuration definitions
 add_compile_definitions(
     $<$<CONFIG:Debug>:RB_CONFIG_DEBUG>

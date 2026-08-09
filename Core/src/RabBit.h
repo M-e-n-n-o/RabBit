@@ -61,6 +61,7 @@
 #include "rabbit/utils/debug/Assert.h"
 
 #include "rabbit/app/Application.h"
+#include "rabbit/app/PlatformService.h"
 
 #include "rabbit/events/ApplicationEvent.h"
 #include "rabbit/events/KeyEvent.h"

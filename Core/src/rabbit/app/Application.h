@@ -10,6 +10,8 @@
 
 namespace RB
 {
+    class PlatformService;
+
     namespace Graphics
     {
         class Window;
@@ -72,6 +74,8 @@ namespace RB
 
         Graphics::Renderer* GetRenderer() const { return m_Renderer; }
 
+        PlatformService* GetPlatformService() const { return m_PlatformService; }
+
         Entity::Scene* GetScene() const { return m_Scene; }
 
         uint64_t GetFrameIndex() const { return m_FrameIndex; }
@@ -97,6 +101,8 @@ namespace RB
 
         bool                        m_Initialized;
         bool                        m_ShouldStop;
+
+        PlatformService*            m_PlatformService;
 
         List<Graphics::Display*>    m_Displays;
 

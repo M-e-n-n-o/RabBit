@@ -20,6 +20,8 @@ private:
 
     Font* m_Font;
 
+    PlatformNetworkService* m_Network;
+
 public:
     TestLayer() : ApplicationLayer("TestLayer") {}
 
@@ -153,10 +155,27 @@ public:
         //m_Obj2->AddComponent<Transform>();
         //Camera* cam_comp2 = m_Obj2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, window_handle1);
         //cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
+
+        m_Network = PlatformNetworkService::Create();
+        if (!m_Network->IsInitialized())
+            SAFE_DELETE(m_Network);
     }
 
     void OnUpdate(float delta) override
     {
+        if (m_Network && IsKeyDown(KeyCode::O))
+        {
+            m_Network->CreateLobby(LobbyType::FriendsOnly, 8);
+        }
+        static bool first_opened_lobby = true;
+        if (m_Network && m_Network->IsConnected() && first_opened_lobby)
+        {
+            m_Network->OpenInviteFriendsOverlay();
+            first_opened_lobby = false;
+        }
+
+
+
         if (IsKeyDown(KeyCode::Q))
         {
             m_Transform->rotation.y += 25.0f * delta;
@@ -245,5 +264,7 @@ public:
         delete m_Mesh;
         delete m_Material;
         delete m_Font;
+
+        SAFE_DELETE(m_Network);
     }
 };
