@@ -8,8 +8,8 @@ namespace RB
         FrameAllocationPage(uint64_t size);
         ~FrameAllocationPage();
 
-        void* Allocate(uint64_t size);
-        bool HasSpace(uint64_t size);
+        void* Allocate(uint64_t size, uint64_t align);
+        bool HasSpace(uint64_t size, uint64_t align);
         void Reset();
 
         void RegisterDestructor(void* object, uint64_t amount, void (*destructor)(void*, uint64_t));

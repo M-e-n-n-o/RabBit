@@ -30,14 +30,12 @@ namespace RB
     {
         RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, m_FrameCycles > 0, "Cannot allocate, there are no free pages left");
 
-        uint64_t final_size = Math::AlignUp(size, align);
-
-        RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, final_size <= m_PageSize, "Trying to allocate %d, which is more than the page size, increase the page size!", final_size);
+        RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, size <= m_PageSize, "Trying to allocate %d, which is more than the page size, increase the page size!", size);
 
         FrameAllocationPage* to_use = nullptr;
         for (FrameAllocationPage* page : m_UsedPageSets[m_CurrentPage])
         {
-            if (page->HasSpace(final_size))
+            if (page->HasSpace(size, align))
             {
                 to_use = page;
                 break;
@@ -66,7 +64,7 @@ namespace RB
 
         out_used_page = to_use;
 
-        return to_use->Allocate(final_size);
+        return to_use->Allocate(size, align);
     }
 
     void FrameAllocator::Cycle()
@@ -129,10 +127,11 @@ namespace RB
         SAFE_FREE(m_MemoryBlock);
     }
 
-    void* FrameAllocationPage::Allocate(uint64_t size)
+    void* FrameAllocationPage::Allocate(uint64_t size, uint64_t align)
     {
         RB_ASSERT_FATAL_RELEASE(LOGTAG_MAIN, m_Offset + size <= m_Size, "Trying to allocate more space than the page has left");
 
+        m_Offset = Math::AlignUp(m_Offset, align);
         void* space = (void*)(m_MemoryBlock + m_Offset);
         m_Offset += size;
 
@@ -141,9 +140,9 @@ namespace RB
         return space;
     }
 
-    bool FrameAllocationPage::HasSpace(uint64_t size)
+    bool FrameAllocationPage::HasSpace(uint64_t size, uint64_t align)
     {
-        return m_Offset + size <= m_Size;
+        return (Math::AlignUp(m_Offset, align) + size) <= m_Size;
     }
 
     void FrameAllocationPage::Reset()

@@ -40,24 +40,23 @@ namespace RB::Graphics::D3D12
 
     bool UploadPage::HasSpace(uint64_t size, uint64_t alignment)
     {
-        return Math::AlignUp(Math::AlignUp(m_UploadOffset, alignment) + size, alignment) <= m_ResourceSize;
+        return (Math::AlignUp(m_UploadOffset, alignment) + size) <= m_ResourceSize;
     }
 
     UploadAllocation UploadPage::Allocate(uint64_t size, uint64_t alignment)
     {
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, HasSpace(size, alignment), "Not enough space to allocate %d bytes on upload resource: %s", size, m_Name);
 
-        uint64_t aligned_size = Math::AlignUp(size, alignment);
         m_UploadOffset = Math::AlignUp(m_UploadOffset, alignment);
 
         UploadAllocation location = {};
         location.resource           = m_UploadResource;
-        location.maxWriteSize       = aligned_size;
+        location.maxWriteSize       = size;
         location.offset             = m_UploadOffset;
         location.gpuAddress         = m_GpuAddress + m_UploadOffset;
         location.cpuWriteAddress    = m_WriteAddress + m_UploadOffset;
 
-        m_UploadOffset += aligned_size;
+        m_UploadOffset += size;
 
         return location;
     }
