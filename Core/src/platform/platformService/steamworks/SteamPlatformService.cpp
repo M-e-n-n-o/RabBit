@@ -2,6 +2,8 @@
 #include "RabBitCommon.h"
 #include "SteamPlatformService.h"
 
+#include <steam/steam_api.h>
+
 namespace RB
 {
     void SteamWarningCallback(int severity, const char* msg)

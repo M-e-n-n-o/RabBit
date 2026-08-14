@@ -79,6 +79,13 @@ target_link_libraries(RabBit PRIVATE
     "${EXTERNAL_PATH}/freetype/lib/x64/freetype.lib"
 )
 
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    target_link_libraries(RabBit PRIVATE
+        # Winsock
+        ws2_32.lib
+    )
+endif()
+
 if(RABBIT_STEAM)
     add_compile_definitions(RB_STEAM_API)
 

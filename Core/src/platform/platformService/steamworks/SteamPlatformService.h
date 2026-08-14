@@ -3,8 +3,6 @@
 
 #include "app/PlatformService.h"
 
-#include <steam/steam_api.h>
-
 namespace RB
 {
     class SteamPlatformService : public PlatformService

@@ -163,17 +163,15 @@ public:
 
     void OnUpdate(float delta) override
     {
-        if (m_Network && IsKeyDown(KeyCode::O))
-        {
-            m_Network->CreateLobby(LobbyType::FriendsOnly, 8);
-        }
-        static bool first_opened_lobby = true;
-        if (m_Network && m_Network->IsConnected() && first_opened_lobby)
-        {
-            m_Network->OpenInviteFriendsOverlay();
-            first_opened_lobby = false;
-        }
 
+
+        // TODO: Create a NetworkTransform component that interpolates the Transform component between the last, and before last network packages.
+        // 
+        //       To create this we also need to have some sort of NetworkManager where you can send and retrieve specific network packages from.
+        //          Maybe with methods such as: 
+        //              - RegisterMessage<T>()
+        //              - SendMessage<T>()
+        //              - GetLastReceivedMessage<T>()
 
 
         if (IsKeyDown(KeyCode::Q))
@@ -241,6 +239,23 @@ public:
 
     bool OnEvent(const Event& event) override
     {
+        if (event.GetEventType() == EventType::KeyPressed)
+        {
+            const KeyPressedEvent& pressed_event = (const KeyPressedEvent&)event;
+
+            if (m_Network && pressed_event.GetKeyCode() == KeyCode::O)
+            {
+                if (m_Network->IsConnected())
+                    m_Network->LeaveLobby();
+                else
+                    m_Network->CreateLobby(LobbyType::FriendsOnly, 8);
+            }
+            if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::I)
+            {
+                m_Network->OpenInviteFriendsOverlay();
+            }
+        }
+
         if (event.GetEventType() == EventType::WindowCloseRequest)
         {
             const WindowCloseRequestEvent& close_event = (const WindowCloseRequestEvent&)event;

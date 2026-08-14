@@ -32,6 +32,8 @@ namespace RB
 
         m_FrameAllocator = Application::GetInstance()->GetAllocator();
         SteamNetworkingUtils()->InitRelayNetworkAccess();
+
+        m_IsValid = true;
     }
 
     SteamNetworkService::~SteamNetworkService()
