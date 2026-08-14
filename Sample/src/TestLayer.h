@@ -250,6 +250,17 @@ public:
                 else
                     m_Network->CreateLobby(LobbyType::FriendsOnly, 8);
             }
+            if (m_Network && pressed_event.GetKeyCode() == KeyCode::P)
+            {
+                if (m_Network->IsConnected())
+                    m_Network->LeaveLobby();
+                else
+                {
+                    const char ip[] = "127.0.0.1";
+                    m_Network->JoinLobby((uint64_t)&ip);
+                }
+            }
+
             if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::I)
             {
                 m_Network->OpenInviteFriendsOverlay();

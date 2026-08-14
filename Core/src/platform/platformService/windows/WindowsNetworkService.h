@@ -23,6 +23,7 @@ namespace RB
 
         void CreateLobby(LobbyType lobby_type, uint32_t max_members) override;
 
+        // Pass in the IP address to connect to as char*
         void JoinLobby(uint64_t lobby_id) override;
         void LeaveLobby() override;
 

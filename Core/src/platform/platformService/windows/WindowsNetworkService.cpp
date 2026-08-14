@@ -31,6 +31,7 @@ namespace RB
         if (!m_IsValid)
             return;
 
+        LeaveLobby();
         WSACleanup();
     }
 
@@ -101,6 +102,53 @@ namespace RB
 
     void WindowsNetworkService::JoinLobby(uint64_t lobby_id)
     {
+        if (m_HasNetworkConnection)
+        {
+            RB_LOG_WARN(LOGTAG_MAIN, "Make sure to leave the current lobby before joining a new one");
+            return;
+        }
+
+        RB_LOG(LOGTAG_MAIN, "Trying to connect to lobby with address: %s", (char*)lobby_id);
+
+        // Currently just open only a TCP port for simplicity.
+        // If this should ever be made more shippable we need UDP (as well)!
+
+        addrinfo hints;
+        memset(&hints, 0, sizeof(addrinfo));
+        hints.ai_flags      = AI_PASSIVE;
+        hints.ai_family     = AF_UNSPEC;
+        hints.ai_socktype   = SOCK_STREAM;
+        hints.ai_protocol   = IPPROTO_TCP;
+
+        ADDRINFO* result = nullptr;
+        int code = getaddrinfo((char*)lobby_id, std::to_string(c_Port).c_str(), &hints, &result);
+        if (code != 0)
+        {
+            RB_LOG_ERROR(LOGTAG_MAIN, "Failed to get TCP address info to join a lobby, error: %d", code);
+            return;
+        }
+
+        m_HostConnection = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+        if (m_HostConnection == INVALID_SOCKET)
+        {
+            RB_LOG_ERROR(LOGTAG_MAIN, "Failed to open TCP socket, error: %ld", WSAGetLastError());
+            freeaddrinfo(result);
+            return;
+        }
+
+        code = connect(m_HostConnection, result->ai_addr, (int)result->ai_addrlen);
+        freeaddrinfo(result);
+
+        if (code == SOCKET_ERROR || m_HostConnection == INVALID_SOCKET)
+        {
+            RB_LOG_ERROR(LOGTAG_MAIN, "Failed to connect to lobby");
+            closesocket(m_HostConnection);
+            return;
+        }
+
+        RB_LOG(LOGTAG_MAIN, "Joined lobby");
+        m_IsHost = false;
+        m_HasNetworkConnection = true;
     }
 
     void WindowsNetworkService::LeaveLobby()
