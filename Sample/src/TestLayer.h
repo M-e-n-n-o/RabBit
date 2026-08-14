@@ -62,7 +62,7 @@ public:
         bool success = AssetManager::LoadMesh("Bunny.fbx", &mesh);
 
         m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        m_Material = new Material("TheRock.png", TextureColorSpace::sRGB);
+        m_Material = new Material("Test.bc1", true, TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
 

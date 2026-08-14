@@ -35,6 +35,8 @@ namespace RB::Graphics
         }
 
         stream.close();
+
+        RB_LOG(LOGTAG_GRAPHICS, "Loaded shader binary file");
     }
 
     ShaderSystem::~ShaderSystem()

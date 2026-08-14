@@ -325,12 +325,10 @@ void Compiler::ReflectEntryPointParameters(EntryPointReflection* entry, RB::Shad
 
 uint32_t GetConstantBufferSize(TypeLayoutReflection* cb_layout)
 {
-    uint32_t size = 0;
-
     TypeLayoutReflection* element_layout = cb_layout->getElementTypeLayout();
 
     if (!element_layout)
-        return size;
+        return 0;
 
 #if DEBUG_PRINT
     for (SlangInt i = 0; i < element_layout->getFieldCount(); i++)
@@ -347,13 +345,12 @@ uint32_t GetConstantBufferSize(TypeLayoutReflection* cb_layout)
     }
 #endif
 
-    size = element_layout->getSize(ParameterCategory::Uniform);
+    return element_layout->getSize(ParameterCategory::Uniform);
 }
 
 void Compiler::ReflectGlobalScope(VariableLayoutReflection* layout, std::vector<GlobalParameter>* out_parameters)
 {
     TypeLayoutReflection* type_layout = layout->getTypeLayout();
-
 
     switch (type_layout->getKind())
     {
