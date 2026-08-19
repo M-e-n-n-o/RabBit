@@ -2,6 +2,8 @@
 #include "RabBitCommon.h"
 #include "WindowsNetworkService.h"
 
+#include "app/Application.h"
+
 #include <WS2tcpip.h>
 #include <iphlpapi.h>
 
@@ -12,6 +14,7 @@ namespace RB
         , m_IsHost(false)
         , m_TcpListenSocket(INVALID_SOCKET)
         , m_HostConnection(INVALID_SOCKET)
+        , m_FrameAllocator(nullptr)
     {
         WSAData wsa_data;
 
@@ -23,6 +26,8 @@ namespace RB
             return;
         }
 
+        m_FrameAllocator = Application::GetInstance()->GetAllocator();
+
         m_IsValid = true;
     }
 
@@ -33,6 +38,29 @@ namespace RB
 
         LeaveLobby();
         WSACleanup();
+    }
+
+    void WindowsNetworkService::Update()
+    {
+        if (m_HasNetworkConnection && m_IsHost)
+        {
+            SOCKET client = accept(m_TcpListenSocket, NULL, NULL);
+            if (client == INVALID_SOCKET)
+            {
+                int error = WSAGetLastError();
+                if (error != WSAEWOULDBLOCK)
+                {
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Failed to accept client: %d", error);
+                }
+                return;
+            }
+
+            RB_LOG(LOGTAG_MAIN, "Accepted new client");
+
+            DisableBlocking(client);
+
+            m_ClientSockets.push_back(client);
+        }
     }
 
     void WindowsNetworkService::CreateLobby(LobbyType lobby_type, uint32_t max_members)
@@ -91,9 +119,7 @@ namespace RB
             return;
         }
 
-        // Disable blocking mode on the socket (so the accept() call does not block)
-        u_long mode = 1;
-        ioctlsocket(m_TcpListenSocket, FIONBIO, &mode);
+        DisableBlocking(m_TcpListenSocket);
 
         RB_LOG(LOGTAG_MAIN, "Created lobby");
         m_IsHost = true;
@@ -146,6 +172,8 @@ namespace RB
             return;
         }
 
+        DisableBlocking(m_HostConnection);
+
         RB_LOG(LOGTAG_MAIN, "Joined lobby");
         m_IsHost = false;
         m_HasNetworkConnection = true;
@@ -189,15 +217,138 @@ namespace RB
 
     void WindowsNetworkService::Broadcast(const DataPackage& package, bool reliable)
     {
+        if (!m_IsHost || !m_HasNetworkConnection)
+            return;
+
+        for (auto itr = m_ClientSockets.begin(); itr != m_ClientSockets.end(); ++itr)
+        {
+            int result = send(*itr, (const char*)package.data, package.size, 0);
+
+            if (result == SOCKET_ERROR)
+            {
+                RB_LOG_WARN(LOGTAG_MAIN, "Failed to broadcast data to a client");
+            }
+        }
     }
 
     void WindowsNetworkService::SendToHost(const DataPackage& package, bool reliable)
     {
+        if (m_IsHost || !m_HasNetworkConnection)
+            return;
+
+        int result = send(m_HostConnection, (const char*)package.data, package.size, 0);
+
+        if (result == SOCKET_ERROR)
+        {
+            RB_LOG_WARN(LOGTAG_MAIN, "Failed to send data to host");
+        }
     }
 
     DataPackage* WindowsNetworkService::GetReceivedPackages(uint32_t& out_total_packages)
     {
-        return nullptr;
+        if (!m_HasNetworkConnection)
+        {
+            out_total_packages = 0;
+            return nullptr;
+        }
+
+        const uint32_t max_size_per_package = 1024;
+
+        if (m_IsHost)
+        {
+            if (m_ClientSockets.empty())
+            {
+                out_total_packages = 0;
+                return nullptr;
+            }
+
+            DataPackage* packages = m_FrameAllocator->Allocate<DataPackage>(m_ClientSockets.size());
+            uint32_t current_package = 0;
+
+            for (auto itr = m_ClientSockets.begin(); itr != m_ClientSockets.end();)
+            {
+                SOCKET& socket = *itr;
+
+                char* buffer = (char*)m_FrameAllocator->Allocate(max_size_per_package);
+
+                int bytes_received = recv(socket, buffer, max_size_per_package, 0);
+
+                if (bytes_received > 0)
+                {
+                    packages[current_package].data = buffer;
+                    packages[current_package].size = bytes_received;
+                    current_package++;
+
+                    ++itr;
+                }
+                else if (bytes_received == 0)
+                {
+                    RB_LOG(LOGTAG_MAIN, "Client disconnected");
+
+                    closesocket(socket);
+                    itr = m_ClientSockets.erase(itr);
+                }
+                else if (bytes_received == SOCKET_ERROR)
+                {
+                    int error = WSAGetLastError();
+
+                    if (error == WSAEWOULDBLOCK)
+                    {
+                        // Not an actual error, there is just no data available right now
+                        ++itr;
+                    }
+                    else
+                    {
+                        RB_LOG(LOGTAG_MAIN, "Client forcefully disconnected");
+
+                        closesocket(socket);
+                        itr = m_ClientSockets.erase(itr);
+                    }
+                }
+            }
+
+            out_total_packages = current_package;
+            return packages;
+        }
+        else
+        {
+            DataPackage* package = m_FrameAllocator->Allocate<DataPackage>();
+
+            char* buffer = (char*)m_FrameAllocator->Allocate(max_size_per_package);
+
+            int bytes_received = recv(m_HostConnection, buffer, max_size_per_package, 0);
+
+            if (bytes_received > 0)
+            {
+                package->data = buffer;
+                package->size = bytes_received;
+
+                out_total_packages = 1;
+                return package;
+            }
+            else if (bytes_received == 0)
+            {
+                RB_LOG(LOGTAG_MAIN, "Server disconnected");
+                LeaveLobby();
+            }
+            else if (bytes_received == SOCKET_ERROR)
+            {
+                if (WSAGetLastError() != WSAEWOULDBLOCK)
+                {
+                    RB_LOG(LOGTAG_MAIN, "Server forcefully disconnected");
+                    LeaveLobby();
+                }
+            }
+
+            out_total_packages = 0;
+            return nullptr;
+        }
+    }
+
+    void WindowsNetworkService::DisableBlocking(SOCKET& socket)
+    {
+        u_long mode = 1;
+        ioctlsocket(socket, FIONBIO, &mode);
     }
 }
 

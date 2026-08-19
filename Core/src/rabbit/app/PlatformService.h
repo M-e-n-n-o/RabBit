@@ -53,6 +53,8 @@ namespace RB
 
         virtual bool IsInitialized() const = 0;
 
+        virtual void Update() = 0;
+
         virtual void CreateLobby(LobbyType lobby_type, uint32_t max_members) = 0;
 
         virtual void JoinLobby(uint64_t lobby_id) = 0;

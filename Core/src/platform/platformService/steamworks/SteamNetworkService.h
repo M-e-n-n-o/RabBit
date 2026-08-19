@@ -33,6 +33,8 @@ namespace RB
 
         bool IsInitialized() const override { return m_IsValid; }
 
+        void Update() override;
+
         void CreateLobby(LobbyType lobby_type, uint32_t max_members) override;
 
         void JoinLobby(uint64_t lobby_id) override;

@@ -21,6 +21,8 @@ namespace RB
 
         bool IsInitialized() const override { return m_IsValid; }
 
+        void Update() override;
+
         void CreateLobby(LobbyType lobby_type, uint32_t max_members) override;
 
         // Pass in the IP address to connect to as char*
@@ -41,6 +43,8 @@ namespace RB
 
     private:
         static const uint32_t c_Port = 42069;
+
+        void DisableBlocking(SOCKET& socket);
 
         bool            m_IsValid;
         bool            m_HasNetworkConnection;

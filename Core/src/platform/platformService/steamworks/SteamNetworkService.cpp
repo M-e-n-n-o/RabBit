@@ -44,6 +44,11 @@ namespace RB
         LeaveLobby();
     }
 
+    void SteamNetworkService::Update()
+    {
+        // Not needed
+    }
+
     void SteamNetworkService::CreateLobby(LobbyType lobby_type, uint32_t max_members)
     {
         if (m_RequestingConnection)

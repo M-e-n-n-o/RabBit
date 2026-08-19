@@ -173,6 +173,19 @@ public:
         //              - SendMessage<T>()
         //              - GetLastReceivedMessage<T>()
 
+        m_Network->Update();
+        {
+            uint32_t packages_count = 0;
+            DataPackage* packages = m_Network->GetReceivedPackages(packages_count);
+
+            for (int i = 0; i < packages_count; i++)
+            {
+                RB_LOG("Received the following package: %s", (const char*)packages[i].data);
+            }
+        }
+
+
+
 
         if (IsKeyDown(KeyCode::Q))
         {
@@ -243,14 +256,14 @@ public:
         {
             const KeyPressedEvent& pressed_event = (const KeyPressedEvent&)event;
 
-            if (m_Network && pressed_event.GetKeyCode() == KeyCode::O)
+            if (m_Network && pressed_event.GetKeyCode() == KeyCode::C)
             {
                 if (m_Network->IsConnected())
                     m_Network->LeaveLobby();
                 else
                     m_Network->CreateLobby(LobbyType::FriendsOnly, 8);
             }
-            if (m_Network && pressed_event.GetKeyCode() == KeyCode::P)
+            if (m_Network && pressed_event.GetKeyCode() == KeyCode::J)
             {
                 if (m_Network->IsConnected())
                     m_Network->LeaveLobby();
@@ -259,6 +272,27 @@ public:
                     const char ip[] = "127.0.0.1";
                     m_Network->JoinLobby((uint64_t)&ip);
                 }
+            }
+
+            if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::O)
+            {
+                const char message[] = "Dit is een test bericht van de client!";
+
+                DataPackage package;
+                package.data = message;
+                package.size = strlen(message);
+
+                m_Network->SendToHost(package, true);
+            }
+            if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::P)
+            {
+                const char message[] = "Dit is een test bericht van de server!";
+
+                DataPackage package;
+                package.data = message;
+                package.size = strlen(message);
+
+                m_Network->Broadcast(package, true);
             }
 
             if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::I)
