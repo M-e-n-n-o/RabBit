@@ -26,7 +26,7 @@ namespace RB
     #define ALLOC_HEAP(size)            malloc((size))
     #define ALLOC_HEAPC(type, count)    (type*)malloc(sizeof(type) * (count))
     
-    #define SAFE_RELEASE(obj)           (obj)->Release();
+    #define SAFE_RELEASE(obj)           if ((obj) != nullptr) { (obj)->Release(); (obj) = nullptr; }
     #define SAFE_DELETE(obj)            if ((obj) != nullptr) { delete (obj); (obj) = nullptr; }
     #define SAFE_DELETE_ARR(obj)        if ((obj) != nullptr) { delete[] (obj); (obj) = nullptr; }
     #define SAFE_FREE(obj)              if ((obj) != nullptr) { free(obj); (obj) = nullptr; }

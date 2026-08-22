@@ -98,12 +98,14 @@ namespace RB
         CSteamID id = CSteamID();
         id.SetFromUint64(lobby_id);
 
-        RB_LOG(LOGTAG_MAIN, "Requesting to join lobby with ID: %d", id);
+        RB_LOG(LOGTAG_MAIN, "Requesting to join lobby with ID: %llu", id);
         SteamMatchmaking()->JoinLobby(id);
     }
 
     void SteamNetworkService::LeaveLobby()
     {
+        m_HasNetworkConnection = false;
+
         if (!m_LobbyID.IsValid())
             return;
 
@@ -128,7 +130,6 @@ namespace RB
         SteamMatchmaking()->LeaveLobby(m_LobbyID);
         
         m_IsHost = false;
-        m_HasNetworkConnection = false;
         m_LobbyID = k_steamIDNil;
         m_ListenSocket = k_HSteamListenSocket_Invalid;
         m_HostConnection = k_HSteamNetConnection_Invalid;
@@ -232,10 +233,9 @@ namespace RB
         m_RequestingConnection = false;
 
         m_LobbyID = CSteamID(info->m_ulSteamIDLobby);
-        RB_LOG(LOGTAG_MAIN, "Joined lobby with ID: %d", m_LobbyID);
+        RB_LOG(LOGTAG_MAIN, "Joined lobby with ID: %llu", m_LobbyID);
 
-        const char* host_str = SteamMatchmaking()->GetLobbyData(m_LobbyID, "host_steamid");
-        CSteamID host_id(std::strtoull(host_str, nullptr, 10));
+        CSteamID host_id = SteamMatchmaking()->GetLobbyOwner(m_LobbyID);
 
         SteamNetworkingIdentity identity;
         identity.SetSteamID(host_id);
@@ -256,11 +256,7 @@ namespace RB
         m_RequestingConnection = false;
 
         m_LobbyID = CSteamID(info->m_ulSteamIDLobby);
-        RB_LOG(LOGTAG_MAIN, "Created lobby with ID: %d", m_LobbyID);
-
-        // Store host's SteamID in lobby data so joiners can read it directly.
-        uint64_t user_id = SteamUser()->GetSteamID().ConvertToUint64();
-        SteamMatchmaking()->SetLobbyData(m_LobbyID, "host_steamid", std::to_string(user_id).c_str());
+        RB_LOG(LOGTAG_MAIN, "Created lobby with ID: %llu", m_LobbyID);
 
         SteamNetworkingConfigValue_t opt = {};
         m_ListenSocket = SteamNetworkingSockets()->CreateListenSocketP2P(0, 0, &opt);

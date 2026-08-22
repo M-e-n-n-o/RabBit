@@ -173,8 +173,10 @@ public:
         //              - SendMessage<T>()
         //              - GetLastReceivedMessage<T>()
 
-        m_Network->Update();
+        if (m_Network)
         {
+            m_Network->Update();
+
             uint32_t packages_count = 0;
             DataPackage* packages = m_Network->GetReceivedPackages(packages_count);
 
