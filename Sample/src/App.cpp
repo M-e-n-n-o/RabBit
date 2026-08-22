@@ -27,6 +27,7 @@ RB::Application* RB::CreateApplication(const char* launch_args)
 {
     AppInfo app_info = {};
     app_info.appName            = "RabBit App";
+    app_info.useNetworking      = true;
 
     AppInfo::Window window1 = {};
     window1.windowName          = "Window 1";

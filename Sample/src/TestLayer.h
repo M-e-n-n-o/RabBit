@@ -20,8 +20,6 @@ private:
 
     Font* m_Font;
 
-    PlatformNetworkService* m_Network;
-
 public:
     TestLayer() : ApplicationLayer("TestLayer") {}
 
@@ -85,29 +83,32 @@ public:
             GameObject* object = scene->CreateGameObject();
             meshes.push_back(object->AddComponent<MeshRenderer>(m_Mesh, mat));
             Transform* t = object->AddComponent<Transform>();
-            t->position = mesh.models[i].position;
-            t->rotation = mesh.models[i].rotation;
+            t->position = mesh.models[i].position + Float3(0, 0, 300);
+            t->rotation = mesh.models[i].rotation + Float3(0, 180, 0);
             t->scale = Math::Float3(1);
             
             m_Transform = t;
         }
+
+        void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
+        //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
+
+        m_Obj1 = scene->CreateGameObject();
+        m_Camera = m_Obj1->AddComponent<Transform>();
+        m_Obj1->AddComponent<NetworkTransform>(true);
+        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, window_handle0);
+        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
+
 
         Mesh* ground = new Mesh("Ground", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
 
         GameObject* ground_obj = scene->CreateGameObject();
         ground_obj->AddComponent<MeshRenderer>(ground, m_Material);
         auto* ground_t = ground_obj->AddComponent<Transform>();
-        ground_t->position.y = -5;
-        ground_t->scale = Float3(5, 0.1f, 5);
+        ground_obj->AddComponent<NetworkTransform>(false);
+        //ground_t->position.y = -5;
+        ground_t->scale = Float3(5, 5, 5);
 
-        void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
-        //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
-
-
-        m_Obj1 = scene->CreateGameObject();
-        m_Camera = m_Obj1->AddComponent<Transform>();
-        Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, window_handle0);
-        cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
         auto* sun = scene->CreateGameObject();
         sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
@@ -155,40 +156,10 @@ public:
         //m_Obj2->AddComponent<Transform>();
         //Camera* cam_comp2 = m_Obj2->AddComponent<Camera>(0.01f, 1000.0f, 90.0f, window_handle1);
         //cam_comp2->SetClearColor({ 1.0f, 0.3f, 0.3f, 0.0f });
-
-        m_Network = PlatformNetworkService::Create();
-        if (!m_Network->IsInitialized())
-            SAFE_DELETE(m_Network);
     }
 
     void OnUpdate(float delta) override
     {
-
-
-        // TODO: Create a NetworkTransform component that interpolates the Transform component between the last, and before last network packages.
-        // 
-        //       To create this we also need to have some sort of NetworkManager where you can send and retrieve specific network packages from.
-        //          Maybe with methods such as: 
-        //              - RegisterMessage<T>()
-        //              - SendMessage<T>()
-        //              - GetLastReceivedMessage<T>()
-
-        if (m_Network)
-        {
-            m_Network->Update();
-
-            uint32_t packages_count = 0;
-            DataPackage* packages = m_Network->GetReceivedPackages(packages_count);
-
-            for (int i = 0; i < packages_count; i++)
-            {
-                RB_LOG("Received the following package: %s", (const char*)packages[i].data);
-            }
-        }
-
-
-
-
         if (IsKeyDown(KeyCode::Q))
         {
             m_Transform->rotation.y += 25.0f * delta;
@@ -258,48 +229,29 @@ public:
         {
             const KeyPressedEvent& pressed_event = (const KeyPressedEvent&)event;
 
-            if (m_Network && pressed_event.GetKeyCode() == KeyCode::C)
+            auto* network_service = Application::GetInstance()->GetNetworkService();
+
+            if (network_service && pressed_event.GetKeyCode() == KeyCode::C)
             {
-                if (m_Network->IsConnected())
-                    m_Network->LeaveLobby();
+                if (network_service->IsConnected())
+                    network_service->LeaveLobby();
                 else
-                    m_Network->CreateLobby(LobbyType::FriendsOnly, 8);
+                    network_service->CreateLobby(LobbyType::FriendsOnly, 8);
             }
-            if (m_Network && pressed_event.GetKeyCode() == KeyCode::J)
+            if (network_service && pressed_event.GetKeyCode() == KeyCode::J)
             {
-                if (m_Network->IsConnected())
-                    m_Network->LeaveLobby();
+                if (network_service->IsConnected())
+                    network_service->LeaveLobby();
                 else
                 {
                     const char ip[] = "127.0.0.1";
-                    m_Network->JoinLobby((uint64_t)&ip);
+                    network_service->JoinLobby((uint64_t)&ip);
                 }
             }
 
-            if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::O)
+            if (network_service && network_service->IsConnected() && pressed_event.GetKeyCode() == KeyCode::I)
             {
-                const char message[] = "Dit is een test bericht van de client!";
-
-                DataPackage package;
-                package.data = message;
-                package.size = strlen(message);
-
-                m_Network->SendToHost(package, true);
-            }
-            if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::P)
-            {
-                const char message[] = "Dit is een test bericht van de server!";
-
-                DataPackage package;
-                package.data = message;
-                package.size = strlen(message);
-
-                m_Network->Broadcast(package, true);
-            }
-
-            if (m_Network && m_Network->IsConnected() && pressed_event.GetKeyCode() == KeyCode::I)
-            {
-                m_Network->OpenInviteFriendsOverlay();
+                network_service->OpenInviteFriendsOverlay();
             }
         }
 
@@ -326,7 +278,5 @@ public:
         delete m_Mesh;
         delete m_Material;
         delete m_Font;
-
-        SAFE_DELETE(m_Network);
     }
 };

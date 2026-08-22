@@ -61,10 +61,12 @@ namespace RB
         virtual void LeaveLobby() = 0;
 
         virtual bool IsConnected() const = 0;
+        virtual bool IsHost() const = 0;
         virtual uint64_t GetLobbyID() const = 0;
+        virtual uint64_t GetPlayerID() const = 0;
 
-        virtual void Broadcast(const DataPackage& package, bool reliable) = 0;  // Host only
-        virtual void SendToHost(const DataPackage& package, bool reliable) = 0; // Client only
+        virtual void Broadcast(const DataPackage* package, bool reliable) = 0;  // Host only
+        virtual void SendToHost(const DataPackage* package, bool reliable) = 0; // Client only
 
         // Returned messages are only valid during the lifetime of the current frame on the main thread (allocated by the FrameAllocator from Application)
         virtual DataPackage* GetReceivedPackages(uint32_t& out_total_packages) = 0;

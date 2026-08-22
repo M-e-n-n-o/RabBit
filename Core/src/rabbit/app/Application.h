@@ -11,6 +11,7 @@
 namespace RB
 {
     class PlatformService;
+    class PlatformNetworkService;
 
     namespace Graphics
     {
@@ -40,8 +41,9 @@ namespace RB
             bool        semiTransparent        = false;
         };
 
-        const char*                     appName;
-        List<Window>                    windows;
+        const char*     appName;
+        bool            useNetworking = false;
+        List<Window>    windows;
 
         UnorderedMap<Graphics::RenderGraphType, Graphics::RenderGraphBuilder> renderGraphs;
     };
@@ -75,6 +77,7 @@ namespace RB
         Graphics::Renderer* GetRenderer() const { return m_Renderer; }
 
         PlatformService* GetPlatformService() const { return m_PlatformService; }
+        PlatformNetworkService* GetNetworkService() const { return m_NetworkService; }
 
         Entity::Scene* GetScene() const { return m_Scene; }
 
@@ -93,7 +96,6 @@ namespace RB
         virtual void OnStop() = 0;
 
         void UpdateInternal(float delta_time);
-        void UpdateApp(float delta_time);
         void OnNewLayerPushed(ApplicationLayer* layer);
         bool OnEvent(Events::Event& event) override;
 
@@ -103,6 +105,7 @@ namespace RB
         bool                        m_ShouldStop;
 
         PlatformService*            m_PlatformService;
+        PlatformNetworkService*     m_NetworkService;
 
         List<Graphics::Display*>    m_Displays;
 

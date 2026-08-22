@@ -94,7 +94,7 @@ namespace RB::Graphics
     };
 
     Renderer::Renderer(bool multi_threading_support)
-        : EventListener(kEventCat_Window | kEventCat_Application, true)
+        : EventListener(kEventCat_Windowing | kEventCat_Application, true)
         , m_IsShutdown(true)
         , m_MultiThreadingSupport(multi_threading_support)
         , m_RenderFrameIndex(0)
@@ -484,7 +484,7 @@ namespace RB::Graphics
             return true;
         };
 
-        if (event.IsInCategory(kEventCat_Window) || event.IsInCategory(kEventCat_Application))
+        if (event.IsInCategory(kEventCat_Windowing) || event.IsInCategory(kEventCat_Application))
         {
             switch (event.GetEventType())
             {
@@ -523,7 +523,7 @@ namespace RB::Graphics
                 break;
             }
 
-            if (event.IsInCategory(kEventCat_Window))
+            if (event.IsInCategory(kEventCat_Windowing))
             {
                 WindowEvent* window_event = static_cast<WindowEvent*>(&event);
                 Window* window = Application::GetInstance()->FindWindow(window_event->GetWindowHandle());

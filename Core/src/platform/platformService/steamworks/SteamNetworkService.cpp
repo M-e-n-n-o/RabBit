@@ -33,6 +33,8 @@ namespace RB
         m_FrameAllocator = Application::GetInstance()->GetAllocator();
         SteamNetworkingUtils()->InitRelayNetworkAccess();
 
+        m_PlayerID = SteamUser()->GetSteamID().ConvertToUint64();
+
         m_IsValid = true;
     }
 
@@ -141,13 +143,23 @@ namespace RB
         return m_HasNetworkConnection;
     }
 
+    bool SteamNetworkService::IsHost() const
+    {
+        return m_HasNetworkConnection && m_IsHost;
+    }
+
     uint64_t SteamNetworkService::GetLobbyID() const
     {
         RB_ASSERT(LOGTAG_MAIN, m_HasNetworkConnection, "Lobby ID is invalid as you are currently not connected to a lobby");
         return m_LobbyID.ConvertToUint64();
     }
 
-    void SteamNetworkService::Broadcast(const DataPackage& package, bool reliable)
+    uint64_t SteamNetworkService::GetPlayerID() const
+    {
+        return m_PlayerID;
+    }
+
+    void SteamNetworkService::Broadcast(const DataPackage* package, bool reliable)
     {
         if (!m_IsHost || !m_HasNetworkConnection)
             return;
@@ -156,7 +168,7 @@ namespace RB
             SendToConnection(conn, package, reliable);
     }
 
-    void SteamNetworkService::SendToHost(const DataPackage& package, bool reliable)
+    void SteamNetworkService::SendToHost(const DataPackage* package, bool reliable)
     {
         if (m_IsHost || !m_HasNetworkConnection)
             return;
@@ -206,9 +218,9 @@ namespace RB
         return packages;
     }
 
-    void SteamNetworkService::SendToConnection(HSteamNetConnection conn, const DataPackage& package, bool reliable)
+    void SteamNetworkService::SendToConnection(HSteamNetConnection conn, const DataPackage* package, bool reliable)
     {
-        SteamNetworkingSockets()->SendMessageToConnection(conn, package.data, package.size, reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable, nullptr);
+        SteamNetworkingSockets()->SendMessageToConnection(conn, package->data, package->size, reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable, nullptr);
     }
 
     void SteamNetworkService::OpenInviteFriendsOverlay()

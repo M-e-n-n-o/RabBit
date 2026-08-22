@@ -9,6 +9,10 @@
 
 namespace RB
 {
+    // These get added to before and after every message so that buffering can be done
+    static const char START_MESSAGE[] = "strwin";
+    static const char END_MESSAGE[] = "endwin";
+
     WindowsNetworkService::WindowsNetworkService()
         : m_HasNetworkConnection(false)
         , m_IsHost(false)
@@ -210,38 +214,54 @@ namespace RB
         return m_HasNetworkConnection;
     }
 
+    bool WindowsNetworkService::IsHost() const
+    {
+        return m_HasNetworkConnection && m_IsHost;
+    }
+
     uint64_t WindowsNetworkService::GetLobbyID() const
     {
+        // TODO: Base the ID based on a handshake after being accepted
         return 0;
     }
 
-    void WindowsNetworkService::Broadcast(const DataPackage& package, bool reliable)
+    uint64_t WindowsNetworkService::GetPlayerID() const
+    {
+        // TODO: Base the ID based on a handshake after being accepted
+        return m_IsHost ? 0 : 1;
+    }
+
+    void WindowsNetworkService::Broadcast(const DataPackage* package, bool reliable)
     {
         if (!m_IsHost || !m_HasNetworkConnection)
             return;
 
         for (auto itr = m_ClientSockets.begin(); itr != m_ClientSockets.end(); ++itr)
         {
-            int result = send(*itr, (const char*)package.data, package.size, 0);
+            int result = send(*itr, START_MESSAGE, sizeof(START_MESSAGE), 0);
+            if (result == SOCKET_ERROR) RB_LOG_WARN(LOGTAG_MAIN, "Failed to broadcast data to a client");
 
-            if (result == SOCKET_ERROR)
-            {
-                RB_LOG_WARN(LOGTAG_MAIN, "Failed to broadcast data to a client");
-            }
+            result = send(*itr, (const char*)package->data, package->size, 0);
+            if (result == SOCKET_ERROR) RB_LOG_WARN(LOGTAG_MAIN, "Failed to broadcast data to a client");
+
+            result = send(*itr, END_MESSAGE, sizeof(END_MESSAGE), 0);
+            if (result == SOCKET_ERROR) RB_LOG_WARN(LOGTAG_MAIN, "Failed to broadcast data to a client");
         }
     }
 
-    void WindowsNetworkService::SendToHost(const DataPackage& package, bool reliable)
+    void WindowsNetworkService::SendToHost(const DataPackage* package, bool reliable)
     {
         if (m_IsHost || !m_HasNetworkConnection)
             return;
 
-        int result = send(m_HostConnection, (const char*)package.data, package.size, 0);
+        int result = send(m_HostConnection, START_MESSAGE, sizeof(START_MESSAGE), 0);
+        if (result == SOCKET_ERROR) RB_LOG_WARN(LOGTAG_MAIN, "Failed to send data to host");
 
-        if (result == SOCKET_ERROR)
-        {
-            RB_LOG_WARN(LOGTAG_MAIN, "Failed to send data to host");
-        }
+        result = send(m_HostConnection, (const char*)package->data, package->size, 0);
+        if (result == SOCKET_ERROR) RB_LOG_WARN(LOGTAG_MAIN, "Failed to send data to host");
+
+        result = send(m_HostConnection, END_MESSAGE, sizeof(END_MESSAGE), 0);
+        if (result == SOCKET_ERROR) RB_LOG_WARN(LOGTAG_MAIN, "Failed to send data to host");
     }
 
     DataPackage* WindowsNetworkService::GetReceivedPackages(uint32_t& out_total_packages)
@@ -252,7 +272,8 @@ namespace RB
             return nullptr;
         }
 
-        const uint32_t max_size_per_package = 1024;
+        const uint32_t max_recv_chunk = 1024;
+        List<DataPackage> found_packages;
 
         if (m_IsHost)
         {
@@ -262,36 +283,29 @@ namespace RB
                 return nullptr;
             }
 
-            DataPackage* packages = m_FrameAllocator->Allocate<DataPackage>(m_ClientSockets.size());
-            uint32_t current_package = 0;
-
             for (auto itr = m_ClientSockets.begin(); itr != m_ClientSockets.end();)
             {
                 SOCKET& socket = *itr;
-
-                char* buffer = (char*)m_FrameAllocator->Allocate(max_size_per_package);
-
-                int bytes_received = recv(socket, buffer, max_size_per_package, 0);
+                char temp[max_recv_chunk];
+                int bytes_received = recv(socket, temp, sizeof(temp), 0);
 
                 if (bytes_received > 0)
                 {
-                    packages[current_package].data = buffer;
-                    packages[current_package].size = bytes_received;
-                    current_package++;
-
+                    RecvBuffer& buf = m_ClientRecvBuffers[socket];
+                    AppendToRecvBuffer(buf, temp, bytes_received);
+                    ExtractPackages(buf, found_packages);
                     ++itr;
                 }
                 else if (bytes_received == 0)
                 {
                     RB_LOG(LOGTAG_MAIN, "Client disconnected");
-
                     closesocket(socket);
+                    m_ClientRecvBuffers.erase(socket);
                     itr = m_ClientSockets.erase(itr);
                 }
-                else if (bytes_received == SOCKET_ERROR)
+                else
                 {
                     int error = WSAGetLastError();
-
                     if (error == WSAEWOULDBLOCK)
                     {
                         // Not an actual error, there is just no data available right now
@@ -300,49 +314,118 @@ namespace RB
                     else
                     {
                         RB_LOG(LOGTAG_MAIN, "Client forcefully disconnected");
-
                         closesocket(socket);
+                        m_ClientRecvBuffers.erase(socket);
                         itr = m_ClientSockets.erase(itr);
                     }
                 }
             }
-
-            out_total_packages = current_package;
-            return packages;
         }
         else
         {
-            DataPackage* package = m_FrameAllocator->Allocate<DataPackage>();
-
-            char* buffer = (char*)m_FrameAllocator->Allocate(max_size_per_package);
-
-            int bytes_received = recv(m_HostConnection, buffer, max_size_per_package, 0);
+            char temp[max_recv_chunk];
+            int bytes_received = recv(m_HostConnection, temp, sizeof(temp), 0);
 
             if (bytes_received > 0)
             {
-                package->data = buffer;
-                package->size = bytes_received;
-
-                out_total_packages = 1;
-                return package;
+                AppendToRecvBuffer(m_HostRecvBuffer, temp, bytes_received);
+                ExtractPackages(m_HostRecvBuffer, found_packages);
             }
             else if (bytes_received == 0)
             {
                 RB_LOG(LOGTAG_MAIN, "Server disconnected");
                 LeaveLobby();
             }
-            else if (bytes_received == SOCKET_ERROR)
+            else if (WSAGetLastError() != WSAEWOULDBLOCK)
             {
-                if (WSAGetLastError() != WSAEWOULDBLOCK)
-                {
-                    RB_LOG(LOGTAG_MAIN, "Server forcefully disconnected");
-                    LeaveLobby();
-                }
+                RB_LOG(LOGTAG_MAIN, "Server forcefully disconnected");
+                LeaveLobby();
+            }
+        }
+
+        out_total_packages = static_cast<uint32_t>(found_packages.size());
+        if (found_packages.empty())
+            return nullptr;
+
+        DataPackage* packages = m_FrameAllocator->Allocate<DataPackage>(found_packages.size());
+        std::copy(found_packages.begin(), found_packages.end(), packages);
+        return packages;
+    }
+
+    void WindowsNetworkService::ExtractPackages(RecvBuffer& buf, List<DataPackage>& out)
+    {
+        const size_t start_len = sizeof(START_MESSAGE);
+        const size_t end_len   = sizeof(END_MESSAGE);
+
+        size_t offset = 0;
+
+        while (true)
+        {
+            int32_t start_rel = FindSequence(buf.data + offset, buf.length - offset, START_MESSAGE, start_len);
+            if (start_rel < 0)
+                break; // No message start found
+
+            size_t start_idx     = offset + start_rel;
+            size_t payload_start = start_idx + start_len;
+
+            int32_t end_rel = FindSequence(buf.data + payload_start, buf.length - payload_start, END_MESSAGE, end_len);
+            if (end_rel < 0)
+            {
+                // No message end found
+                offset = start_idx;
+                break;
             }
 
-            out_total_packages = 0;
-            return nullptr;
+            size_t end_idx      = payload_start + end_rel;
+            size_t payload_size = end_idx - payload_start;
+
+            void* full_payload = m_FrameAllocator->Allocate(payload_size);
+            memcpy(full_payload, buf.data + payload_start, payload_size);
+
+            DataPackage pkg;
+            pkg.data = full_payload;
+            pkg.size = static_cast<uint32_t>(payload_size);
+            out.push_back(pkg);
+
+            // Keep scanning for more completed messages
+            offset = end_idx + end_len;
         }
+
+        if (offset > 0)
+        {
+            // Compact by shifting any unconsumed trailing bytes to the front of the buffer
+            size_t remaining = buf.length - offset;
+            if (remaining > 0)
+                memmove(buf.data, buf.data + offset, remaining);
+            buf.length = remaining;
+        }
+    }
+
+    int32_t WindowsNetworkService::FindSequence(const char* haystack, size_t haystack_len, const char* needle, size_t needle_len)
+    {
+        if (needle_len == 0 || haystack_len < needle_len)
+            return -1;
+
+        for (size_t i = 0; i <= haystack_len - needle_len; ++i)
+        {
+            if (memcmp(haystack + i, needle, needle_len) == 0)
+                return static_cast<int32_t>(i);
+        }
+
+        return -1;
+    }
+
+    void WindowsNetworkService::AppendToRecvBuffer(RecvBuffer& buf, const void* data, uint32_t size)
+    {
+        if (buf.length + size > sizeof(buf.data))
+        {
+            RB_LOG_WARN(LOGTAG_MAIN, "Receive buffer overflow, dropping messages");
+            buf.length = 0;
+            return;
+        }
+
+        memcpy(buf.data + buf.length, data, size);
+        buf.length += size;
     }
 
     void WindowsNetworkService::DisableBlocking(SOCKET& socket)

@@ -15,7 +15,7 @@ namespace RB::Events
         virtual EventType GetEventType() const override = 0;
         virtual const char* GetName() const override = 0;
 
-        int GetCategoryFlags() const override { return kEventCat_Window; }
+        int GetCategoryFlags() const override { return kEventCat_Windowing; }
 
     private:
         void* m_WindowHandle;

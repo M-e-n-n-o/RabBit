@@ -12,5 +12,6 @@ namespace RB::Entity
     {
         m_GameObject = obj;
         m_Enabled = true;
+        OnAttached();
     }
 }

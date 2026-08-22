@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "AssetManager.h"
 #include "PlatformService.h"
+#include "NetworkRouter.h"
 
 #include "graphics/Window.h"
 #include "graphics/RenderInterface.h"
@@ -35,6 +36,7 @@ namespace RB
         , m_DeltaTime(0)
         , m_FixedTimeStep(-1)
         , m_PlatformService(nullptr)
+        , m_NetworkService(nullptr)
     {
         RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "Application already exists");
         s_Instance = this;
@@ -55,8 +57,11 @@ namespace RB
         RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
         RB_LOG(LOGTAG_MAIN, "");
 
-        RB_LOG(LOGTAG_MAIN, "Launch arguments: %s", launch_args)
+        RB_LOG(LOGTAG_MAIN, "Launch arguments: %s", launch_args);
 
+
+
+        // Assets
         char asset_path[256];
         if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
         {
@@ -88,14 +93,30 @@ namespace RB
 
         AssetManager::Init(asset_path);
 
+
+        m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
+
+
+        // Platform & networking services
 #ifdef RB_STEAM_API
-        if (std::strstr(launch_args, "-noSteam") == nullptr)
+        if (std::strstr(launch_args, "-steam"))
             m_PlatformService = PlatformService::Create(PlatformAPI::Steamworks);
 #endif
         if (m_PlatformService && !m_PlatformService->IsInitialized())
             SAFE_DELETE(m_PlatformService);
 
+        if (m_StartAppInfo->useNetworking)
+        {
+            m_NetworkService = PlatformNetworkService::Create();
+            if (m_NetworkService && !m_NetworkService->IsInitialized())
+                SAFE_DELETE(m_NetworkService);
 
+            PushLayer<NetworkRouterLayer>(m_NetworkService);
+        }
+
+
+
+        // Rendering
 #if RB_GRAPHICS_API_D3D12
         RenderAPI api = RenderAPI::D3D12;
 #elif RB_GRAPHICS_API_VULKAN
@@ -103,8 +124,6 @@ namespace RB
 #else
         RenderAPI api = RenderAPI::None;
 #endif
-
-        m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
 
         m_Renderer = Renderer::Create(api, std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
         m_Renderer->Init();
@@ -143,7 +162,12 @@ namespace RB
             (*(m_Windows.end()-1))->SetVirtualResolutionLinearUpscale(window.linearUpscale);
         }
 
+
+
+        // Scene
         m_Scene = new Scene();
+
+
 
         m_Initialized = true;
 
@@ -182,11 +206,6 @@ namespace RB
                 m_DeltaTime = m_FixedTimeStep;
             }
 
-            if (m_PlatformService)
-            {
-                m_PlatformService->Update();
-            }
-
             // Poll inputs and update windows
             for (Graphics::Window* window : m_Windows)
             {
@@ -203,11 +222,8 @@ namespace RB
             // Process the new received events
             ProcessEvents();
 
-            // Firstly update the engine itself
+            // Update the app and internal systems
             UpdateInternal(m_DeltaTime);
-
-            // Secondly update the application
-            UpdateApp(m_DeltaTime);
 
             // Submit the scene as context for rendering the next frame
             m_Renderer->SubmitFrame(m_Scene);
@@ -246,17 +262,16 @@ namespace RB
 
     void Application::UpdateInternal(float delta_time)
     {
+        if (m_PlatformService)
+        {
+            m_PlatformService->Update();
+        }
 
-    }
-
-    void Application::UpdateApp(float delta_time)
-    {
-        // Update the application layers
         for (ApplicationLayer* layer : m_LayerStack)
         {
-            if (layer->IsEnabled()) 
-            { 
-                layer->OnUpdate(delta_time); 
+            if (layer->IsEnabled())
+            {
+                layer->OnUpdate(delta_time);
             }
         }
 

@@ -18,6 +18,10 @@
 #undef FindWindow
 #endif
 
+#if defined(SendMessage)
+#undef SendMessage
+#endif
+
 namespace RB
 {
     // Custom graphics pointer

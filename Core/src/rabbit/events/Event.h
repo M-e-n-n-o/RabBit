@@ -7,23 +7,31 @@ namespace RB::Events
     enum class EventType
     {
         None = 0,
+
+        // Window events
         WindowCreated, WindowCloseRequest, WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved, WindowFullscreenToggle,
+
+        // Key events
         KeyPressed, KeyReleased, KeyTyped,
+
+        // Mouse events
         MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
-        RenderOutputChanged
+
+        // Application events
+        RenderOutputChanged,
     };
 
     enum EventCategory
     {
         kEventCat_None          = 0,
-        kEventCat_Window        = (1 << 0),
+        kEventCat_Windowing     = (1 << 0),
         kEventCat_Keyboard      = (1 << 1),
         kEventCat_Mouse         = (1 << 2),
         kEventCat_MouseButton   = (1 << 3),
         kEventCat_Application   = (1 << 4),
 
         kEventCat_Input = (kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton),
-        kEventCat_All = (kEventCat_Window | kEventCat_Input | kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton | kEventCat_Application)
+        kEventCat_All   = (kEventCat_Windowing | kEventCat_Keyboard | kEventCat_Mouse | kEventCat_MouseButton | kEventCat_Application)
     };
 
     #define DEFINE_CLASS_TYPE_CUSTOM_OVERWRITE(classType, type) static EventType GetStaticType() { return EventType::type; }\

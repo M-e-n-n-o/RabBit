@@ -41,18 +41,20 @@ namespace RB
         void LeaveLobby() override;
 
         bool IsConnected() const override;
+        bool IsHost() const override;
 
         uint64_t GetLobbyID() const override;
+        uint64_t GetPlayerID() const override;
 
-        void Broadcast(const DataPackage& package, bool reliable) override;
-        void SendToHost(const DataPackage& package, bool reliable) override;
+        void Broadcast(const DataPackage* package, bool reliable) override;
+        void SendToHost(const DataPackage* package, bool reliable) override;
 
         DataPackage* GetReceivedPackages(uint32_t& out_total_packages) override;
 
         void OpenInviteFriendsOverlay() override;
 
     private:
-        void SendToConnection(HSteamNetConnection conn, const DataPackage& package, bool reliable);
+        void SendToConnection(HSteamNetConnection conn, const DataPackage* package, bool reliable);
 
         STEAM_CALLBACK(SteamNetworkService, OnLobbyEntered, LobbyEnter_t);
         STEAM_CALLBACK(SteamNetworkService, OnLobbyCreated, LobbyCreated_t);
@@ -63,6 +65,7 @@ namespace RB
         bool                        m_RequestingConnection;
         bool                        m_HasNetworkConnection;
         bool                        m_IsHost;
+        uint64_t                    m_PlayerID;
         CSteamID                    m_LobbyID;
         HSteamListenSocket          m_ListenSocket;
         List<HSteamNetConnection>   m_ClientConnections;
