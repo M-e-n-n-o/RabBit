@@ -3,32 +3,14 @@
 #include "RabBitCommon.h"
 #include "ApplicationLayer.h"
 
+#include "utils/Util.h"
+
 namespace RB
 {
     class PlatformNetworkService;
 
     namespace NetworkUtils
     {
-        template <typename T>
-        constexpr std::string_view RawTypeName()
-        {
-#if defined(__clang__) || defined(__GNUC__)
-            return __PRETTY_FUNCTION__;
-#elif defined(_MSC_VER)
-            return __FUNCSIG__;
-#endif
-        }
-
-        template <typename T>
-        constexpr uint64_t TypeId()
-        {
-            uint64_t h = 0;
-            std::string_view s = RawTypeName<T>();
-            for (uint8_t c : s)
-                HashCombine(h, c);
-            return h;
-        }
-
         class NetworkHandlerBase
         {
         public:
@@ -87,12 +69,12 @@ namespace RB
         void SendMessage(M* message, bool reliable = false)
         {
             RB_STATIC_ASSERT((std::is_same_v<M, T> || ...), "Message type must be one of NetworkNetworkHandler's types");
-            m_Router->SendMessage(NetworkUtils::TypeId<M>(), (uint8_t*)message, sizeof(M), reliable);
+            m_Router->SendMessage(ConstantTypeId<M>(), (uint8_t*)message, sizeof(M), reliable);
         }
 
         bool ListensToID(uint64_t id) const override
         {
-            return ((NetworkUtils::TypeId<T>() == id) || ...);
+            return ((ConstantTypeId<T>() == id) || ...);
         }
 
         void OnNetworkMessage(uint64_t player_id, uint64_t message_id, const uint8_t* data, uint64_t size) override
@@ -104,7 +86,7 @@ namespace RB
         template <typename M>
         void DispatchOne(uint64_t player_id, uint64_t message_id, const uint8_t* data, uint64_t size)
         {
-            if (message_id == NetworkUtils::TypeId<M>())
+            if (message_id == ConstantTypeId<M>())
             {
                 if (size == sizeof(M))
                     static_cast<NetworkUtils::NetworkHandlerSingle<M>*>(this)->OnMessageReceived(player_id, (M*)data);
