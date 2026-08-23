@@ -1,21 +1,21 @@
 #include "RabBitCommon.h"
-#include "NetworkTransform.h"
+#include "NetworkTransformSync.h"
 
 #include "entity/GameObject.h"
 
 namespace RB::Entity
 {
-    NetworkTransform::NetworkTransform(bool is_local)
+    NetworkTransformSync::NetworkTransformSync(bool is_local)
         : m_IsLocal(is_local)
     {
     }
 
-    void NetworkTransform::OnAttached()
+    void NetworkTransformSync::OnAttached()
     {
         m_Transform = m_GameObject->GetComponent<Transform>();
     }
 
-    void NetworkTransform::Update()
+    void NetworkTransformSync::Update()
     {
         if (m_IsLocal)
         {
@@ -23,7 +23,7 @@ namespace RB::Entity
         }
     }
 
-    void NetworkTransform::OnMessageReceived(uint64_t player_id, const Transform* message)
+    void NetworkTransformSync::OnMessageReceived(uint64_t player_id, const Transform* message)
     {
         if (!m_IsLocal)
         {

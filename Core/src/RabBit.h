@@ -83,7 +83,7 @@
 #include "rabbit/entity/components/Mesh.h"
 #include "rabbit/entity/components/UI.h"
 #include "rabbit/entity/components/Light.h"
-#include "rabbit/entity/components/NetworkTransform.h"
+#include "rabbit/entity/components/NetworkTransformSync.h"
 #include "rabbit/entity/components/ScreenCapturer.h"
 
 #include "rabbit/graphics/passes/GBuffer.h"

@@ -95,17 +95,17 @@ public:
 
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
-        m_Obj1->AddComponent<NetworkTransform>(true);
+        m_Obj1->AddComponent<NetworkTransformSync>(true);
         Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
 
-        Mesh* ground = new Mesh("Ground", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
+        Mesh* ground = new Mesh("Cube", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
 
         GameObject* ground_obj = scene->CreateGameObject();
         ground_obj->AddComponent<MeshRenderer>(ground, m_Material);
         auto* ground_t = ground_obj->AddComponent<Transform>();
-        ground_obj->AddComponent<NetworkTransform>(false);
+        ground_obj->AddComponent<NetworkTransformSync>(false);
         //ground_t->position.y = -5;
         ground_t->scale = Float3(5, 5, 5);
 

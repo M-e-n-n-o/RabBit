@@ -7,10 +7,10 @@
 
 namespace RB::Entity
 {
-    class NetworkTransform : public ObjectComponent, NetworkHandler<Transform>
+    class NetworkTransformSync : public ObjectComponent, NetworkHandler<Transform>
     {
     public:
-        NetworkTransform(bool is_local);
+        NetworkTransformSync(bool is_local);
 
         void OnAttached() override;
 
