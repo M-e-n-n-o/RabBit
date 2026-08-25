@@ -1087,7 +1087,7 @@ namespace RB::Graphics::D3D12
             if (!m_RenderState.viewportSet)
                 SetViewport(vp);
             if (!m_RenderState.scissorSet)
-            SetScissor(vp);
+                SetScissor(vp);
         }
     }
 

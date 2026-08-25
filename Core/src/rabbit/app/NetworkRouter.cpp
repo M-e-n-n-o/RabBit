@@ -100,7 +100,8 @@ namespace RB
         header->playerID   = m_NetworkService->GetPlayerID();
         header->messageID  = message_id;
         header->isReliable = (uint8_t)reliable;
-
+        
+        // TODO: Can we maybe avoid this copy?
         memcpy(data_ptr, data, size);
 
         if (m_NetworkService->IsHost())
