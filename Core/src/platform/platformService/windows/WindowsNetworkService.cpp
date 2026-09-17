@@ -264,7 +264,7 @@ namespace RB
         if (result == SOCKET_ERROR) RB_LOG_WARN(LOGTAG_MAIN, "Failed to send data to host");
     }
 
-    DataPackage* WindowsNetworkService::GetReceivedPackages(uint32_t& out_total_packages)
+    DataPackage** WindowsNetworkService::GetReceivedPackages(uint32_t& out_total_packages)
     {
         if (!m_HasNetworkConnection)
         {
@@ -347,8 +347,15 @@ namespace RB
         if (found_packages.empty())
             return nullptr;
 
-        DataPackage* packages = m_FrameAllocator->Allocate<DataPackage>(found_packages.size());
-        std::copy(found_packages.begin(), found_packages.end(), packages);
+        DataPackage** packages = m_FrameAllocator->Allocate<DataPackage*>(found_packages.size());
+
+        for (int i = 0; i < found_packages.size(); i++)
+        {
+            DataPackage* pkg = m_FrameAllocator->Allocate<DataPackage>(1);
+            *pkg = found_packages[i];
+            packages[i] = pkg;
+        }
+
         return packages;
     }
 

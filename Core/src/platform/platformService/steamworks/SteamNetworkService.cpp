@@ -176,7 +176,7 @@ namespace RB
         SendToConnection(m_HostConnection, package, reliable);
     }
 
-    DataPackage* SteamNetworkService::GetReceivedPackages(uint32_t& out_total_packages)
+    DataPackage** SteamNetworkService::GetReceivedPackages(uint32_t& out_total_packages)
     {
         if (!m_HasNetworkConnection)
         {
@@ -195,7 +195,7 @@ namespace RB
         }
 
         SteamNetworkingMessage_t** msgs = (SteamNetworkingMessage_t**)m_FrameAllocator->Allocate(sizeof(SteamNetworkingMessage_t*) * max_packages);
-        SteamDataPackage* packages = m_FrameAllocator->Allocate<SteamDataPackage>(max_packages);
+        DataPackage** packages = m_FrameAllocator->Allocate<DataPackage*>(max_packages);
 
         int total_messages = SteamNetworkingSockets()->ReceiveMessagesOnPollGroup(m_PollGroup, msgs, max_packages);
 
@@ -208,9 +208,12 @@ namespace RB
 
         for (int i = 0; i < total_messages; i++)
         {
-            packages[i].data = msgs[i]->GetData();
-            packages[i].size = msgs[i]->GetSize();
-            packages[i].steamMsg = msgs[i];
+            SteamDataPackage* pkg = m_FrameAllocator->Allocate<SteamDataPackage>();
+            pkg->data = msgs[i]->GetData();
+            pkg->size = msgs[i]->GetSize();
+            pkg->steamMsg = msgs[i];
+
+            packages[i] = pkg;
         }
 
         out_total_packages = total_messages;
@@ -220,7 +223,8 @@ namespace RB
 
     void SteamNetworkService::SendToConnection(HSteamNetConnection conn, const DataPackage* package, bool reliable)
     {
-        SteamNetworkingSockets()->SendMessageToConnection(conn, package->data, package->size, reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable, nullptr);
+        int send_flags = reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_UnreliableNoDelay;
+        SteamNetworkingSockets()->SendMessageToConnection(conn, package->data, package->size, send_flags, nullptr);
     }
 
     void SteamNetworkService::OpenInviteFriendsOverlay()

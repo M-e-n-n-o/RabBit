@@ -19,15 +19,15 @@ namespace RB::Entity
     {
         if (m_IsLocal)
         {
-            SendMessage(m_Transform);
+            SendMessage(&m_Transform->position);
         }
     }
 
-    void NetworkTransformSync::OnMessageReceived(uint64_t player_id, const Transform* message)
+    void NetworkTransformSync::OnMessageReceived(uint64_t player_id, const Math::Float3* message)
     {
         if (!m_IsLocal)
         {
-            m_Transform->position = message->position;
+            m_Transform->position = *message;
         }
     }
 }

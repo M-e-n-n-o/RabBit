@@ -69,7 +69,7 @@ namespace RB
         virtual void SendToHost(const DataPackage* package, bool reliable) = 0; // Client only
 
         // Returned messages are only valid during the lifetime of the current frame on the main thread (allocated by the FrameAllocator from Application)
-        virtual DataPackage* GetReceivedPackages(uint32_t& out_total_packages) = 0;
+        virtual DataPackage** GetReceivedPackages(uint32_t& out_total_packages) = 0;
 
         virtual void OpenInviteFriendsOverlay() = 0; // Host only
 

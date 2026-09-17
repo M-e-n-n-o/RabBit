@@ -39,7 +39,7 @@ namespace RB
             return;
 
         uint32_t count;
-        DataPackage* packages = m_NetworkService->GetReceivedPackages(count);
+        DataPackage** packages = m_NetworkService->GetReceivedPackages(count);
 
         if (count == 0)
             return;
@@ -48,7 +48,7 @@ namespace RB
 
         for (int i = 0; i < count; i++)
         {
-            const DataPackage* package = &packages[i];
+            const DataPackage* package = packages[i];
 
             if (package->size <= header_size)
             {
@@ -82,6 +82,8 @@ namespace RB
 
     void NetworkRouterLayer::SendMessage(uint64_t message_id, uint8_t* data, uint64_t size, bool reliable)
     {
+        // TODO: Limit the amount of packages being able to be send per component to like ~30Hz
+
         if (!m_NetworkService || !m_NetworkService->IsConnected())
             return;
 

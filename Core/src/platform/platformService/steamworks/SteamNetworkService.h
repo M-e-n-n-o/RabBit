@@ -49,7 +49,7 @@ namespace RB
         void Broadcast(const DataPackage* package, bool reliable) override;
         void SendToHost(const DataPackage* package, bool reliable) override;
 
-        DataPackage* GetReceivedPackages(uint32_t& out_total_packages) override;
+        DataPackage** GetReceivedPackages(uint32_t& out_total_packages) override;
 
         void OpenInviteFriendsOverlay() override;
 
