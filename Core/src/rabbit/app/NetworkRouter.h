@@ -17,6 +17,7 @@ namespace RB
             virtual ~NetworkHandlerBase() = default;
             virtual bool ListensToID(uint64_t id) const = 0;
             virtual void OnNetworkMessage(uint64_t player_id, uint64_t message_id, const uint8_t* data, uint64_t size) = 0;
+            virtual void OnNetworkTick() = 0;
         };
 
         template <typename T>
@@ -27,6 +28,8 @@ namespace RB
             virtual void OnMessageReceived(uint64_t player_id, const T* message) = 0;
         };
     }
+
+    static const float NetworkTickSpeedMs = 0.05f; // 20Hz
 
     class NetworkRouterLayer : public ApplicationLayer
     {
@@ -46,6 +49,7 @@ namespace RB
     private:
         PlatformNetworkService*                 m_NetworkService;
         List<NetworkUtils::NetworkHandlerBase*> m_Handlers;
+        float                                   m_NetworkTickTimer;
 
         static NetworkRouterLayer*              s_Instance;
     };
@@ -81,6 +85,9 @@ namespace RB
         {
             (DispatchOne<T>(player_id, message_id, data, size), ...);
         }
+
+        // When constantly sending messages, prefer to send them in this method to limit bandwith (runs at the speed of NetworkTickSpeedMs)
+        virtual void OnNetworkTick() override {}
 
     private:
         template <typename M>

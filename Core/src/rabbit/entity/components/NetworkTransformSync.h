@@ -7,14 +7,14 @@
 
 namespace RB::Entity
 {
-    class NetworkTransformSync : public ObjectComponent, NetworkHandler<Math::Float3>
+    class NetworkTransformSync : public ObjectComponent, public NetworkHandler<Math::Float3>
     {
     public:
         NetworkTransformSync(bool is_local);
 
         void OnAttached() override;
 
-        void Update() override;
+        void OnNetworkTick() override;
 
         void OnMessageReceived(uint64_t player_id, const Math::Float3* message) override;
 

@@ -48,6 +48,8 @@ namespace RB::Entity
 
         const char* GetName() const { return m_Name.c_str(); }
 
+        const List<ObjectComponent*>& GetComponents() const { return m_Components; }
+
         // Pass in nullptr to detach the parent
         void SetParent(GameObject* new_parent);
         GameObject* GetParent() const;

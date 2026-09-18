@@ -15,7 +15,7 @@ namespace RB::Entity
         m_Transform = m_GameObject->GetComponent<Transform>();
     }
 
-    void NetworkTransformSync::Update()
+    void NetworkTransformSync::OnNetworkTick()
     {
         if (m_IsLocal)
         {

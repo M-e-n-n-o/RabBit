@@ -2,6 +2,7 @@
 #include "NetworkRouter.h"
 #include "PlatformService.h"
 #include "Application.h"
+#include "entity/Scene.h"
 
 namespace RB
 {
@@ -18,6 +19,7 @@ namespace RB
     NetworkRouterLayer::NetworkRouterLayer(PlatformNetworkService* network_service)
         : ApplicationLayer("NetworkRouterLayer")
         , m_NetworkService(network_service)
+        , m_NetworkTickTimer(0)
     {
         RB_ASSERT_FATAL(LOGTAG_MAIN, s_Instance == nullptr, "NetworkRouterLayer already exists");
         s_Instance = this;
@@ -32,6 +34,26 @@ namespace RB
     {
         if (!m_NetworkService)
             return;
+
+        m_NetworkTickTimer += delta_time;
+
+        if (m_NetworkTickTimer >= NetworkTickSpeedMs)
+        {
+            const auto& objects = Application::GetInstance()->GetScene()->GetGameObjects();
+            for (const Entity::GameObject* obj : objects)
+            {
+                const auto& comps = obj->GetComponents();
+                for (Entity::ObjectComponent* comp : comps)
+                {
+                    if (auto* nh = dynamic_cast<NetworkUtils::NetworkHandlerBase*>(comp); nh != nullptr)
+                    {
+                        nh->OnNetworkTick();
+                    }
+                }
+            }
+
+            m_NetworkTickTimer = 0;
+        }
 
         m_NetworkService->Update();
 
@@ -82,8 +104,6 @@ namespace RB
 
     void NetworkRouterLayer::SendMessage(uint64_t message_id, uint8_t* data, uint64_t size, bool reliable)
     {
-        // TODO: Limit the amount of packages being able to be send per component to like ~30Hz
-
         if (!m_NetworkService || !m_NetworkService->IsConnected())
             return;
 

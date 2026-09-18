@@ -15,7 +15,7 @@ namespace RB::Entity
 
         void UpdateScene();
 
-        List<GameObject*>& GetGameObjects();
+        const List<GameObject*>& GetGameObjects() const;
 
         template<class T>
         const List<const ObjectComponent*> GetComponentsWithTypeOf() const;

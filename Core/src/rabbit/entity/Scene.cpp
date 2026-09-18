@@ -46,7 +46,7 @@ namespace RB::Entity
         }
     }
 
-    List<GameObject*>& Scene::GetGameObjects()
+    const List<GameObject*>& Scene::GetGameObjects() const
     {
         return m_GameObjects;
     }
