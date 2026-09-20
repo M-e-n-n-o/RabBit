@@ -94,7 +94,15 @@ namespace RB
         AssetManager::Init(asset_path);
 
 
+
+        // Main frame allocator
         m_FrameAllocator = new FrameAllocator("Main Allocator", 1, k2MB);
+
+
+
+        // Input processing
+        PushOverlay<InputLayer>();
+
 
 
         // Platform & networking services
@@ -415,7 +423,7 @@ namespace RB
         BindEvent<KeyPressedEvent>([&](KeyPressedEvent& e)
         {
             if (e.GetKeyCode() == KeyCode::F11 ||
-                (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::Enter))
+                (Input::IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::Enter))
             {
                 passtrough_layers = false;
 
@@ -423,7 +431,7 @@ namespace RB
                 g_EventManager->InsertEvent(e);
             }
 
-            if (IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
+            if (Input::IsKeyDown(KeyCode::LeftAlt) && e.GetKeyCode() == KeyCode::F4)
             {
                 RB_LOG(LOGTAG_EVENT, "Instant close requested, requesting to close all windows..");
                 passtrough_layers = false;

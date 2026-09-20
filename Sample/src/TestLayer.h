@@ -160,19 +160,19 @@ public:
 
     void OnUpdate(float delta) override
     {
-        if (IsKeyDown(KeyCode::Q))
+        if (Input::IsKeyDown(KeyCode::Q))
         {
             m_Transform->rotation.y += 25.0f * delta;
         }
-        if (IsKeyDown(KeyCode::E))
+        if (Input::IsKeyDown(KeyCode::E))
         {
             m_Transform->rotation.x += 25.0f * delta;
         }
         
-        static Float2 last_pos = GetMousePos();
-        Float2 new_pos = GetMousePos();
+        static Float2 last_pos = Input::GetMousePos();
+        Float2 new_pos = Input::GetMousePos();
 
-        if (IsMouseKeyDown(MouseCode::ButtonRight))
+        if (Input::IsMouseKeyDown(MouseCode::ButtonRight))
         {
             Float2 vel = (new_pos - last_pos) * 0.2f;
             m_Camera->rotation.x += vel.y;
@@ -201,21 +201,21 @@ public:
 
 
         // Move forward/backward
-        if (IsKeyDown(KeyCode::W))
+        if (Input::IsKeyDown(KeyCode::W))
             m_Camera->position = m_Camera->position + (forward * (50 * delta));
-        if (IsKeyDown(KeyCode::S))
+        if (Input::IsKeyDown(KeyCode::S))
             m_Camera->position = m_Camera->position - (forward * (50 * delta));
         
         // Strafe left/right
-        if (IsKeyDown(KeyCode::A))
+        if (Input::IsKeyDown(KeyCode::A))
             m_Camera->position = m_Camera->position - (right * (50 * delta));
-        if (IsKeyDown(KeyCode::D))
+        if (Input::IsKeyDown(KeyCode::D))
             m_Camera->position = m_Camera->position + (right * (50 * delta));
 
         // Move up/down
-        if (IsKeyDown(KeyCode::Space))
+        if (Input::IsKeyDown(KeyCode::Space))
             m_Camera->position = m_Camera->position + (up * (50 * delta));
-        if (IsKeyDown(KeyCode::LeftShift))
+        if (Input::IsKeyDown(KeyCode::LeftShift))
             m_Camera->position = m_Camera->position - (up * (50 * delta));
 
 
@@ -223,7 +223,7 @@ public:
         //RB_LOG("Rot: %f, %f, %f", m_Camera->rotation.x, m_Camera->rotation.y, m_Camera->rotation.z);
     }
 
-    bool OnEvent(const Event& event) override
+    bool OnEvent(Event& event) override
     {
         if (event.GetEventType() == EventType::KeyPressed)
         {

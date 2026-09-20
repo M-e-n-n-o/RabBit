@@ -122,7 +122,7 @@ namespace Editor
         }
     }
 
-    bool EditorLayer::OnEvent(const Event& event)
+    bool EditorLayer::OnEvent(Event& event)
     {
         if (event.GetEventType() == EventType::KeyPressed)
         {

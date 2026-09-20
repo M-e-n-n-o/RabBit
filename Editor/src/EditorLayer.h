@@ -24,7 +24,7 @@ namespace Editor
 
         void OnUpdate(float delta) override;
 
-        bool OnEvent(const RB::Events::Event& event) override;
+        bool OnEvent(RB::Events::Event& event) override;
 
         void OnDetach() override;
 

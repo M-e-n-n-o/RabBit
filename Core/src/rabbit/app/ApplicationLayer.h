@@ -24,8 +24,8 @@ namespace RB
 		// Gets called every game loop before the rendering
 		virtual void OnUpdate(float delta_time) {}
 		// Gets called every time an event occurs in the application
-		// Returns wheter the event was processed by the layer
-		virtual bool OnEvent(const Events::Event& event) { return false; }
+		// Returns wheter the event was processed by the layer (and you don't want it to pass to the next layers)
+		virtual bool OnEvent(Events::Event& event) { return false; }
 
 		void SetEnabled(bool enabled) { m_Enabled = enabled; }
 		bool IsEnabled() const { return m_Enabled; }

@@ -9,7 +9,6 @@
 #include "events/WindowEvent.h"
 #include "events/MouseEvent.h"
 #include "events/KeyEvent.h"
-#include "events/input/Input.h"
 
 #if RB_GRAPHICS_API_D3D12
 #include "platform/graphics/d3d12/SwapChainD3D12.h"
@@ -371,17 +370,112 @@ namespace RB::Graphics::Windows
             if (g_OnNativeWindowEventCallback(hwnd, message, wParam, lParam))
                 return 1;
 
+        auto MapKey = [](WPARAM wParam, LPARAM lParam) -> WPARAM
+            {
+                WPARAM vk_code = wParam;
+
+                if (vk_code == VK_SHIFT)
+                {
+                    // For Shift, use the scan code to find the exact side
+                    UINT scan_code = (lParam & 0x00FF0000) >> 16;
+                    vk_code = MapVirtualKey(scan_code, MAPVK_VSC_TO_VK_EX);
+                }
+                else if (vk_code == VK_CONTROL)
+                {
+                    // For Control, check the "Extended Key" bit (bit 24 of lParam)
+                    bool is_right = (lParam & (1 << 24)) != 0;
+                    vk_code = is_right ? VK_RCONTROL : VK_LCONTROL;
+                }
+                else if (vk_code == VK_MENU)
+                {
+                    // For Alt, check the "Extended Key" bit (bit 24 of lParam)
+                    bool is_right = (lParam & (1 << 24)) != 0;
+                    vk_code = is_right ? VK_RMENU : VK_LMENU;
+                }
+
+                return vk_code;
+            };
+
         switch (message)
         {
+
+        // Keys
         case WM_SYSKEYDOWN:
         case WM_KEYDOWN:
         {
-            KeyPressedEvent e(static_cast<KeyCode>(wParam), false);
+            KeyPressedEvent e(static_cast<KeyCode>(MapKey(wParam, lParam)), false);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_SYSKEYUP:
+        case WM_KEYUP:
+        {
+            KeyReleasedEvent e(static_cast<KeyCode>(MapKey(wParam, lParam)));
             g_EventManager->InsertEvent(e);
         }
         break;
         case WM_SYSCHAR:
             break;
+
+        // Mouse
+        case WM_MOUSEMOVE:
+        {
+            int x = static_cast<int>(short(LOWORD(lParam)));
+            int y = static_cast<int>(short(HIWORD(lParam)));
+
+            MouseMovedEvent e(x, y);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_LBUTTONDOWN:
+        {
+            MouseButtonPressedEvent e(MouseCode::ButtonLeft);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_LBUTTONUP:
+        {
+            MouseButtonReleasedEvent e(MouseCode::ButtonLeft);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_RBUTTONDOWN:
+        {
+            MouseButtonPressedEvent e(MouseCode::ButtonRight);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_RBUTTONUP:
+        {
+            MouseButtonReleasedEvent e(MouseCode::ButtonRight);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_MBUTTONDOWN:
+        {
+            MouseButtonPressedEvent e(MouseCode::ButtonMiddle);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_MBUTTONUP:
+        {
+            MouseButtonReleasedEvent e(MouseCode::ButtonMiddle);
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_MOUSEWHEEL:
+        {
+            // GET_WHEEL_DELTA_WPARAM extracts the scroll distance.
+            // A standard scroll "tick" is WHEEL_DELTA (120). Positive is forward, negative is backward.
+            int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+            float offset = static_cast<float>(delta) / static_cast<float>(WHEEL_DELTA);
+
+            MouseScrolledEvent e(0.0f, offset); // No support for horizontal scrolls yet
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+
+        // Windowing
         case WM_SIZE:
         {
             RECT client_rect = {};
@@ -419,7 +513,8 @@ namespace RB::Graphics::Windows
                 DefWindowProcW(hwnd, message, wParam, lParam);
             }
 
-            Math::Float2 mouse_pos = Events::GetMousePos();
+            int mouse_x = static_cast<int>(short(LOWORD(lParam)));
+            int mouse_y = static_cast<int>(short(HIWORD(lParam)));
         
             RECT rect;
             ::GetWindowRect(hwnd, &rect);
@@ -428,31 +523,31 @@ namespace RB::Graphics::Windows
             const int border = 8;
             const int title_bar_height = 25;
             // Corner testing
-            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border &&
-                mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+            if (mouse_x >= rect.left && mouse_x < rect.left + border &&
+                mouse_y >= rect.top && mouse_y < rect.top + border)
                 return HTTOPLEFT;
-            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right &&
-                mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+            if (mouse_x >= rect.right - border && mouse_x < rect.right &&
+                mouse_y >= rect.top && mouse_y < rect.top + border)
                 return HTTOPRIGHT;
-            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border &&
-                mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+            if (mouse_x >= rect.left && mouse_x < rect.left + border &&
+                mouse_y >= rect.bottom - border && mouse_y < rect.bottom)
                 return HTBOTTOMLEFT;
-            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right &&
-                mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+            if (mouse_x >= rect.right - border && mouse_x < rect.right &&
+                mouse_y >= rect.bottom - border && mouse_y < rect.bottom)
                 return HTBOTTOMRIGHT;
 
             // Side testing
-            if (mouse_pos.x >= rect.left && mouse_pos.x < rect.left + border)
+            if (mouse_x >= rect.left && mouse_x < rect.left + border)
                 return HTLEFT;
-            if (mouse_pos.x >= rect.right - border && mouse_pos.x < rect.right)
+            if (mouse_x >= rect.right - border && mouse_x < rect.right)
                 return HTRIGHT;
-            if (mouse_pos.y >= rect.top && mouse_pos.y < rect.top + border)
+            if (mouse_y >= rect.top && mouse_y < rect.top + border)
                 return HTTOP;
-            if (mouse_pos.y >= rect.bottom - border && mouse_pos.y < rect.bottom)
+            if (mouse_y >= rect.bottom - border && mouse_y < rect.bottom)
                 return HTBOTTOM;
         
             // Draggable area
-            if (mouse_pos.y < rect.top + title_bar_height && mouse_pos.x < rect.right - 80)
+            if (mouse_y < rect.top + title_bar_height && mouse_x < rect.right - 80)
                 return HTCAPTION;
 
             return HTCLIENT;
