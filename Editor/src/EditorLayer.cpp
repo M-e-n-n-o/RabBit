@@ -57,6 +57,7 @@ namespace Editor
     }
 
     Transform* Triangle;
+    float angle = 0.0f;
 
     void EditorLayer::OnAttach()
     {
@@ -108,7 +109,8 @@ namespace Editor
         // Make sure to update the output texture for if it got updated
         m_Camera->SetRenderTexture(m_Viewport->GetSceneTexture());
 
-        Triangle->rotation.y += delta * 150;
+        angle += delta * 150.0f;
+        Triangle->rotation = Math::Quaternion::FromAxisAngle(Math::WorldUp, Math::DegreesToRadians(angle));
 
         if (m_Recording)
         {

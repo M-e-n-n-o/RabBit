@@ -126,9 +126,9 @@ namespace RB::Math
 
     void Float4x4::Scale(float x, float y, float z)
     {
-        a00 *= x;
-        a11 *= y;
-        a22 *= z;
+        row0 = row0 * x;
+        row1 = row1 * y;
+        row2 = row2 * z;
     }
 
     // Specialized, faster invert for projection matrices

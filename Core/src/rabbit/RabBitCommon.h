@@ -43,6 +43,7 @@
 #include "math/Misc.h"
 #include "math/Vector.h"
 #include "math/Matrix.h"
+#include "math/Quaternion.h"
 
 #if RB_PLATFORM_WINDOWS
 #include "platform/utils/Windows.h"

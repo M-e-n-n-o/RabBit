@@ -323,7 +323,7 @@ Float4::Float4(float x, float y, float z, float w)
 }
 
 Float4::Float4(const Float3& xyz, float w)
-    : x(xyz.x), y(xyz.y), z(xyz.x), w(w)
+    : x(xyz.x), y(xyz.y), z(xyz.z), w(w)
 {
 }
 

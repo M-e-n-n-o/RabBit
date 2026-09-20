@@ -18,6 +18,10 @@ private:
     Transform* m_Transform;
     Transform* m_Camera;
 
+    // Degrees
+    float m_CameraYaw = 0.0f;
+    float m_CameraPitch = 0.0f;
+
     Font* m_Font;
 
 public:
@@ -84,8 +88,10 @@ public:
             meshes.push_back(object->AddComponent<MeshRenderer>(m_Mesh, mat));
             Transform* t = object->AddComponent<Transform>();
             t->position = mesh.models[i].position + Float3(0, 0, 300);
-            t->rotation = mesh.models[i].rotation + Float3(0, 180, 0);
             t->scale = Math::Float3(1);
+
+            Float3 r = mesh.models[i].rotation;
+            t->rotation = Quaternion::FromEuler(DegreesToRadians(r.x), DegreesToRadians(r.y + 180.0f), DegreesToRadians(r.z));
             
             m_Transform = t;
         }
@@ -161,51 +167,37 @@ public:
     void OnUpdate(float delta) override
     {
         if (Input::IsKeyDown(KeyCode::Q))
-        {
-            m_Transform->rotation.y += 25.0f * delta;
-        }
+            m_Transform->rotation = m_Transform->rotation * Quaternion::FromAxisAngle(WorldUp, DegreesToRadians(25.0f * delta));
         if (Input::IsKeyDown(KeyCode::E))
-        {
-            m_Transform->rotation.x += 25.0f * delta;
-        }
-        
+            m_Transform->rotation = m_Transform->rotation * Quaternion::FromAxisAngle(WorldRight, DegreesToRadians(25.0f * delta));
+        m_Transform->rotation.Normalize();
+
         static Float2 last_pos = Input::GetMousePos();
         Float2 new_pos = Input::GetMousePos();
 
         if (Input::IsMouseKeyDown(MouseCode::ButtonRight))
         {
             Float2 vel = (new_pos - last_pos) * 0.2f;
-            m_Camera->rotation.x += vel.y;
-            m_Camera->rotation.y += vel.x;
+            m_CameraPitch += vel.y;
+            m_CameraYaw   += vel.x;
         }
 
         last_pos = new_pos;
 
-        m_Camera->rotation.x = Clamp(m_Camera->rotation.x, -89.0f, 89.0f);
+        m_CameraPitch = Clamp(m_CameraPitch, -89.0f, 89.0f);
 
-        float pitch = DegreesToRadians(-m_Camera->rotation.x);
-        float yaw   = DegreesToRadians(m_Camera->rotation.y);
+        m_Camera->rotation = Quaternion::FromEuler(DegreesToRadians(m_CameraPitch), DegreesToRadians(m_CameraYaw), 0.0f);
 
-        Float3 worldUp = Math::WorldUp;
-
-        Float3 forward(
-            Cos(pitch) * Sin(yaw),
-            Sin(pitch),
-            Cos(pitch) * Cos(yaw)
-        );
-
-        Float3 right = Float3::Cross(worldUp, forward);
-        right.Normalize();
-
-        Float3 up = Float3::Cross(forward, right);
-
+        Float3 forward = m_Camera->rotation.Rotate(WorldForward);
+        Float3 right   = m_Camera->rotation.Rotate(WorldRight);
+        Float3 up      = m_Camera->rotation.Rotate(WorldUp);
 
         // Move forward/backward
         if (Input::IsKeyDown(KeyCode::W))
             m_Camera->position = m_Camera->position + (forward * (50 * delta));
         if (Input::IsKeyDown(KeyCode::S))
             m_Camera->position = m_Camera->position - (forward * (50 * delta));
-        
+
         // Strafe left/right
         if (Input::IsKeyDown(KeyCode::A))
             m_Camera->position = m_Camera->position - (right * (50 * delta));
@@ -217,10 +209,6 @@ public:
             m_Camera->position = m_Camera->position + (up * (50 * delta));
         if (Input::IsKeyDown(KeyCode::LeftShift))
             m_Camera->position = m_Camera->position - (up * (50 * delta));
-
-
-        //RB_LOG("Pos: %f, %f, %f", m_Camera->position.x, m_Camera->position.y, m_Camera->position.z);
-        //RB_LOG("Rot: %f, %f, %f", m_Camera->rotation.x, m_Camera->rotation.y, m_Camera->rotation.z);
     }
 
     bool OnEvent(Event& event) override

@@ -16,20 +16,22 @@ namespace RB::Graphics
     {
     }
 
+    void Frustum::SetTransform(const Math::Float3& position, const Math::Quaternion& rotation)
+    {
+        Math::Float4x4 m = rotation.ToMatrix();
+        m.SetPosition(position);
+        m_ViewToWorldMat = m;
+
+        Math::Quaternion inv_rot = rotation.GetConjugate();
+        m_WorldToViewMat = inv_rot.ToMatrix();
+        m_WorldToViewMat.SetPosition(inv_rot.Rotate(position) * -1.0f);
+    }
+
     void Frustum::SetTransform(const Math::Float3& position, const Math::Float3& rotation)
     {
-        Math::Float4x4 m;
-
-        m.RotateAroundX(Math::DegreesToRadians(rotation.x));
-        m.RotateAroundY(Math::DegreesToRadians(rotation.y));
-        m.RotateAroundZ(Math::DegreesToRadians(rotation.z));
-        
-        m.SetPosition(position);
-        m.Scale(1.0f);
-        
-        m_ViewToWorldMat = m;
-        m.Invert();
-        m_WorldToViewMat = m;
+        SetTransform(position, Math::Quaternion::FromEuler(Math::DegreesToRadians(rotation.x),
+                                                           Math::DegreesToRadians(rotation.y),
+                                                           Math::DegreesToRadians(rotation.z)));
     }
 
     void Frustum::SetTransform(const Math::Float4x4& world_to_view)
@@ -148,11 +150,6 @@ namespace RB::Graphics
 
     bool Frustum::IsInFrustum(const Math::AABB& aabb, const Math::Float4x4& view_proj)
     {
-        // Add "small" padding to fix early culling of small objects
-        float epsilon = 0.1f;
-        Math::Float3 padded_min = aabb.min - epsilon;
-        Math::Float3 padded_max = aabb.max + epsilon;
-        
         const float* m = view_proj.a;
 
         bool inverted_depth = (m[14] > 0.5f && m[10] < 0.0f);
@@ -229,10 +226,10 @@ namespace RB::Graphics
             d_plane /= length;
 
             // Compute positive vertex of AABB for this plane
-            Math::Float3 p = padded_min;
-            if (plane.x >= 0) p.x = padded_max.x;
-            if (plane.y >= 0) p.y = padded_max.y;
-            if (plane.z >= 0) p.z = padded_max.z;
+            Math::Float3 p = aabb.min;
+            if (plane.x >= 0) p.x = aabb.max.x;
+            if (plane.y >= 0) p.y = aabb.max.y;
+            if (plane.z >= 0) p.z = aabb.max.z;
 
             // If positive vertex is outside the plane, AABB is outside frustum
             if ((plane.x * p.x + plane.y * p.y + plane.z * p.z + d_plane) < 0)

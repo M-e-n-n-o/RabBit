@@ -6,15 +6,9 @@ namespace RB::Entity
 {
     Math::Float4x4 Transform::GetLocalToWorldMatrix() const
     {
-        const Math::Float3& world_rot = GetWorldRotation();
-
-        Math::Float4x4 m;
+        Math::Float4x4 m = GetWorldRotation().ToMatrix();
         m.Scale(GetWorldScale());
-        m.RotateAroundX(Math::DegreesToRadians(world_rot.x));
-        m.RotateAroundY(Math::DegreesToRadians(world_rot.y));
-        m.RotateAroundZ(Math::DegreesToRadians(world_rot.z));
         m.SetPosition(GetWorldPosition());
-
         return m;
     }
 
@@ -33,18 +27,19 @@ namespace RB::Entity
         return world_pos;
     }
 
-    Math::Float3 Transform::GetWorldRotation() const
+    Math::Quaternion Transform::GetWorldRotation() const
     {
-        Math::Float3 world_rot = rotation;
+        Math::Quaternion world_rot = rotation;
 
         GameObject* parent_obj = GetGameObject()->GetParent();
         while (parent_obj)
         {
             const Transform* parent_transform = parent_obj->GetComponent<Transform>();
-            world_rot = world_rot + parent_transform->rotation;
+            world_rot = world_rot * parent_transform->rotation;
             parent_obj = parent_obj->GetParent();
         }
 
+        world_rot.Normalize();
         return world_rot;
     }
 

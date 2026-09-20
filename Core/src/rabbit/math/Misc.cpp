@@ -11,9 +11,9 @@ namespace RB::Math
 
         // Compute world extents using absolute rotation
         Float3 world_extents;
-        world_extents.x = Abs(model.a00) * extents.x + Abs(model.a01) * extents.y + Abs(model.a02) * extents.z;
-        world_extents.y = Abs(model.a10) * extents.x + Abs(model.a11) * extents.y + Abs(model.a12) * extents.z;
-        world_extents.z = Abs(model.a20) * extents.x + Abs(model.a21) * extents.y + Abs(model.a22) * extents.z;
+        world_extents.x = Abs(model.a00) * extents.x + Abs(model.a10) * extents.y + Abs(model.a20) * extents.z;
+        world_extents.y = Abs(model.a01) * extents.x + Abs(model.a11) * extents.y + Abs(model.a21) * extents.z;
+        world_extents.z = Abs(model.a02) * extents.x + Abs(model.a12) * extents.y + Abs(model.a22) * extents.z;
 
         return { world_center - world_extents, world_center + world_extents };
     }

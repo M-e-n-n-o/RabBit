@@ -2,6 +2,7 @@
 
 #include "math/Matrix.h"
 #include "math/Vector.h"
+#include "math/Quaternion.h"
 
 namespace RB::Graphics
 {
@@ -22,6 +23,7 @@ namespace RB::Graphics
         const Math::Float4x4& GetViewToClipMatrix() const { return m_ViewToClipMat; }
         const Math::Float4x4& GetClipToViewMatrix() const { return m_ClipToViewMat; }
 
+        void SetTransform(const Math::Float3& position, const Math::Quaternion& rotation);
         void SetTransform(const Math::Float3& position, const Math::Float3& rotation);
         void SetTransform(const Math::Float4x4& world_to_view);
         

@@ -75,6 +75,7 @@
 #include "rabbit/math/Misc.h"
 #include "rabbit/math/Matrix.h"
 #include "rabbit/math/Vector.h"
+#include "rabbit/math/Quaternion.h"
 
 #include "rabbit/entity/Scene.h"
 #include "rabbit/entity/GameObject.h"
