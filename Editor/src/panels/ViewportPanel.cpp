@@ -16,8 +16,9 @@ using namespace RB::Graphics;
 
 namespace Editor
 {
-    ViewportPanel::ViewportPanel()
-        : m_Width(1280)
+    ViewportPanel::ViewportPanel(int window_flags)
+        : WindowPanel(window_flags)
+        , m_Width(1280)
         , m_Height(720)
         , m_DeltaIndex(0)
     {
@@ -42,7 +43,7 @@ namespace Editor
 
     void ViewportPanel::OnUpdate()
     {
-        ImGui::Begin("Viewport");
+        ImGui::Begin("Viewport", nullptr, (ImGuiWindowFlags)m_WindowFlags);
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImVec2 size = ImGui::GetContentRegionAvail();
 

@@ -7,7 +7,8 @@ namespace Editor
 {
     const uint32_t ConsolePanel::c_MaxCharacters = 25000;
 
-    ConsolePanel::ConsolePanel()
+    ConsolePanel::ConsolePanel(int window_flags)
+        : WindowPanel(window_flags)
     {
         m_Text.reserve(c_MaxCharacters);
     }
@@ -22,7 +23,7 @@ namespace Editor
 
     void ConsolePanel::OnUpdate()
     {
-        ImGui::Begin("Console");
+        ImGui::Begin("Console", nullptr, (ImGuiWindowFlags)m_WindowFlags);
 
         if (ImGui::Button("Clear"))
         {

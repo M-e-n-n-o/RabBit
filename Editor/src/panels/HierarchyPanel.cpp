@@ -5,8 +5,9 @@ using namespace RB::Entity;
 
 namespace Editor
 {
-    HierarchyPanel::HierarchyPanel()
-        : m_SceneRoot(nullptr)
+    HierarchyPanel::HierarchyPanel(int window_flags)
+        : WindowPanel(window_flags)
+        , m_SceneRoot(nullptr)
         , m_Root(nullptr)
         , m_Selected(nullptr)
     {
@@ -37,7 +38,7 @@ namespace Editor
         if (m_SceneRoot == nullptr && m_Root == nullptr)
             return;
 
-        ImGui::Begin("Hierarchy View");
+        ImGui::Begin("Hierarchy View", nullptr, (ImGuiWindowFlags)m_WindowFlags);
 
         if (m_SceneRoot)
         {

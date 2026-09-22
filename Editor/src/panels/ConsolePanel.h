@@ -8,7 +8,7 @@ namespace Editor
     class ConsolePanel : public WindowPanel
     {
     public:
-        ConsolePanel();
+        ConsolePanel(int window_flags);
 
         void OnCreate() override;
         void OnDestroy() override;

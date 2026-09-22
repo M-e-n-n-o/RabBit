@@ -54,7 +54,7 @@ namespace RB
         Application(AppInfo& info);
         virtual ~Application();
 
-        bool Start(const char* launch_args);
+        bool Start(int argc, char** argv);
         void Run();
         void Shutdown();
 
@@ -147,5 +147,5 @@ namespace RB
     }
 
     // To be defined in client
-    Application* CreateApplication(const char* launch_args);
+    Application* CreateApplication(int argc, char** argv);
 }

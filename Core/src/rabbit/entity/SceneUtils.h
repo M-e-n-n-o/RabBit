@@ -2,6 +2,8 @@
 
 #include "utils/Container.h"
 
+namespace RB { class LoadedModel; }
+
 namespace RB::Entity
 {
     class Scene;
@@ -23,5 +25,6 @@ namespace RB::Entity
         };
 
         SpawnedModel SpawnModel(Scene* scene, const char* model_path, const char* texture_path_prefix = "");
+        SpawnedModel SpawnModel(Scene* scene, const LoadedModel* loaded_model, const List<Material*>& materials);
     }
 }

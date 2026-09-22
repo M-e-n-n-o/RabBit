@@ -1,5 +1,8 @@
 #include "EditorLayer.h"
 
+#include "imgui.h"
+#include "backends/imgui_impl_dx12.h"
+
 #include <RabBit.h>
 
 using namespace RB;
@@ -15,6 +18,10 @@ namespace Editor
     public:
         int currentID = 0;
 
+        TestWindowPanel()
+            : WindowPanel(ImGuiWindowFlags_None)
+        {}
+
         void OnCreate()
         {
             static int id = 0;
@@ -29,7 +36,7 @@ namespace Editor
 
         void OnUpdate()
         {
-            ImGui::Begin(std::to_string(currentID).c_str());
+            ImGui::Begin(std::to_string(currentID).c_str(), nullptr, (ImGuiWindowFlags)m_WindowFlags);
             ImGui::Text("Hello World");
             ImGui::End();
         }
@@ -46,9 +53,9 @@ namespace Editor
         m_ImGuiRenderContext = CreateImGuiContext();
         InitializeImGuiContextRenderBackend(m_ImGuiRenderContext, m_Window->GetBackBufferFormat());
 
-        m_Viewport = m_Window->AddPanel<ViewportPanel>();
-        m_Console = m_Window->AddPanel<ConsolePanel>();
-        m_Hierarchy = m_Window->AddPanel<HierarchyPanel>();
+        m_Viewport = m_Window->AddPanel<ViewportPanel>(ImGuiWindowFlags_None);
+        m_Console = m_Window->AddPanel<ConsolePanel>(ImGuiWindowFlags_None);
+        m_Hierarchy = m_Window->AddPanel<HierarchyPanel>(ImGuiWindowFlags_None);
         m_Window->AddPanel<TestWindowPanel>();
 
         m_Recording = false;

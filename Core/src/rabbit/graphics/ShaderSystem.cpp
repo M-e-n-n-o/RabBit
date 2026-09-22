@@ -1,5 +1,6 @@
 #include "RabBitCommon.h"
 #include "ShaderSystem.h"
+#include "utils/File.h"
 #include <fstream>
 
 using namespace RB::ShaderCompiler;
@@ -8,8 +9,14 @@ namespace RB::Graphics
 {
     ShaderSystem::ShaderSystem()
     {
+        std::string path = GetExecutablePath().parent_path().string();
+        path += "/";
+        path += ShaderCompiler::OBJ_FILE_LOCATION;
+
+        RB_LOG(LOGTAG_GRAPHICS, "Loading shader binary file: %s", path.c_str());
+
         // Load the shader data from the binary file
-        std::ifstream stream(ShaderCompiler::OBJ_FILE_LOCATION, std::ios::in | std::ios::binary);
+        std::ifstream stream(path, std::ios::in | std::ios::binary);
 
         if (!stream.is_open())
         {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include "Memory.h"
 
 namespace RB
@@ -49,4 +51,6 @@ namespace RB
 
         ~FileData();
     };
+
+    std::filesystem::path GetExecutablePath();
 }

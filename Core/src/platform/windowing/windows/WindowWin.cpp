@@ -358,6 +358,7 @@ namespace RB::Graphics::Windows
     }
 
     bool(*g_OnNativeWindowEventCallback)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) = nullptr;
+    bool g_TrackingMouseMove = false;
 
     void SetOnNativeWindowEventCallback(bool(*onEvent)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam))
     {
@@ -425,6 +426,32 @@ namespace RB::Graphics::Windows
 
             MouseMovedEvent e(x, y);
             g_EventManager->InsertEvent(e);
+
+            if (!g_TrackingMouseMove) 
+            {
+                // Start tracking mouse movement
+                TRACKMOUSEEVENT tme;
+                tme.cbSize = sizeof(TRACKMOUSEEVENT);
+                tme.dwFlags = TME_HOVER | TME_LEAVE;
+                tme.hwndTrack = hwnd;
+                tme.dwHoverTime = 1; // Trigger hover almost immediately
+                TrackMouseEvent(&tme);
+                g_TrackingMouseMove = true;
+            }
+        }
+        break;
+        case WM_MOUSEHOVER:
+        {
+            MouseEnteredEvent e;
+            g_EventManager->InsertEvent(e);
+        }
+        break;
+        case WM_MOUSELEAVE:
+        {
+            MouseExitedEvent e;
+            g_EventManager->InsertEvent(e);
+
+            g_TrackingMouseMove = false;
         }
         break;
         case WM_LBUTTONDOWN:

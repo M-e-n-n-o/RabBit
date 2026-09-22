@@ -10,9 +10,6 @@
 #include "panels/HierarchyPanel.h"
 #include "engine/EngineEditorWindow.h"
 
-#include "imgui.h"
-#include "backends/imgui_impl_dx12.h"
-
 namespace Editor
 {
     class EditorLayer : public RB::ApplicationLayer

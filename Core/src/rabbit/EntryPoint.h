@@ -5,7 +5,7 @@
 #include "events/Event.h"
 #include "app/Application.h"
 
-extern RB::Application* RB::CreateApplication(const char* launch_args);
+extern RB::Application* RB::CreateApplication(int argc, char** argv);
 
 int main(int argc, char* argv[])
 {
@@ -19,16 +19,9 @@ int main(int argc, char* argv[])
 
     RB::Events::g_EventManager = new RB::Events::EventManager();
 
-    std::string args;
-    for (int argi = 0; argi < argc; ++argi)
-    {
-        args += argv[argi];
-        args += " ";
-    }
+    auto* app = RB::CreateApplication(argc, argv);
 
-    auto* app = RB::CreateApplication(args.c_str());
-
-    bool success = app->Start(args.c_str());
+    bool success = app->Start(argc, argv);
 
     if (success)
     {

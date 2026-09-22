@@ -13,6 +13,10 @@ namespace RB::Entity
     {
         LoadedModel model;
         bool success = AssetLoader::LoadConvertedModel(model_path, &model);
+        if (!success)
+        {
+            return SpawnedModel();
+        }
 
         List<Material*> materials;
         for (int i = 0; i < model.diffuseColorTextures.size(); i++)
@@ -20,14 +24,19 @@ namespace RB::Entity
             materials.push_back(new Material((texture_path_prefix + model.diffuseColorTextures[i]).c_str(), false));
         }
 
+        return SpawnModel(scene, &model, materials);
+    }
+
+    SpawnedModel SceneUtils::SpawnModel(Scene* scene, const LoadedModel* model, const List<Material*>& materials)
+    {
         SpawnedModel result;
-        result.nodeObjects.resize(model.nodes.size());
-        result.nodeTransforms.resize(model.nodes.size());
+        result.nodeObjects.resize(model->nodes.size());
+        result.nodeTransforms.resize(model->nodes.size());
 
         // Nodes (The loader guarantees that parents come before their children)
-        for (size_t i = 0; i < model.nodes.size(); i++)
+        for (size_t i = 0; i < model->nodes.size(); i++)
         {
-            const LoadedModel::Node& node = model.nodes[i];
+            const LoadedModel::Node& node = model->nodes[i];
 
             GameObject* object = scene->CreateGameObject();
             Transform* transform = object->AddComponent<Transform>();
@@ -51,8 +60,8 @@ namespace RB::Entity
         }
 
         // Submodels
-        std::vector<bool> has_renderer(model.nodes.size(), false);
-        for (const LoadedModel::Submodel& submodel : model.models)
+        std::vector<bool> has_renderer(model->nodes.size(), false);
+        for (const LoadedModel::Submodel& submodel : model->models)
         {
             if (submodel.positions.empty() || submodel.nodeIndex >= result.nodeObjects.size())
                 continue;

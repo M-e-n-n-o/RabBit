@@ -8,7 +8,7 @@ namespace Editor
     class ViewportPanel : public WindowPanel
     {
     public:
-        ViewportPanel();
+        ViewportPanel(int window_flags);
 
         void OnCreate() override;
         void OnDestroy() override;

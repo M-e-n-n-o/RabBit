@@ -47,5 +47,7 @@ namespace RB::Math
         static float Dot(const Quaternion& first, const Quaternion& second);
         static Quaternion Nlerp(const Quaternion& from, const Quaternion& to, float t);
         static Quaternion Slerp(const Quaternion& from, const Quaternion& to, float t);
+
+        static Quaternion LookRotation(const Float3& forward, const Float3& up);
     };
 }

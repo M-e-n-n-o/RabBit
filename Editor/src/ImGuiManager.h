@@ -27,7 +27,7 @@ namespace Editor
     // -----------------------------------
     // Global ImGui functions
 
-    void InitializeImGui();
+    void InitializeImGui(bool use_layout_file = true);
 
     ImGuiContext* CreateImGuiContext();
     void InitializeImGuiContextRenderBackend(ImGuiContext* ctx, RB::Graphics::RenderResourceFormat format);

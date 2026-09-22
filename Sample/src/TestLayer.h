@@ -143,17 +143,12 @@ public:
             m_Transform->rotation = m_Transform->rotation * Quaternion::FromAxisAngle(WorldRight, DegreesToRadians(25.0f * delta));
         m_Transform->rotation.Normalize();
 
-        static Float2 last_pos = Input::GetMousePos();
-        Float2 new_pos = Input::GetMousePos();
-
         if (Input::IsMouseKeyDown(MouseCode::ButtonRight))
         {
-            Float2 vel = (new_pos - last_pos) * 0.2f;
+            Float2 vel = Input::GetMousePosDelta() * 0.2f;
             m_CameraPitch += vel.y;
             m_CameraYaw   += vel.x;
         }
-
-        last_pos = new_pos;
 
         m_CameraPitch = Clamp(m_CameraPitch, -89.0f, 89.0f);
 

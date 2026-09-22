@@ -51,19 +51,27 @@ namespace RB
 
     }
 
-    bool Application::Start(const char* launch_args)
+    bool Application::Start(int argc, char** argv)
     {
         RB_LOG(LOGTAG_MAIN, "");
         RB_LOG(LOGTAG_MAIN, "============== STARTUP ==============");
         RB_LOG(LOGTAG_MAIN, "");
 
-        RB_LOG(LOGTAG_MAIN, "Launch arguments: %s", launch_args);
+        std::string launch_args;
+        for (int argi = 0; argi < argc; ++argi)
+        {
+            launch_args += argv[argi];
+            launch_args += " ";
+        }
+
+        RB_LOG(LOGTAG_MAIN, "Launch arguments: %s", launch_args.c_str());
 
 
 
         // Assets
         char asset_path[256];
-        if (const char* offset = std::strstr(launch_args, "-assetPath"); offset != NULL)
+        memset(asset_path, 0, _countof(asset_path));
+        if (const char* offset = std::strstr(launch_args.c_str(), "-assetPath"); offset != NULL)
         {
             std::string s = offset;
 
@@ -82,11 +90,6 @@ namespace RB
             }
 
             strcpy(asset_path, s.substr(0, end).c_str());
-        }
-        else
-        {
-            RB_ASSERT_ALWAYS_RELEASE(LOGTAG_MAIN, "Did not fill in the asset path! Use the \"-assetPath \"path\" launch argument to specify the path");
-            return false;
         }
 
         RB_LOG(LOGTAG_MAIN, "Asset path: \"%s\"", asset_path);
@@ -107,7 +110,7 @@ namespace RB
 
         // Platform & networking services
 #ifdef RB_STEAM_API
-        if (std::strstr(launch_args, "-steam"))
+        if (std::strstr(launch_args.c_str(), "-steam"))
             m_PlatformService = PlatformService::Create(PlatformAPI::Steamworks);
 #endif
         if (m_PlatformService && !m_PlatformService->IsInitialized())
@@ -133,7 +136,7 @@ namespace RB
         RenderAPI api = RenderAPI::None;
 #endif
 
-        m_Renderer = Renderer::Create(api, std::strstr(launch_args, "-renderDebug"), std::strstr(launch_args, "-pix"));
+        m_Renderer = Renderer::Create(api, std::strstr(launch_args.c_str(), "-renderDebug"), std::strstr(launch_args.c_str(), "-pix"));
         m_Renderer->Init();
         m_Renderer->SetRenderGraphs(m_StartAppInfo->renderGraphs);
         for (auto& [ type, graph ] : m_StartAppInfo->renderGraphs)

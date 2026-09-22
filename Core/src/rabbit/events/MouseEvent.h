@@ -33,19 +33,36 @@ namespace RB::Events
     class MouseScrolledEvent : public MouseEvent
     {
     public:
-        MouseScrolledEvent(const float x, const float y) : m_OffsetX(x), m_OffsetY(y) {}
+        MouseScrolledEvent(const float x, const float y) : m_DeltaX(x), m_DeltaY(y) {}
 
-        float GetOffsetX() const { return m_OffsetX; }
-        float GetOffsetY() const { return m_OffsetY; }
+        float GetDeltaX() const { return m_DeltaX; }
+        float GetDeltaY() const { return m_DeltaY; }
 
         DEFINE_CLASS_TYPE(MouseScrolledEvent, MouseScrolled, false)
         int GetCategoryFlags() const override { return kEventCat_Mouse; }
 
     private:
-        float m_OffsetX;
-        float m_OffsetY;
+        float m_DeltaX;
+        float m_DeltaY;
     };
 
+    class MouseEnteredEvent : public MouseEvent
+    {
+    public:
+        MouseEnteredEvent() = default;
+
+        DEFINE_CLASS_TYPE(MouseEnteredEvent, MouseEntered, false)
+        int GetCategoryFlags() const override { return kEventCat_Mouse; }
+    };
+
+    class MouseExitedEvent : public MouseEvent
+    {
+    public:
+        MouseExitedEvent() = default;
+
+        DEFINE_CLASS_TYPE(MouseExitedEvent, MouseExited, false)
+        int GetCategoryFlags() const override { return kEventCat_Mouse; }
+    };
 
     class MouseButtonEvent : public MouseEvent
     {

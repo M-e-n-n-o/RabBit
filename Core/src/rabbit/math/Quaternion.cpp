@@ -237,4 +237,43 @@ namespace RB::Math
             from.w * wa + target.w * wb
         );
     }
+
+    Quaternion Quaternion::LookRotation(const Float3& forward, const Float3& up)
+    {
+        Float3 f = forward;
+        f.Normalize();
+
+        Float3 axis = Float3::Cross(WorldForward, f);
+        float axis_len = axis.GetLength();
+        float dot = Math::Clamp(Float3::Dot(WorldForward, f), -1.0f, 1.0f);
+
+        Quaternion q1;
+        if (axis_len < 1e-6f)
+        {
+            // forward is parallel or anti-parallel to identity forward
+            q1 = (dot > 0.0f) ? Quaternion::Identity() : Quaternion::FromAxisAngle(WorldUp, kPI);
+        }
+        else
+        {
+            axis = axis / axis_len;
+            float angle = acosf(dot);
+            q1 = Quaternion::FromAxisAngle(axis, angle);
+        }
+
+        Float3 rotated_up = q1.Rotate(WorldUp);
+        Float3 desired_up = up - f * Float3::Dot(up, f); // project out component along f
+        desired_up.Normalize();
+
+        float roll_dot = Math::Clamp(Float3::Dot(rotated_up, desired_up), -1.0f, 1.0f);
+        float roll_angle = acosf(roll_dot);
+
+        Float3 roll_cross = Float3::Cross(rotated_up, desired_up);
+        if (Float3::Dot(roll_cross, f) < 0.0f)
+        {
+            roll_angle = -roll_angle;
+        }
+
+        Quaternion q2 = Quaternion::FromAxisAngle(f, roll_angle);
+        return q1 * q2;
+    }
 }

@@ -15,7 +15,7 @@ namespace RB::Events
         KeyPressed, KeyReleased, KeyTyped,
 
         // Mouse events
-        MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
+        MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled, MouseEntered, MouseExited,
 
         // Application events
         RenderOutputChanged,

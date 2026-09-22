@@ -88,4 +88,34 @@ namespace RB
     {
         delete[] data;
     }
+
+    std::filesystem::path GetExecutablePath()
+    {
+#ifdef _WIN32
+        // Windows implementation
+        wchar_t buffer[MAX_PATH];
+        DWORD size = GetModuleFileNameW(NULL, buffer, MAX_PATH);
+        if (size == 0 || size == MAX_PATH) {
+            return ""; // Handle error or path truncation
+        }
+        return std::filesystem::path(buffer);
+#elif __APPLE__
+        // macOS implementation
+        char buffer[PATH_MAX];
+        uint32_t size = sizeof(buffer);
+        if (_NSGetExecutablePath(buffer, &size) == 0) {
+            return std::filesystem::canonical(buffer);
+        }
+        return "";
+#else
+        // Linux implementation
+        char buffer[PATH_MAX + 1];
+        ssize_t length = readlink("/proc/self/exe", buffer, PATH_MAX);
+        if (length == -1) {
+            return ""; // Error reading link
+        }
+        buffer[length] = '\0';
+        return std::filesystem::path(buffer);
+#endif
+    }
 }

@@ -8,7 +8,7 @@ namespace Editor
     class HierarchyPanel : public WindowPanel
     {
     public:
-        HierarchyPanel();
+        HierarchyPanel(int window_flags);
 
         void SetRoot(RB::Entity::GameObject* root);
         void SetRoot(RB::Entity::Scene* root);

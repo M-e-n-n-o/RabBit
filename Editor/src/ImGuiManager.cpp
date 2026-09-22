@@ -20,9 +20,10 @@ thread_local ImGuiContext* g_CustomImGuiTLS;
 
 namespace Editor
 {
-    UnorderedMap<SIZE_T, D3D12::DescriptorIndex> g_DescriptorState;
+    UnorderedMap<SIZE_T, D3D12::DescriptorIndex>    g_DescriptorState;
+    bool                                            g_UseLayoutFile;
 
-    thread_local AllocatorMode g_AllocMode = AllocatorMode::Persistent;
+    thread_local AllocatorMode                      g_AllocMode = AllocatorMode::Persistent;
 
     void* CustomImGuiAllocate(size_t sz, void* user_data)
     {
@@ -55,9 +56,10 @@ namespace Editor
         RB_LOG_ERROR("ImGui AllocatorMode not implemented");
     }
 
-    void InitializeImGui()
+    void InitializeImGui(bool use_layout_file)
     {
         g_DescriptorState.clear();
+        g_UseLayoutFile = use_layout_file;
 
         ImGui::SetAllocatorFunctions(CustomImGuiAllocate, CustomImGuiRelease, nullptr);
     }
@@ -78,6 +80,9 @@ namespace Editor
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // I don't want ImGui to create/destroy windows itself!
+
+        if (!g_UseLayoutFile)
+            io.IniFilename = nullptr;
 
         // Setup style
         ImGui::StyleColorsDark();

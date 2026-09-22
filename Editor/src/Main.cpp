@@ -10,6 +10,7 @@ using namespace RB::Graphics;
 
 #include "Utils.h"
 #include "EditorLayer.h"
+#include "ViewerLayer.h"
 #include "engine/ImGuiRenderPass.h"
 
 class EditorApp : public RB::Application
@@ -18,14 +19,19 @@ private:
     std::string m_DeferredLog;
 
 public:
-    EditorApp(RB::AppInfo& info) 
+    EditorApp(RB::AppInfo& info, std::string model_name)
         : Application(info)
         , m_EditorLayer(nullptr)
+        , m_ViewerLayer(nullptr)
+        , m_ModelName(model_name)
     {}
 
     void OnStart() override
     {
-        m_EditorLayer = PushLayer<Editor::EditorLayer>();
+        if (m_ModelName.empty())
+            m_EditorLayer = PushLayer<Editor::EditorLayer>();
+        else
+            m_ViewerLayer = PushLayer<Editor::ViewerLayer>(m_ModelName.c_str());
     }
 
     void OnStop() override
@@ -40,13 +46,17 @@ public:
 
         if (m_EditorLayer)
             success = m_EditorLayer->CustomLogging(mode, m_DeferredLog.c_str());
+        else if (m_ViewerLayer)
+            success = true;
 
         if (success)
             m_DeferredLog.clear();
     }
 
 private:
-    Editor::EditorLayer* m_EditorLayer;
+    Editor::EditorLayer*    m_EditorLayer;
+    Editor::ViewerLayer*    m_ViewerLayer;
+    std::string             m_ModelName;
 };
 
 void CustomLogging(int mode, const char* format, va_list args)
@@ -56,7 +66,7 @@ void CustomLogging(int mode, const char* format, va_list args)
     app->CustomLogging(mode, format, args);
 }
 
-RB::Application* RB::CreateApplication(const char* launch_args)
+RB::Application* RB::CreateApplication(int argc, char** argv)
 {
     AppInfo app_info = {};
     app_info.appName = "RabBit Editor";
@@ -107,7 +117,15 @@ RB::Application* RB::CreateApplication(const char* launch_args)
             },
         };
 
-    RB::Application* app = new EditorApp(app_info);
+    std::string model_name = "";
+    if (argc >= 2)
+    {
+        const std::string model_ext = ".rbmd";
+        if (std::strstr(argv[1], ".rbmd"))
+            model_name = argv[1];
+    }
+
+    RB::Application* app = new EditorApp(app_info, model_name);
 
     RB::Utils::Debug::Logger::SetCustomOutput(CustomLogging);
 
