@@ -294,6 +294,7 @@ int main(int argc, char* argv[])
 
         CompiledTextureHeader header = {};
         header.magic            = ValidMagic;
+        header.version          = kCurrentVersion;
         header.format           = target_format;
         header.mipCount         = mip_count;
         header.width            = width;

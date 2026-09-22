@@ -87,7 +87,7 @@ namespace RB::Entity
         Math::Float3        m_Direction;
         Math::Float3        m_Color;
 
-        float               m_SliceSteepness = 0.4f;     // How fast do we transition to the next shadow slice?
+        float               m_SliceSteepness = 0.3f;     // How fast do we transition to the next shadow slice? (0-1)
         float               m_ShadowDistance = 500.0f;   // The max shadow coverage
         float               m_PullBackDistance = 900.0f; // How far away is the directionalLight from the scene?
     };

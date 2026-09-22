@@ -1,11 +1,11 @@
 #include "RabBitCommon.h"
 #include "Mesh.h"
-#include "app/AssetManager.h"
+#include "app/AssetLoader.h"
 #include "graphics/ResourceDefaults.h"
 
 namespace RB::Entity
 {
-    Mesh::Mesh(const char* name, LoadedMesh::Submodel& submodel)
+    Mesh::Mesh(const char* name, const LoadedModel::Submodel& submodel)
     {
         char position_name[100];
         sprintf(position_name, "%s primary", name);
@@ -14,7 +14,7 @@ namespace RB::Entity
         sprintf(secondary_name, "%s secondary", name);
 
         uint32_t position_size = sizeof(Math::Float3);
-        uint32_t vertex_size = sizeof(LoadedMesh::Vertex);
+        uint32_t vertex_size = sizeof(LoadedModel::Vertex);
 
         m_VertexPack.primaryBuffer   = Graphics::VertexBuffer::Create(position_name,  RB::Graphics::TopologyType::TriangleList, submodel.positions.data(), position_size, position_size * submodel.positions.size());
         m_VertexPack.secondaryBuffer = Graphics::VertexBuffer::Create(secondary_name, RB::Graphics::TopologyType::TriangleList, submodel.vertices.data(), vertex_size, vertex_size * submodel.vertices.size());
@@ -32,7 +32,7 @@ namespace RB::Entity
         m_Bounds.max = submodel.maxBounds;
     }
 
-    Mesh::Mesh(const char* name, float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, uint32_t* index_data, uint64_t index_data_count)
+    Mesh::Mesh(const char* name, const float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, const uint32_t* index_data, uint64_t index_data_count)
     {
         m_VertexPack.primaryBuffer = Graphics::VertexBuffer::Create(name, RB::Graphics::TopologyType::TriangleList, vertex_data, elements_per_vertex * sizeof(float), vertex_data_count * sizeof(float));
 
@@ -64,9 +64,9 @@ namespace RB::Entity
 
         bool success;
         if (converted_texture)
-            success = AssetManager::LoadConvertedTexture(file_name, &img);
+            success = AssetLoader::LoadConvertedTexture(file_name, &img);
         else
-            success = AssetManager::LoadTexture8Bit(file_name, &img, color_space == TextureColorSpace::sRGB);
+            success = AssetLoader::LoadTexture8Bit(file_name, &img, color_space == TextureColorSpace::sRGB);
 
         if (success)
         {

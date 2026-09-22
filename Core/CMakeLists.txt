@@ -29,11 +29,6 @@ file(GLOB_RECURSE RABBIT_SRC_FILES CONFIGURE_DEPENDS
     "src/*.cpp"
 )
 
-# Disable PCH for c files (libraries)
-# UFBX
-set_source_files_properties("external/ufbx/ufbx.c" PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-list(APPEND RABBIT_SRC_FILES "external/ufbx/ufbx.c")
-
 add_library(RabBit STATIC ${RABBIT_SRC_FILES})
 
 # Add standard preprocessor definitions
@@ -63,12 +58,10 @@ target_include_directories(RabBit PRIVATE
     "tools/utils"
     "tools/shaderCompiler/include"
     "tools/textureConverter/include"
+    "tools/modelConverter/include"
 
     # STB
     "external/stb"
-    
-    # UFBX
-    "external/ufbx"
 
     # FreeType
     "external/freetype/include"
@@ -160,6 +153,9 @@ endif()
 # Texture converter
 add_subdirectory(external/libsquish)
 add_subdirectory(tools/textureConverter)
+
+# Model converter
+add_subdirectory(tools/modelConverter)
 
 # Copy libraries next to the final executable (should be called app side)
 function(RabBitCopyLibs TARGET_NAME)

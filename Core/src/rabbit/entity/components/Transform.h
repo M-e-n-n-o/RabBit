@@ -18,11 +18,6 @@ namespace RB::Entity
         Math::Float3     scale;
         Math::Quaternion rotation;
 
-        // Real transforms, based on Parent transforms
-        Math::Float3     GetWorldPosition() const;
-        Math::Float3     GetWorldScale() const;
-        Math::Quaternion GetWorldRotation() const;
-
         // Transformation matrix
         Math::Float4x4 GetLocalToWorldMatrix() const;
     };

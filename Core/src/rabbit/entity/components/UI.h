@@ -1,7 +1,7 @@
 #pragma once
 #include "RabBitCommon.h"
 #include "entity/ObjectComponent.h"
-#include "app/AssetManager.h"
+#include "app/AssetLoader.h"
 #include "graphics/RenderResource.h"
 
 namespace RB::Entity

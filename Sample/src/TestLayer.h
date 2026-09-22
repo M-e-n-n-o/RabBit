@@ -10,6 +10,7 @@ class TestLayer : public ApplicationLayer
 {
 private:
     Mesh* m_Mesh;
+    SceneUtils::SpawnedModel m_Model;
     Material* m_Material;
 
     GameObject* m_Obj1;
@@ -59,42 +60,16 @@ public:
         //	0.5f, -0.5f, 0,		0, 0, 1,
         //};
 
-        LoadedMesh mesh;
-        //bool success = AssetManager::LoadMesh("sponza/NewSponza_Main_Yup_003.fbx", &mesh);
-        bool success = AssetManager::LoadMesh("Bunny.fbx", &mesh);
-
-        m_Mesh = new Mesh("Triangle", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        m_Material = new Material("Test.bc1", true, TextureColorSpace::sRGB);
+        m_Mesh = new Mesh("Cube", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
+        m_Material = new Material("ConvertedRock.bc3", true, TextureColorSpace::sRGB);
+        //m_Material = new Material("TheRock.png", false, TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
 
-        List<Material*> materials;
-        for (int i = 0; i < mesh.diffuseColorTextures.size(); i++)
-        {
-            materials.push_back(new Material(("sponza/" + mesh.diffuseColorTextures[i]).c_str()));
-        }
-
-        List<MeshRenderer*> meshes;
-        for (int i = 0; i < mesh.models.size(); i++)
-        {
-            if (mesh.models[i].positions.empty())
-                continue;
-
-            m_Mesh = new Mesh("Mesh", mesh.models[i]);
-
-            Material* mat = materials[mesh.models[i].diffuseTexIndex];
-
-            GameObject* object = scene->CreateGameObject();
-            meshes.push_back(object->AddComponent<MeshRenderer>(m_Mesh, mat));
-            Transform* t = object->AddComponent<Transform>();
-            t->position = mesh.models[i].position + Float3(0, 0, 300);
-            t->scale = Math::Float3(1);
-
-            Float3 r = mesh.models[i].rotation;
-            t->rotation = Quaternion::FromEuler(DegreesToRadians(r.x), DegreesToRadians(r.y + 180.0f), DegreesToRadians(r.z));
-            
-            m_Transform = t;
-        }
+        m_Model = SceneUtils::SpawnModel(scene, "ConvertedSponza.mdl", "sponza/textures/");
+        m_Model.rootTransform->position = Float3(0, 0, 100);
+        m_Model.rootTransform->scale    = Math::Float3(10.0f);
+        m_Transform = m_Model.rootTransform;
 
         void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
         //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
@@ -105,16 +80,12 @@ public:
         Camera* cam_comp = m_Obj1->AddComponent<Camera>(0.1f, 1000.0f, 70.0f, window_handle0);
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
-
-        Mesh* ground = new Mesh("Cube", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-
         GameObject* ground_obj = scene->CreateGameObject();
-        ground_obj->AddComponent<MeshRenderer>(ground, m_Material);
+        ground_obj->AddComponent<MeshRenderer>(m_Mesh, m_Material);
         auto* ground_t = ground_obj->AddComponent<Transform>();
         ground_obj->AddComponent<NetworkTransformSync>(false);
         //ground_t->position.y = -5;
         ground_t->scale = Float3(5, 5, 5);
-
 
         auto* sun = scene->CreateGameObject();
         sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
@@ -147,7 +118,7 @@ public:
             rect_obj->SetParent(list);
         
             LoadedFont font;
-            AssetManager::LoadFont("TypoGraphica.otf", &font, 48);
+            AssetLoader::LoadFont("TypoGraphica.otf", &font, 48);
             
             m_Font = new Font("Cool Font", font);
             
@@ -263,6 +234,9 @@ public:
 
     void OnDetach() override
     {
+        for (Mesh* mesh : m_Model.meshes)
+            delete mesh;
+
         delete m_Mesh;
         delete m_Material;
         delete m_Font;

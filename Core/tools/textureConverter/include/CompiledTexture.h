@@ -6,6 +6,9 @@
 
 namespace RB::TextureConverter
 {
+    inline constexpr uint32_t ValidMagic      = Tools::CreateMagic('R', 'B', 'T', 'X');
+    inline constexpr uint32_t kCurrentVersion = 1;
+
     enum Format : uint8_t
     {
         kFormat_Invalid,
@@ -28,12 +31,11 @@ namespace RB::TextureConverter
         kFormat_Count
     };
 
-    inline constexpr uint32_t ValidMagic = Tools::CreateMagic('R', 'B', 'T', 'X');
-
     struct CompiledTextureHeader
     {
         uint32_t                        magic;
-        char                            name[30];
+        uint32_t                        version;
+        char                            name[32];
         uint8_t                         format;
         uint8_t                         mipCount;
         uint32_t                        width;

@@ -1,6 +1,6 @@
 #include "RabBitCommon.h"
 #include "Application.h"
-#include "AssetManager.h"
+#include "AssetLoader.h"
 #include "PlatformService.h"
 #include "NetworkRouter.h"
 
@@ -91,7 +91,7 @@ namespace RB
 
         RB_LOG(LOGTAG_MAIN, "Asset path: \"%s\"", asset_path);
 
-        AssetManager::Init(asset_path);
+        AssetLoader::Init(asset_path);
 
 
 

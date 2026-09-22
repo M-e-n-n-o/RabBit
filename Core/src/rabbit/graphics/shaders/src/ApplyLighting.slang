@@ -6,19 +6,19 @@ import GBuffer;
 
 ConstantBuffer<ApplyLightingCB> g_ApplyLighting;
 
-float SampleShadowPCF3X3(Texture2DArray<float>.Handle shadow_slices, float2 uv, float depth, float slice, float bias)
+float SampleShadowPCF5X5(Texture2DArray<float>.Handle shadow_slices, float2 uv, float depth, float slice, float bias)
 {
     float width, height, elements;
     shadow_slices.GetDimensions(width, height, elements);
     float2 texel_size = 1.0f / float2(width, height);
 
-    // 3x3 kernel around UV
+    // 5x5 kernel around UV
     float sum = 0.0f;
     [unroll]
-    for (int y = -1; y <= 1; y++)
+    for (int y = -2; y <= 2; y++)
     {
         [unroll]
-        for (int x = -1; x <= 1; x++)
+        for (int x = -2; x <= 2; x++)
         {
             float2 offset = float2(x, y) * texel_size;
             float sample_depth = shadow_slices.Sample(g_ClampAnisoSampler, float3(uv + offset, slice));
@@ -28,7 +28,7 @@ float SampleShadowPCF3X3(Texture2DArray<float>.Handle shadow_slices, float2 uv, 
         }
     }
 
-    return sum / 9.0f; // Normalize to [0,1]
+    return sum / 25.0f; // Normalize to [0,1]
 }
 
 struct Handles
@@ -81,7 +81,7 @@ void ApplyLightingDeferred(uint2 screen_coord : SV_DispatchThreadID,
                                       1.0f - (shadow_ndc.y * 0.5f + 0.5f));
 
             // Sample shadow map
-            shadow = SampleShadowPCF3X3(handles.shadowSlices, shadow_uv, shadow_ndc.z, cascade_idx, 0.005f);
+            shadow = SampleShadowPCF5X5(handles.shadowSlices, shadow_uv, shadow_ndc.z, cascade_idx, 0.005f);
         }
     }
 
