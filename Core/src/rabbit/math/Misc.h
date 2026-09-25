@@ -74,6 +74,18 @@ namespace RB::Math
     }
 
     template<typename T>
+    inline T Sqrt(T value)
+    {
+        return sqrt(value);
+    }
+
+    template<>
+    inline float Sqrt<float>(float value)
+    {
+        return sqrtf(value);
+    }
+
+    template<typename T>
     inline T Sin(T value)
     {
         return sin(value);
@@ -86,6 +98,18 @@ namespace RB::Math
     }
 
     template<typename T>
+    inline T ArcSin(T value)
+    {
+        return asin(value);
+    }
+
+    template<>
+    inline float ArcSin<float>(float value)
+    {
+        return asinf(value);
+    }
+
+    template<typename T>
     inline T Cos(T value)
     {
         return cos(value);
@@ -95,6 +119,18 @@ namespace RB::Math
     inline float Cos<float>(float value)
     {
         return cosf(value);
+    }
+
+    template<typename T>
+    inline T ArcCos(T value)
+    {
+        return acos(value);
+    }
+
+    template<>
+    inline float ArcCos<float>(float value)
+    {
+        return acosf(value);
     }
 
     template<typename T>

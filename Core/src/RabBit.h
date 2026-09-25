@@ -85,6 +85,7 @@
 #include "rabbit/entity/components/Mesh.h"
 #include "rabbit/entity/components/UI.h"
 #include "rabbit/entity/components/Light.h"
+#include "rabbit/entity/components/Animation.h"
 #include "rabbit/entity/components/NetworkTransformSync.h"
 #include "rabbit/entity/components/ScreenCapturer.h"
 

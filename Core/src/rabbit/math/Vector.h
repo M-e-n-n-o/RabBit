@@ -279,6 +279,8 @@ namespace RB::Math
 
         // Returns the angle between the two vectors in radians
         static float Angle(const Float3& first, const Float3& second);
+
+        static Float3 Lerp(const Float3& from, const Float3& to, float t);
     };
 
     struct Float4

@@ -59,10 +59,10 @@ namespace RB::Entity
         Shared<Graphics::Texture2D> m_Texture;
     };
 
-    class MeshRenderer : public ObjectComponent
+    class MeshRenderable : public ObjectComponent
     {
     public:
-        MeshRenderer(Mesh* mesh, Material* material)
+        MeshRenderable(Mesh* mesh, Material* material)
         {
             m_Mesh = mesh;
             m_Material = material;

@@ -62,7 +62,7 @@ namespace RB
 
         struct SkinBone
         {
-            uint32_t       nodeIndex;          // Index into LoadedModel::nodes
+            uint32_t       nodeIndex;
             Math::Float4x4 geometryToBone;     // "Inverse bind" matrix
         };
 
@@ -74,7 +74,7 @@ namespace RB
             Math::Float3       minBounds;           // In the local space of the node
             Math::Float3       maxBounds;
             uint32_t           diffuseTexIndex;     // Index into diffuseColorTextures (0xFFFFFFFF = none)
-            uint32_t           nodeIndex;           // Node this mesh is attached to. The vertices are in that node's local space
+            uint32_t           nodeIndex;
             bool               skinned;             // When skinned the bone matrices contain the world transform, so the node's own transform must not be applied on top
             List<SkinVertex>   skinVertices;
             List<SkinBone>     skinBones;
@@ -93,19 +93,20 @@ namespace RB
         struct Float3Key { float time; Math::Float3 value; };
         struct QuatKey   { float time; Math::Quaternion value; };
 
+        // Entire animation for the specified node
         struct AnimationChannel
         {
             uint32_t            nodeIndex;
-            List<Float3Key>     translation;    // Empty = not animated, use the bind pose
-            List<QuatKey>       rotation;
-            List<Float3Key>     scale;
+            List<Float3Key>     translations;    // Empty = not animated, use the bind pose
+            List<QuatKey>       rotations;
+            List<Float3Key>     scales;
         };
 
         struct Animation
         {
             std::string             name;
             float                   duration;   // Seconds
-            List<AnimationChannel>  channels;   // Only nodes that are animated
+            List<AnimationChannel>  channels;
         };
 
         List<std::string>   diffuseColorTextures;

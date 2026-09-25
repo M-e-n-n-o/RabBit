@@ -291,16 +291,23 @@ Float3 Float3::Cross(const Float3& first, const Float3& second)
 
 float Float3::Dot(const Float3& first, const Float3& second)
 {
-    return (
-        first.x * second.x +
-        first.y * second.y +
-        first.z * second.z
-    );
+    return first.x * second.x +
+           first.y * second.y +
+           first.z * second.z;
 }
 
 float Float3::Angle(const Float3& first, const Float3& second)
 {
     return acos(Dot(first, second) / (first.GetLength() * second.GetLength()));
+}
+
+Float3 RB::Math::Float3::Lerp(const Float3& from, const Float3& to, float t)
+{
+    return Float3(
+        Math::Lerp(from.x, to.x, t),
+        Math::Lerp(from.y, to.y, t),
+        Math::Lerp(from.z, to.z, t)
+    );
 }
 
 // --------------------------------------------------------------------------

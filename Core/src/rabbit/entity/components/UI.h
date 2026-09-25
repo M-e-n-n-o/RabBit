@@ -84,7 +84,7 @@ namespace RB::Entity
         Pair<float, float> GetWorldStartPos() const;
         Pair<float, float> GetWorldSize() const;
 
-        void Update() override;
+        void OnUpdate(float delta_time) override;
 
     private:
         void UpdateMagnets();

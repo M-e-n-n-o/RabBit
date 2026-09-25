@@ -13,7 +13,7 @@ namespace RB::Entity
     {
     }
 
-    void ScreenCapturer::Update()
+    void ScreenCapturer::OnUpdate(float delta_time)
     {
         uint64_t frame_idx = Application::GetInstance()->GetFrameIndex();
 

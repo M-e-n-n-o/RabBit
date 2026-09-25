@@ -93,7 +93,7 @@ namespace Editor
             m_Material = new Material();
 
             GameObject* triangle_obj = scene->CreateGameObject("Triangle");
-            triangle_obj->AddComponent<MeshRenderer>(m_TriangleMesh, m_Material);
+            triangle_obj->AddComponent<MeshRenderable>(m_TriangleMesh, m_Material);
             auto* t = triangle_obj->AddComponent<Transform>();
             t->position.z = 5;
             Triangle = t;

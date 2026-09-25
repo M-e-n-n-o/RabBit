@@ -287,7 +287,7 @@ namespace RB
         }
 
         // Maybe make the scene also just a ApplicationLayer?
-        m_Scene->UpdateScene();
+        m_Scene->UpdateScene(delta_time);
     }
 
     void Application::Shutdown()

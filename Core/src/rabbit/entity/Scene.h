@@ -13,7 +13,7 @@ namespace RB::Entity
         GameObject* CreateGameObject(const char* name = "GameObject");
         void RemoveGameObject(GameObject* obj);
 
-        void UpdateScene();
+        void UpdateScene(float delta_time);
 
         const List<GameObject*>& GetGameObjects() const;
 

@@ -100,7 +100,7 @@ namespace RB::Entity
         return ConvertUnits(m_SizeUnit, unit, m_Width, m_Height);
     }
 
-    void UIBox::Update()
+    void UIBox::OnUpdate(float delta_time)
     {
         float parent_x, parent_y, parent_w, parent_h;
         GetParentBounds(parent_x, parent_y, parent_w, parent_h);

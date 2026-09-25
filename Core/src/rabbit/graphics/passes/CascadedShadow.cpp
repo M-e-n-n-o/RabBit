@@ -64,14 +64,14 @@ namespace RB::Graphics
     RenderPassEntry* CascadedShadowPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         const auto& list = scene->GetComponentsWithTypeOf<DirectionalLight>();
-        const auto& mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
+        const auto& mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
 
-        if (list.empty() || mesh_renderers.empty())
+        if (list.empty() || mesh_renderables.empty())
         {
             return nullptr;
         }
 
-        CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(mesh_renderers.size());
+        CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(mesh_renderables.size());
 
         const auto* light = (DirectionalLight*)list[0];
 
@@ -86,10 +86,10 @@ namespace RB::Graphics
 
         uint32_t total_entries = 0;
 
-        for (int i = 0; i < mesh_renderers.size(); ++i)
+        for (int i = 0; i < mesh_renderables.size(); ++i)
         {
-            const MeshRenderer*     mesh_renderer   = (const MeshRenderer*)mesh_renderers[i];
-            const Mesh*             mesh            = mesh_renderer->GetMesh();
+            const MeshRenderable*   mesh_renderable = (const MeshRenderable*)mesh_renderables[i];
+            const Mesh*             mesh            = mesh_renderable->GetMesh();
             const Mesh::VertexPack& vp              = mesh->GetVertexPack();
 
             if (!vp.primaryBuffer || !vp.primaryBuffer->ContentsReady() ||
@@ -98,7 +98,7 @@ namespace RB::Graphics
                 continue;
             }
 
-            const Transform*     transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Transform*     transform = mesh_renderable->GetGameObject()->GetComponent<Transform>();
             const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
 
             uint32_t frustum_mask = 0;

@@ -81,7 +81,7 @@ public:
         cam_comp->SetClearColor({ 0.0f, 0.3f, 0.3f, 0.4f });
 
         GameObject* ground_obj = scene->CreateGameObject();
-        ground_obj->AddComponent<MeshRenderer>(m_Mesh, m_Material);
+        ground_obj->AddComponent<MeshRenderable>(m_Mesh, m_Material);
         auto* ground_t = ground_obj->AddComponent<Transform>();
         ground_obj->AddComponent<NetworkTransformSync>(false);
         //ground_t->position.y = -5;
@@ -231,6 +231,8 @@ public:
     {
         for (Mesh* mesh : m_Model.meshes)
             delete mesh;
+        for (Animation* anim : m_Model.animations)
+            delete anim;
 
         delete m_Mesh;
         delete m_Material;

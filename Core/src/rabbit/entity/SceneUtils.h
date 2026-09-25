@@ -11,6 +11,8 @@ namespace RB::Entity
     class Transform;
     class Mesh;
     class Material;
+    class Animator;
+    class Animation;
 
     namespace SceneUtils
     {
@@ -18,10 +20,13 @@ namespace RB::Entity
         {
             GameObject*         root            = nullptr;
             Transform*          rootTransform   = nullptr;
+            Animator*           animator        = nullptr;
 
             List<GameObject*>   nodeObjects;                // One per LoadedModel::nodes entry (same index)
-            List<Transform*>    nodeTransforms;             // Same, these are what an animation player would drive
-            List<Mesh*>         meshes;                     // One per submodel that got spawned !!!MAKE SURE TO DELETE THESE!!!
+
+            // Memory management !!!MAKE SURE TO DELETE THESE!!!
+            List<Mesh*>         meshes;                     // One per LoadedModel::models entry
+            List<Animation*>    animations;                 // One per LoadedModel::animations entry
         };
 
         SpawnedModel SpawnModel(Scene* scene, const char* model_path, const char* texture_path_prefix = "");

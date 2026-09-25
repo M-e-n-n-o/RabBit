@@ -434,17 +434,17 @@ namespace RB
 
                     dst_ch.nodeIndex = src_ch.nodeIndex;
 
-                    dst_ch.translation.resize(src_ch.translationKeyCount);
+                    dst_ch.translations.resize(src_ch.translationKeyCount);
                     for (uint32_t k = 0; k < src_ch.translationKeyCount; k++)
-                        dst_ch.translation[k] = { translation[k].time, ToFloat3(translation[k].value) };
+                        dst_ch.translations[k] = { translation[k].time, ToFloat3(translation[k].value) };
 
-                    dst_ch.rotation.resize(src_ch.rotationKeyCount);
+                    dst_ch.rotations.resize(src_ch.rotationKeyCount);
                     for (uint32_t k = 0; k < src_ch.rotationKeyCount; k++)
-                        dst_ch.rotation[k] = { rotation[k].time, ToQuaternion(rotation[k].value) };
+                        dst_ch.rotations[k] = { rotation[k].time, ToQuaternion(rotation[k].value) };
 
-                    dst_ch.scale.resize(src_ch.scaleKeyCount);
+                    dst_ch.scales.resize(src_ch.scaleKeyCount);
                     for (uint32_t k = 0; k < src_ch.scaleKeyCount; k++)
-                        dst_ch.scale[k] = { scale[k].time, ToFloat3(scale[k].value) };
+                        dst_ch.scales[k] = { scale[k].time, ToFloat3(scale[k].value) };
                 }
             }
 

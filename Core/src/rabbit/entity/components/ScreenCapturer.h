@@ -12,7 +12,7 @@ namespace RB::Entity
     public:
         ScreenCapturer();
 
-        void Update() override;
+        void OnUpdate(float delta_time) override;
 
         // Simply used to calculate the required readback size
         uint64_t PrepareCapture(Graphics::Texture2D* target);

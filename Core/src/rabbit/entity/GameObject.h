@@ -25,7 +25,7 @@ namespace RB::Entity
         GameObject(const char* name);
         ~GameObject();
 
-        void Update();
+        void OnUpdate(float delta_time);
 
         template<class T, typename... Args>
         T* AddComponent(Args&&... args);

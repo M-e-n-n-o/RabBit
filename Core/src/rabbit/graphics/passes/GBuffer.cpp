@@ -80,22 +80,22 @@ namespace RB::Graphics
 
     RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
-        auto mesh_renderers = scene->GetComponentsWithTypeOf<MeshRenderer>();
+        auto mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
 
-        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderers.size());
+        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderables.size());
 
         uint32_t total_entries = 0;
 
-        for (int i = 0; i < mesh_renderers.size(); ++i)
+        for (int i = 0; i < mesh_renderables.size(); ++i)
         {
             // TODO: GameObjects that use the same static Mesh & Material should be instanced.
             // It would be a good idea to add a SetInstancedData method to the ViewContext and macro's
             // in the shaders so that it, for examply, automatically picks the correct instanced model matrix
             // in the Transform helper functions.
 
-            const MeshRenderer*     mesh_renderer   = (const MeshRenderer*)mesh_renderers[i];
-            const Mesh*             mesh            = mesh_renderer->GetMesh();
-            const Material*         mat             = mesh_renderer->GetMaterial();
+            const MeshRenderable*   mesh_renderable = (const MeshRenderable*)mesh_renderables[i];
+            const Mesh*             mesh            = mesh_renderable->GetMesh();
+            const Material*         mat             = mesh_renderable->GetMaterial();
             const Mesh::VertexPack& vp              = mesh->GetVertexPack();
 
             if (!vp.primaryBuffer || !vp.primaryBuffer->ContentsReady() ||
@@ -106,7 +106,7 @@ namespace RB::Graphics
                 continue;
             }
 
-            const Transform*     transform = mesh_renderer->GetGameObject()->GetComponent<Transform>();
+            const Transform*     transform = mesh_renderable->GetGameObject()->GetComponent<Transform>();
             const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
 
             if (mesh->HasValidAABB())

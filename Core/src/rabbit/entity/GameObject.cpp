@@ -20,11 +20,11 @@ namespace RB::Entity
         }
     }
 
-    void GameObject::Update()
+    void GameObject::OnUpdate(float delta_time)
     {
         for (ObjectComponent* comp : m_Components)
         {
-            comp->Update();
+            comp->OnUpdate(delta_time);
         }
     }
 

@@ -45,7 +45,7 @@ namespace RB
                 const auto& comps = obj->GetComponents();
                 for (Entity::ObjectComponent* comp : comps)
                 {
-                    if (auto* nh = dynamic_cast<NetworkUtils::NetworkHandlerBase*>(comp); nh != nullptr)
+                    if (auto* nh = dynamic_cast<NetworkUtils::NetworkHandlerBase*>(comp); nh != nullptr) // ew
                     {
                         nh->OnNetworkTick();
                     }

@@ -134,6 +134,8 @@ namespace Editor
     {
         for (Mesh* mesh : m_Model.meshes)
             delete mesh;
+        for (Animation* anim : m_Model.animations)
+            delete anim;
 
         DestroyImGuiContext(m_ImGuiRenderContext);
     }

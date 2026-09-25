@@ -38,11 +38,11 @@ namespace RB::Entity
         delete obj;
     }
 
-    void Scene::UpdateScene()
+    void Scene::UpdateScene(float delta_time)
     {
         for (GameObject* obj : m_GameObjects)
         {
-            obj->Update();
+            obj->OnUpdate(delta_time);
         }
     }
 

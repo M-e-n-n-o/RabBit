@@ -21,7 +21,7 @@ namespace RB::Math
 
     float Quaternion::GetLength() const
     {
-        return sqrtf(x * x + y * y + z * z + w * w);
+        return Sqrt(x * x + y * y + z * z + w * w);
     }
 
     void Quaternion::Normalize()
@@ -127,7 +127,7 @@ namespace RB::Math
         float m22 = 1.0f - 2.0f * (x * x + y * y);
 
         Float3 e;
-        e.y = asinf(Clamp(-m02, -1.0f, 1.0f));
+        e.y = ArcSin(Clamp(-m02, -1.0f, 1.0f));
 
         if (Abs(m02) < 0.99999f)
         {
@@ -153,7 +153,7 @@ namespace RB::Math
 
         if (trace > 0.0f)
         {
-            float s = sqrtf(trace + 1.0f) * 2.0f;
+            float s = Sqrt(trace + 1.0f) * 2.0f;
             q.w = 0.25f * s;
             q.x = (m.a12 - m.a21) / s;
             q.y = (m.a20 - m.a02) / s;
@@ -161,7 +161,7 @@ namespace RB::Math
         }
         else if (m.a00 > m.a11 && m.a00 > m.a22)
         {
-            float s = sqrtf(1.0f + m.a00 - m.a11 - m.a22) * 2.0f;
+            float s = Sqrt(1.0f + m.a00 - m.a11 - m.a22) * 2.0f;
             q.w = (m.a12 - m.a21) / s;
             q.x = 0.25f * s;
             q.y = (m.a01 + m.a10) / s;
@@ -169,7 +169,7 @@ namespace RB::Math
         }
         else if (m.a11 > m.a22)
         {
-            float s = sqrtf(1.0f + m.a11 - m.a00 - m.a22) * 2.0f;
+            float s = Sqrt(1.0f + m.a11 - m.a00 - m.a22) * 2.0f;
             q.w = (m.a20 - m.a02) / s;
             q.x = (m.a01 + m.a10) / s;
             q.y = 0.25f * s;
@@ -177,7 +177,7 @@ namespace RB::Math
         }
         else
         {
-            float s = sqrtf(1.0f + m.a22 - m.a00 - m.a11) * 2.0f;
+            float s = Sqrt(1.0f + m.a22 - m.a00 - m.a11) * 2.0f;
             q.w = (m.a01 - m.a10) / s;
             q.x = (m.a02 + m.a20) / s;
             q.y = (m.a12 + m.a21) / s;
@@ -193,16 +193,16 @@ namespace RB::Math
         return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
     }
 
-    Quaternion Quaternion::Nlerp(const Quaternion& from, const Quaternion& to, float t)
+    Quaternion Quaternion::Lerp(const Quaternion& from, const Quaternion& to, float t)
     {
         // q and -q are the same rotation, take the short way around
         float sign = Dot(from, to) < 0.0f ? -1.0f : 1.0f;
 
         Quaternion out(
-            Lerp(from.x, to.x * sign, t),
-            Lerp(from.y, to.y * sign, t),
-            Lerp(from.z, to.z * sign, t),
-            Lerp(from.w, to.w * sign, t)
+            Math::Lerp(from.x, to.x * sign, t),
+            Math::Lerp(from.y, to.y * sign, t),
+            Math::Lerp(from.z, to.z * sign, t),
+            Math::Lerp(from.w, to.w * sign, t)
         );
         out.Normalize();
         return out;
@@ -222,13 +222,13 @@ namespace RB::Math
         // Nearly parallel: sin(theta) approaches 0, fall back to nlerp
         if (d > 0.9995f)
         {
-            return Nlerp(from, target, t);
+            return Lerp(from, target, t);
         }
 
-        float theta = acosf(d);
-        float inv_sin = 1.0f / sinf(theta);
-        float wa = sinf((1.0f - t) * theta) * inv_sin;
-        float wb = sinf(t * theta) * inv_sin;
+        float theta = ArcCos(d);
+        float inv_sin = 1.0f / Sin(theta);
+        float wa = Sin((1.0f - t) * theta) * inv_sin;
+        float wb = Sin(t * theta) * inv_sin;
 
         return Quaternion(
             from.x * wa + target.x * wb,
@@ -256,7 +256,7 @@ namespace RB::Math
         else
         {
             axis = axis / axis_len;
-            float angle = acosf(dot);
+            float angle = ArcCos(dot);
             q1 = Quaternion::FromAxisAngle(axis, angle);
         }
 
@@ -265,7 +265,7 @@ namespace RB::Math
         desired_up.Normalize();
 
         float roll_dot = Math::Clamp(Float3::Dot(rotated_up, desired_up), -1.0f, 1.0f);
-        float roll_angle = acosf(roll_dot);
+        float roll_angle = ArcCos(roll_dot);
 
         Float3 roll_cross = Float3::Cross(rotated_up, desired_up);
         if (Float3::Dot(roll_cross, f) < 0.0f)

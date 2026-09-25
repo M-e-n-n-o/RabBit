@@ -73,7 +73,7 @@ namespace Editor
         ImGuiRenderEntry* entry = (ImGuiRenderEntry*)allocator->Allocate(sizeof(ImGuiRenderEntry));
         memset(entry, 0, sizeof(ImGuiRenderEntry));
 
-        auto* window = dynamic_cast<EngineEditorWindow*>(Application::GetInstance()->GetWindow(view_context->windowIndex));
+        auto* window = (EngineEditorWindow*)Application::GetInstance()->GetWindow(view_context->windowIndex);
         window->Select();
 
         // Prepare render data for rendering
