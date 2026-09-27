@@ -14,7 +14,7 @@ namespace RB::Graphics::VK
     class VertexBufferVK : public VertexBuffer
     {
     public:
-        VertexBufferVK(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
+        VertexBufferVK(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size);
         ~VertexBufferVK();
 
         void* GetNativeResource() const override { return m_Resource; }
@@ -24,6 +24,8 @@ namespace RB::Graphics::VK
         uint32_t GetVertexElementCount() const override { return m_Size / m_VertexSize; }
 
         TopologyType GetTopologyType() const override { return m_Type; }
+
+        bool AllowedRandomReadWrites() const override { return false; };
 
     private:
         GpuResource*    m_Resource;

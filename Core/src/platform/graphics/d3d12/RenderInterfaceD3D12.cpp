@@ -268,55 +268,33 @@ namespace RB::Graphics::D3D12
 
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "Shader resource input slot out of range");
 
-        switch (resource->GetType())
-        {
-        case RenderResourceType::Texture2D:
-        {
-
-            switch (stage)
+        auto GetResourceHandle = [&resource]() -> DescriptorIndex 
             {
-            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
-            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
-            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetSrvHandle(); break;
-            default:
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
-                break;
-            }
-        }
-        break;
+                switch (resource->GetType())
+                {
+                case RenderResourceType::Texture2D:      return static_cast<Texture2DD3D12*>(resource)->GetSrvHandle();
+                case RenderResourceType::Texture2DArray: return static_cast<Texture2DArrayD3D12*>(resource)->GetSrvHandle();
+                case RenderResourceType::GenericBuffer:  return static_cast<GenericBufferD3D12*>(resource)->GetSrvHandle();
+                case RenderResourceType::VertexBuffer:   return static_cast<VertexBufferD3D12*>(resource)->GetSrvHandle();
+                default:
+                    RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a shader input");
+                    return {};
+                }
+            };
 
-        case RenderResourceType::Texture2DArray:
+        auto srv_handle = GetResourceHandle();
+        if (!srv_handle.isValid()) 
         {
-            switch (stage)
-            {
-            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
-            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
-            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetSrvHandle(); break;
-            default:
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
-                break;
-            }
+            return;
         }
-        break;
 
-        case RenderResourceType::GenericBuffer:
+        switch (stage)
         {
-            switch (stage)
-            {
-            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetSrvHandle(); break;
-            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetSrvHandle(); break;
-            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetSrvHandle(); break;
-            default:
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
-                break;
-            }
-        }
-        break;
-
-
-
+        case RB::ShaderCompiler::Stage::kVertex:  m_RenderState.vertexResourceHandles[slot] = srv_handle; break;
+        case RB::ShaderCompiler::Stage::kPixel:   m_RenderState.pixelResourceHandles[slot] = srv_handle; break;
+        case RB::ShaderCompiler::Stage::kCompute: m_RenderState.computeResourceHandles[slot] = srv_handle; break;
         default:
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a shader input");
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as shader resource input");
             break;
         }
     }
@@ -339,52 +317,33 @@ namespace RB::Graphics::D3D12
 
         RB_ASSERT_FATAL(LOGTAG_GRAPHICS, slot < _countof(m_RenderState.vertexResourceHandles), "UAV input slot out of range");
 
-        switch (resource->GetType())
-        {
-        case RenderResourceType::Texture2D:
-        {
-            switch (stage)
+        auto GetResourceHandle = [&resource]() -> DescriptorIndex
             {
-            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
-            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
-            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DD3D12*)resource)->GetUavHandle(); break;
-            default:
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
-                break;
-            }
-        }
-        break;
+                switch (resource->GetType())
+                {
+                case RenderResourceType::Texture2D:      return static_cast<Texture2DD3D12*>(resource)->GetUavHandle();
+                case RenderResourceType::Texture2DArray: return static_cast<Texture2DArrayD3D12*>(resource)->GetUavHandle();
+                case RenderResourceType::GenericBuffer:  return static_cast<GenericBufferD3D12*>(resource)->GetUavHandle();
+                case RenderResourceType::VertexBuffer:   return static_cast<VertexBufferD3D12*>(resource)->GetUavHandle();
+                default:
+                    RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a UAV input");
+                    return {};
+                }
+            };
 
-        case RenderResourceType::Texture2DArray:
+        auto uav_handle = GetResourceHandle();
+        if (!uav_handle.isValid())
         {
-            switch (stage)
-            {
-            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
-            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
-            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((Texture2DArrayD3D12*)resource)->GetUavHandle(); break;
-            default:
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
-                break;
-            }
+            return;
         }
-        break;
 
-        case RenderResourceType::GenericBuffer:
+        switch (stage)
         {
-            switch (stage)
-            {
-            case RB::ShaderCompiler::Stage::kVertex:    m_RenderState.vertexResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetUavHandle(); break;
-            case RB::ShaderCompiler::Stage::kPixel:     m_RenderState.pixelResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetUavHandle(); break;
-            case RB::ShaderCompiler::Stage::kCompute:   m_RenderState.computeResourceHandles[slot] = ((GenericBufferD3D12*)resource)->GetUavHandle(); break;
-            default:
-                RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
-                break;
-            }
-        }
-        break;
-
+        case RB::ShaderCompiler::Stage::kVertex:  m_RenderState.vertexResourceHandles[slot] = uav_handle; break;
+        case RB::ShaderCompiler::Stage::kPixel:   m_RenderState.pixelResourceHandles[slot] = uav_handle; break;
+        case RB::ShaderCompiler::Stage::kCompute: m_RenderState.computeResourceHandles[slot] = uav_handle; break;
         default:
-            RB_LOG_ERROR(LOGTAG_GRAPHICS, "This resource type is not yet supported as a UAV input");
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Shader stage not recognized as random read write input");
             break;
         }
     }
@@ -715,6 +674,7 @@ namespace RB::Graphics::D3D12
             }
 
             VertexBufferD3D12* vbo = (VertexBufferD3D12*)vertex_resources[res_idx];
+            TransitionResource(vbo, ResourceState::COMMON);
 
             views[res_idx] = vbo->GetView();
 

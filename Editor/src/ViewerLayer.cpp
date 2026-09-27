@@ -53,6 +53,9 @@ namespace Editor
 
             m_Model = SceneUtils::SpawnModel(scene, &model, materials);
 
+            if (m_Model.animator && !m_Model.animations.empty())
+                m_Model.animator->PlayAnimation(m_Model.animations[0]->GetName());
+
             // This camera renders the viewport
             auto* game_cam_obj = scene->CreateGameObject();
             m_CamTransform = game_cam_obj->AddComponent<Transform>();

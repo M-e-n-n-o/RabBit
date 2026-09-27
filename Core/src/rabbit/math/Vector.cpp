@@ -65,7 +65,7 @@ void Float2::Normalize()
 
 float Float2::GetLength() const
 {
-    return sqrt((x * x) + (y * y));
+    return Sqrt((x * x) + (y * y));
 }
 
 Float2 Float2::operator+(const Float2& other) const
@@ -142,7 +142,7 @@ float Float2::Dot(const Float2& first, const Float2& second)
 
 float Float2::Angle(const Float2& first, const Float2& second)
 {
-    return acos(Dot(first, second) / (first.GetLength() * second.GetLength()));
+    return ArcCos(Dot(first, second) / (first.GetLength() * second.GetLength()));
 }
 
 // --------------------------------------------------------------------------
@@ -178,7 +178,7 @@ void Float3::Normalize()
 
 float Float3::GetLength() const
 {
-    return sqrt((x * x) + (y * y) + (z * z));
+    return Sqrt((x * x) + (y * y) + (z * z));
 }
 
 Float3 Float3::operator+(const Float3& other) const
@@ -301,7 +301,15 @@ float Float3::Angle(const Float3& first, const Float3& second)
     return acos(Dot(first, second) / (first.GetLength() * second.GetLength()));
 }
 
-Float3 RB::Math::Float3::Lerp(const Float3& from, const Float3& to, float t)
+float Float3::Distance(const Float3& first, const Float3& second)
+{
+    float dx = first.x - second.x;
+    float dy = first.y - second.y;
+    float dz = first.z - second.z;
+    return Sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+Float3 Float3::Lerp(const Float3& from, const Float3& to, float t)
 {
     return Float3(
         Math::Lerp(from.x, to.x, t),

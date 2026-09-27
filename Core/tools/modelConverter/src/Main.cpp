@@ -70,13 +70,28 @@ namespace
         return { (float)v.x, (float)v.y, (float)v.z };
     }
 
-    // Row-major (element (row, col) at [row * 4 + col]), column vector convention: the translation is in the last column
     void ToFloat4x4(const ufbx_matrix& m, float out[16])
     {
-        out[0]  = (float)m.m00; out[1]  = (float)m.m01; out[2]  = (float)m.m02; out[3]  = (float)m.m03;
-        out[4]  = (float)m.m10; out[5]  = (float)m.m11; out[6]  = (float)m.m12; out[7]  = (float)m.m13;
-        out[8]  = (float)m.m20; out[9]  = (float)m.m21; out[10] = (float)m.m22; out[11] = (float)m.m23;
-        out[12] = 0.0f;         out[13] = 0.0f;         out[14] = 0.0f;         out[15] = 1.0f;
+        // Transpose ufbx's column-vector matrix into the engine's row-vector matrix convention.
+        out[0] = (float)m.m00;
+        out[1] = (float)m.m10;
+        out[2] = (float)m.m20;
+        out[3] = 0.0f;
+
+        out[4] = (float)m.m01;
+        out[5] = (float)m.m11;
+        out[6] = (float)m.m21;
+        out[7] = 0.0f;
+
+        out[8] = (float)m.m02;
+        out[9] = (float)m.m12;
+        out[10] = (float)m.m22;
+        out[11] = 0.0f;
+
+        out[12] = (float)m.m03;
+        out[13] = (float)m.m13;
+        out[14] = (float)m.m23;
+        out[15] = 1.0f;
     }
 
     PackedFloat4 ToFloat4(const ufbx_quat& q)
@@ -190,8 +205,7 @@ static bool ConvertMeshPart(const ufbx_mesh* mesh, const ufbx_mesh_part* part, c
     if (skin && skin->clusters.count == 0)
         skin = nullptr;
 
-    // The vertices stay in the local space of the node, the node's transform (and its parents') is applied at runtime
-    // through the node hierarchy
+    // The vertices stay in the local space of the node, the node's transform (and its parents') is applied at runtime through the node hierarchy
     if (skin)
     {
         out.flags |= kSubmodel_Skinned;

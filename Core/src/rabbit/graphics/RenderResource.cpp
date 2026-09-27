@@ -150,13 +150,13 @@ namespace RB::Graphics
         return (RenderResourceType)primitive_type;
     }
 
-    Shared<GenericBuffer> GenericBuffer::Create(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access)
+    Shared<GenericBuffer> GenericBuffer::Create(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access, bool cpu_mapped)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return CreateShared<D3D12::GenericBufferD3D12>(name, format, elements, random_read_write_access);
+            return CreateShared<D3D12::GenericBufferD3D12>(name, format, elements, random_read_write_access, cpu_mapped);
 #endif
 
         default:
@@ -167,13 +167,13 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Shared<GenericBuffer> GenericBuffer::Create(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access)
+    Shared<GenericBuffer> GenericBuffer::Create(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access, bool cpu_mapped)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return CreateShared<D3D12::GenericBufferD3D12>(name, element_size, elements, random_read_write_access);
+            return CreateShared<D3D12::GenericBufferD3D12>(name, element_size, elements, random_read_write_access, cpu_mapped);
 #endif
 
         default:
@@ -184,18 +184,18 @@ namespace RB::Graphics
         return nullptr;
     }
 
-    Shared<VertexBuffer> VertexBuffer::Create(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
+    Shared<VertexBuffer> VertexBuffer::Create(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient, bool random_read_write_access)
     {
         switch (Renderer::GetAPI())
         {
 #if RB_GRAPHICS_API_D3D12
         case RenderAPI::D3D12:
-            return CreateShared<D3D12::VertexBufferD3D12>(name, type, data, vertex_size, data_size, transient);
+            return CreateShared<D3D12::VertexBufferD3D12>(name, type, data, vertex_size, data_size, transient, random_read_write_access);
 #endif
 
 #if RB_GRAPHICS_API_VULKAN
         case RenderAPI::Vulkan:
-            return CreateShared<VK::VertexBufferVK>(name, type, data, vertex_size, data_size, transient);
+            return CreateShared<VK::VertexBufferVK>(name, type, data, vertex_size, data_size);
 #endif
 
         default:

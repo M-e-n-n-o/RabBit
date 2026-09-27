@@ -1,11 +1,13 @@
 #include "RabBitCommon.h"
 #include "Mesh.h"
+#include "Transform.h"
 #include "app/AssetLoader.h"
+#include "entity/GameObject.h"
 #include "graphics/ResourceDefaults.h"
 
 namespace RB::Entity
 {
-    Mesh::Mesh(const char* name, const LoadedModel::Submodel& submodel)
+    Mesh::Mesh(const char* name, const LoadedModel::Submodel& submodel, bool allow_skinning)
     {
         char position_name[100];
         sprintf(position_name, "%s primary", name);
@@ -25,6 +27,15 @@ namespace RB::Entity
             sprintf(index_name, "%s indices", name);
 
             m_VertexPack.indexBuffer = Graphics::IndexBuffer::Create(index_name, submodel.indices.data(), submodel.indices.size());
+        }
+
+        if (allow_skinning && submodel.isSkinned)
+        {
+            char bones_name[100];
+            sprintf(bones_name, "%s bones", name);
+
+            uint32_t bones_size = sizeof(LoadedModel::SkinVertex);
+            m_VertexPack.boneWeightBuffer = Graphics::VertexBuffer::Create(bones_name, RB::Graphics::TopologyType::TriangleList, submodel.skinVertices.data(), bones_size, bones_size * submodel.skinVertices.size());
         }
 
         m_ValidBounds = true;
@@ -69,12 +80,68 @@ namespace RB::Entity
             success = AssetLoader::LoadTexture8Bit(file_name, &img, color_space == TextureColorSpace::sRGB);
 
         if (success)
-        {
             m_Texture = Graphics::Texture2D::Create(img.name, img.data, img.dataSize, img.format, img.width, img.height, img.mipCount, false, false);
-        }
         else
-        {
             m_Texture = Graphics::g_TexDefaultError;
+    }
+
+    SkinnedMeshRenderable::SkinnedMeshRenderable(Mesh* mesh, Material* material, List<Transform*> nodes, List<LoadedModel::SkinBone> bones, float max_skinning_distance)
+        : m_Mesh(nullptr)
+        , m_Material(nullptr)
+        , m_SkinningDistance(max_skinning_distance)
+        , m_Transform(nullptr)
+        , m_SkinnedPrimaryBuffer(nullptr)
+        , m_SkinnedSecondaryBuffer(nullptr)
+        , m_BoneMatrixBuffer(nullptr)
+        , m_SkeletonNodes(nodes)
+        , m_Bones(bones)
+    {
+        if (!mesh->HasSkinningData())
+        {
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Mesh does not have skinning data, not compatible with SkinnedMeshRenderable");
+            return;
+        }
+
+        m_Mesh = mesh;
+        m_Material = material;
+
+        const auto& primary_buffer = mesh->GetVertexPack().primaryBuffer;
+        const auto& secondary_buffer = mesh->GetVertexPack().secondaryBuffer;
+
+        char skinned_prim_name[100];
+        sprintf(skinned_prim_name, "%s skinned", primary_buffer->GetName());
+
+        char skinned_sec_name[100];
+        sprintf(skinned_sec_name, "%s skinned", secondary_buffer->GetName());
+
+        m_SkinnedPrimaryBuffer = Graphics::VertexBuffer::Create(skinned_prim_name, RB::Graphics::TopologyType::TriangleList, nullptr, primary_buffer->GetVertexSize(), primary_buffer->GetSize(), false, true);
+        m_SkinnedSecondaryBuffer = Graphics::VertexBuffer::Create(skinned_sec_name, RB::Graphics::TopologyType::TriangleList, nullptr, secondary_buffer->GetVertexSize(), secondary_buffer->GetSize(), false, true);
+
+        m_BoneMatrixBuffer = Graphics::GenericBuffer::Create("Bone matrices", sizeof(Math::Float4x4), bones.size(), false, true);
+    }
+
+    void SkinnedMeshRenderable::OnAttached()
+    {
+        m_Transform = m_GameObject->GetComponent<Transform>();
+    }
+
+    void SkinnedMeshRenderable::OnUpdate(float delta_time)
+    {
+        // TODO: Actually check if this mesh is within m_SkinningDistance of the main camera
+
+        Math::Float4x4* dst = (Math::Float4x4*)m_BoneMatrixBuffer->Map();
+
+        Math::Float4x4 attach_world = m_Transform->GetLocalToWorldMatrix();
+        Math::Float4x4 attach_world_inv = attach_world;
+        attach_world_inv.InvertAffine();
+
+        for (size_t i = 0; i < m_Bones.size(); i++)
+        {
+            const LoadedModel::SkinBone& bone = m_Bones[i];
+            Transform* bone_transform = m_SkeletonNodes[bone.nodeIndex];
+
+            // bind-space -> bone-local -> world -> back into attach-node-local space (so that gbuffer can render normally)
+            dst[i] = bone.geometryToBone * bone_transform->GetLocalToWorldMatrix() * attach_world_inv;
         }
     }
 }

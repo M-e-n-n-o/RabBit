@@ -66,10 +66,13 @@ public:
 
         Scene* scene = Application::GetInstance()->GetScene();
 
-        m_Model = SceneUtils::SpawnModel(scene, "ConvertedSponza.mdl", "sponza/textures/");
+        m_Model = SceneUtils::SpawnModel(scene, "ConvertedSuit.rbmd", "sponza/textures/");
         m_Model.rootTransform->position = Float3(0, 0, 100);
         m_Model.rootTransform->scale    = Math::Float3(10.0f);
         m_Transform = m_Model.rootTransform;
+
+        if (m_Model.animator)
+            m_Model.animator->PlayAnimation("CharacterArmature|Walk");
 
         void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
         //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();

@@ -56,6 +56,7 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
             kRenderGraphType_Normal,
             RenderGraphBuilder()
             // Passes
+            .AddPass<SkinningPass>          (RenderPassType::Skinning,          RenderPassSettings{})
             .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
             .AddPass<RayMarcherPass>        (RenderPassType::Custom0,           RayMarcherSettings{})
             .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
@@ -65,6 +66,9 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
             .AddPass<SmaaPass>              (RenderPassType::Smaa,              RenderPassSettings{})
 
             // Connections           (from)     ->      (to)
+            .AddLink(RenderPassType::Skinning,          RenderPassType::GBuffer)
+            .AddLink(RenderPassType::Skinning,          RenderPassType::CascadedShadow)
+
             .AddLink(RenderPassType::GBuffer,           RenderPassType::Custom0,
                                         0u,                0u,
                                         1u,                1u)

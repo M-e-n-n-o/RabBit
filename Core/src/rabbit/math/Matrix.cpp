@@ -96,7 +96,7 @@ namespace RB::Math
         *this = (*this) * rot;
     }
 
-    Float3 Float4x4::GetPosition()
+    Float3 Float4x4::GetPosition() const
     {
         return Float3(a30, a31, a32);
     }
@@ -131,7 +131,6 @@ namespace RB::Math
         row2 = row2 * z;
     }
 
-    // Specialized, faster invert for projection matrices
     void Float4x4::InvertProjection()
     {
         Float4x4 inv = {};
@@ -188,6 +187,31 @@ namespace RB::Math
         memcpy(a, inverse.a, sizeof(float) * 16);
 
         return true;
+    }
+
+    void Float4x4::InvertAffine()
+    {
+        Math::Float4x4 inv;
+
+        float sxSq = a00 * a00 + a01 * a01 + a02 * a02;
+        float sySq = a10 * a10 + a11 * a11 + a12 * a12;
+        float szSq = a20 * a20 + a21 * a21 + a22 * a22;
+
+        float invSx = (sxSq > 1e-6f) ? 1.0f / sxSq : 0.0f;
+        float invSy = (sySq > 1e-6f) ? 1.0f / sySq : 0.0f;
+        float invSz = (szSq > 1e-6f) ? 1.0f / szSq : 0.0f;
+
+        inv.a00 = a00 * invSx;  inv.a01 = a10 * invSy;  inv.a02 = a20 * invSz;
+        inv.a10 = a01 * invSx;  inv.a11 = a11 * invSy;  inv.a12 = a21 * invSz;
+        inv.a20 = a02 * invSx;  inv.a21 = a12 * invSy;  inv.a22 = a22 * invSz;
+
+        inv.a30 = -(a30 * inv.a00 + a31 * inv.a10 + a32 * inv.a20);
+        inv.a31 = -(a30 * inv.a01 + a31 * inv.a11 + a32 * inv.a21);
+        inv.a32 = -(a30 * inv.a02 + a31 * inv.a12 + a32 * inv.a22);
+
+        inv.a03 = 0.0f; inv.a13 = 0.0f; inv.a23 = 0.0f; inv.a33 = 1.0f;
+
+        *this = inv;
     }
 
     float Float4x4::GetDeterminant() const

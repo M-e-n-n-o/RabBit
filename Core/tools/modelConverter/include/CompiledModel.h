@@ -19,8 +19,7 @@ namespace RB::ModelConverter
 
     enum SubmodelFlags : uint32_t
     {
-        kSubmodel_Skinned = 1 << 0  // Has skinVertices/skinBones. Once you do skinning, the bone matrices already
-                                    // contain the world transform, so the mesh node's own transform must not be applied on top.
+        kSubmodel_Skinned = 1 << 0
     };
 
     struct CompiledModelHeader

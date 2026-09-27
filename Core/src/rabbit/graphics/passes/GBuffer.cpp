@@ -81,57 +81,74 @@ namespace RB::Graphics
     RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         auto mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
+        auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
 
-        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderables.size());
+        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderables.size() + skinned_renderables.size());
 
         uint32_t total_entries = 0;
 
-        for (int i = 0; i < mesh_renderables.size(); ++i)
+        auto ProcessRenderables = [&]<typename TRenderable>(const auto& container, auto GetPrimaryBuffer, auto GetSecondaryBuffer) 
         {
-            // TODO: GameObjects that use the same static Mesh & Material should be instanced.
-            // It would be a good idea to add a SetInstancedData method to the ViewContext and macro's
-            // in the shaders so that it, for examply, automatically picks the correct instanced model matrix
-            // in the Transform helper functions.
-
-            const MeshRenderable*   mesh_renderable = (const MeshRenderable*)mesh_renderables[i];
-            const Mesh*             mesh            = mesh_renderable->GetMesh();
-            const Material*         mat             = mesh_renderable->GetMaterial();
-            const Mesh::VertexPack& vp              = mesh->GetVertexPack();
-
-            if (!vp.primaryBuffer || !vp.primaryBuffer->ContentsReady() ||
-                (vp.secondaryBuffer && !vp.secondaryBuffer->ContentsReady()) ||
-                (vp.indexBuffer && !vp.indexBuffer->ContentsReady()) ||
-                !mat->GetTexture()->ContentsReady())
+            for (const ObjectComponent* component : container)
             {
-                continue;
-            }
+                const auto* renderable = static_cast<const TRenderable*>(component);
+        
+                // TODO: GameObjects that use the same static Mesh & Material should be instanced.
+                // It would be a good idea to add a SetInstancedData method to the ViewContext and macro's
+                // in the shaders so that it, for examply, automatically picks the correct instanced model matrix
+                // in the Transform helper functions.
 
-            const Transform*     transform = mesh_renderable->GetGameObject()->GetComponent<Transform>();
-            const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
+                const Mesh*                 mesh        = renderable->GetMesh();
+                const Material*             mat         = renderable->GetMaterial();
+                const Mesh::VertexPack&     vp          = mesh->GetVertexPack();
+                const Shared<VertexBuffer>& prim_buffer = GetPrimaryBuffer(renderable, vp);
+                const Shared<VertexBuffer>& sec_buffer  = GetSecondaryBuffer(renderable, vp);
 
-            if (mesh->HasValidAABB())
-            {
-                // We can do some frustum culling
-                const Math::AABB&    aabb       = mesh->GetAABB();
-                const Math::AABB     world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
-                const Math::Float4x4 vp         = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
-
-                if (!Frustum::IsInFrustum(world_aabb, vp))
+                // Unified validation check
+                if (!prim_buffer || !prim_buffer->ContentsReady() ||
+                    (sec_buffer && !sec_buffer) ||
+                    (vp.indexBuffer && !vp.indexBuffer->ContentsReady()) ||
+                    !mat->GetTexture()->ContentsReady())
                 {
                     continue;
                 }
+
+                const Transform*     transform = renderable->GetGameObject()->GetComponent<Transform>();
+                const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
+
+                if (mesh->HasValidAABB())
+                {
+                    // We can do some frustum culling
+                    const Math::AABB&    aabb       = mesh->GetAABB();
+                    const Math::AABB     world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
+                    const Math::Float4x4 vp         = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
+
+                    if (!Frustum::IsInFrustum(world_aabb, vp))
+                    {
+                        continue;
+                    }
+                }
+
+                GBufferEntry::ModelEntry entry = {};
+                entry.vb_primary   = prim_buffer;
+                entry.vb_secondary = sec_buffer;
+                entry.ib           = vp.indexBuffer;
+                entry.texture      = mat->GetTexture();
+                entry.modelMatrix  = model_mat;
+
+                entries[total_entries++] = entry;
             }
+        };
 
-            GBufferEntry::ModelEntry entry = {};
-            entry.vb_primary    = vp.primaryBuffer;
-            entry.vb_secondary  = vp.secondaryBuffer;
-            entry.ib            = vp.indexBuffer;
-            entry.texture       = mat->GetTexture();
-            entry.modelMatrix   = model_mat;
+        // Execute for regular meshes
+        ProcessRenderables.operator()<MeshRenderable>(mesh_renderables, 
+            [](auto* r, const auto& vp) { return vp.primaryBuffer; },
+            [](auto* r, const auto& vp) { return vp.secondaryBuffer; });
 
-            entries[total_entries] = entry;
-            total_entries++;
-        }
+        // Execute for skinned meshes
+        ProcessRenderables.operator()<SkinnedMeshRenderable>(skinned_renderables, 
+            [](auto* r, const auto& vp) { return r->GetSkinnedPrimaryBuffer(); },
+            [](auto* r, const auto& vp) { return r->GetSkinnedSecondaryBuffer(); });
 
         GBufferEntry* entry = allocator->Allocate<GBufferEntry>();
         entry->entries      = entries;

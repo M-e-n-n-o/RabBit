@@ -16,8 +16,8 @@ namespace RB::Graphics::D3D12
     class GenericBufferD3D12 : public GenericBuffer
     {
     public:
-        GenericBufferD3D12(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access);
-        GenericBufferD3D12(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access);
+        GenericBufferD3D12(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access, bool cpu_mapped);
+        GenericBufferD3D12(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access, bool cpu_mapped);
         ~GenericBufferD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
@@ -27,6 +27,8 @@ namespace RB::Graphics::D3D12
         uint64_t GetSize() const override { return m_Elements * m_ElementSize; }
 
         bool AllowedRandomReadWrites() const override { return m_RandomReadWrite; }
+
+        void* Map() override;
 
         DescriptorIndex GetSrvHandle();
         DescriptorIndex GetUavHandle();
@@ -38,6 +40,9 @@ namespace RB::Graphics::D3D12
         uint32_t                m_Elements;
         bool                    m_RandomReadWrite;
 
+        bool                    m_CpuMapped;
+        void*                   m_MappedMemory;
+
         DescriptorIndex         m_SRV;
         DescriptorIndex         m_UAV;
     };
@@ -45,7 +50,7 @@ namespace RB::Graphics::D3D12
     class VertexBufferD3D12 : public VertexBuffer
     {
     public:
-        VertexBufferD3D12(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient);
+        VertexBufferD3D12(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient, bool random_read_write_access);
         ~VertexBufferD3D12();
 
         void* GetNativeResource() const override { return m_Resource; }
@@ -56,7 +61,12 @@ namespace RB::Graphics::D3D12
 
         TopologyType GetTopologyType() const override { return m_Type; }
 
+        bool AllowedRandomReadWrites() const override { return m_RandomReadWrite; }
+
         const D3D12_VERTEX_BUFFER_VIEW& GetView();
+
+        DescriptorIndex GetSrvHandle();
+        DescriptorIndex GetUavHandle();
 
     private:
         GpuResource*                m_Resource;
@@ -64,9 +74,11 @@ namespace RB::Graphics::D3D12
         TopologyType                m_Type;
         uint32_t                    m_VertexSize;
         uint64_t                    m_Size;
-        const void*                 m_Data;
         bool                        m_Transient;
+        bool                        m_RandomReadWrite;
         D3D12_GPU_VIRTUAL_ADDRESS   m_GpuAddress;
+        DescriptorIndex             m_SRV;
+        DescriptorIndex             m_UAV;
     };
 
     class IndexBufferD3D12 : public IndexBuffer
@@ -84,9 +96,8 @@ namespace RB::Graphics::D3D12
 
     private:
         GpuResource*                m_Resource;
-        D3D12_INDEX_BUFFER_VIEW		m_View;
-        uint64_t					m_Elements;
-        const void*                 m_Data;
+        D3D12_INDEX_BUFFER_VIEW     m_View;
+        uint64_t                    m_Elements;
     };
 
 

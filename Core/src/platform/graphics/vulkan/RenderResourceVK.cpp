@@ -13,7 +13,7 @@ namespace RB::Graphics::VK
     //								VertexBuffer
     // ---------------------------------------------------------------------------
 
-    VertexBufferVK::VertexBufferVK(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
+    VertexBufferVK::VertexBufferVK(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size)
         : VertexBuffer(name)
         , m_Type(type)
         , m_VertexSize(vertex_size)

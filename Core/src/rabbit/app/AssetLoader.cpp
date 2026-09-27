@@ -362,7 +362,7 @@ namespace RB
                 dst.maxBounds       = ToFloat3(src.maxBounds);
                 dst.diffuseTexIndex = src.materialIndex;
                 dst.nodeIndex       = src.nodeIndex;
-                dst.skinned         = skinned;
+                dst.isSkinned       = skinned;
 
                 dst.positions.resize(src.vertexCount);
                 dst.vertices.resize(src.vertexCount);

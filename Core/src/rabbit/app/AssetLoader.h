@@ -68,14 +68,14 @@ namespace RB
 
         struct Submodel
         {
-            List<Math::Float3> positions;
+            List<Math::Float3> positions;           // Are in local space of the SubModel
             List<Vertex>       vertices;
             List<uint32_t>     indices;
             Math::Float3       minBounds;           // In the local space of the node
             Math::Float3       maxBounds;
             uint32_t           diffuseTexIndex;     // Index into diffuseColorTextures (0xFFFFFFFF = none)
             uint32_t           nodeIndex;
-            bool               skinned;             // When skinned the bone matrices contain the world transform, so the node's own transform must not be applied on top
+            bool               isSkinned;
             List<SkinVertex>   skinVertices;
             List<SkinBone>     skinBones;
         };

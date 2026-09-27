@@ -134,8 +134,10 @@ namespace RB::Graphics
     class GenericBuffer : public Buffer
     {
     public:
-        static Shared<GenericBuffer> Create(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access);
-        static Shared<GenericBuffer> Create(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access);
+        virtual void* Map() = 0;
+
+        static Shared<GenericBuffer> Create(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access, bool cpu_mapped = false);
+        static Shared<GenericBuffer> Create(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access, bool cpu_mapped = false);
 
     protected:
         GenericBuffer(const char* name) : Buffer(name, RenderResourceType::GenericBuffer) {}
@@ -154,15 +156,13 @@ namespace RB::Graphics
 
         RenderResourceFormat GetFormat() const override { return RenderResourceFormat::Unkown; }
 
-        bool AllowedRandomReadWrites() const override { return false; };
-
         uint64_t GetSize() const override { return GetVertexElementCount() * GetVertexSize(); }
 
         virtual uint32_t GetVertexSize() const = 0;
         virtual uint32_t GetVertexElementCount() const = 0;
         virtual TopologyType GetTopologyType() const = 0;
 
-        static Shared<VertexBuffer> Create(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false);
+        static Shared<VertexBuffer> Create(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient = false, bool random_read_write_access = false);
 
     protected:
         VertexBuffer(const char* name) : Buffer(name, RenderResourceType::VertexBuffer) {}

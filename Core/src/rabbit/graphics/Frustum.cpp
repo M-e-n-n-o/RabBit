@@ -38,7 +38,7 @@ namespace RB::Graphics
     {
         m_WorldToViewMat = world_to_view;
         m_ViewToWorldMat = world_to_view;
-        m_ViewToWorldMat.Invert();
+        m_ViewToWorldMat.InvertAffine();
     }
 
     void Frustum::LookAt(const Math::Float3& eye, const Math::Float3& target, const Math::Float3& up)
@@ -61,7 +61,7 @@ namespace RB::Graphics
                                              1.0f);
 
         m_ViewToWorldMat = m_WorldToViewMat;
-        m_ViewToWorldMat.Invert();
+        m_ViewToWorldMat.InvertAffine();
     }
 
     void Frustum::SetPerspectiveProjectionVFov(float near, float far, float vfov, float aspect, bool reverse_depth)

@@ -33,6 +33,8 @@ namespace RB::Entity
         SpawnedModel result;
         result.nodeObjects.resize(model->nodes.size());
 
+        List<Transform*> node_transforms(model->nodes.size());
+
         // Nodes (The loader guarantees that parents come before their children)
         for (size_t i = 0; i < model->nodes.size(); i++)
         {
@@ -49,7 +51,8 @@ namespace RB::Entity
             transform->rotation = node.rotation;
             transform->scale    = node.scale;
 
-            result.nodeObjects[i]    = object;
+            result.nodeObjects[i] = object;
+            node_transforms[i] = transform;
         }
 
         if (!result.nodeObjects.empty())
@@ -94,7 +97,11 @@ namespace RB::Entity
             }
 
             has_renderer[submodel.nodeIndex] = true;
-            object->AddComponent<MeshRenderable>(mesh, material);
+
+            if (submodel.isSkinned)
+                object->AddComponent<SkinnedMeshRenderable>(mesh, material, node_transforms, submodel.skinBones);
+            else
+                object->AddComponent<MeshRenderable>(mesh, material);
         }
 
         // Animations

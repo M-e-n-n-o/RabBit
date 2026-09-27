@@ -19,6 +19,7 @@ namespace RB::Graphics
         None,
         GBuffer,
         CascadedShadow,
+        Skinning,
         DeferredLighting,
         Overlay2D,
         Smaa,

@@ -65,69 +65,85 @@ namespace RB::Graphics
     {
         const auto& list = scene->GetComponentsWithTypeOf<DirectionalLight>();
         const auto& mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
+        const auto& skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
 
-        if (list.empty() || mesh_renderables.empty())
+        if (list.empty() || (mesh_renderables.empty() && skinned_renderables.empty()))
         {
             return nullptr;
         }
 
-        CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(mesh_renderables.size());
+        CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(mesh_renderables.size() + skinned_renderables.size());
 
         const auto* light = (DirectionalLight*)list[0];
 
         uint32_t fsize = sizeof(Frustum) * m_ShadowSlices;
         Frustum* frustums = (Frustum*)allocator->Allocate(fsize);
 
+        List<Math::Float4x4> precomputed_vps(m_ShadowSlices);
         for (int i = 0; i < m_ShadowSlices; ++i)
         {
             float split;
             frustums[i] = light->CalculateFrustum(view_context->camera, view_context->cameraTransform, i, m_ShadowSlices, &split);
+
+            precomputed_vps[i] = frustums[i].GetWorldToViewMatrix() * frustums[i].GetViewToClipMatrix();
         }
 
         uint32_t total_entries = 0;
 
-        for (int i = 0; i < mesh_renderables.size(); ++i)
+        auto ProcessRenderables = [&]<typename TRenderable>(const auto& container, auto GetPrimaryBuffer) 
         {
-            const MeshRenderable*   mesh_renderable = (const MeshRenderable*)mesh_renderables[i];
-            const Mesh*             mesh            = mesh_renderable->GetMesh();
-            const Mesh::VertexPack& vp              = mesh->GetVertexPack();
-
-            if (!vp.primaryBuffer || !vp.primaryBuffer->ContentsReady() ||
-                (vp.indexBuffer && !vp.indexBuffer->ContentsReady()))
+            for (const ObjectComponent* component : container)
             {
-                continue;
-            }
+                const auto* renderable = static_cast<const TRenderable*>(component);
+        
+                const Mesh*                 mesh = renderable->GetMesh();
+                const Mesh::VertexPack&     vp   = mesh->GetVertexPack();
+                const Shared<VertexBuffer>& prim = GetPrimaryBuffer(renderable, vp);
 
-            const Transform*     transform = mesh_renderable->GetGameObject()->GetComponent<Transform>();
-            const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
-
-            uint32_t frustum_mask = 0;
-            if (mesh->HasValidAABB())
-            {
-                const Math::AABB& aabb = mesh->GetAABB();
-                const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
-
-                // Do frustum culling on each shadow slice
-                for (int i = 0; i < m_ShadowSlices; ++i)
+                if (!prim || !prim->ContentsReady() ||
+                    (vp.indexBuffer && !vp.indexBuffer->ContentsReady()))
                 {
-                    const Math::Float4x4 vp = frustums[i].GetWorldToViewMatrix() * frustums[i].GetViewToClipMatrix();
-                    frustum_mask |= Frustum::IsInFrustum(world_aabb, vp) << i;
+                    continue;
                 }
-            }
 
-            if (frustum_mask == 0)
-            {
-                continue;
-            }
+                const Transform*     transform = renderable->GetGameObject()->GetComponent<Transform>();
+                const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
 
-            CascadedShadowEntry::ModelEntry entry = {};
-            entry.frustumMask   = frustum_mask;
-            entry.vb            = vp.primaryBuffer;
-            entry.ib            = vp.indexBuffer;
-            entry.modelMatrix   = model_mat;
-            entries[total_entries] = entry;
-            total_entries++;
-        }
+                uint32_t frustum_mask = 0;
+                if (mesh->HasValidAABB())
+                {
+                    const Math::AABB& aabb = mesh->GetAABB();
+                    const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
+
+                    // Do frustum culling on each shadow slice
+                    for (int i = 0; i < m_ShadowSlices; ++i)
+                    {
+                        frustum_mask |= Frustum::IsInFrustum(world_aabb, precomputed_vps[i]) << i;
+                    }
+                }
+
+                if (frustum_mask == 0)
+                {
+                    continue;
+                }
+
+                CascadedShadowEntry::ModelEntry entry = {};
+                entry.frustumMask   = frustum_mask;
+                entry.vb            = prim;
+                entry.ib            = vp.indexBuffer;
+                entry.modelMatrix   = model_mat;
+                entries[total_entries] = entry;
+                total_entries++;
+            }
+        };
+
+        // Execute for regular meshes
+        ProcessRenderables.operator()<MeshRenderable>(mesh_renderables, 
+            [](auto* r, const auto& vp)  { return vp.primaryBuffer; });
+
+        // Execute for skinned meshes
+        ProcessRenderables.operator()<SkinnedMeshRenderable>(skinned_renderables, 
+            [](auto* r, const auto& vp) { return r->GetSkinnedPrimaryBuffer(); });
 
         if (total_entries == 0)
         {

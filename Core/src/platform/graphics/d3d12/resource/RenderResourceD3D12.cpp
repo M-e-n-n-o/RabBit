@@ -16,13 +16,15 @@ namespace RB::Graphics::D3D12
     //								GenericBuffer
     // ---------------------------------------------------------------------------
 
-    GenericBufferD3D12::GenericBufferD3D12(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access)
+    GenericBufferD3D12::GenericBufferD3D12(const char* name, RenderResourceFormat format, uint32_t elements, bool random_read_write_access, bool cpu_mapped)
         : GenericBuffer(name)
         , m_Format(format)
         , m_RandomReadWrite(random_read_write_access)
         , m_Elements(elements)
         , m_SRV{}
         , m_UAV{}
+        , m_CpuMapped(cpu_mapped)
+        , m_MappedMemory(nullptr)
     {
         m_ElementSize = GetElementSizeFromFormat(format);
         
@@ -30,12 +32,12 @@ namespace RB::Graphics::D3D12
 
         ResourceManager::BufferDesc desc = {};
         desc.size       = m_Elements * m_ElementSize;
-        desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
+        desc.heapType   = cpu_mapped ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT;
         desc.flags      = random_read_write_access ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
         g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
     }
 
-    GenericBufferD3D12::GenericBufferD3D12(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access)
+    GenericBufferD3D12::GenericBufferD3D12(const char* name, uint32_t element_size, uint32_t elements, bool random_read_write_access, bool cpu_mapped)
         : GenericBuffer(name)
         , m_Format(RenderResourceFormat::Unkown)
         , m_RandomReadWrite(random_read_write_access)
@@ -43,19 +45,40 @@ namespace RB::Graphics::D3D12
         , m_ElementSize(element_size)
         , m_SRV{}
         , m_UAV{}
+        , m_CpuMapped(cpu_mapped)
+        , m_MappedMemory(nullptr)
     {
         m_Resource = new GpuResource();
 
         ResourceManager::BufferDesc desc = {};
         desc.size       = m_Elements * m_ElementSize;
-        desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
+        desc.heapType   = cpu_mapped ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT;
         desc.flags      = random_read_write_access ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
         g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc);
     }
 
     GenericBufferD3D12::~GenericBufferD3D12()
     {
+        if (m_SRV.isValid())
+            g_DescriptorManager->InvalidateDescriptor(m_SRV);
+        if (m_UAV.isValid())
+            g_DescriptorManager->InvalidateDescriptor(m_UAV);
+
         SAFE_DELETE(m_Resource);
+    }
+
+    void* GenericBufferD3D12::Map()
+    {
+        if (!m_CpuMapped)
+        {
+            RB_LOG_ERROR(LOGTAG_GRAPHICS, "Cannot map GenericBuffer, it is not accessible to the CPU");
+            return nullptr;
+        }
+
+        if (m_MappedMemory == nullptr)
+            m_Resource->GetResource()->Map(0, nullptr, (void**)&m_MappedMemory);
+
+        return m_MappedMemory;
     }
 
     DescriptorIndex GenericBufferD3D12::GetSrvHandle()
@@ -106,12 +129,11 @@ namespace RB::Graphics::D3D12
     //								VertexBuffer
     // ---------------------------------------------------------------------------
 
-    VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient)
+    VertexBufferD3D12::VertexBufferD3D12(const char* name, const TopologyType& type, const void* data, uint32_t vertex_size, uint64_t data_size, bool transient, bool random_read_write_access)
         : VertexBuffer(name)
         , m_Type(type)
         , m_VertexSize(vertex_size)
         , m_Size(data_size)
-        , m_Data(data)
         , m_View{}
         , m_Transient(transient)
         , m_GpuAddress(0)
@@ -123,6 +145,8 @@ namespace RB::Graphics::D3D12
             m_GpuAddress = alloc.gpuAddress;
 
             memcpy(alloc.cpuWriteAddress, data, data_size);
+            
+            m_RandomReadWrite = false;
         }
         else
         {
@@ -131,17 +155,22 @@ namespace RB::Graphics::D3D12
             ResourceManager::BufferDesc desc = {};
             desc.size       = data_size;
             desc.heapType   = D3D12_HEAP_TYPE_DEFAULT;
-            desc.flags      = D3D12_RESOURCE_FLAG_NONE;
+            desc.flags      = random_read_write_access ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
             g_ResourceManager->ScheduleCreateBufferResource(m_Resource, name, desc, data, data_size);
+            
+            m_RandomReadWrite = random_read_write_access;
         }
     }
 
     VertexBufferD3D12::~VertexBufferD3D12()
     {
+        if (m_SRV.isValid())
+            g_DescriptorManager->InvalidateDescriptor(m_SRV);
+        if (m_UAV.isValid())
+            g_DescriptorManager->InvalidateDescriptor(m_UAV);
+
         if (!m_Transient)
-        {
             SAFE_DELETE(m_Resource);
-        }
     }
 
     const D3D12_VERTEX_BUFFER_VIEW& VertexBufferD3D12::GetView()
@@ -156,6 +185,50 @@ namespace RB::Graphics::D3D12
         return m_View;
     }
 
+    DescriptorIndex VertexBufferD3D12::GetSrvHandle()
+    {
+        if (!m_SRV.isValid())
+        {
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+            desc.Format                     = DXGI_FORMAT_UNKNOWN;
+            desc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
+            desc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            desc.Buffer.FirstElement        = 0;
+            desc.Buffer.NumElements         = GetVertexElementCount();
+            desc.Buffer.StructureByteStride = m_VertexSize;
+            desc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_NONE;
+
+            m_SRV = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
+        }
+
+        return m_SRV;
+    }
+
+    DescriptorIndex VertexBufferD3D12::GetUavHandle()
+    {
+        if (!m_RandomReadWrite)
+        {
+            RB_ASSERT_ALWAYS(LOGTAG_GRAPHICS, "VertexBuffer does not have random read write access");
+            return DescriptorIndex{};
+        }
+
+        if (!m_UAV.isValid())
+        {
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+            desc.Format                      = DXGI_FORMAT_UNKNOWN;
+            desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
+            desc.Buffer.FirstElement         = 0;
+            desc.Buffer.NumElements          = GetVertexElementCount();
+            desc.Buffer.StructureByteStride  = m_VertexSize;
+            desc.Buffer.CounterOffsetInBytes = 0;
+            desc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
+
+            m_UAV = g_DescriptorManager->CreateDescriptor(m_Resource->GetResource(), desc);
+        }
+
+        return m_UAV;
+    }
+
     // ---------------------------------------------------------------------------
     //								IndexBuffer
     // ---------------------------------------------------------------------------
@@ -163,7 +236,6 @@ namespace RB::Graphics::D3D12
     IndexBufferD3D12::IndexBufferD3D12(const char* name, const uint32_t* data, uint64_t elements)
         : IndexBuffer(name)
         , m_Elements(elements)
-        , m_Data(data)
         , m_View{}
     {
         uint64_t size = m_Elements * GetElementSizeFromFormat(GetFormat());

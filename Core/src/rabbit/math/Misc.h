@@ -56,6 +56,18 @@ namespace RB::Math
     }
 
     template<typename T>
+    inline T Ceil(T value)
+    {
+        return ceil(value);
+    }
+
+    template<>
+    inline float Ceil<float>(float value)
+    {
+        return ceilf(value);
+    }
+
+    template<typename T>
     inline T AlignUp(T value, size_t alignment)
     {
         return (value + alignment - 1) / alignment * alignment;

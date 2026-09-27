@@ -65,7 +65,7 @@ namespace RB::Math
         // Note, all methods after calling this will not work anymore!
         void Transpose();
 
-        Float3 GetPosition();
+        Float3 GetPosition() const;
 
         void RotateAroundX(float xrad);
         void RotateAroundY(float yrad);
@@ -79,7 +79,8 @@ namespace RB::Math
         void Scale(float x, float y, float z);
 
         bool Invert();
-        void InvertProjection();
+        void InvertAffine();                // Specialized, faster invert for matrices with just position, rotation, and scale (no shear)
+        void InvertProjection();            // Specialized, faster invert for projection matrices
         float GetDeterminant() const;
         void GetCofactor(Float3x3& temp, int p, int q) const;
         Float4x4 GetAdjugate() const;
