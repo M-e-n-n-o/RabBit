@@ -32,11 +32,11 @@ namespace RB::Events
         UnorderedMap<MouseCode, bool> m_MouseMap;
 
         Math::Float2                  m_MousePos;
-        Math::Float2                  m_PrevMousePos;
-        bool                          m_MousePosUpdated;
-
-        float                         m_MouseScrollDelta;
-        bool                          m_MouseScrollUpdated;
+        Math::Float2                  m_MouseDeltaAccum;
+        Math::Float2                  m_MouseDelta;
+        float                         m_ScrollAccum;
+        float                         m_ScrollDelta;
+        bool                          m_HasMousePos;
 
         static InputLayer*            s_Instance;
     };

@@ -68,6 +68,14 @@ namespace RB::Graphics::Windows
             delete[] wchar_name;
         }
 
+        // Enable raw mouse input (WM_INPUT)
+        RAWINPUTDEVICE rid = {};
+        rid.usUsagePage = 0x01; // generic desktop
+        rid.usUsage     = 0x02; // mouse
+        rid.dwFlags     = 0;
+        rid.hwndTarget  = m_WindowHandle;
+        RegisterRawInputDevices(&rid, 1, sizeof(rid));
+
         // Create swapchain
         {
             bool transparency_support = (args.windowStyle & kWindowStyle_SemiTransparent) > 0;
@@ -424,7 +432,7 @@ namespace RB::Graphics::Windows
             int x = static_cast<int>(short(LOWORD(lParam)));
             int y = static_cast<int>(short(HIWORD(lParam)));
 
-            MouseMovedEvent e(x, y);
+            MouseMovedEvent e(x, y, false);
             g_EventManager->InsertEvent(e);
 
             if (!g_TrackingMouseMove) 
@@ -438,6 +446,20 @@ namespace RB::Graphics::Windows
                 TrackMouseEvent(&tme);
                 g_TrackingMouseMove = true;
             }
+        }
+        break;
+        case WM_INPUT:
+        {
+            RAWINPUT raw = {};
+            UINT size = sizeof(raw);
+            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER)) != -1u &&
+                raw.header.dwType == RIM_TYPEMOUSE &&
+                !(raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE))
+            {
+                MouseMovedEvent e((float)raw.data.mouse.lLastX, (float)raw.data.mouse.lLastY, true);
+                g_EventManager->InsertEvent(e);
+            }
+            return DefWindowProcW(hwnd, message, wParam, lParam);
         }
         break;
         case WM_MOUSEHOVER:
@@ -531,14 +553,15 @@ namespace RB::Graphics::Windows
         {
             auto* window = Application::GetInstance()->FindWindow(hwnd);
 
+            if (!window)
+                return DefWindowProcW(hwnd, message, wParam, lParam);
+
             if (window->IsFullscreen())
-                return 0; // Should not able to resize using mouse
+                return HTCLIENT; // While window is client area
 
             // Custom hit testing is only for draggable borderless windows
             if (!window->IsDraggableBorderless())
-            {
-                DefWindowProcW(hwnd, message, wParam, lParam);
-            }
+                return DefWindowProcW(hwnd, message, wParam, lParam);
 
             int mouse_x = static_cast<int>(short(LOWORD(lParam)));
             int mouse_y = static_cast<int>(short(HIWORD(lParam)));

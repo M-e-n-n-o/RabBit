@@ -10,9 +10,9 @@ namespace RB::Events
 
     InputLayer::InputLayer()
         : ApplicationLayer("InputLayer")
-        , m_MousePosUpdated(false)
-        , m_MouseScrollUpdated(false)
-        , m_MouseScrollDelta(0.0f)
+        , m_ScrollAccum(0.0f)
+        , m_ScrollDelta(0.0f)
+        , m_HasMousePos(false)
     {
         RB_ASSERT(LOGTAG_EVENT, s_Instance == nullptr, "Can only have one InputLayer class!");
         s_Instance = this;
@@ -39,34 +39,22 @@ namespace RB::Events
     Math::Float2 InputLayer::GetMousePosDelta()
     {
         InputLayer* l = GetInstance();
-        return l->m_MousePos - l->m_PrevMousePos;
+        return l->m_MouseDelta;
     }
 
     float InputLayer::GetMouseScrollDelta()
     {
         InputLayer* l = GetInstance();
-        return l->m_MouseScrollDelta;
+        return l->m_ScrollDelta;
     }
 
     void InputLayer::OnUpdate(float delta_time)
     {
-        if (m_MousePosUpdated)
-        {
-            m_MousePosUpdated = false;
-        }
-        else
-        {
-            m_PrevMousePos = m_MousePos;
-        }
+        m_MouseDelta = m_MouseDeltaAccum;
+        m_MouseDeltaAccum = { 0.0f, 0.0f };
 
-        if (m_MouseScrollUpdated)
-        {
-            m_MouseScrollUpdated = false;
-        }
-        else
-        {
-            m_MouseScrollDelta = 0.0f;
-        }
+        m_ScrollDelta = m_ScrollAccum;
+        m_ScrollAccum = 0.0f;
     }
 
     bool InputLayer::OnEvent(Event& event)
@@ -93,20 +81,27 @@ namespace RB::Events
 
         BindEvent<MouseScrolledEvent>([&](MouseScrolledEvent& e)
             {
-                m_MouseScrollDelta = e.GetDeltaY();
-                m_MouseScrollUpdated = true;
+                m_ScrollAccum += e.GetDeltaY();
             }, event);
 
         BindEvent<MouseMovedEvent>([&](MouseMovedEvent& e)
             {
-                m_PrevMousePos = m_MousePos;
-                m_MousePos.x = e.GetMouseX();
-                m_MousePos.y = e.GetMouseY();
-                m_MousePosUpdated = true;
+                if (e.IsRawMovement())
+                {
+                    // For raw events, X/Y hold the relative movement from the device, not a position, so accumulate them as-is
+                    m_MouseDeltaAccum = m_MouseDeltaAccum + Math::Float2(e.GetMouseX(), e.GetMouseY());
+                }
+                else
+                {
+                    // Absolute cursor position only
+                    m_MousePos = Math::Float2(e.GetMouseX(), e.GetMouseY());
+                    m_HasMousePos = true;
+                }
             }, event);
 
         BindEvent<MouseEnteredEvent>([&](MouseEnteredEvent& e)
             {
+                m_HasMousePos = false;
                 for (auto& b : m_KeyMap)
                     b.second = false;
                 for (auto& b : m_MouseMap)
@@ -115,6 +110,7 @@ namespace RB::Events
 
         BindEvent<MouseExitedEvent>([&](MouseExitedEvent& e)
             {
+                m_HasMousePos = false;
                 for (auto& b : m_KeyMap)
                     b.second = false;
                 for (auto& b : m_MouseMap)

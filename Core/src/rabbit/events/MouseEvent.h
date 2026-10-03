@@ -16,10 +16,11 @@ namespace RB::Events
     class MouseMovedEvent : public MouseEvent
     {
     public:
-        MouseMovedEvent(const float x, const float y) : m_MouseX(x), m_MouseY(y) {}
+        MouseMovedEvent(const float x, const float y, bool raw) : m_MouseX(x), m_MouseY(y), m_Raw(raw) {}
 
         float GetMouseX() const { return m_MouseX; }
         float GetMouseY() const { return m_MouseY; }
+        bool  IsRawMovement() const { return m_Raw; }
 
         DEFINE_CLASS_TYPE(MouseMovedEvent, MouseMoved, false)
         int GetCategoryFlags() const override { return kEventCat_Mouse; }
@@ -27,6 +28,7 @@ namespace RB::Events
     private:
         float m_MouseX;
         float m_MouseY;
+        bool  m_Raw;
     };
 
 
