@@ -72,7 +72,7 @@ namespace RB::Graphics
         };
     }
 
-    RenderPassEntry* SmaaPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* SmaaPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
     {
         SmaaEntry* e = allocator->Allocate<SmaaEntry>();
         return e;

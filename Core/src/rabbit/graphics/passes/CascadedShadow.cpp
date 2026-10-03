@@ -50,7 +50,7 @@ namespace RB::Graphics
                         .name       = "CascadedShadowMap",
                         .format     = RenderResourceFormat::R32_TYPELESS,
                         .type       = RenderResourcePassType::Tex2D,
-                        .typeDesc   = { 1024, 1024, m_ShadowSlices },
+                        .typeDesc   = { 2048, 2048, m_ShadowSlices },
                         .flags      = kRTFlag_CustomSized | kRTFlag_ClearBeforeGraph,
                         .clearValue = 1.0f
                     }
@@ -61,7 +61,7 @@ namespace RB::Graphics
             };
     }
 
-    RenderPassEntry* CascadedShadowPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* CascadedShadowPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         const auto& list = scene->GetComponentsWithTypeOf<DirectionalLight>();
         const auto& mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
@@ -143,7 +143,7 @@ namespace RB::Graphics
 
         // Execute for skinned meshes
         ProcessRenderables.operator()<SkinnedMeshRenderable>(skinned_renderables, 
-            [](auto* r, const auto& vp) { return r->GetSkinnedPrimaryBuffer(); });
+            [view_context](auto* r, const auto& vp) { return view_context->scheduledSkinning ? r->GetSkinnedPrimaryBuffer() : vp.primaryBuffer; });
 
         if (total_entries == 0)
         {

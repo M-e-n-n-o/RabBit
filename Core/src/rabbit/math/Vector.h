@@ -270,6 +270,8 @@ namespace RB::Math
 
         Float3 operator*(const Float4x4& other) const;
 
+        bool operator==(const Float3& other) const;
+
         static Float3 Min(const Float3& first, const Float3& second);
         static Float3 Max(const Float3& first, const Float3& second);
 

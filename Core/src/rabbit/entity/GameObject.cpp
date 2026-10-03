@@ -30,20 +30,18 @@ namespace RB::Entity
 
     void GameObject::SetParent(GameObject* new_parent)
     {
-        if (new_parent == nullptr)
-        {
-            if (m_Parent != nullptr)
-            {
-                m_Parent->OnChildDetached(this);
-            }
+        if (m_Parent == new_parent)
+            return;
 
-            m_Parent = nullptr;
-        }
-        else
-        {
-            m_Parent = new_parent;
+        if (m_Parent != nullptr)
+            m_Parent->OnChildDetached(this);
+
+        m_Parent = new_parent;
+
+        OnNewParent();
+
+        if (new_parent != nullptr)
             new_parent->OnNewChildAttached(this);
-        }
     }
 
     GameObject* GameObject::GetParent() const
@@ -54,6 +52,14 @@ namespace RB::Entity
     const UnorderedSet<GameObject*>& GameObject::GetChildren() const
     {
         return m_Children;
+    }
+
+    void GameObject::OnNewParent()
+    {
+        for (ObjectComponent* comp : m_Components)
+        {
+            comp->OnNewParent(m_Parent);
+        }
     }
 
     void GameObject::OnNewChildAttached(GameObject* obj)

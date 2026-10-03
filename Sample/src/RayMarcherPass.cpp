@@ -65,7 +65,7 @@ RenderPassConfig RayMarcherPass::GetConfiguration(const RenderPassSettings* sett
     };
 }
 
-RenderPassEntry* RayMarcherPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
+RenderPassEntry* RayMarcherPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
 {
     RayMarcherRenderEntry* entry = allocator->Allocate<RayMarcherRenderEntry>();
     return entry;
@@ -96,7 +96,7 @@ void RayMarcherPass::Render(RenderPassInput& in)
         in.ri->SetComputeShader(CS_CollisionCheck);
 
         CollisionCheckCB data = {};
-        data.points[0] = Math::Float4(in.viewContext->cameraTransform.position);
+        data.points[0] = Math::Float4(in.viewContext->cameraTransform.GetPosition());
         data.maxPoints = 1;
 
         in.ri->SetConstantShaderData(RayMarcherGlobals_CollisionChecks, &data, sizeof(CollisionCheckCB));

@@ -29,7 +29,7 @@ namespace RB::Entity
             List<Animation*>    animations;                 // One per LoadedModel::animations entry
         };
 
-        SpawnedModel SpawnModel(Scene* scene, const char* model_path, const char* texture_path_prefix = "");
+        SpawnedModel SpawnModel(Scene* scene, const char* model_path, bool converted_textures = true, const char* texture_path_prefix = "");
         SpawnedModel SpawnModel(Scene* scene, const LoadedModel* loaded_model, const List<Material*>& materials);
     }
 }

@@ -21,7 +21,7 @@ namespace RB::Graphics
         }
     }
 
-    RenderPassEntry** RenderGraph::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry** RenderGraph::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
     {
         size_t size = sizeof(RenderPassEntry*) * m_RenderFlow.size();
         RenderPassEntry** entries = (RenderPassEntry**)allocator->Allocate(size);

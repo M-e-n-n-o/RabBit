@@ -330,7 +330,7 @@ namespace RB::Graphics
             }
             
             contexts[context_index].viewFrustum = {};
-            contexts[context_index].viewFrustum.SetTransform(transform->position, transform->rotation);
+            contexts[context_index].viewFrustum.SetTransform(transform->GetPosition(), transform->GetRotation());
             contexts[context_index].viewFrustum.SetPerspectiveProjectionVFov(camera->GetNearPlane(), camera->GetFarPlane(), camera->GetVerticalFovInRadians(), contexts[context_index].finalColorTarget->GetViewportAspectRatio(), true);
             //contexts[context_index].viewFrustum.SetOrthographicProjection(camera->GetNearPlane(), camera->GetFarPlane(), -1 * window->GetAspectRatio(), 1 * contexts[context_index].finalColorTarget->GetViewportAspectRatio(), 1, -1, true);
 

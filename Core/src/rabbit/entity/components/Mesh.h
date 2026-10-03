@@ -52,13 +52,21 @@ namespace RB::Entity
     public:
 
         Material();
-        Material(const char* name, LoadedImage* image);
-        Material(const char* file_name, bool converted_texture, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
-        Shared<Graphics::Texture2D> GetTexture() const { return m_Texture; }
+        void LoadAlbedoTexture(const char* name, LoadedImage* image);
+        void LoadAlbedoTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space = TextureColorSpace::sRGB);
+
+        void LoadNormalTexture(const char* name, LoadedImage* image);
+        void LoadNormalTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space = TextureColorSpace::sRGB);
+
+        Shared<Graphics::Texture2D> GetAlbedoTexture() const { return m_AlbedoTex; }
+        Shared<Graphics::Texture2D> GetNormalTexture() const { return m_NormalTex; }
 
     private:
-        Shared<Graphics::Texture2D> m_Texture;
+        Shared<Graphics::Texture2D> LoadTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space) const;
+
+        Shared<Graphics::Texture2D> m_AlbedoTex;
+        Shared<Graphics::Texture2D> m_NormalTex;
     };
 
     class MeshRenderable : public ObjectComponent

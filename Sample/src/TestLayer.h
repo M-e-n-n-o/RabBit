@@ -61,14 +61,15 @@ public:
         //};
 
         m_Mesh = new Mesh("Cube", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
-        m_Material = new Material("ConvertedRock.bc3", true, TextureColorSpace::sRGB);
+        m_Material = new Material();
+        m_Material->LoadAlbedoTexture("ConvertedRock.bc3", true, TextureColorSpace::sRGB);
         //m_Material = new Material("TheRock.png", false, TextureColorSpace::sRGB);
 
         Scene* scene = Application::GetInstance()->GetScene();
 
-        m_Model = SceneUtils::SpawnModel(scene, "ConvertedSuit.rbmd", "sponza/textures/");
-        m_Model.rootTransform->position = Float3(0, 0, 100);
-        m_Model.rootTransform->scale    = Math::Float3(10.0f);
+        m_Model = SceneUtils::SpawnModel(scene, "ConvertedSponza.rbmd", false, "sponza/textures/");
+        m_Model.rootTransform->SetPosition(Float3(0, 0, 100));
+        m_Model.rootTransform->SetScale(Math::Float3(10.0f));
         m_Transform = m_Model.rootTransform;
 
         if (m_Model.animator)
@@ -88,7 +89,7 @@ public:
         auto* ground_t = ground_obj->AddComponent<Transform>();
         ground_obj->AddComponent<NetworkTransformSync>(false);
         //ground_t->position.y = -5;
-        ground_t->scale = Float3(5, 5, 5);
+        ground_t->SetScale(Float3(5, 5, 5));
 
         auto* sun = scene->CreateGameObject();
         sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
@@ -141,10 +142,10 @@ public:
     void OnUpdate(float delta) override
     {
         if (Input::IsKeyDown(KeyCode::Q))
-            m_Transform->rotation = m_Transform->rotation * Quaternion::FromAxisAngle(WorldUp, DegreesToRadians(25.0f * delta));
+            m_Transform->SetRotation(m_Transform->GetRotation() * Quaternion::FromAxisAngle(WorldUp, DegreesToRadians(25.0f * delta)));
         if (Input::IsKeyDown(KeyCode::E))
-            m_Transform->rotation = m_Transform->rotation * Quaternion::FromAxisAngle(WorldRight, DegreesToRadians(25.0f * delta));
-        m_Transform->rotation.Normalize();
+            m_Transform->SetRotation(m_Transform->GetRotation() * Quaternion::FromAxisAngle(WorldRight, DegreesToRadians(25.0f * delta)));
+        m_Transform->NormalizeRotation();
 
         if (Input::IsMouseKeyDown(MouseCode::ButtonRight))
         {
@@ -155,29 +156,29 @@ public:
 
         m_CameraPitch = Clamp(m_CameraPitch, -89.0f, 89.0f);
 
-        m_Camera->rotation = Quaternion::FromEuler(DegreesToRadians(m_CameraPitch), DegreesToRadians(m_CameraYaw), 0.0f);
+        m_Camera->SetRotation(Quaternion::FromEuler(DegreesToRadians(m_CameraPitch), DegreesToRadians(m_CameraYaw), 0.0f));
 
-        Float3 forward = m_Camera->rotation.Rotate(WorldForward);
-        Float3 right   = m_Camera->rotation.Rotate(WorldRight);
-        Float3 up      = m_Camera->rotation.Rotate(WorldUp);
+        Float3 forward = m_Camera->GetRotation().Rotate(WorldForward);
+        Float3 right   = m_Camera->GetRotation().Rotate(WorldRight);
+        Float3 up      = m_Camera->GetRotation().Rotate(WorldUp);
 
         // Move forward/backward
         if (Input::IsKeyDown(KeyCode::W))
-            m_Camera->position = m_Camera->position + (forward * (50 * delta));
+            m_Camera->SetPosition(m_Camera->GetPosition() + (forward * (50 * delta)));
         if (Input::IsKeyDown(KeyCode::S))
-            m_Camera->position = m_Camera->position - (forward * (50 * delta));
+            m_Camera->SetPosition(m_Camera->GetPosition() - (forward * (50 * delta)));
 
         // Strafe left/right
         if (Input::IsKeyDown(KeyCode::A))
-            m_Camera->position = m_Camera->position - (right * (50 * delta));
+            m_Camera->SetPosition(m_Camera->GetPosition() - (right * (50 * delta)));
         if (Input::IsKeyDown(KeyCode::D))
-            m_Camera->position = m_Camera->position + (right * (50 * delta));
+            m_Camera->SetPosition(m_Camera->GetPosition() + (right * (50 * delta)));
 
         // Move up/down
         if (Input::IsKeyDown(KeyCode::Space))
-            m_Camera->position = m_Camera->position + (up * (50 * delta));
+            m_Camera->SetPosition(m_Camera->GetPosition() + (up * (50 * delta)));
         if (Input::IsKeyDown(KeyCode::LeftShift))
-            m_Camera->position = m_Camera->position - (up * (50 * delta));
+            m_Camera->SetPosition(m_Camera->GetPosition() - (up * (50 * delta)));
     }
 
     bool OnEvent(Event& event) override

@@ -73,7 +73,7 @@ namespace RB
             List<uint32_t>     indices;
             Math::Float3       minBounds;           // In the local space of the node
             Math::Float3       maxBounds;
-            uint32_t           diffuseTexIndex;     // Index into diffuseColorTextures (0xFFFFFFFF = none)
+            uint32_t           materialIndex;       // Index into albedoTextures/normalTextures (0xFFFFFFFF = none)
             uint32_t           nodeIndex;
             bool               isSkinned;
             List<SkinVertex>   skinVertices;
@@ -109,7 +109,8 @@ namespace RB
             List<AnimationChannel>  channels;
         };
 
-        List<std::string>   diffuseColorTextures;
+        List<std::string>   albedoTextures;
+        List<std::string>   normalTextures;
         List<Submodel>      models;
         List<Node>          nodes;
         List<Animation>     animations;

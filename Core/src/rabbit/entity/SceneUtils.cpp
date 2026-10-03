@@ -10,7 +10,7 @@ namespace RB::Entity
 {
     using namespace SceneUtils;
 
-    SpawnedModel SceneUtils::SpawnModel(Scene* scene, const char* model_path, const char* texture_path_prefix)
+    SpawnedModel SceneUtils::SpawnModel(Scene* scene, const char* model_path, bool converted_textures, const char* texture_path_prefix)
     {
         LoadedModel model;
         bool success = AssetLoader::LoadConvertedModel(model_path, &model);
@@ -20,9 +20,15 @@ namespace RB::Entity
         }
 
         List<Material*> materials;
-        for (int i = 0; i < model.diffuseColorTextures.size(); i++)
+        for (int i = 0; i < model.albedoTextures.size(); i++)
         {
-            materials.push_back(new Material((texture_path_prefix + model.diffuseColorTextures[i]).c_str(), false));
+            Material* mat = new Material();
+            materials.push_back(mat);
+            mat->LoadAlbedoTexture((texture_path_prefix + model.albedoTextures[i]).c_str(), converted_textures);
+        }
+        for (int i = 0; i < model.normalTextures.size(); i++)
+        {
+            materials[i]->LoadNormalTexture((texture_path_prefix + model.normalTextures[i]).c_str(), converted_textures);
         }
 
         return SpawnModel(scene, &model, materials);
@@ -47,9 +53,9 @@ namespace RB::Entity
                 object->SetParent(result.nodeObjects[node.parent]);
 
             // Local transform
-            transform->position = node.translation;
-            transform->rotation = node.rotation;
-            transform->scale    = node.scale;
+            transform->SetPosition(node.translation);
+            transform->SetRotation(node.rotation);
+            transform->SetScale(node.scale);
 
             result.nodeObjects[i] = object;
             node_transforms[i] = transform;
@@ -73,7 +79,7 @@ namespace RB::Entity
             if (submodel.positions.empty() || submodel.nodeIndex >= result.nodeObjects.size())
                 continue;
 
-            Material* material = materials[submodel.diffuseTexIndex];
+            Material* material = materials[submodel.materialIndex];
             if (material == nullptr)
                 continue;
 
@@ -88,10 +94,6 @@ namespace RB::Entity
                 GameObject* child = scene->CreateGameObject();
                 Transform* child_transform = child->AddComponent<Transform>();
                 child->SetParent(object);
-
-                child_transform->position = Math::Float3(0.0f, 0.0f, 0.0f);
-                child_transform->rotation = Math::Quaternion::FromEuler(0.0f, 0.0f, 0.0f);
-                child_transform->scale    = Math::Float3(1.0f);
 
                 object = child;
             }

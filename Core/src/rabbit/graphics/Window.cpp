@@ -31,7 +31,7 @@ namespace RB::Graphics
         // Destroy window in implementation class!
     }
 
-    const Shared<Graphics::Texture2D>& Window::GetVirtualBackBuffer()
+    const Shared<Graphics::Texture2D> Window::GetVirtualBackBuffer()
     {
         if (!IsValid())
         {

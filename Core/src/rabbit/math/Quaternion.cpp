@@ -69,6 +69,14 @@ namespace RB::Math
         );
     }
 
+    bool Quaternion::operator==(const Quaternion& other) const
+    {
+        return Math::Abs(x - other.x) < kEpsilon &&
+               Math::Abs(y - other.y) < kEpsilon &&
+               Math::Abs(z - other.z) < kEpsilon &&
+               Math::Abs(w - other.w) < kEpsilon;
+    }
+
     Float3 Quaternion::Rotate(const Float3& v) const
     {
         Float3 q(x, y, z);

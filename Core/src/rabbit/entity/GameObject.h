@@ -57,7 +57,7 @@ namespace RB::Entity
         const UnorderedSet<GameObject*>& GetChildren() const;
 
     private:
-
+        void OnNewParent();
         void OnNewChildAttached(GameObject* obj);
         void OnChildDetached(GameObject* obj);
 
@@ -169,7 +169,13 @@ namespace RB::Entity
             return false;
 
         auto itr = std::find(m_Components.begin(), m_Components.end(), comp);
-        m_Components.erase(itr);
+        RB_ASSERT(LOGTAG_ENTITY, itr != m_Components.end(), "Somehow failed the std::find call?");
+        if (itr != m_Components.end())
+        {
+            // Remove the component
+            *itr = m_Components.back();
+            m_Components.pop_back();
+        }
 
         // Remove all mappings to this component
         for (auto it = m_Map.begin(); it != m_Map.end();) 

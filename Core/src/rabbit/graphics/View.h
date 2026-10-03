@@ -32,14 +32,17 @@ namespace RB::Graphics
         uint32_t            renderGraphSizeID;
 
         // RenderPasses can change the properties of the viewport if needed
-        Viewport     viewport;
-        Frustum      viewFrustum;
+        Viewport            viewport;
+        Frustum             viewFrustum;
 
         // The camera this ViewContext is linked to
-        Entity::Camera camera;
-        Entity::Transform cameraTransform;
+        Entity::Camera      camera;
+        Entity::Transform   cameraTransform;
 
         void SetFrameConstants(uint32_t slot, RenderInterface* render_interface) const;
         void SetFrameConstants(uint32_t slot, RenderInterface* render_interface, Viewport vp, Frustum frustum) const;
+
+        // Cross-pass communication members
+        bool                scheduledSkinning = false;
     };
 }

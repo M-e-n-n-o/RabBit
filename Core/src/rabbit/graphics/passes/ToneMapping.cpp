@@ -49,7 +49,7 @@ namespace RB::Graphics
         };
     }
 
-    RenderPassEntry* ToneMappingPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* ToneMappingPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
     {
         ToneMappingEntry* e = allocator->Allocate<ToneMappingEntry>();
         return e;

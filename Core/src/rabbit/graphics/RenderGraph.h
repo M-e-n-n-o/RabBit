@@ -25,7 +25,7 @@ namespace RB::Graphics
 
         RenderGraph() = default;
 
-        RenderPassEntry** SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator);
+        RenderPassEntry** SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator);
         void RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context, uint32_t size_id);
 
     private:

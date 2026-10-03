@@ -44,6 +44,7 @@ namespace RB::ModelConverter
     struct CompiledMaterial
     {
         char        diffuseTexture[kMaxTextureLength];  // Texture file name (no directory), null terminated
+        char        normalTexture[kMaxTextureLength];
     };
 
     struct CompiledVertex

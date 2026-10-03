@@ -19,7 +19,8 @@ namespace RB::Entity
     {
         if (m_IsLocal)
         {
-            SendMessage(&m_Transform->position);
+            Math::Float3 pos = m_Transform->GetPosition();
+            SendMessage(&pos);
         }
     }
 
@@ -27,7 +28,7 @@ namespace RB::Entity
     {
         if (!m_IsLocal)
         {
-            m_Transform->position = *message;
+            m_Transform->SetPosition(*message);
         }
     }
 }

@@ -308,8 +308,9 @@ namespace RB
             // Materials
             for (uint32_t i = 0; i < header.materialCount; i++)
             {
-                const char* name = materials[i].diffuseTexture;
-                out_model->diffuseColorTextures.push_back(std::string(name, strnlen(name, ModelConverter::kMaxTextureLength)));
+                const auto& mat = materials[i];
+                out_model->albedoTextures.push_back(std::string(mat.diffuseTexture, strnlen(mat.diffuseTexture, ModelConverter::kMaxTextureLength)));
+                out_model->normalTextures.push_back(std::string(mat.normalTexture, strnlen(mat.normalTexture, ModelConverter::kMaxTextureLength)));
             }
 
             // Nodes
@@ -360,7 +361,7 @@ namespace RB
 
                 dst.minBounds       = ToFloat3(src.minBounds);
                 dst.maxBounds       = ToFloat3(src.maxBounds);
-                dst.diffuseTexIndex = src.materialIndex;
+                dst.materialIndex   = src.materialIndex;
                 dst.nodeIndex       = src.nodeIndex;
                 dst.isSkinned       = skinned;
 

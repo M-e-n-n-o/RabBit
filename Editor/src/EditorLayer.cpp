@@ -95,7 +95,7 @@ namespace Editor
             GameObject* triangle_obj = scene->CreateGameObject("Triangle");
             triangle_obj->AddComponent<MeshRenderable>(m_TriangleMesh, m_Material);
             auto* t = triangle_obj->AddComponent<Transform>();
-            t->position.z = 5;
+            t->SetPositionZ(5);
             Triangle = t;
 
             auto* sun = scene->CreateGameObject("Sun");
@@ -117,7 +117,7 @@ namespace Editor
         m_Camera->SetRenderTexture(m_Viewport->GetSceneTexture());
 
         angle += delta * 150.0f;
-        Triangle->rotation = Math::Quaternion::FromAxisAngle(Math::WorldUp, Math::DegreesToRadians(angle));
+        Triangle->SetRotation(Math::Quaternion::FromAxisAngle(Math::WorldUp, Math::DegreesToRadians(angle)));
 
         if (m_Recording)
         {

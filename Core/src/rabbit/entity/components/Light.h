@@ -38,7 +38,7 @@ namespace RB::Entity
 
             // Get the corners of this frustum slice in world space
             Graphics::Frustum temp_frustum;
-            temp_frustum.SetTransform(cam_transform.position, cam_transform.rotation);
+            temp_frustum.SetTransform(cam_transform.GetPosition(), cam_transform.GetRotation());
             temp_frustum.SetPerspectiveProjectionVFov(prev_split, split_dist,
                                                       camera.GetVerticalFovInRadians(), 
                                                       ((float)camera.GetRenderTargetWidth() / (float)camera.GetRenderTargetHeight()),

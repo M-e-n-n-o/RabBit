@@ -18,6 +18,8 @@ namespace RB::Entity
         virtual void OnAttached() {}
 
         virtual void OnUpdate(float delta_time) {}
+
+        virtual void OnNewParent(GameObject* obj) {}
         virtual void OnChildAttached(GameObject* obj) {}
         virtual void OnChildDettached(GameObject* obj) {}
 

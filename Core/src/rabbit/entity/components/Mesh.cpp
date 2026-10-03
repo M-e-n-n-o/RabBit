@@ -1,8 +1,11 @@
 #include "RabBitCommon.h"
 #include "Mesh.h"
 #include "Transform.h"
+#include "app/Application.h"
 #include "app/AssetLoader.h"
+#include "entity/Scene.h"
 #include "entity/GameObject.h"
+#include "entity/components/Camera.h"
 #include "graphics/ResourceDefaults.h"
 
 namespace RB::Entity
@@ -60,16 +63,35 @@ namespace RB::Entity
 
     Material::Material()
     {
-        m_Texture = Graphics::g_TexDefaultError;
+        m_AlbedoTex = Graphics::g_TexDefaultError;
+        m_NormalTex = nullptr;
     }
 
-    Material::Material(const char* name, LoadedImage* image)
+    void Material::LoadAlbedoTexture(const char* name, LoadedImage* image)
     {
-        m_Texture = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
+        m_AlbedoTex = nullptr;
+        m_AlbedoTex = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
     }
 
-    Material::Material(const char* file_name, bool converted_texture, TextureColorSpace color_space)
-        : m_Texture(nullptr)
+    void Material::LoadAlbedoTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space)
+    {
+        m_AlbedoTex = LoadTexture(file_name, converted_texture, color_space);
+
+        if (m_AlbedoTex == nullptr)
+            m_AlbedoTex = Graphics::g_TexDefaultError;
+    }
+
+    void Material::LoadNormalTexture(const char* name, LoadedImage* image)
+    {
+        m_NormalTex = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
+    }
+
+    void Material::LoadNormalTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space)
+    {
+        m_NormalTex = LoadTexture(file_name, converted_texture, color_space);
+    }
+
+    Shared<Graphics::Texture2D> Material::LoadTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space) const
     {
         LoadedImage img;
 
@@ -79,10 +101,10 @@ namespace RB::Entity
         else
             success = AssetLoader::LoadTexture8Bit(file_name, &img, color_space == TextureColorSpace::sRGB);
 
-        if (success)
-            m_Texture = Graphics::Texture2D::Create(img.name, img.data, img.dataSize, img.format, img.width, img.height, img.mipCount, false, false);
-        else
-            m_Texture = Graphics::g_TexDefaultError;
+        if (!success)
+            return nullptr;
+
+        return Graphics::Texture2D::Create(img.name, img.data, img.dataSize, img.format, img.width, img.height, img.mipCount, false, false);
     }
 
     SkinnedMeshRenderable::SkinnedMeshRenderable(Mesh* mesh, Material* material, List<Transform*> nodes, List<LoadedModel::SkinBone> bones, float max_skinning_distance)
@@ -127,7 +149,21 @@ namespace RB::Entity
 
     void SkinnedMeshRenderable::OnUpdate(float delta_time)
     {
-        // TODO: Actually check if this mesh is within m_SkinningDistance of the main camera
+        const auto& cameras = Application::GetInstance()->GetScene()->GetComponentsWithTypeOf<Camera>();
+
+        bool in_radius = false;
+        for (const auto& camera : cameras)
+        {
+            const Transform* t = camera->GetGameObject()->GetComponent<Transform>();
+            if (t && Math::Float3::Distance(t->GetPosition(), m_Transform->GetPosition()) < m_SkinningDistance)
+            {
+                in_radius = true;
+                break;
+            }
+        }
+
+        if (!in_radius)
+            return;
 
         Math::Float4x4* dst = (Math::Float4x4*)m_BoneMatrixBuffer->Map();
 

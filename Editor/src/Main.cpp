@@ -78,7 +78,6 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
                 kRenderGraphType_Normal,
                 RenderGraphBuilder()
                 // Passes
-                .AddPass<SkinningPass>          (RenderPassType::Skinning,          RenderPassSettings{})
                 .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
                 .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
                 .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
@@ -88,9 +87,6 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
                 .AddPass<ScreenCapturePass>     (RenderPassType::ScreenCapture,     RenderPassSettings{})
 
                 // Connections           (from)     ->      (to)
-                .AddLink(RenderPassType::Skinning,          RenderPassType::GBuffer)
-                .AddLink(RenderPassType::Skinning,          RenderPassType::CascadedShadow)
-
                 .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting, 
                                             0u,                0u,
                                             1u,                1u)

@@ -71,7 +71,7 @@ namespace RB::Graphics
         virtual RenderResourceFormat        GetBackBufferFormat() = 0;
         virtual uint32_t                    GetCurrentBackBufferIndex() = 0;
         virtual Texture2D*                  GetCurrentBackBuffer() = 0;
-        const Shared<Graphics::Texture2D>&  GetVirtualBackBuffer();
+        const Shared<Graphics::Texture2D>   GetVirtualBackBuffer();
 
         void           Resize(uint32_t width, uint32_t height, int32_t x = -1, int32_t y = -1);
 

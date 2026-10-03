@@ -46,9 +46,15 @@ namespace Editor
             }
 
             List<Material*> materials;
-            for (int i = 0; i < model.diffuseColorTextures.size(); i++)
+            for (int i = 0; i < model.albedoTextures.size(); i++)
             {
-                materials.push_back(new Material(model.diffuseColorTextures[i].c_str(), false));
+                Material* mat = new Material();
+                materials.push_back(mat);
+                mat->LoadAlbedoTexture(model.albedoTextures[i].c_str(), false);
+            }
+            for (int i = 0; i < model.normalTextures.size(); i++)
+            {
+                materials[i]->LoadNormalTexture((model.normalTextures[i]).c_str(), false);
             }
 
             m_Model = SceneUtils::SpawnModel(scene, &model, materials);
@@ -73,7 +79,7 @@ namespace Editor
             m_OrbitDistance = cam_distance;
             m_OrbitYaw      = 0.0f;
             m_OrbitPitch    = 0.0f;
-            m_CamTransform->position.z = -cam_distance;
+            m_CamTransform->SetPositionZ(-cam_distance);
 
             auto* sun = scene->CreateGameObject("Sun");
             sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
@@ -120,12 +126,12 @@ namespace Editor
         offset.y = m_OrbitDistance * Math::Sin(m_OrbitPitch);
         offset.z = -m_OrbitDistance * cos_pitch * Math::Cos(m_OrbitYaw);
 
-        m_CamTransform->position = offset;
+        m_CamTransform->SetPosition(offset);
 
-        Math::Float3 forward = m_CamTransform->position * -1;
+        Math::Float3 forward = m_CamTransform->GetPosition() * -1;
         forward.Normalize();
 
-        m_CamTransform->rotation = Math::Quaternion::LookRotation(forward, Math::Float3(0.0f, 1.0f, 0.0f));
+        m_CamTransform->SetRotation(Math::Quaternion::LookRotation(forward, Math::Float3(0.0f, 1.0f, 0.0f)));
     }
 
     bool ViewerLayer::OnEvent(Event& event)

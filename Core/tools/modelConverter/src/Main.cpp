@@ -21,6 +21,24 @@
 using namespace RB::ModelConverter;
 
 // ------------------------------------------------------------------------------------------------
+// Texture suffix names (if the texture name was not embedded)
+// ------------------------------------------------------------------------------------------------
+
+enum TextureType
+{
+    kTextureType_Albedo,
+    kTextureType_Normal,
+
+    kTextureType_Count
+};
+
+const char* TextureSuffix[kTextureType_Count] =
+{
+    "_Albedo",
+    "_Normal"
+};
+
+// ------------------------------------------------------------------------------------------------
 // Intermediate data (what is gathered from ufbx, before serializing)
 // ------------------------------------------------------------------------------------------------
 
@@ -143,13 +161,13 @@ namespace
 // Conversion
 // ------------------------------------------------------------------------------------------------
 
-static std::string GetTextureName(const ufbx_material* material, const std::string& texture_extension)
+static std::string GetTextureName(const ufbx_texture* tex, const ufbx_material* material, const std::string& texture_extension, const char* fallback_suffix)
 {
     std::string name;
-    if (material->fbx.diffuse_color.texture)
-        name = std::string(material->fbx.diffuse_color.texture->filename.data, material->fbx.diffuse_color.texture->filename.length);
+    if (tex)
+        name = std::string(tex->filename.data, tex->filename.length);
     else
-        name = std::string(material->name.data, material->name.length); // Same fallback as before: use the material name
+        name = std::string(material->name.data, material->name.length) + fallback_suffix + ".png";
 
     // Strip the directory, the engine finds textures by file name
     const size_t slash = name.find_last_of("/\\");
@@ -497,6 +515,11 @@ int main(int argc, char* argv[])
     // Optional: rewrite texture extensions so they point at the compiled textures, e.g. -textureExt .rbtx
     const char* texture_ext_arg = FindLaunchArg("-textureExt");
     const std::string texture_extension = texture_ext_arg ? texture_ext_arg : "";
+    if (texture_ext_arg)
+        LOG("Texture extension: " << texture_ext_arg);
+    else
+        LOG("Texture extension: unchanged");
+
     LOG("");
 
     // Load the scene
@@ -536,7 +559,8 @@ int main(int argc, char* argv[])
     for (const ufbx_material* material : scene->materials)
     {
         CompiledMaterial& dst = materials[material->typed_id];
-        CopyName(dst.diffuseTexture, sizeof(dst.diffuseTexture), GetTextureName(material, texture_extension));
+        CopyName(dst.diffuseTexture, sizeof(dst.diffuseTexture), GetTextureName(material->fbx.diffuse_color.texture, material, texture_extension, TextureSuffix[kTextureType_Albedo]));
+        CopyName(dst.normalTexture, sizeof(dst.normalTexture), GetTextureName(material->fbx.normal_map.texture, material, texture_extension, TextureSuffix[kTextureType_Normal]));
     }
 
     // Meshes

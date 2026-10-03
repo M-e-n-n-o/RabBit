@@ -91,7 +91,7 @@ namespace RB::Graphics
             };
     }
 
-    RenderPassEntry* Overlay2DPass::SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* Overlay2DPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
     {
         uint32_t window_width  = view_context->viewport.width;
         uint32_t window_height = view_context->viewport.height;

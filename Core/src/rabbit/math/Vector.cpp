@@ -262,6 +262,13 @@ Float3 Float3::operator*(const Float4x4& other) const
     );
 }
 
+bool RB::Math::Float3::operator==(const Float3& other) const
+{
+    return Math::Abs(x - other.x) < kEpsilon &&
+           Math::Abs(y - other.y) < kEpsilon &&
+           Math::Abs(z - other.z) < kEpsilon;
+}
+
 Float3 Float3::Min(const Float3& first, const Float3& second)
 {
     return Float3(

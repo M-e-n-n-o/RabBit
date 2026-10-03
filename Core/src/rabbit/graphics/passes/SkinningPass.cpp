@@ -53,7 +53,7 @@ namespace RB::Graphics
             };
     }
 
-    RenderPassEntry* SkinningPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* SkinningPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
 
@@ -77,7 +77,7 @@ namespace RB::Graphics
             const Transform* transform = renderable->GetGameObject()->GetComponent<Transform>();
             const Math::Float4x4& model_mat = transform->GetLocalToWorldMatrix();
 
-            if (Math::Float3::Distance(model_mat.GetPosition(), view_context->cameraTransform.position) > renderable->GetSkinningDistance())
+            if (Math::Float3::Distance(model_mat.GetPosition(), view_context->cameraTransform.GetPosition()) > renderable->GetSkinningDistance())
             {
                 continue;
             }
@@ -121,6 +121,9 @@ namespace RB::Graphics
         SkinningEntry* entry = allocator->Allocate<SkinningEntry>();
         entry->entries      = entries;
         entry->entryCount   = total_entries;
+
+        // Let the other passes know skinning is scheduled
+        view_context->scheduledSkinning = true;
 
         return entry;
     }

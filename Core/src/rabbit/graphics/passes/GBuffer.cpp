@@ -24,7 +24,8 @@ namespace RB::Graphics
             Shared<VertexBuffer> vb_primary;
             Shared<VertexBuffer> vb_secondary;
             Shared<IndexBuffer>  ib;
-            Shared<Texture>      texture;
+            Shared<Texture>      albedoTex;
+            Shared<Texture>      normalTex;
             Math::Float4x4	     modelMatrix;
         };
 
@@ -78,7 +79,7 @@ namespace RB::Graphics
             };
     }
 
-    RenderPassEntry* GBufferPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* GBufferPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         auto mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
         auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
@@ -103,12 +104,15 @@ namespace RB::Graphics
                 const Mesh::VertexPack&     vp          = mesh->GetVertexPack();
                 const Shared<VertexBuffer>& prim_buffer = GetPrimaryBuffer(renderable, vp);
                 const Shared<VertexBuffer>& sec_buffer  = GetSecondaryBuffer(renderable, vp);
+                const Shared<Texture2D>&    albedo      = mat->GetAlbedoTexture();
+                const Shared<Texture2D>&    normal      = mat->GetNormalTexture();
 
                 // Unified validation check
                 if (!prim_buffer || !prim_buffer->ContentsReady() ||
-                    (sec_buffer && !sec_buffer) ||
+                    (sec_buffer && !sec_buffer->ContentsReady()) ||
                     (vp.indexBuffer && !vp.indexBuffer->ContentsReady()) ||
-                    !mat->GetTexture()->ContentsReady())
+                    !albedo || !albedo->ContentsReady() ||
+                    (normal && !normal->ContentsReady()))
                 {
                     continue;
                 }
@@ -133,7 +137,8 @@ namespace RB::Graphics
                 entry.vb_primary   = prim_buffer;
                 entry.vb_secondary = sec_buffer;
                 entry.ib           = vp.indexBuffer;
-                entry.texture      = mat->GetTexture();
+                entry.albedoTex    = albedo;
+                entry.normalTex    = normal;
                 entry.modelMatrix  = model_mat;
 
                 entries[total_entries++] = entry;
@@ -147,8 +152,8 @@ namespace RB::Graphics
 
         // Execute for skinned meshes
         ProcessRenderables.operator()<SkinnedMeshRenderable>(skinned_renderables, 
-            [](auto* r, const auto& vp) { return r->GetSkinnedPrimaryBuffer(); },
-            [](auto* r, const auto& vp) { return r->GetSkinnedSecondaryBuffer(); });
+            [view_context](auto* r, const auto& vp) { return view_context->scheduledSkinning ? r->GetSkinnedPrimaryBuffer()   : vp.primaryBuffer; },
+            [view_context](auto* r, const auto& vp) { return view_context->scheduledSkinning ? r->GetSkinnedSecondaryBuffer() : vp.secondaryBuffer; });
 
         GBufferEntry* entry = allocator->Allocate<GBufferEntry>();
         entry->entries      = entries;
@@ -191,9 +196,15 @@ namespace RB::Graphics
                 in.ri->SetIndexBuffer(model_entry.ib.get());
             }
 
-            in.ri->SetConstantShaderData(GeometryGlobals_LocalToWorldMat, &model_entry.modelMatrix, sizeof(model_entry.modelMatrix));
+            Shader::GBufferCB cb = {};
+            cb.localToWorldMat = model_entry.modelMatrix;
+            cb.hasNormalMap    = model_entry.normalTex != nullptr;
 
-            in.ri->SetShaderResourceInput(PsGbuffer_Albedo, model_entry.texture.get());
+            in.ri->SetConstantShaderData(GeometryGlobals_GBufferCB, &cb, sizeof(Shader::GBufferCB));
+
+            in.ri->SetShaderResourceInput(PsGbuffer_Albedo, model_entry.albedoTex.get());
+            if (model_entry.normalTex)
+                in.ri->SetShaderResourceInput(PsGbuffer_Normal, model_entry.normalTex.get());
 
             in.ri->Draw();
         }

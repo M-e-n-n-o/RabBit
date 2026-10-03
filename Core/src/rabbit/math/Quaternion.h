@@ -29,6 +29,7 @@ namespace RB::Math
         Quaternion GetInverse() const;
 
         Quaternion operator*(const Quaternion& other) const;
+        bool operator==(const Quaternion& other) const;
 
         Float3 Rotate(const Float3& v) const;                   // Rotates a direction / point around the origin
         Float4x4 ToMatrix() const;                              // Rotation only (row 3 = 0,0,0,1)

@@ -6,7 +6,8 @@
 
 namespace RB::Math
 {
-    #define kPI 3.14159265359
+    #define kPI         3.14159265359
+    #define kEpsilon    1e-5f
     
     #define ALIGN_8(x)  Math::AlignUp((x), 8)
     #define ALIGN_16(x) Math::AlignUp((x), 16)

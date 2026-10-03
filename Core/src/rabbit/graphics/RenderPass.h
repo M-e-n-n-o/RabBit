@@ -163,7 +163,7 @@ namespace RB::Graphics
         // current frame' viewcontext to the renderpass (as the renderpass will run next frame as it is ~1 frame behind). 
         // It can also do some preprocessing before the actual Render() call to, for example, determine which RenderEntries 
         // this pass needs, so the RenderThread does not need to do this. But it can also determine if the pass needs to run at all this frame.
-        virtual RenderPassEntry* SubmitEntry(const ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) = 0;
+        virtual RenderPassEntry* SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) = 0;
 
         // Executed on the render thread
         // Runs for every ViewContext

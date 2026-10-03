@@ -17,7 +17,7 @@ namespace Editor
 
         RB::Graphics::RenderPassConfig GetConfiguration(const RB::Graphics::RenderPassSettings* settings) override;
 
-        RB::Graphics::RenderPassEntry* SubmitEntry(const RB::Graphics::ViewContext* view_context, const RB::Entity::Scene* const scene, RB::FrameAllocator* allocator) override;
+        RB::Graphics::RenderPassEntry* SubmitEntry(RB::Graphics::ViewContext* view_context, const RB::Entity::Scene* const scene, RB::FrameAllocator* allocator) override;
 
         void Render(RB::Graphics::RenderPassInput& inputs) override;
     };

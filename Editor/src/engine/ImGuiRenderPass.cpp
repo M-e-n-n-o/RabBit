@@ -55,7 +55,7 @@ namespace Editor
         };
     }
 
-    RenderPassEntry* ImGuiRenderPass::SubmitEntry(const ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
+    RenderPassEntry* ImGuiRenderPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         if (view_context->isOffscreen)
         {

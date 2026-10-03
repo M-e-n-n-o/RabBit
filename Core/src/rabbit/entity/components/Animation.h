@@ -76,34 +76,43 @@ namespace RB::Entity
 
 
 
+    // A callable that receives the sampled value and applies it to whatever it is bound to
+    template<typename T>
+    using AnimSetter = std::function<void(const T&)>;
+
     class BindContext
     {
     public:
-        BindContext(const List<GameObject*>& nodes, const UnorderedMap<uint64_t, void*>& custom_targets)
+        BindContext(const List<GameObject*>& nodes, const UnorderedMap<uint64_t, std::any>& custom_targets)
             : m_Nodes(nodes)
             , m_CustomTargets(custom_targets)
         {
         }
 
+        // Returns a setter for the given node/property, or an empty function if nothing is bound
         template<typename T>
-        T* Resolve(uint32_t node_index, uint32_t property_id)
+        AnimSetter<T> Resolve(uint32_t node_index, uint32_t property_id)
         {
+            using namespace std::placeholders;
+
             // Built-in animation properties
             if constexpr (std::is_same_v<T, Math::Float3>)
             {
-                Transform* trans = m_Nodes[node_index]->GetComponent<Transform>();
-
-                if (property_id == kAnimProperty_Position)
-                    return trans ? &trans->position : nullptr;
-                else if (property_id == kAnimProperty_Scale)
-                    return trans ? &trans->scale : nullptr;
+                if (Transform* trans = m_Nodes[node_index]->GetComponent<Transform>())
+                {
+                    if (property_id == kAnimProperty_Position)
+                        return std::bind(&Transform::SetPosition, trans, _1);
+                    else if (property_id == kAnimProperty_Scale)
+                        return std::bind(&Transform::SetScale, trans, _1);
+                }
             }
             if constexpr (std::is_same_v<T, Math::Quaternion>)
             {
-                Transform* trans = m_Nodes[node_index]->GetComponent<Transform>();
-
-                if (property_id == kAnimProperty_Rotation)
-                    return trans ? &trans->rotation : nullptr;
+                if (Transform* trans = m_Nodes[node_index]->GetComponent<Transform>())
+                {
+                    if (property_id == kAnimProperty_Rotation)
+                        return std::bind(&Transform::SetRotation, trans, _1);
+                }
             }
 
             // Custom properties (bound using Animator::Bind)
@@ -114,7 +123,14 @@ namespace RB::Entity
                 return nullptr;
             }
 
-            return static_cast<T*>(it->second);
+            const AnimSetter<T>* setter = std::any_cast<AnimSetter<T>>(&it->second);
+            if (!setter)
+            {
+                RB_LOG_WARN(LOGTAG_ENTITY, "Property ID %d is bound with a different value type than the animation track uses", property_id);
+                return nullptr;
+            }
+
+            return *setter;
         }
 
         static uint64_t MakeKey(uint32_t node_index, uint32_t property_id)
@@ -123,8 +139,8 @@ namespace RB::Entity
         }
 
     private:
-        const List<GameObject*>&             m_Nodes;
-        const UnorderedMap<uint64_t, void*>& m_CustomTargets;
+        const List<GameObject*>&                m_Nodes;
+        const UnorderedMap<uint64_t, std::any>& m_CustomTargets;
     };
 
 
@@ -132,7 +148,7 @@ namespace RB::Entity
     struct ITrackList
     {
         virtual ~ITrackList() = default;
-        virtual void Bind(BindContext& ctx) = 0;     // Resolves target pointers
+        virtual void Bind(BindContext& ctx) = 0;     // Resolves target setters
         virtual void Evaluate(float time) const = 0; // Applies the animation to the targets
     };
 
@@ -154,23 +170,23 @@ namespace RB::Entity
 
         void Bind(BindContext& ctx) override
         {
-            m_BoundTargets.resize(m_Tracks.size());
+            m_BoundSetters.resize(m_Tracks.size());
             for (size_t i = 0; i < m_Tracks.size(); i++)
-                m_BoundTargets[i] = ctx.Resolve<T>(m_Tracks[i].nodeIndex, m_Tracks[i].propertyID);
+                m_BoundSetters[i] = ctx.Resolve<T>(m_Tracks[i].nodeIndex, m_Tracks[i].propertyID);
         }
 
         void Evaluate(float time) const override
         {
             for (size_t i = 0; i < m_Tracks.size(); i++)
             {
-                if (T* target = m_BoundTargets[i])
-                    *target = m_Tracks[i].Sample(time);
+                if (m_BoundSetters[i])
+                    m_BoundSetters[i](m_Tracks[i].Sample(time));
             }
         }
 
     private:
         List<AnimationTrack<T>> m_Tracks;
-        List<T*>                m_BoundTargets;
+        List<AnimSetter<T>>     m_BoundSetters;
     };
 
 
@@ -236,11 +252,27 @@ namespace RB::Entity
             m_Animations.push_back(animation); 
         }
 
-        // Register any custom property to be animated by the Animator
+        // Register a custom property using a callback:
+        //   animator.Bind<float>(0, kMyProp, [this](const float& v) { m_Intensity = v; });
+        template<typename T>
+        void Bind(uint32_t node_index, uint32_t property_id, AnimSetter<T> setter)
+        {
+            m_CustomTargets[BindContext::MakeKey(node_index, property_id)] = std::move(setter);
+        }
+
+        // Register a custom property using a member function setter:
+        //   animator.Bind(0, kMyProp, &light, &Light::SetIntensity);
+        template<typename T, typename Obj>
+        void Bind(uint32_t node_index, uint32_t property_id, Obj* object, void (Obj::*setter)(const T&))
+        {
+            Bind<T>(node_index, property_id, AnimSetter<T>(std::bind(setter, object, std::placeholders::_1)));
+        }
+
+        // Register a custom properly for a plain variable
         template<typename T>
         void Bind(uint32_t node_index, uint32_t property_id, T* target)
         {
-            m_CustomTargets[BindContext::MakeKey(node_index, property_id)] = target;
+            Bind<T>(node_index, property_id, AnimSetter<T>([target](const T& value) { *target = value; }));
         }
 
         void SetLooping(bool looping)
@@ -307,13 +339,13 @@ namespace RB::Entity
                 anim_time = Math::AlignDown(anim_time, 1.0f / (float)m_InterpolationFrameRate);
             }
 
-            Math::Float3 original_pos = m_RootTransform ? m_RootTransform->position : Math::Float3();
+            Math::Float3 original_pos = m_RootTransform ? m_RootTransform->GetPosition() : Math::Float3();
 
             for (auto& track_list : m_CurrentAnimation->GetTrackLists())
                 track_list->Evaluate(anim_time);
 
             if (!m_ApplyRootMotion && m_RootTransform)
-                m_RootTransform->position = original_pos;
+                m_RootTransform->SetPosition(original_pos);
         }
 
     private:
@@ -324,7 +356,7 @@ namespace RB::Entity
 
         List<GameObject*>               m_Nodes;
         List<Animation*>                m_Animations;
-        UnorderedMap<uint64_t, void*>   m_CustomTargets;
+        UnorderedMap<uint64_t, std::any> m_CustomTargets;
 
         bool                            m_ApplyRootMotion;
         uint32_t                        m_InterpolationFrameRate;   // 0 is smooth (follow actual fps)
