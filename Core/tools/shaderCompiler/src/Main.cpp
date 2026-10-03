@@ -27,7 +27,6 @@ int main(int argc, char* argv[])
 	DEFINE_FIND_LAUNCH_ARG(argc, argv);
 
 	const char* extra_source_dir = FindLaunchArg("-extraSrc");
-	const char* shader_bin_dir = FindLaunchArg("-shadersBin");
 
 	std::vector<std::string> source_dirs;
 	source_dirs.push_back(RB_SHADER_SOURCE);
@@ -38,13 +37,9 @@ int main(int argc, char* argv[])
 	for (const auto& path : source_dirs)
 		LOG("\t" << path);
 
-	if (shader_bin_dir == nullptr)
-	{
-		LOGW(L"Did not find the shader bin directory from the launch arguments, using default");
-		shader_bin_dir = RB_OUTPUT_FOLDER;
-	}
-
-	LOGW(L"Shader bin directory: " << shader_bin_dir);
+	const char* shader_bin_dir = RB_OUTPUT_FOLDER;
+	const char* shader_bin_name = RB_OUTPUT_NAME;
+	LOGW(L"Shader bin: " << shader_bin_dir << "/" << shader_bin_name);
 
 	LOGW(L"");
 
@@ -58,7 +53,7 @@ int main(int argc, char* argv[])
 	LOGW(L"");
 
 	ShaderWriter writer;
-	writer.WriteOutShaders(RB_DEFINE_FOLDER, shader_bin_dir, reflection, blobs, params);
+	writer.WriteOutShaders(RB_DEFINE_FOLDER, shader_bin_dir, shader_bin_name, reflection, blobs, params);
 
 	LOGW(L"");
 	LOGW(L"-------------------------------------------------------------------------");

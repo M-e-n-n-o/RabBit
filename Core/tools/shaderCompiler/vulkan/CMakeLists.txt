@@ -26,7 +26,8 @@ target_compile_definitions(ShaderCompilerVK PRIVATE
     RB_SHADER_COMPILER_VK
     RB_SHADER_SOURCE="${RB_SRC}/src/RabBit/graphics/shaders"
     RB_DEFINE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../include"
-    RB_OUTPUT_FOLDER="$<TARGET_FILE_DIR:Sample>"
+    RB_OUTPUT_FOLDER="$<TARGET_FILE_DIR:ShaderCompilerVK>"
+    RB_OUTPUT_NAME="$ENV{SHADER_VK_OUT}"
 )
 
 add_custom_command(TARGET ShaderCompilerVK POST_BUILD

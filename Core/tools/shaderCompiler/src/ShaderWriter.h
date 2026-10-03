@@ -10,6 +10,6 @@ class ShaderWriter
 public:
 	ShaderWriter();
 
-	void WriteOutShaders(const char* defines_folder, const char* bin_folder,
+	void WriteOutShaders(const char* defines_folder, const char* bin_folder, const char* output_name,
 		std::vector<RB::ShaderCompiler::ShaderReflection>& shaders, const std::vector<Slang::ComPtr<slang::IBlob>>& blobs, const ModuleParams& module_parameters);
 };

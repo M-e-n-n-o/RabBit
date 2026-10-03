@@ -124,6 +124,7 @@ if(RABBIT_API_DX12)
     )
     
     # Add D3D12 shader compiler
+    set(ENV{SHADER_D3D_OUT} "ShadersD3D12.bin")
     add_subdirectory(tools/shaderCompiler/d3d12)
 endif()
 
@@ -147,6 +148,7 @@ if(RABBIT_API_VULKAN)
     )
 
     # Add VK shader compiler
+    set(ENV{SHADER_VK_OUT} "ShadersVK.bin")
     add_subdirectory(tools/shaderCompiler/vulkan)
 endif()
 
@@ -159,35 +161,30 @@ add_subdirectory(tools/modelConverter)
 
 # Copy libraries next to the final executable (should be called app side)
 function(RabBitCopyLibs TARGET_NAME)
-    # Create a lit of files to copy to the executable
-    set(DLLS_TO_COPY "")
+    set(DEST "$<TARGET_FILE_DIR:${TARGET_NAME}>")
 
     if(RABBIT_STEAM)
-        list (APPEND DLLS_TO_COPY
-            "$ENV{STEAM_PATH}/redistributable_bin/win64/steam_api64.dll"
-        )
+        list(APPEND FILES "$ENV{STEAM_PATH}/redistributable_bin/win64/steam_api64.dll")
     endif()
 
     if(RABBIT_API_DX12)
-        list (APPEND DLLS_TO_COPY
-            "$ENV{PIX_PATH}/WinPixEventRuntime.dll"
-        )
+        list(APPEND FILES "$ENV{PIX_PATH}/WinPixEventRuntime.dll")
+        
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${DEST}/D3D12"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "$ENV{D3D_PATH}/bin/x64/D3D12Core.dll" "$ENV{D3D_PATH}/bin/x64/d3d12SDKLayers.dll" "${DEST}/D3D12")
+    endif()
 
-        # Copy the D3D12 DLL's to a specific folder
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$ENV{D3D_PATH}/bin/x64/D3D12Core.dll"
-            "$<TARGET_FILE_DIR:${TARGET_NAME}>/D3D12/D3D12Core.dll")
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$ENV{D3D_PATH}/bin/x64/d3d12SDKLayers.dll"
-            "$<TARGET_FILE_DIR:${TARGET_NAME}>/D3D12/d3d12SDKLayers.dll")
+    if(RABBIT_API_DX12)
+        list(APPEND FILES "$<$<TARGET_EXISTS:ShaderCompilerD3D12>:$<TARGET_FILE_DIR:ShaderCompilerD3D12>/$ENV{SHADER_D3D_OUT}>")
+    endif()
+    if(RABBIT_API_VULKAN)
+        list(APPEND FILES "$<$<TARGET_EXISTS:ShaderCompilerVK>:$<TARGET_FILE_DIR:ShaderCompilerVK>/$ENV{SHADER_VK_OUT}>")
     endif()
 
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${DLLS_TO_COPY}
-        $<TARGET_FILE_DIR:${TARGET_NAME}>)
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${FILES} "${DEST}"
+        COMMAND_EXPAND_LISTS)
 endfunction()
 
 

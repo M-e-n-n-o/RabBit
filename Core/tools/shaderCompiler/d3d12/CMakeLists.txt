@@ -13,7 +13,6 @@ target_include_directories(ShaderCompilerD3D12 PRIVATE
     "../../../external/slang/include"
 )
 
-
 set(SLANG_PATH ${EXTERNAL_PATH}/slang)
 
 target_link_libraries(ShaderCompilerD3D12 PRIVATE
@@ -27,7 +26,8 @@ target_compile_definitions(ShaderCompilerD3D12 PRIVATE
     RB_SHADER_COMPILER_D3D12
     RB_SHADER_SOURCE="${RB_SRC}/src/RabBit/graphics/shaders"
     RB_DEFINE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../include"
-    RB_OUTPUT_FOLDER="$<TARGET_FILE_DIR:Sample>"
+    RB_OUTPUT_FOLDER="$<TARGET_FILE_DIR:ShaderCompilerD3D12>"
+    RB_OUTPUT_NAME="$ENV{SHADER_D3D_OUT}"
 )
 
 add_custom_command(TARGET ShaderCompilerD3D12 POST_BUILD
