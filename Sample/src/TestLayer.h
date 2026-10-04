@@ -119,6 +119,7 @@ public:
         ground_obj2->AddComponent<MeshRenderable>(m_Mesh, m_Material);
         auto* ground_t2 = ground_obj2->AddComponent<Transform>();
         ground_t2->SetPositionY(50);
+        ground_t2->RotateZ(Math::DegreesToRadians(30.0f));
         ground_obj2->AddComponent<PhysicsBox2D>(Math::Float2(1, 1), false, physics_world);
 
         GameObject* ground_obj3 = scene->CreateGameObject();

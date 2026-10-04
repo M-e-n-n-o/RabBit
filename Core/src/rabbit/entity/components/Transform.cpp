@@ -87,6 +87,27 @@ namespace RB::Entity
         MarkDirty();
     }
 
+    void Transform::RotateX(float rad)
+    {
+        m_Rotation = m_Rotation * Math::Quaternion::FromAxisAngle(Math::WorldRight, rad);
+        m_Rotation.Normalize();
+        MarkDirty();
+    }
+
+    void Transform::RotateY(float rad)
+    {
+        m_Rotation = m_Rotation * Math::Quaternion::FromAxisAngle(Math::WorldUp, rad);
+        m_Rotation.Normalize();
+        MarkDirty();
+    }
+
+    void Transform::RotateZ(float rad)
+    {
+        m_Rotation = m_Rotation * Math::Quaternion::FromAxisAngle(Math::WorldForward, rad);
+        m_Rotation.Normalize();
+        MarkDirty();
+    }
+
     void Transform::MarkDirty()
     {
         if (m_CachedDirty)

@@ -46,6 +46,9 @@ namespace RB::Entity
         void SetScaleZ(float z);
 
         void NormalizeRotation();
+        void RotateX(float rad);
+        void RotateY(float rad);
+        void RotateZ(float rad);
 
     private:
         void MarkDirty();
