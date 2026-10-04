@@ -52,7 +52,8 @@ namespace RB::Graphics
         if (list.empty())
             return nullptr;
 
-        const auto& screen_capturer = (Entity::ScreenCapturer*)list[0];
+        const auto& screen_capturer = list[0];
+        RB_ASSERT(LOGTAG_GRAPHICS, list.size() == 1, "Only 1 ScreenCapturer is currently supported");
 
         if (!screen_capturer->ShouldMakeCapture())
             return nullptr;

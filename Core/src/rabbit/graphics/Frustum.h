@@ -26,6 +26,7 @@ namespace RB::Graphics
         void SetTransform(const Math::Float3& position, const Math::Quaternion& rotation);
         void SetTransform(const Math::Float3& position, const Math::Float3& rotation);
         void SetTransform(const Math::Float4x4& world_to_view);
+        void SetTransformInverse(const Math::Float4x4& view_to_world);
         
         void LookAt(const Math::Float3& eye, const Math::Float3& target, const Math::Float3& up);
 

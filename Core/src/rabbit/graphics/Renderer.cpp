@@ -268,7 +268,7 @@ namespace RB::Graphics
         uint32_t original_context_count = out_context_count;
         for (int i = 0; i < original_context_count; ++i)
         {
-            const Entity::Camera* camera = (const Entity::Camera*)camera_components[i];
+            const Entity::Camera* camera = camera_components[i];
             const Entity::Transform* transform = camera->GetGameObject()->GetComponent<Entity::Transform>();
 
             if (!camera->GetGameObject()->HasComponent<Entity::Transform>())

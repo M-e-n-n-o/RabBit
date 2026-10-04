@@ -17,3 +17,6 @@
 [submodule "Core/external/libsquish"]
 	path = Core/external/libsquish
 	url = https://github.com/oblivioncth/libsquish
+[submodule "Core/external/box2d"]
+	path = Core/external/box2d
+	url = https://github.com/erincatto/box2d

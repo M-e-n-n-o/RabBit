@@ -63,11 +63,11 @@ namespace RB::Graphics
 
     RenderPassEntry* DeferredLightingPass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
     {
-        const auto& list = scene->GetComponentsWithTypeOf<Entity::DirectionalLight>();
+        const auto& lights = scene->GetComponentsWithTypeOf<Entity::DirectionalLight>();
 
         DeferredLightingEntry* entry = allocator->Allocate<DeferredLightingEntry>();
 
-        if (list.empty())
+        if (lights.empty())
         {
             entry->has_light = false;
             entry->light     = Entity::DirectionalLight(Math::Float3(0), Math::Float3(0));
@@ -75,7 +75,8 @@ namespace RB::Graphics
         else
         {
             entry->has_light = true;
-            entry->light     = *((Entity::DirectionalLight*)list[0]);
+            entry->light     = *lights[0];
+            RB_ASSERT(LOGTAG_GRAPHICS, lights.size() == 1, "Only 1 directional light is currently supported");
         }
 
         return entry;

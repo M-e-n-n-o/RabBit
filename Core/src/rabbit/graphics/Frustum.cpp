@@ -41,6 +41,13 @@ namespace RB::Graphics
         m_ViewToWorldMat.InvertAffine();
     }
 
+    void Frustum::SetTransformInverse(const Math::Float4x4& view_to_world)
+    {
+        m_ViewToWorldMat = view_to_world;
+        m_WorldToViewMat = view_to_world;
+        m_WorldToViewMat.InvertAffine();
+    }
+
     void Frustum::LookAt(const Math::Float3& eye, const Math::Float3& target, const Math::Float3& up)
     {
         Math::Float3 zAxis = (target - eye);

@@ -88,6 +88,8 @@
 #include "rabbit/entity/components/Animation.h"
 #include "rabbit/entity/components/NetworkTransformSync.h"
 #include "rabbit/entity/components/ScreenCapturer.h"
+#include "rabbit/entity/components/PhysicsWorld.h"
+#include "rabbit/entity/components/PhysicsShape.h"
 
 #include "rabbit/graphics/passes/GBuffer.h"
 #include "rabbit/graphics/passes/SkinningPass.h"

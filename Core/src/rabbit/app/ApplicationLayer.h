@@ -21,7 +21,8 @@ namespace RB
 		virtual void OnAttach() {}
 		// Gets called when detached from the layerstack
 		virtual void OnDetach() {}
-		// Gets called every game loop before the rendering
+		// Gets called every game loop before the rendering.
+		// (This is not meant to update ObjectComponents or any scene related things)
 		virtual void OnUpdate(float delta_time) {}
 		// Gets called every time an event occurs in the application
 		// Returns wheter the event was processed by the layer (and you don't want it to pass to the next layers)

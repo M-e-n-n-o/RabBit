@@ -29,7 +29,8 @@ namespace RB
         };
     }
 
-    static const float NetworkTickSpeedMs = 0.05f; // 20Hz
+    // A maximum of 20Hz, will be lower if FPS is lower than 20
+    static const float NetworkTickSpeedMs = 0.05f;
 
     class NetworkRouterLayer : public ApplicationLayer
     {

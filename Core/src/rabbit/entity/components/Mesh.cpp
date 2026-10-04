@@ -149,13 +149,15 @@ namespace RB::Entity
 
     void SkinnedMeshRenderable::OnUpdate(float delta_time)
     {
+        Math::Float4x4 local_to_world = m_Transform->GetLocalToWorldMatrix();
+
         const auto& cameras = Application::GetInstance()->GetScene()->GetComponentsWithTypeOf<Camera>();
 
         bool in_radius = false;
         for (const auto& camera : cameras)
         {
             const Transform* t = camera->GetGameObject()->GetComponent<Transform>();
-            if (t && Math::Float3::Distance(t->GetPosition(), m_Transform->GetPosition()) < m_SkinningDistance)
+            if (t && Math::Float3::Distance(t->GetPosition(), local_to_world.GetPosition()) < m_SkinningDistance)
             {
                 in_radius = true;
                 break;
@@ -167,8 +169,7 @@ namespace RB::Entity
 
         Math::Float4x4* dst = (Math::Float4x4*)m_BoneMatrixBuffer->Map();
 
-        Math::Float4x4 attach_world = m_Transform->GetLocalToWorldMatrix();
-        Math::Float4x4 attach_world_inv = attach_world;
+        Math::Float4x4 attach_world_inv = local_to_world;
         attach_world_inv.InvertAffine();
 
         for (size_t i = 0; i < m_Bones.size(); i++)

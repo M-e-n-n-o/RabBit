@@ -2,6 +2,8 @@
 
 #ifdef RB_CONFIG_DEBUG
 #ifdef RB_PLATFORM_WINDOWS
+    #define WIN32_LEAN_AND_MEAN
+    #include <Windows.h>
     #define RB_DEBUGGER_ATTACHED IsDebuggerPresent()
 #else
     #define RB_DEBUGGER_ATTACHED false

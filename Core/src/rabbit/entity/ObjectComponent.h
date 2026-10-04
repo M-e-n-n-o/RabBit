@@ -6,7 +6,7 @@ namespace RB::Entity
 {
     class GameObject;
 
-    // Macro to declare base classes for derived components.
+    // Macro to declare base classes for derived components (to ensure only 1 can be in the GameObject)
     #define REGISTER_COMP_BASES(Derived, ...) template<> struct BaseClasses<Derived> { using type = std::tuple<__VA_ARGS__>; }
 
     class ObjectComponent

@@ -83,7 +83,7 @@ namespace Editor
         ImGuiContext* original_context = ImGui::GetCurrentContext();
 
         // Set the render thread context
-        entry->context = ((ImGuiManager*)list[0])->GetRenderContext();
+        entry->context = list[0]->GetRenderContext();
         ImGui::SetCurrentContext(entry->context);
 
         // Create a snapshot of the render data for the RenderThread

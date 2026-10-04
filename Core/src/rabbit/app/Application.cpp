@@ -3,6 +3,7 @@
 #include "AssetLoader.h"
 #include "PlatformService.h"
 #include "NetworkRouter.h"
+#include "PhysicsLayer.h"
 
 #include "graphics/Window.h"
 #include "graphics/RenderInterface.h"
@@ -109,16 +110,19 @@ namespace RB
 
 
         // Platform & networking services
+        PlatformAPI platform_api = PlatformAPI::None;
 #ifdef RB_STEAM_API
         if (std::strstr(launch_args.c_str(), "-steam"))
-            m_PlatformService = PlatformService::Create(PlatformAPI::Steamworks);
+            platform_api = PlatformAPI::Steamworks;
 #endif
+        if (platform_api != PlatformAPI::None)
+            m_PlatformService = PlatformService::Create(platform_api);
         if (m_PlatformService && !m_PlatformService->IsInitialized())
             SAFE_DELETE(m_PlatformService);
 
         if (m_StartAppInfo->useNetworking)
         {
-            m_NetworkService = PlatformNetworkService::Create();
+            m_NetworkService = PlatformNetworkService::Create(platform_api);
             if (m_NetworkService && !m_NetworkService->IsInitialized())
                 SAFE_DELETE(m_NetworkService);
 
@@ -129,14 +133,14 @@ namespace RB
 
         // Rendering
 #if RB_GRAPHICS_API_D3D12
-        RenderAPI api = RenderAPI::D3D12;
+        RenderAPI render_api = RenderAPI::D3D12;
 #elif RB_GRAPHICS_API_VULKAN
-        RenderAPI api = RenderAPI::Vulkan;
+        RenderAPI render_api = RenderAPI::Vulkan;
 #else
-        RenderAPI api = RenderAPI::None;
+        RenderAPI render_api = RenderAPI::None;
 #endif
 
-        m_Renderer = Renderer::Create(api, std::strstr(launch_args.c_str(), "-renderDebug"), std::strstr(launch_args.c_str(), "-pix"));
+        m_Renderer = Renderer::Create(render_api, std::strstr(launch_args.c_str(), "-renderDebug"), std::strstr(launch_args.c_str(), "-pix"));
         m_Renderer->Init();
         m_Renderer->SetRenderGraphs(m_StartAppInfo->renderGraphs);
         for (auto& [ type, graph ] : m_StartAppInfo->renderGraphs)
@@ -177,6 +181,9 @@ namespace RB
 
         // Scene
         m_Scene = new Scene();
+
+        // Physics
+        PushLayer<PhysicsLayer>();
 
 
 

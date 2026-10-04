@@ -26,14 +26,10 @@ namespace RB
 
         virtual void Update() = 0;
 
-        static PlatformAPI GetAPI() { return s_Api; }
         static PlatformService* Create(PlatformAPI api);
 
     protected:
         PlatformService() = default;
-
-    private:
-        inline static PlatformAPI s_Api = PlatformAPI::None;
     };
 
     struct DataPackage
@@ -73,8 +69,7 @@ namespace RB
 
         virtual void OpenInviteFriendsOverlay() = 0; // Host only
 
-        // Create this AFTER the platform service API has been set!
-        static PlatformNetworkService* Create();
+        static PlatformNetworkService* Create(PlatformAPI api);
 
     protected:
         PlatformNetworkService() = default;

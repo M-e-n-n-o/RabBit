@@ -63,18 +63,19 @@ namespace RB::Graphics
 
     RenderPassEntry* CascadedShadowPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
-        const auto& list = scene->GetComponentsWithTypeOf<DirectionalLight>();
+        const auto& lights = scene->GetComponentsWithTypeOf<DirectionalLight>();
         const auto& mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
         const auto& skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
 
-        if (list.empty() || (mesh_renderables.empty() && skinned_renderables.empty()))
+        if (lights.empty() || (mesh_renderables.empty() && skinned_renderables.empty()))
         {
             return nullptr;
         }
 
         CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(mesh_renderables.size() + skinned_renderables.size());
 
-        const auto* light = (DirectionalLight*)list[0];
+        const auto* light = lights[0];
+        RB_ASSERT(LOGTAG_GRAPHICS, lights.size() == 1, "Only 1 directional light is currently supported");
 
         uint32_t fsize = sizeof(Frustum) * m_ShadowSlices;
         Frustum* frustums = (Frustum*)allocator->Allocate(fsize);

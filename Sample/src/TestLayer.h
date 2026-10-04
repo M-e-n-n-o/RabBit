@@ -32,33 +32,55 @@ public:
     {
         RB_LOG("Hoiii");
 
-        float vertex_data[] = {
-            // Pos					Color				UV
-            -1.0f,  -1.0f, -1.0f,	0.0f, 0.0f, 0.0f,	0, 1,	// 0
-            -1.0f,   1.0f, -1.0f,	0.0f, 1.0f, 0.0f,	0, 1,	// 1
-             1.0f,   1.0f, -1.0f,	1.0f, 1.0f, 0.0f,	0, 1,	// 2
-             1.0f,  -1.0f, -1.0f,	1.0f, 0.0f, 0.0f,	0, 1,	// 3
-            -1.0f,  -1.0f,  1.0f,	0.0f, 0.0f, 1.0f,	0, 1,	// 4
-            -1.0f,   1.0f,  1.0f,	0.0f, 1.0f, 1.0f,	0, 1,	// 5
-             1.0f,   1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	0, 1,	// 6
-             1.0f,  -1.0f,  1.0f,	1.0f, 0.0f, 1.0f,	0, 1,	// 7
+        float vertex_data[] = 
+        {
+            // Pos                   Normal                 UV
+            // -Z face
+            -0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    0.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    1.0f, 0.0f,
+
+             // +Z face
+             -0.5f, -0.5f,  0.5f,    0.0f,  0.0f,  1.0f,    0.0f, 0.0f,
+              0.5f, -0.5f,  0.5f,    0.0f,  0.0f,  1.0f,    0.0f, 1.0f,
+              0.5f,  0.5f,  0.5f,    0.0f,  0.0f,  1.0f,    1.0f, 1.0f,
+             -0.5f,  0.5f,  0.5f,    0.0f,  0.0f,  1.0f,    1.0f, 0.0f,
+
+             // -X face
+             -0.5f, -0.5f,  0.5f,   -1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
+             -0.5f,  0.5f,  0.5f,   -1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
+             -0.5f,  0.5f, -0.5f,   -1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
+             -0.5f, -0.5f, -0.5f,   -1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
+
+             // +X face
+              0.5f, -0.5f, -0.5f,    1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
+              0.5f,  0.5f, -0.5f,    1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
+              0.5f,  0.5f,  0.5f,    1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
+              0.5f, -0.5f,  0.5f,    1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
+
+              // +Y face
+              -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    0.0f, 0.0f,
+              -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,    0.0f, 1.0f,
+               0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,    1.0f, 1.0f,
+               0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,    1.0f, 0.0f,
+
+               // -Y face
+               -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,    0.0f, 0.0f,
+               -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,    0.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,    1.0f, 1.0f,
+                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,    1.0f, 0.0f,
         };
 
-        uint32_t index_data[] = {
-            0, 1, 2, 0, 2, 3,
-            4, 6, 5, 4, 7, 6,
-            4, 5, 1, 4, 1, 0,
-            3, 2, 6, 3, 6, 7,
-            1, 5, 6, 1, 6, 2,
-            4, 0, 3, 4, 3, 7
+        uint32_t index_data[] = 
+        {
+             0,  1,  2,   0,  2,  3,   // -Z
+             4,  5,  6,   4,  6,  7,   // +Z
+             8,  9, 10,   8, 10, 11,   // -X
+            12, 13, 14,  12, 14, 15,   // +X
+            16, 17, 18,  16, 18, 19,   // +Y
+            20, 21, 22,  20, 22, 23,   // -Y
         };
-
-        //float vertex_data[] = {
-        //	// Pos				Color
-        //	-0.5f, -0.5f, 0,	1, 0, 0,
-        //	0, 0.5f, 0,			0, 1, 0,
-        //	0.5f, -0.5f, 0,		0, 0, 1,
-        //};
 
         m_Mesh = new Mesh("Cube", vertex_data, 8, _countof(vertex_data), index_data, _countof(index_data));
         m_Material = new Material();
@@ -67,8 +89,8 @@ public:
 
         Scene* scene = Application::GetInstance()->GetScene();
 
-        m_Model = SceneUtils::SpawnModel(scene, "ConvertedSponza.rbmd", false, "sponza/textures/");
-        m_Model.rootTransform->SetPosition(Float3(0, 0, 100));
+        m_Model = SceneUtils::SpawnModel(scene, "ConvertedSuit.rbmd", false, "sponza/textures/");
+        m_Model.rootTransform->SetPosition(Float3(0, 0, 50));
         m_Model.rootTransform->SetScale(Math::Float3(10.0f));
         m_Transform = m_Model.rootTransform;
 
@@ -77,6 +99,9 @@ public:
 
         void* window_handle0 = Application::GetInstance()->GetWindow(0)->GetNativeWindowHandle();
         //void* window_handle1 = Application::GetInstance()->GetWindow(1)->GetNativeWindowHandle();
+
+        auto* physics_world_obj = scene->CreateGameObject();
+        PhysicsWorld2D* physics_world = physics_world_obj->AddComponent<PhysicsWorld2D>();
 
         m_Obj1 = scene->CreateGameObject();
         m_Camera = m_Obj1->AddComponent<Transform>();
@@ -87,9 +112,19 @@ public:
         GameObject* ground_obj = scene->CreateGameObject();
         ground_obj->AddComponent<MeshRenderable>(m_Mesh, m_Material);
         auto* ground_t = ground_obj->AddComponent<Transform>();
-        ground_obj->AddComponent<NetworkTransformSync>(false);
-        //ground_t->position.y = -5;
-        ground_t->SetScale(Float3(5, 5, 5));
+        ground_t->SetScale(Float3(20, 5, 1));
+        ground_obj->AddComponent<PhysicsBox2D>(Math::Float2(20, 5), true, physics_world);
+
+        GameObject* ground_obj2 = scene->CreateGameObject();
+        ground_obj2->AddComponent<MeshRenderable>(m_Mesh, m_Material);
+        auto* ground_t2 = ground_obj2->AddComponent<Transform>();
+        ground_t2->SetPositionY(50);
+        ground_obj2->AddComponent<PhysicsBox2D>(Math::Float2(1, 1), false, physics_world);
+
+        GameObject* ground_obj3 = scene->CreateGameObject();
+        ground_obj3->AddComponent<MeshRenderable>(m_Mesh, m_Material);
+        ground_obj3->AddComponent<Transform>();
+        ground_obj3->AddComponent<NetworkTransformSync>(false);
 
         auto* sun = scene->CreateGameObject();
         sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));

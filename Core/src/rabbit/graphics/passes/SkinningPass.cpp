@@ -61,9 +61,11 @@ namespace RB::Graphics
 
         uint32_t total_entries = 0;
 
+        const Math::Float4x4 cam_world = view_context->cameraTransform.GetLocalToWorldMatrix();
+
         for (int i = 0; i < skinned_renderables.size(); ++i)
         {
-            const SkinnedMeshRenderable* renderable = (const SkinnedMeshRenderable*)skinned_renderables[i];
+            const SkinnedMeshRenderable* renderable = skinned_renderables[i];
             const Mesh*                  mesh       = renderable->GetMesh();
             const Mesh::VertexPack&      vp         = mesh->GetVertexPack();
 
@@ -77,7 +79,7 @@ namespace RB::Graphics
             const Transform* transform = renderable->GetGameObject()->GetComponent<Transform>();
             const Math::Float4x4& model_mat = transform->GetLocalToWorldMatrix();
 
-            if (Math::Float3::Distance(model_mat.GetPosition(), view_context->cameraTransform.GetPosition()) > renderable->GetSkinningDistance())
+            if (Math::Float3::Distance(model_mat.GetPosition(), cam_world.GetPosition()) > renderable->GetSkinningDistance())
             {
                 continue;
             }

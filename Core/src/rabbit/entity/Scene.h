@@ -18,19 +18,19 @@ namespace RB::Entity
         const List<GameObject*>& GetGameObjects() const;
 
         template<class T>
-        const List<const ObjectComponent*> GetComponentsWithTypeOf() const;
+        const List<const T*> GetComponentsWithTypeOf() const;
 
     private:
         List<GameObject*>  m_GameObjects;
     };
 
     template<class T>
-    inline const List<const ObjectComponent*> Scene::GetComponentsWithTypeOf() const
+    inline const List<const T*> Scene::GetComponentsWithTypeOf() const
     {
-        List<const ObjectComponent*> list;
+        List<const T*> list;
         for (const GameObject* obj : m_GameObjects)
         {
-            ObjectComponent* comp = obj->GetComponent<T>();
+            T* comp = obj->GetComponent<T>();
             if (comp)
                 list.push_back(comp);
         }

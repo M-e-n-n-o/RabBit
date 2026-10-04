@@ -14,7 +14,6 @@ namespace RB
 {
     PlatformService* PlatformService::Create(PlatformAPI api)
     {
-        s_Api = api;
         switch (api)
         {
 #ifdef RB_STEAM_API
@@ -28,9 +27,9 @@ namespace RB
         }
     }
 
-    PlatformNetworkService* PlatformNetworkService::Create()
+    PlatformNetworkService* PlatformNetworkService::Create(PlatformAPI api)
     {
-        switch (PlatformService::GetAPI())
+        switch (api)
         {
 #ifdef RB_STEAM_API
         case RB::PlatformAPI::Steamworks:
