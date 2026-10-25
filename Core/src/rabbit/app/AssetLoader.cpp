@@ -51,7 +51,7 @@ namespace RB
 
     namespace AssetLoader
     {
-        static const char* g_AssetPath = nullptr;
+        static std::string g_AssetPath = "";
 
         void Init(const char* asset_path)
         {
@@ -64,7 +64,7 @@ namespace RB
 
         bool LoadConvertedTexture(const char* path, LoadedImage* out_image)
         {
-            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+            std::string final_path = (g_AssetPath + ((std::string)path));
 
             RB_LOG(LOGTAG_MAIN, "Loading converted texture file: %s", final_path.c_str());
 
@@ -91,9 +91,9 @@ namespace RB
                 return false;
             }
 
-            if (header->version != ModelConverter::kCurrentVersion)
+            if (header->version != TextureConverter::kCurrentVersion)
             {
-                RB_LOG_ERROR(LOGTAG_MAIN, "Texture file has version %d but version %d is expected, convert it again", header->version, ModelConverter::kCurrentVersion);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Texture file has version %d but version %d is expected, convert it again", header->version, TextureConverter::kCurrentVersion);
                 return false;
             }
 
@@ -130,7 +130,7 @@ namespace RB
 
         bool LoadTexture8Bit(const char* path, LoadedImage* out_image, bool srgb)
         {
-            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+            std::string final_path = (g_AssetPath + ((std::string)path));
 
             RB_LOG(LOGTAG_MAIN, "Loading image: %s", final_path.c_str());
 
@@ -248,7 +248,7 @@ namespace RB
             static_assert(sizeof(LoadedModel::SkinVertex)   == sizeof(ModelConverter::CompiledSkinVertex), "LoadedModel::SkinVertex does not match the file layout");
             static_assert(sizeof(Math::Float4x4)            == sizeof(float) * 16, "Math::Float4x4 does not match the file layout");
 
-            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+            std::string final_path = (g_AssetPath + ((std::string)path));
 
             RB_LOG(LOGTAG_MAIN, "Loading converted model file: %s", final_path.c_str());
 
@@ -460,7 +460,7 @@ namespace RB
 
         bool LoadFont(const char* path, LoadedFont* out_font, uint32_t font_size)
         {
-            std::string final_path = (((std::string)g_AssetPath) + ((std::string)path));
+            std::string final_path = (g_AssetPath + ((std::string)path));
 
             RB_LOG(LOGTAG_MAIN, "Loading font: %s", final_path.c_str());
 

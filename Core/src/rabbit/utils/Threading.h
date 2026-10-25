@@ -105,8 +105,7 @@ namespace RB
             Mutex               kickMutex;
             ConditionVariable   syncCV;
             Mutex               syncMutex;
-            ConditionVariable   completedCV;
-            Mutex	            completedMutex;
+            ConditionVariable   completedCV; // Waits on kickMutex
 
             Timer               timer;
             double              counterStart;
@@ -115,7 +114,7 @@ namespace RB
             JobID               currentJob;
             List<Job>           pendingJobs;
             uint32_t            highPriorityInsertIndex;
-            uint64_t            startedJobsCount;
+            uint64_t            nextJobId;
             JobID               lastCompletedJob;
         };
 

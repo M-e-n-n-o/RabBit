@@ -21,19 +21,44 @@ namespace RB::Entity
         const List<const T*> GetComponentsWithTypeOf() const;
 
     private:
-        List<GameObject*>  m_GameObjects;
+        struct ComponentQueryCache
+        {
+            uint64_t                     structureVersion = UINT64_MAX;
+            size_t                       objectCount      = 0;
+            List<const ObjectComponent*> components;
+        };
+
+        List<GameObject*> m_GameObjects;
+
+        // Scanning every GameObject per query is expensive, so keep the result per component type 
+        // and only rescan when a component was added/removed or an object was destroyed.
+        mutable UnorderedMap<std::type_index, ComponentQueryCache> m_QueryCache;
     };
 
     template<class T>
     inline const List<const T*> Scene::GetComponentsWithTypeOf() const
     {
-        List<const T*> list;
-        for (const GameObject* obj : m_GameObjects)
+        ComponentQueryCache& cache = m_QueryCache[std::type_index(typeid(T))];
+
+        const uint64_t version = GameObject::GetStructureVersion();
+        if (cache.structureVersion != version || m_GameObjects.size() != cache.objectCount)
         {
-            T* comp = obj->GetComponent<T>();
-            if (comp)
-                list.push_back(comp);
+            cache.components.clear();
+            for (const GameObject* obj : m_GameObjects)
+            {
+                T* comp = obj->GetComponent<T>();
+                if (comp)
+                    cache.components.push_back(comp);
+            }
+
+            cache.structureVersion = version;
+            cache.objectCount      = m_GameObjects.size();
         }
+
+        List<const T*> list;
+        list.reserve(cache.components.size());
+        for (const ObjectComponent* comp : cache.components)
+            list.push_back(static_cast<const T*>(comp));
 
         return list;
     }

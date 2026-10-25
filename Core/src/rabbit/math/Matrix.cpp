@@ -1,6 +1,10 @@
 #include "RabBitCommon.h"
 #include "Matrix.h"
 
+#if defined(_M_X64) || defined(__SSE2__)
+#include <emmintrin.h>
+#endif
+
 namespace RB::Math
 {
     // ---------------------------------------------------------------------------
@@ -31,11 +35,35 @@ namespace RB::Math
     Float4x4 Float4x4::operator*(const Float4x4& other) const
     {
         Float4x4 out;
+
+#if defined(_M_X64) || defined(__SSE2__)
+        // Optimized matrix multiplication using SIMD instructions
+
+        const __m128 b0 = _mm_loadu_ps(&other.a[0]);
+        const __m128 b1 = _mm_loadu_ps(&other.a[4]);
+        const __m128 b2 = _mm_loadu_ps(&other.a[8]);
+        const __m128 b3 = _mm_loadu_ps(&other.a[12]);
+
+        for (int r = 0; r < 4; r++)
+        {
+            const __m128 row = _mm_loadu_ps(&a[r * 4]);
+
+            __m128 res = _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(0, 0, 0, 0)), b0);
+            res = _mm_add_ps(res, _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(1, 1, 1, 1)), b1));
+            res = _mm_add_ps(res, _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(2, 2, 2, 2)), b2));
+            res = _mm_add_ps(res, _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(3, 3, 3, 3)), b3));
+
+            _mm_storeu_ps(&out.a[r * 4], res);
+        }
+
+        return out;
+#else
         out.row0 = (other.row0 * row0.x) + (other.row1 * row0.y) + (other.row2 * row0.z) + (other.row3 * row0.w);
         out.row1 = (other.row0 * row1.x) + (other.row1 * row1.y) + (other.row2 * row1.z) + (other.row3 * row1.w);
         out.row2 = (other.row0 * row2.x) + (other.row1 * row2.y) + (other.row2 * row2.z) + (other.row3 * row2.w);
         out.row3 = (other.row0 * row3.x) + (other.row1 * row3.y) + (other.row2 * row3.z) + (other.row3 * row3.w);
         return out;
+#endif
     }
 
     void Float4x4::Transpose()

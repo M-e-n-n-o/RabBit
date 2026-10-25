@@ -3,6 +3,8 @@
 #include "BaseClasses.h"
 #include "components/Transform.h"
 
+#include <atomic>
+
 namespace RB::Entity
 {
     class ObjectComponent;
@@ -56,7 +58,15 @@ namespace RB::Entity
 
         const UnorderedSet<GameObject*>& GetChildren() const;
 
+        // Incremented whenever any component is added/removed or any GameObject is destroyed.
+        // Lets systems (like Scene) cache component queries and only rebuild them when this changes.
+        static uint64_t GetStructureVersion() { return s_StructureVersion.load(std::memory_order_relaxed); }
+
     private:
+        static void BumpStructureVersion() { s_StructureVersion.fetch_add(1, std::memory_order_relaxed); }
+
+        static std::atomic<uint64_t> s_StructureVersion;
+
         void OnNewParent();
         void OnNewChildAttached(GameObject* obj);
         void OnChildDetached(GameObject* obj);
@@ -90,6 +100,8 @@ namespace RB::Entity
         ForEachType<Bases>([this, comp](std::type_index base) {
             m_Map[base] = comp;
         });
+
+        BumpStructureVersion();
 
         comp->OnAttachedToGameObject(this);
 
@@ -185,6 +197,8 @@ namespace RB::Entity
             else 
                 ++it;
         }
+
+        BumpStructureVersion();
 
         delete comp;
         return true;

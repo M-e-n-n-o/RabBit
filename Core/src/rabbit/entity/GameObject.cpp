@@ -4,6 +4,8 @@
 
 namespace RB::Entity
 {
+    std::atomic<uint64_t> GameObject::s_StructureVersion = 0;
+
     GameObject::GameObject(const char* name)
         : m_Name(name)
         , m_Parent(nullptr)
@@ -13,6 +15,8 @@ namespace RB::Entity
     GameObject::~GameObject()
     {
         SetParent(nullptr);
+
+        BumpStructureVersion();
 
         for (ObjectComponent* comp : m_Components)
         {

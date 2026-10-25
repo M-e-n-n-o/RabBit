@@ -156,7 +156,7 @@ namespace RB
             if (window.fullscreen && window.windowIndex >= 0)
             {
                 RB_ASSERT(LOGTAG_MAIN, window.windowIndex < m_Displays.size(), "Specified window index is invalid");
-                int32_t index = Math::Min(window.windowIndex, (int32_t)m_Displays.size());
+                int32_t index = Math::Min(window.windowIndex, (int32_t)m_Displays.size() - 1);
 
                 m_Windows.push_back(Window::Create(window.windowName, 
                                                    m_Displays[index],

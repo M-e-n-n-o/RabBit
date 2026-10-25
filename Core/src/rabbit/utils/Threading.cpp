@@ -24,7 +24,7 @@ namespace RB
         m_SharedContext->currentJob                 = UINT64_MAX;
         m_SharedContext->pendingJobs                = {};
         m_SharedContext->highPriorityInsertIndex    = 0;
-        m_SharedContext->startedJobsCount           = 0;
+        m_SharedContext->nextJobId                  = 0;
         m_SharedContext->lastCompletedJob           = UINT64_MAX;
         m_SharedContext->counterStart               = 0;
         m_SharedContext->lastJobTime                = 0;
@@ -130,7 +130,7 @@ namespace RB
         m_SharedContext->state = ThreadState::Waking;
 
         Job job = {};
-        job.id          = m_SharedContext->startedJobsCount + m_SharedContext->pendingJobs.size();
+        job.id          = UINT64_MAX; // Assigned below, only when a new job is actually inserted
         job.function    = &type.function;
         job.data        = data;
 
@@ -144,6 +144,7 @@ namespace RB
             if (itr == m_SharedContext->pendingJobs.end())
             {
                 // Insert new job
+                job.id = m_SharedContext->nextJobId++;
                 m_SharedContext->pendingJobs.push_back(job);
             }
             else
@@ -159,6 +160,7 @@ namespace RB
         else
         {
             // Insert new job
+            job.id = m_SharedContext->nextJobId++;
             m_SharedContext->pendingJobs.push_back(job);
         }
 
@@ -211,29 +213,13 @@ namespace RB
 
     void WorkerThread::Sync(JobID job_id)
     {
-        m_SharedContext->kickMutex.lock();
-        
-        if (job_id != m_SharedContext->currentJob)
-        {
-            auto itr = FindJobBy(job_id);
-        
-            if (itr == m_SharedContext->pendingJobs.end())
-            {
-                // Job not found, probably completed already
-                m_SharedContext->kickMutex.unlock();
-                return;
-            }
-        }
-        
-        m_SharedContext->completedMutex.lock();
-        m_SharedContext->kickMutex.unlock();
-        
-        // Wait until the task has been completed
-        m_SharedContext->completedCV.wait(m_SharedContext->completedMutex, [&] {
-            return m_SharedContext->lastCompletedJob == job_id;
-        });
+        std::unique_lock<Mutex> lock(m_SharedContext->kickMutex);
 
-        m_SharedContext->completedMutex.unlock();
+        // Wait until the job is neither queued nor running. This also returns when the job
+        // was already done, was cancelled, or when other jobs finished after it.
+        m_SharedContext->completedCV.wait(lock, [&] {
+            return m_SharedContext->currentJob != job_id && FindJobBy(job_id) == m_SharedContext->pendingJobs.end();
+        });
     }
 
     void WorkerThread::SyncAll()
@@ -269,39 +255,55 @@ namespace RB
 
     float WorkerThread::GetLastJobTimeMs()
     {
-        RB_MUTEX_AUTO_LOCK(m_SharedContext->completedMutex);
+        RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
 
         return m_SharedContext->lastJobTime;
     }
 
     void WorkerThread::Cancel(JobID job_id)
     {
-        RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
-
-        auto itr = FindJobBy(job_id);
-
-        if (itr == m_SharedContext->pendingJobs.end())
         {
-            return;
+            RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
+
+            auto itr = FindJobBy(job_id);
+
+            if (itr == m_SharedContext->pendingJobs.end())
+            {
+                return;
+            }
+
+            if (itr->data)
+                itr->data->OnDestroy(false);
+            SAFE_DELETE(itr->data);
+
+            // Keep the high priority boundary in sync with the removed entry
+            const size_t index = itr - m_SharedContext->pendingJobs.begin();
+            if (index < m_SharedContext->highPriorityInsertIndex)
+                m_SharedContext->highPriorityInsertIndex--;
+
+            m_SharedContext->pendingJobs.erase(itr);
         }
 
-        if (itr->data)
-            itr->data->OnDestroy(false);
-        SAFE_DELETE(itr->data);
-        m_SharedContext->pendingJobs.erase(itr);
+        // Anyone syncing on this job is done waiting
+        m_SharedContext->completedCV.notify_all();
     }
 
     void WorkerThread::CancelAll()
     {
-        RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
-
-        for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
         {
-            if (m_SharedContext->pendingJobs[i].data)
-                m_SharedContext->pendingJobs[i].data->OnDestroy(false);
-            SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
+            RB_MUTEX_AUTO_LOCK(m_SharedContext->kickMutex);
+
+            for (int i = 0; i < m_SharedContext->pendingJobs.size(); ++i)
+            {
+                if (m_SharedContext->pendingJobs[i].data)
+                    m_SharedContext->pendingJobs[i].data->OnDestroy(false);
+                SAFE_DELETE(m_SharedContext->pendingJobs[i].data);
+            }
+            m_SharedContext->pendingJobs.clear();
+            m_SharedContext->highPriorityInsertIndex = 0;
         }
-        m_SharedContext->pendingJobs.clear();
+
+        m_SharedContext->completedCV.notify_all();
     }
 
     bool WorkerThread::IsCurrentThread()
@@ -333,24 +335,20 @@ namespace RB
 
                 context->currentJob = UINT64_MAX;
 
-                // Only start waiting if there are no more jobs pending
-                if (context->pendingJobs.empty())
+                // Sleep until there is a job to run. The queue is checked (not just the state), because a
+                // job can be cancelled after the kick, which leaves us woken up with nothing to do.
+                while (context->pendingJobs.empty() && context->state != WorkerThread::ThreadState::Terminating)
                 {
-                    // Wait until kick
-                    do
+                    // Notify that we are starting to idle
                     {
-                        // Notify that we are starting to idle
-                        {
-                            context->syncMutex.lock();
-                            context->state = WorkerThread::ThreadState::Idle;
-                            context->syncMutex.unlock();
-                            context->syncCV.notify_one();
-                        }
+                        context->syncMutex.lock();
+                        context->state = WorkerThread::ThreadState::Idle;
+                        context->syncMutex.unlock();
+                        context->syncCV.notify_one();
+                    }
 
-                        // Sleep
-                        context->kickCV.wait(kick_lock);
-
-                    } while (context->state == WorkerThread::ThreadState::Idle);
+                    // Sleep
+                    context->kickCV.wait(kick_lock);
                 }
 
                 if (context->state == WorkerThread::ThreadState::Terminating)
@@ -366,7 +364,6 @@ namespace RB
 
                 context->pendingJobs.erase(context->pendingJobs.begin());
 
-                context->startedJobsCount++;
                 context->highPriorityInsertIndex = Math::Max((int)context->highPriorityInsertIndex - 1, 0);
 
                 context->currentJob = current_job.id;
@@ -388,10 +385,11 @@ namespace RB
 
             // Notify that we are done with a job
             {
-                context->completedMutex.lock();
+                context->kickMutex.lock();
+                context->currentJob = UINT64_MAX;
                 context->lastCompletedJob = current_job.id;
                 context->lastJobTime = context->timer.ElapsedMilliseconds() - context->counterStart;
-                context->completedMutex.unlock();
+                context->kickMutex.unlock();
                 context->completedCV.notify_all();
             }
         }
