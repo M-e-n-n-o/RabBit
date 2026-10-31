@@ -63,6 +63,9 @@ namespace RB::Graphics
         cb.clearColor       = m_Settings.applyClearColor ? i.viewContext->clearColor : Math::Float4(0);
         cb.brightnessValue  = m_Settings.brightness;
         cb.gammaValue       = m_Settings.applyGamma ? 2.2f : 1.0f;
+        cb.peakLuminance    = 1000.0f;              // Make this a window setting
+        cb.contrast         = m_Settings.contrast;
+        cb.isHDR            = false;                // Make this a window setting/check the output texture format
 
         i.ri->SetConstantShaderData(ToneMapGlobals_ToneMapCB, &cb, sizeof(Shader::ToneMapCB));
 

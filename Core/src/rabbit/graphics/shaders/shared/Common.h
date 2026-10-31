@@ -81,7 +81,10 @@ PB struct ToneMapCB
     PB float4 clearColor;
     PB float  brightnessValue;
     PB float  gammaValue;
-    PB float2 padding;
+    PB float  peakLuminance;
+    PB float  contrast;
+    PB uint   isHDR;
+    PB float3 padding;
 };
 ALIGN_CHECK(ToneMapCB);
 

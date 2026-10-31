@@ -38,6 +38,7 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
     //window1.windowHeight        = 720;
     //window1.forcedRenderAspect  = 4.0f / 3.0f;
     window1.semiTransparent     = true;
+    //window1.renderScale         = 2.0f;
     //window1.renderScale         = 0.75f;
     app_info.windows.push_back(window1);
 
@@ -61,32 +62,32 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
             .AddPass<RayMarcherPass>        (RenderPassType::Custom0,           RayMarcherSettings{})
             .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
             .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
-            .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
             .AddPass<ToneMappingPass>       (RenderPassType::ToneMapping,       ToneMappingSettings{})
+            .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
             .AddPass<SmaaPass>              (RenderPassType::Smaa,              RenderPassSettings{})
 
             // Connections           (from)     ->      (to)
             .AddLink(RenderPassType::Skinning,          RenderPassType::GBuffer)
             .AddLink(RenderPassType::Skinning,          RenderPassType::CascadedShadow)
 
-            .AddLink(RenderPassType::GBuffer,           RenderPassType::Custom0,
+            .AddLink(RenderPassType::GBuffer,           RenderPassType::DeferredLighting,
                                         0u,                0u,
                                         1u,                1u)
 
-            .AddLink(RenderPassType::Custom0,           RenderPassType::DeferredLighting,
-                                        0u,                0u,
-                                        1u,                1u)
+            //.AddLink(RenderPassType::Custom0,           RenderPassType::DeferredLighting,
+            //                            0u,                0u,
+            //                            1u,                1u)
 
             .AddLink(RenderPassType::CascadedShadow,    RenderPassType::DeferredLighting,
                                         0u,                2u)
 
-            .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
+            .AddLink(RenderPassType::DeferredLighting,  RenderPassType::ToneMapping,
                                         0u,                0u)
 
-            .AddLink(RenderPassType::Overlay2D,         RenderPassType::ToneMapping,
+            .AddLink(RenderPassType::ToneMapping,       RenderPassType::Overlay2D,
                                         0u,                0u)
 
-            .AddLink(RenderPassType::ToneMapping,       RenderPassType::Smaa,
+            .AddLink(RenderPassType::Overlay2D,         RenderPassType::Smaa,
                                         0u,                0u)
 
             // Finalize

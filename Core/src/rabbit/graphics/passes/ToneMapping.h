@@ -8,6 +8,7 @@ namespace RB::Graphics
         float brightness = 1.0f;
         bool  applyGamma = true;
         bool  applyClearColor = false;
+        float contrast = 1.4f;
 
         ToneMappingSettings(float brightness = 1.0f, float applyGamma = true, float applyClearColor = false)
             : brightness(brightness)

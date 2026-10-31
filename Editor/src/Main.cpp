@@ -81,8 +81,8 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
                 .AddPass<GBufferPass>           (RenderPassType::GBuffer,           RenderPassSettings{})
                 .AddPass<CascadedShadowPass>    (RenderPassType::CascadedShadow,    RenderPassSettings{})
                 .AddPass<DeferredLightingPass>  (RenderPassType::DeferredLighting,  RenderPassSettings{})
-                .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
                 .AddPass<ToneMappingPass>       (RenderPassType::ToneMapping,       ToneMappingSettings{})
+                .AddPass<Overlay2DPass>         (RenderPassType::Overlay2D,         RenderPassSettings{})
                 .AddPass<SmaaPass>              (RenderPassType::Smaa,              RenderPassSettings{})
                 .AddPass<ScreenCapturePass>     (RenderPassType::ScreenCapture,     RenderPassSettings{})
 
@@ -94,13 +94,13 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
                 .AddLink(RenderPassType::CascadedShadow,    RenderPassType::DeferredLighting,
                                             0u,                2u)
 
-                .AddLink(RenderPassType::DeferredLighting,  RenderPassType::Overlay2D,
+                .AddLink(RenderPassType::DeferredLighting,  RenderPassType::ToneMapping,
                                             0u,                0u)
 
-                .AddLink(RenderPassType::Overlay2D,         RenderPassType::ToneMapping,
+                .AddLink(RenderPassType::ToneMapping,       RenderPassType::Overlay2D,
                                             0u,                0u)
 
-                .AddLink(RenderPassType::ToneMapping,       RenderPassType::Smaa,
+                .AddLink(RenderPassType::Overlay2D,         RenderPassType::Smaa,
                                             0u,                0u)
 
                 .AddLink(RenderPassType::Smaa,              RenderPassType::ScreenCapture,
