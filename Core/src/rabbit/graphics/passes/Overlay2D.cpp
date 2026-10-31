@@ -53,7 +53,7 @@ namespace RB::Graphics
         struct Element
         {
             OverlayEntryType type;
-            uint32_t renderOrder;
+            int renderOrder;
             std::variant<Rectangle, Text> data;
         };
 
@@ -180,7 +180,17 @@ namespace RB::Graphics
 
                     Overlay2DEntry::Text out_text;
                     out_text.fontTex    = text->GetFont()->GetFontTexture();
-                    out_text.scissor    = { (uint32_t)pos_x, (uint32_t)pos_y, uint32_t(bounds_x * scale), uint32_t(bounds_y * scale) };
+
+                    // The box size is already in pixels. If the box has no size, fall back to the text's own bounds.
+                    float clip_w = bounds_x > 0.0f ? bounds_x : text->GetTextBoundsWidth()  * scale;
+                    float clip_h = bounds_y > 0.0f ? bounds_y : text->GetTextBoundsHeight() * scale;
+
+                    // Clamp to the screen so negative positions don't wrap around in the unsigned cast
+                    float clip_x0 = Math::Max(pos_x, 0.0f);
+                    float clip_y0 = Math::Max(pos_y, 0.0f);
+                    float clip_x1 = Math::Max(pos_x + clip_w, clip_x0);
+                    float clip_y1 = Math::Max(pos_y + clip_h, clip_y0);
+                    out_text.scissor    = { (uint32_t)clip_x0, (uint32_t)clip_y0, uint32_t(clip_x1 - clip_x0), uint32_t(clip_y1 - clip_y0) };
 
                     auto char_map = text->GetFont()->GetCharacterMap();
 
@@ -189,7 +199,10 @@ namespace RB::Graphics
 
                     for (char c : text->GetText())
                     {
-                        const auto& ch = char_map->at(c);
+                        auto ch_it = char_map->find(c);
+                        if (ch_it == char_map->end())
+                            continue; // Glyph not in the font atlas
+                        const auto& ch = ch_it->second;
         
                         float xpos = start_x + ch.bearing.x * scale;
                         float ypos = start_y + (ch.size.y - ch.bearing.y) * scale;

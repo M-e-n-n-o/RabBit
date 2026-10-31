@@ -130,43 +130,103 @@ public:
         auto* sun = scene->CreateGameObject();
         sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
 
-        // UI
+        // UI test scene
         {
             auto canvas = scene->CreateGameObject();
             canvas->AddComponent<UICanvas>(cam_comp);
-        
-        
-            auto list = scene->CreateGameObject();
-            auto* list_box = list->AddComponent<UIBox>();
-            list_box->SetSize(UIUnit::IPCT, 10, 50);
-            list->AddComponent<ListView>(true, 15);
-            //auto list_t = list->AddComponent<Transform>();
-            //list_t->position.x = 0.0f;
-            //list_t->position.y = 0.0f;
-            list->SetParent(canvas);
-        
-            auto rect_obj = scene->CreateGameObject();
-            auto* rect_box = rect_obj->AddComponent<UIBox>();
-            //rect_box->SetStartPos(UIUnit::PX, 5, 5);
-            rect_box->SetPadding(UIUnit::PX, 5);
-            //rect_box->AddConstraint(UIConstraintType::Left);
-            //rect_box->AddConstraint(UIConstraintType::Right);
-            //rect_box->AddConstraint(UIConstraintType::Up);
-            //rect_box->AddConstraint(UIConstraintType::Down);
-            rect_box->SetSize(UIUnit::IPCT, 25, 25);
-            rect_obj->AddComponent<Rect2D>(Math::Float4(0.0f, 1.0f, 0.0f, 0.4f), 0);
-            rect_obj->SetParent(list);
-        
+
             LoadedFont font;
             AssetLoader::LoadFont("TypoGraphica.otf", &font, 48);
-            
             m_Font = new Font("Cool Font", font);
-            
-            auto text_obj = scene->CreateGameObject();
-            auto* text_box = text_obj->AddComponent<UIBox>();
-            text_box->SetSize(UIUnit::IPCT, 30, 10);
-            text_obj->AddComponent<Text2D>(m_Font, "Hoi Sylvia! (dit zie je niet)", 1.0f, 0);
-            text_obj->SetParent(list);
+
+            // Creates a UI object with a box + optional colored rect under 'parent'
+            auto make_box = [&](GameObject* parent, UIUnit size_unit, float w, float h) -> UIBox*
+            {
+                auto* obj = scene->CreateGameObject();
+                auto* box = obj->AddComponent<UIBox>();
+                box->SetSize(size_unit, w, h);
+                obj->SetParent(parent);
+                return box;
+            };
+            auto make_rect = [&](GameObject* parent, UIUnit size_unit, float w, float h, Float4 color, int order) -> UIBox*
+            {
+                UIBox* box = make_box(parent, size_unit, w, h);
+                box->GetGameObject()->AddComponent<Rect2D>(color, order);
+                return box;
+            };
+
+            // 1. Top-left panel: PCT size (stretches with the window), Left+Up, IPCT padding, text with no box size
+            UIBox* title = make_rect(canvas, UIUnit::PCT, 30, 8, Float4(0.1f, 0.1f, 0.1f, 0.6f), 0);
+            title->SetPadding(UIUnit::IPCT, 2);
+            title->AddConstraint(UIConstraintType::Left);
+            title->AddConstraint(UIConstraintType::Up);
+            {
+                UIBox* label = make_box(title->GetGameObject(), UIUnit::PX, 0, 0);
+                label->SetPadding(UIUnit::IPCT, 5);
+                label->AddConstraint(UIConstraintType::Left);
+                label->AddConstraint(UIConstraintType::Up);
+                label->GetGameObject()->AddComponent<Text2D>(m_Font, "UI test", 0.5f, 2);
+            }
+
+            // 2. Bottom-right square: IPCT keeps it square on every aspect ratio, Right+Down
+            UIBox* corner = make_rect(canvas, UIUnit::IPCT, 15, 15, Float4(1.0f, 0.4f, 0.1f, 0.7f), 0);
+            corner->SetPadding(UIUnit::IPCT, 2);
+            corner->AddConstraint(UIConstraintType::Right);
+            corner->AddConstraint(UIConstraintType::Down);
+
+            // 3. Centered square: all four constraints = centered
+            UIBox* center = make_rect(canvas, UIUnit::PX, 100, 100, Float4(0.2f, 0.5f, 1.0f, 0.5f), 0);
+            for (auto c : { UIConstraintType::Left, UIConstraintType::Right, UIConstraintType::Up, UIConstraintType::Down })
+                center->AddConstraint(c);
+
+            // 4. Nested boxes, bottom-left: children are sized/padded relative to their parent
+            UIBox* panel = make_rect(canvas, UIUnit::PCT, 25, 20, Float4(0.0f, 0.0f, 0.0f, 0.5f), 0);
+            panel->SetPadding(UIUnit::IPCT, 2);
+            panel->AddConstraint(UIConstraintType::Left);
+            panel->AddConstraint(UIConstraintType::Down);
+            {
+                UIBox* a = make_rect(panel->GetGameObject(), UIUnit::PCT, 45, 45, Float4(1.0f, 0.2f, 0.2f, 0.8f), 1);
+                a->SetPadding(UIUnit::IPCT, 5);
+                a->AddConstraint(UIConstraintType::Left);
+                a->AddConstraint(UIConstraintType::Up);
+
+                UIBox* b = make_rect(panel->GetGameObject(), UIUnit::PCT, 45, 45, Float4(0.2f, 1.0f, 0.2f, 0.8f), 1);
+                b->SetPadding(UIUnit::IPCT, 5);
+                b->AddConstraint(UIConstraintType::Right);
+                b->AddConstraint(UIConstraintType::Down);
+            }
+
+            // 5. Mixed: constraint on X only, Y stays a free PCT position (the old code reinterpreted 50% as 50 px)
+            UIBox* mixed = make_rect(canvas, UIUnit::IPCT, 6, 6, Float4(1.0f, 1.0f, 0.0f, 0.8f), 0);
+            mixed->SetStartPos(UIUnit::PCT, 0, 50);
+            mixed->SetPadding(UIUnit::IPCT, 2);
+            mixed->AddConstraint(UIConstraintType::Left);
+
+            // 6. Pure PCT position + size, no constraints: a bar at the bottom center
+            UIBox* bar = make_rect(canvas, UIUnit::PCT, 30, 3, Float4(1.0f, 1.0f, 1.0f, 0.6f), 0);
+            bar->SetStartPos(UIUnit::PCT, 35, 92);
+
+            // 7. Vertical ListView, top-right: children are PCT of the list, so the list scales as a whole
+            UIBox* list_box = make_box(canvas, UIUnit::PCT, 18, 55);
+            list_box->SetPadding(UIUnit::IPCT, 2);
+            list_box->AddConstraint(UIConstraintType::Right);
+            list_box->AddConstraint(UIConstraintType::Up);
+            list_box->GetGameObject()->AddComponent<ListView>(true, 8);
+            {
+                const Float4 colors[] =
+                {
+                    Float4(0.9f, 0.3f, 0.3f, 0.7f),
+                    Float4(0.3f, 0.9f, 0.3f, 0.7f),
+                    Float4(0.3f, 0.3f, 0.9f, 0.7f),
+                };
+
+                for (const Float4& color : colors)
+                    make_rect(list_box->GetGameObject(), UIUnit::PCT, 100, 20, color, 0);
+
+                // Text row: has a box size, so it is clipped to it
+                UIBox* row = make_box(list_box->GetGameObject(), UIUnit::PCT, 100, 20);
+                row->GetGameObject()->AddComponent<Text2D>(m_Font, "List item", 0.4f, 1);
+            }
         }
 
         //m_Obj2 = scene->CreateGameObject();

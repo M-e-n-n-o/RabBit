@@ -84,12 +84,10 @@ namespace RB::Entity
         Pair<float, float> GetWorldStartPos() const;
         Pair<float, float> GetWorldSize() const;
 
-        void OnUpdate(float delta_time) override;
-
     private:
-        void UpdateMagnets();
-        void GetParentBounds(float& x, float& y, float& width, float& height) const;
-        Pair<float, float> ConvertUnits(UIUnit current, UIUnit target, float x, float y) const;
+        void GetParentSize(float& width, float& height) const;
+        void ResolvePx(float& x, float& y, float& w, float& h) const; // local to parent, constraints applied
+        static Pair<float, float> ConvertUnits(UIUnit current, UIUnit target, float x, float y, float parent_w, float parent_h);
 
         UIUnit m_PosUnit;
         float  m_PosX;
@@ -103,8 +101,6 @@ namespace RB::Entity
         bool   m_RightMagnet;
         bool   m_TopMagnet;
         bool   m_BottomMagnet;
-        float  m_LastParentWidth;
-        float  m_LastParentHeight;
     };
 
     // ---------------------------------------------------------------------------
@@ -125,6 +121,7 @@ namespace RB::Entity
 
         void OnChildAttached(GameObject* obj) override;
         void OnChildDettached(GameObject* obj) override;
+        void OnUpdate(float delta_time) override;
 
     private:
         void UpdateItemPositions();
@@ -138,7 +135,7 @@ namespace RB::Entity
     class UIRenderComponent : public UIComponent
     {
     public:
-        UIRenderComponent(uint32_t render_order = 0)
+        UIRenderComponent(int render_order = 0)
             : m_RenderOrder(render_order)
         {
         }
@@ -147,7 +144,7 @@ namespace RB::Entity
         int GetRenderOrder() const { return m_RenderOrder; }
 
     private:
-        uint32_t m_RenderOrder;
+        int m_RenderOrder;
     };
     REGISTER_COMP_BASES(UIRenderComponent, UIComponent);
 
@@ -155,7 +152,7 @@ namespace RB::Entity
     {
     public:
 
-        Rect2D(Math::Float4 color, float render_order = 0)
+        Rect2D(Math::Float4 color, int render_order = 0)
             : UIRenderComponent(render_order)
             , m_Color(color)
         {
@@ -171,7 +168,7 @@ namespace RB::Entity
     class Text2D : public UIRenderComponent
     {
     public:
-        Text2D(Font* font, const std::string& text, float scale = 1.0f, float render_order = 0);
+        Text2D(Font* font, const std::string& text, float scale = 1.0f, int render_order = 0);
 
         void UpdateText(const std::string& text);
 
