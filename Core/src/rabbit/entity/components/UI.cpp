@@ -247,10 +247,9 @@ namespace RB::Entity
     //                                  Text2D
     // ---------------------------------------------------------------------------
 
-    Text2D::Text2D(Font* font, const std::string& text, float scale, int render_order)
+    Text2D::Text2D(Font* font, const std::string& text, int render_order)
         : UIRenderComponent(render_order)
         , m_Font(font)
-        , m_Scale(scale)
     {
         UpdateText(text);
     }

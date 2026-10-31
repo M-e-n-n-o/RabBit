@@ -24,8 +24,8 @@ namespace RB::Entity
         const Map<char, LoadedFont::Character>* GetCharacterMap() const { return &m_Characters; }
 
     private:
-        Shared<Graphics::Texture2D> m_FontTexture;
-        Map<char, LoadedFont::Character> m_Characters;
+        Shared<Graphics::Texture2D>         m_FontTexture;
+        Map<char, LoadedFont::Character>    m_Characters;
     };
 
     // ---------------------------------------------------------------------------
@@ -168,14 +168,13 @@ namespace RB::Entity
     class Text2D : public UIRenderComponent
     {
     public:
-        Text2D(Font* font, const std::string& text, float scale = 1.0f, int render_order = 0);
+        Text2D(Font* font, const std::string& text, int render_order = 0);
 
         void UpdateText(const std::string& text);
 
         const Font* GetFont()   const { return m_Font; }
         std::string GetText()   const { return m_Text; }
-        float       GetScale()  const { return m_Scale; }
-        
+
         float       GetTextBoundsWidth()     const { return m_TextBoundsWidth; }
         float       GetTextBoundsHeight()    const { return m_TextBoundsHeight; }
         float       GetTextMaxBearingUpper() const { return m_TextMaxBearingUpper; }
@@ -183,7 +182,6 @@ namespace RB::Entity
     private:
         Font*        m_Font;
         std::string  m_Text;
-        float        m_Scale;
         float        m_TextBoundsWidth;
         float        m_TextBoundsHeight;
         float        m_TextMaxBearingUpper;

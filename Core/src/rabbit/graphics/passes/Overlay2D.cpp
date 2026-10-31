@@ -172,7 +172,10 @@ namespace RB::Graphics
                 }
                 else if (auto text = dynamic_cast<const Text2D*>(render_comps[i]); text != nullptr)
                 {
-                    const float scale = text->GetScale();
+                    // Scale the text uniformly to fit the box
+                    float scale = 1.0f;
+                    if (bounds_x > 0.0f && bounds_y > 0.0f && text->GetTextBoundsWidth() > 0.0f && text->GetTextBoundsHeight() > 0.0f)
+                        scale = Math::Min(bounds_x / text->GetTextBoundsWidth(), bounds_y / text->GetTextBoundsHeight());
 
                     // Calculate the baseline start position
                     float start_x = pos_x;
