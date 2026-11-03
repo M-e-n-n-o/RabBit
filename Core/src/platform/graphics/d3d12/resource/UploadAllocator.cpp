@@ -70,6 +70,7 @@ namespace RB::Graphics::D3D12
         , m_PageSize(page_size)
         , m_CurrentPage(-1)
         , m_ResetCounter(0)
+        , m_LastHighestPage(0)
     {
     }
 

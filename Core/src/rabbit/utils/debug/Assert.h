@@ -25,11 +25,11 @@ namespace RB::Utils::Debug
 
     #else
         
-        #define RB_ASSERT(tag, check, ...)
+        #define RB_ASSERT(tag, check, ...)              { (void)(check); }
         #define RB_ASSERT_ALWAYS(tag, ...)
-        #define RB_ASSERT_FATAL(check, ...)
-        #define RB_ASSERT_FATAL_D3D(check, ...)
-        #define RB_ASSERT_FATAL_VK(check, ...)
+        #define RB_ASSERT_FATAL(check, ...)             { (void)(check); }
+        #define RB_ASSERT_FATAL_D3D(check, ...)         { (void)(check); }
+        #define RB_ASSERT_FATAL_VK(check, ...)          { (void)(check); }
         
         #define RB_STATIC_ASSERT(check, ...)
 
