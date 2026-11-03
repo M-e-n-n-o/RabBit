@@ -136,7 +136,7 @@ public:
             canvas->AddComponent<UICanvas>(cam_comp);
 
             LoadedFont font;
-            AssetLoader::LoadFont("TypoGraphica.otf", &font, 48);
+            AssetLoader::LoadFont("TypoGraphica.otf", &font, 64);
             m_Font = new Font("Cool Font", font);
 
             // Creates a UI object with a box + optional colored rect under 'parent'
@@ -155,17 +155,17 @@ public:
                 return box;
             };
 
-            // 1. Top-left panel: PCT size (stretches with the window), Left+Up, IPCT padding, text with no box size
+            // 1. Top-left panel: PCT size (stretches with the window), Left+Up, IPCT padding, text scaled to fit its box
             UIBox* title = make_rect(canvas, UIUnit::PCT, 30, 8, Float4(0.1f, 0.1f, 0.1f, 0.6f), 0);
             title->SetPadding(UIUnit::IPCT, 2);
             title->AddConstraint(UIConstraintType::Left);
             title->AddConstraint(UIConstraintType::Up);
             {
-                UIBox* label = make_box(title->GetGameObject(), UIUnit::PX, 0, 0);
+                UIBox* label = make_box(title->GetGameObject(), UIUnit::PCT, 60, 70);
                 label->SetPadding(UIUnit::IPCT, 5);
                 label->AddConstraint(UIConstraintType::Left);
                 label->AddConstraint(UIConstraintType::Up);
-                label->GetGameObject()->AddComponent<Text2D>(m_Font, "UI test", 0.5f, 2);
+                label->GetGameObject()->AddComponent<Text2D>(m_Font, "UI test", 2);
             }
 
             // 2. Bottom-right square: IPCT keeps it square on every aspect ratio, Right+Down
@@ -225,7 +225,7 @@ public:
 
                 // Text row: has a box size, so it is clipped to it
                 UIBox* row = make_box(list_box->GetGameObject(), UIUnit::PCT, 100, 20);
-                row->GetGameObject()->AddComponent<Text2D>(m_Font, "List item", 0.4f, 1);
+                row->GetGameObject()->AddComponent<Text2D>(m_Font, "List item", 1);
             }
         }
 
