@@ -35,3 +35,25 @@ add_custom_command(TARGET ShaderCompilerD3D12 POST_BUILD
         ${SLANG_PATH}/bin/x86_64/slang.dll
         ${SLANG_PATH}/bin/x86_64/slang-compiler.dll
         $<TARGET_FILE_DIR:ShaderCompilerD3D12>)
+
+# Slang needs dxcompiler.dll next to the exe to compile to DXIL
+file(GLOB DXC_CANDIDATES "$ENV{ProgramFiles\(x86\)}/Windows Kits/10/bin/*/x64/dxcompiler.dll")
+list(SORT DXC_CANDIDATES COMPARE NATURAL ORDER DESCENDING)
+list(GET DXC_CANDIDATES 0 DXC_DLL)
+if (NOT DXC_DLL)
+    message(FATAL_ERROR "dxcompiler.dll not found")
+endif()
+get_filename_component(DXC_DIR ${DXC_DLL} DIRECTORY)
+
+add_custom_command(TARGET ShaderCompilerD3D12 POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${DXC_DIR}/dxcompiler.dll
+        $<TARGET_FILE_DIR:ShaderCompilerD3D12>)
+
+# dxil.dll (shader signing) is only present in some SDK versions
+if (EXISTS ${DXC_DIR}/dxil.dll)
+    add_custom_command(TARGET ShaderCompilerD3D12 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${DXC_DIR}/dxil.dll
+            $<TARGET_FILE_DIR:ShaderCompilerD3D12>)
+endif()
