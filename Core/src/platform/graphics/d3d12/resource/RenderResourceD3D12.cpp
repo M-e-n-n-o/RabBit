@@ -273,6 +273,7 @@ namespace RB::Graphics::D3D12
     ReadbackBufferD3D12::ReadbackBufferD3D12(const char* name, uint64_t size)
         : ReadbackBuffer(name)
         , m_Size(size)
+        , m_PackedSize(size)
         , m_MappedMemory(nullptr)
     {
         m_Resource = new GpuResource();
@@ -362,10 +363,16 @@ namespace RB::Graphics::D3D12
 
     void ReadbackBufferD3D12::OnScheduledReadback(Shared<GpuGuardD3D12>& fence)
     {
+        constexpr uint32_t MAX_FENCES = 8;
+
+        // Limit the amount of fences to avoid unnecessary memory usage
+        if (m_Fences.size() >= MAX_FENCES)
+            m_Fences.pop();
+
         m_Fences.push(fence);
     }
 
-    bool ReadbackBufferD3D12::GetData(void* memory, bool should_block)
+    bool ReadbackBufferD3D12::GetData(void* memory, bool block_until_ready)
     {
         // TODO: It would probably be safer to do this readback memcpy at the start of the frame to have a smaller chance the GPU is also writing to this resource
 
@@ -380,10 +387,10 @@ namespace RB::Graphics::D3D12
             }
             else
             {
-                if (popped_one)
+                if (popped_one || !block_until_ready)
                     break;
-                else if (should_block)
-                    m_Fences.front()->WaitUntilFinishedRendering();
+
+                m_Fences.front()->WaitUntilFinishedRendering();
             }
         }
 

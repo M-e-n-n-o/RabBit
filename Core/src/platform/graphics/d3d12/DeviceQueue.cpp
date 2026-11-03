@@ -48,6 +48,13 @@ namespace RB::Graphics::D3D12
 
         UpdateAvailableCommandAllocators();
 
+        // Limit the amount of created allocators to avoid extreme memory usage
+        if (m_AvailableCommandAllocators.empty() && m_RunningCommandAllocators.size() >= MAX_COMMAND_ALLOCATORS)
+        {
+            CpuWaitForFenceValue(m_RunningCommandAllocators.front().fenceValue);
+            UpdateAvailableCommandAllocators();
+        }
+
         if (m_AvailableCommandAllocators.empty())
         {
             RB_ASSERT_FATAL_RELEASE_D3D(g_GraphicsDevice->Get()->CreateCommandAllocator(m_Type, IID_PPV_ARGS(&command_allocator)),

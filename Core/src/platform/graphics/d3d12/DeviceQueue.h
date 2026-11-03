@@ -43,6 +43,8 @@ namespace RB::Graphics::D3D12
             GPtr<ID3D12CommandAllocator> commandAllocator;
         };
 
+        const static inline size_t MAX_COMMAND_ALLOCATORS = 64;
+
         D3D12_COMMAND_LIST_TYPE                 m_Type;
         GPtr<ID3D12CommandQueue>                m_CommandQueue;
         GPtr<ID3D12Fence>                       m_Fence;

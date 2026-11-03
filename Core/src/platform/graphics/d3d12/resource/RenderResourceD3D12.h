@@ -115,7 +115,7 @@ namespace RB::Graphics::D3D12
 
         void OnScheduledReadback(Shared<GpuGuardD3D12>& fence);
 
-        bool GetData(void* memory, bool should_block) override;
+        bool GetData(void* memory, bool block_until_ready) override;
 
     private:
         GpuResource*                                m_Resource;

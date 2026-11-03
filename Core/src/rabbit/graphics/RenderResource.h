@@ -192,7 +192,7 @@ namespace RB::Graphics
     public:
         // Make sure that the memory parameter is at least the size of GetPackedSize().
         // If should_block is false it will return older frames' data. You probably want this behaviour when doing readbacks every frame.
-        virtual bool GetData(void* memory, bool should_block = false) = 0;
+        virtual bool GetData(void* memory, bool block_until_ready = false) = 0;
 
         virtual uint64_t GetPackedSize() const = 0;
 
