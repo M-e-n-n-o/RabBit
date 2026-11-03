@@ -6,6 +6,7 @@
 
 namespace RB
 {
+#ifdef RB_ENABLE_LOGS
     void SteamWarningCallback(int severity, const char* msg)
     {
         // if you're running in the debugger, only warnings (nSeverity >= 1) will be sent
@@ -16,6 +17,7 @@ namespace RB
         else if (severity >= 1)
             RB_LOG_WARN(LOGTAG_MAIN, "Steam warning: %s", msg)
     }
+#endif
 
     SteamPlatformService::SteamPlatformService()
         : m_Initialized(false)
@@ -35,7 +37,9 @@ namespace RB
             return;
         }
 
+#ifdef RB_ENABLE_LOGS
         SteamClient()->SetWarningMessageHook(&SteamWarningCallback);
+#endif
 
         m_Initialized = true;
     }
