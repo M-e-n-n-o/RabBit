@@ -127,7 +127,9 @@ RB::Application* RB::CreateApplication(int argc, char** argv)
 
     RB::Application* app = new EditorApp(app_info, model_name);
 
+#ifdef RB_ENABLE_LOGS
     RB::Utils::Debug::Logger::SetCustomOutput(CustomLogging);
+#endif
 
     return app;
 }
