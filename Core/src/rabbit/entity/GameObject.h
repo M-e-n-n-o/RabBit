@@ -132,12 +132,6 @@ namespace RB::Entity
         auto it = m_Map.find(std::type_index(typeid(T)));
         if (it == m_Map.end())
         {
-            //if constexpr (std::is_same<T, Transform>::value)
-            //{
-            //  // A gameobject should always have a transform
-            //  return (T*)GetDefaultTransform();
-            //}
-
             return nullptr;
         }
 

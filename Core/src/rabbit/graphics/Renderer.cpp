@@ -271,7 +271,7 @@ namespace RB::Graphics
             const Entity::Camera* camera = camera_components[i];
             const Entity::Transform* transform = camera->GetGameObject()->GetComponent<Entity::Transform>();
 
-            if (!camera->GetGameObject()->HasComponent<Entity::Transform>())
+            if (transform == nullptr)
             {
                 RB_LOG_WARN(LOGTAG_GRAPHICS, "Camera object does not have a transform");
                 out_context_count--;

@@ -92,25 +92,25 @@ void RayMarcherPass::Render(RenderPassInput& in)
 
     in.ri->ClearResourceInputs();
 
-    {
-        in.ri->SetComputeShader(CS_CollisionCheck);
+    //{
+    //    in.ri->SetComputeShader(CS_CollisionCheck);
 
-        CollisionCheckCB data = {};
-        data.points[0] = Math::Float4(in.viewContext->cameraTransform.GetPosition());
-        data.maxPoints = 1;
+    //    CollisionCheckCB data = {};
+    //    data.points[0] = Math::Float4(in.viewContext->cameraTransform.GetPosition());
+    //    data.maxPoints = 1;
 
-        in.ri->SetConstantShaderData(RayMarcherGlobals_CollisionChecks, &data, sizeof(CollisionCheckCB));
+    //    in.ri->SetConstantShaderData(RayMarcherGlobals_CollisionChecks, &data, sizeof(CollisionCheckCB));
 
-        in.ri->SetRandomReadWriteInput(CsCollisionCheck_Distances, m_CollisionBuffer.get());
+    //    in.ri->SetRandomReadWriteInput(CsCollisionCheck_Distances, m_CollisionBuffer.get());
 
-        in.ri->Dispatch(1, 1, 1);
+    //    in.ri->Dispatch(1, 1, 1);
 
-        in.ri->Readback(m_CollisionBuffer.get(), m_Readback.get());
+    //    in.ri->Readback(m_CollisionBuffer.get(), m_Readback.get());
 
-        float* distances = ALLOC_STACKC(float, MAX_COLLISION_CHECKS);
-        if (m_Readback->GetData(distances))
-        {
-            RB_LOG("Distance: %f", distances[0]);
-        }
-    }
+    //    float distances[MAX_COLLISION_CHECKS];
+    //    if (m_Readback->GetData(distances))
+    //    {
+    //        RB_LOG("Distance: %f", distances[0]);
+    //    }
+    //}
 }
