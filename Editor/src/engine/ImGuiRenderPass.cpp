@@ -63,7 +63,7 @@ namespace Editor
             return nullptr;
         }
 
-        const auto& list = scene->GetComponentsWithTypeOf<ImGuiManager>();
+        const auto& list = scene->GetComponentsWithTypeOf<ImGuiManager>(allocator);
         if (list.empty())
         {
             RB_LOG_WARN("ImGuiRenderer requires a ImGuiManager to work!");

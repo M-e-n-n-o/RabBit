@@ -20,6 +20,7 @@
 #include <system_error>
 #include <tuple>
 #include <map>
+#include <span>
 #include <queue>
 #include <deque>
 #include <array>

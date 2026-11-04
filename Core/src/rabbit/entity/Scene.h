@@ -2,6 +2,8 @@
 #include "RabBitCommon.h"
 #include "GameObject.h"
 
+#include "app/FrameAllocator.h"
+
 namespace RB::Entity
 {
     class Scene
@@ -18,7 +20,7 @@ namespace RB::Entity
         const List<GameObject*>& GetGameObjects() const;
 
         template<class T>
-        const List<const T*> GetComponentsWithTypeOf() const;
+        const Span<const T*> GetComponentsWithTypeOf(FrameAllocator* allocator) const;
 
     private:
         struct ComponentQueryCache
@@ -36,7 +38,7 @@ namespace RB::Entity
     };
 
     template<class T>
-    inline const List<const T*> Scene::GetComponentsWithTypeOf() const
+    inline const Span<const T*> Scene::GetComponentsWithTypeOf(FrameAllocator* allocator) const
     {
         ComponentQueryCache& cache = m_QueryCache[std::type_index(typeid(T))];
 
@@ -55,11 +57,11 @@ namespace RB::Entity
             cache.objectCount      = m_GameObjects.size();
         }
 
-        List<const T*> list;
-        list.reserve(cache.components.size());
-        for (const ObjectComponent* comp : cache.components)
-            list.push_back(static_cast<const T*>(comp));
+        const T** mem = (const T**)allocator->Allocate(sizeof(T*) * cache.components.size());
+        for (int i = 0; i < cache.components.size(); i++)
+            mem[i] = static_cast<const T*>(cache.components[i]);
 
+        Span list(mem, cache.components.size());
         return list;
     }
 }

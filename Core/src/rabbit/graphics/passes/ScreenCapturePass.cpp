@@ -47,7 +47,7 @@ namespace RB::Graphics
 
     RenderPassEntry* ScreenCapturePass::SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator)
     {
-        const auto& list = scene->GetComponentsWithTypeOf<Entity::ScreenCapturer>();
+        const auto& list = scene->GetComponentsWithTypeOf<Entity::ScreenCapturer>(allocator);
 
         if (list.empty())
             return nullptr;

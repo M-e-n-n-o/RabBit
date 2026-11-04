@@ -81,12 +81,14 @@ namespace RB::Graphics
 
     RenderPassEntry* GBufferPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
-        auto mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
-        auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
+        auto mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>(allocator);
+        auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>(allocator);
 
         GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderables.size() + skinned_renderables.size());
 
         uint32_t total_entries = 0;
+
+        const Math::Float4x4 camera_vp = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
 
         auto ProcessRenderables = [&]<typename TRenderable>(const auto& container, auto GetPrimaryBuffer, auto GetSecondaryBuffer) 
         {
@@ -107,7 +109,6 @@ namespace RB::Graphics
                 const Shared<Texture2D>&    albedo      = mat->GetAlbedoTexture();
                 const Shared<Texture2D>&    normal      = mat->GetNormalTexture();
 
-                // Unified validation check
                 if (!prim_buffer || !prim_buffer->ContentsReady() ||
                     (sec_buffer && !sec_buffer->ContentsReady()) ||
                     (vp.indexBuffer && !vp.indexBuffer->ContentsReady()) ||
@@ -123,11 +124,10 @@ namespace RB::Graphics
                 if (mesh->HasValidAABB())
                 {
                     // We can do some frustum culling
-                    const Math::AABB&    aabb       = mesh->GetAABB();
-                    const Math::AABB     world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
-                    const Math::Float4x4 vp         = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
+                    const Math::AABB& aabb       = mesh->GetAABB();
+                    const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
 
-                    if (!Frustum::IsInFrustum(world_aabb, vp))
+                    if (!Frustum::IsInFrustum(world_aabb, camera_vp))
                     {
                         continue;
                     }

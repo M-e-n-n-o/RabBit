@@ -18,8 +18,5 @@ namespace RB::Graphics
         RenderPassEntry* SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator) override;
 
         void Render(RenderPassInput& inputs) override;
-
-    private:
-        const uint32_t m_ShadowSlices = 3;
     };
 }

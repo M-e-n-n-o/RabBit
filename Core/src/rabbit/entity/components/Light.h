@@ -19,8 +19,11 @@ namespace RB::Entity
 
         Math::Float3 GetDirection() const { return m_Direction; }
         Math::Float3 GetColor() const { return m_Color; }
+        
+        uint32_t GetShadowSlices() const { return m_TotalSlices; }
+        void SetShadowSlices(uint32_t slices) { m_TotalSlices = slices; }
 
-        Graphics::Frustum CalculateFrustum(const Camera& camera, const Transform& cam_transform, uint32_t slice, uint32_t total_slices, float* out_split) const
+        Graphics::Frustum CalculateFrustum(const Camera& camera, const Transform& cam_transform, uint32_t slice, float* out_split, uint32_t max_slices = UINT32_MAX) const
         {
             // Calculate Split Distances
             float near_p = Math::Max(camera.GetNearPlane(), 0.5f);
@@ -28,7 +31,7 @@ namespace RB::Entity
             float ratio = far_p / near_p;
 
             // Practical split lerp between logarithmic and linear
-            float p = (float)(slice + 1) / (float)total_slices;
+            float p = (float)(slice + 1) / (float)Math::Min(m_TotalSlices, max_slices);
             float log_split = near_p * Math::Pow(ratio, p);
             float lin_split = near_p + (far_p - near_p) * p;
             float split_dist = Math::Lerp(log_split, lin_split, m_SliceSteepness);
@@ -86,6 +89,8 @@ namespace RB::Entity
     private:
         Math::Float3        m_Direction;
         Math::Float3        m_Color;
+
+        uint32_t            m_TotalSlices = 3;
 
         float               m_SliceSteepness = 0.3f;     // How fast do we transition to the next shadow slice? (0-1)
         float               m_ShadowDistance = 500.0f;   // The max shadow coverage

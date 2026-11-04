@@ -5,6 +5,9 @@ namespace RB
     // Custom data containers
 
     template<class T>
+    using Span = std::span<T>;
+
+    template<class T>
     using List = std::vector<T>;
 
     template<class T>

@@ -55,13 +55,14 @@ namespace RB::Graphics
 
     RenderPassEntry* SkinningPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
-        auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
+        auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>(allocator);
 
         SkinningEntry::ModelEntry* entries = allocator->Allocate<SkinningEntry::ModelEntry>(skinned_renderables.size());
 
         uint32_t total_entries = 0;
 
         const Math::Float4x4 cam_world = view_context->cameraTransform.GetLocalToWorldMatrix();
+        const Math::Float4x4 cam_vp    = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
 
         for (int i = 0; i < skinned_renderables.size(); ++i)
         {
@@ -98,11 +99,10 @@ namespace RB::Graphics
             if (mesh->HasValidAABB())
             {
                 // We can do some frustum culling
-                const Math::AABB&    aabb       = mesh->GetAABB();
-                const Math::AABB     world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
-                const Math::Float4x4 vp         = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
+                const Math::AABB& aabb       = mesh->GetAABB();
+                const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
 
-                if (!Frustum::IsInFrustum(world_aabb, vp))
+                if (!Frustum::IsInFrustum(world_aabb, cam_vp))
                 {
                     continue;
                 }

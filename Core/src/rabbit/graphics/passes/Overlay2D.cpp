@@ -96,7 +96,7 @@ namespace RB::Graphics
         uint32_t window_width  = view_context->viewport.width;
         uint32_t window_height = view_context->viewport.height;
 
-        auto canvases = scene->GetComponentsWithTypeOf<UICanvas>();
+        auto canvases = scene->GetComponentsWithTypeOf<UICanvas>(allocator);
 
         uint32_t expected_components = 0;
         for (const ObjectComponent* obj : canvases)

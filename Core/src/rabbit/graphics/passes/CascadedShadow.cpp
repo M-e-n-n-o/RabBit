@@ -50,7 +50,7 @@ namespace RB::Graphics
                         .name       = "CascadedShadowMap",
                         .format     = RenderResourceFormat::R32_TYPELESS,
                         .type       = RenderResourcePassType::Tex2D,
-                        .typeDesc   = { 2048, 2048, m_ShadowSlices },
+                        .typeDesc   = { 2048, 2048, Shader::MAX_NUM_CASCADES },
                         .flags      = kRTFlag_CustomSized | kRTFlag_ClearBeforeGraph,
                         .clearValue = 1.0f
                     }
@@ -63,9 +63,9 @@ namespace RB::Graphics
 
     RenderPassEntry* CascadedShadowPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
-        const auto& lights = scene->GetComponentsWithTypeOf<DirectionalLight>();
-        const auto& mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>();
-        const auto& skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>();
+        const auto& lights = scene->GetComponentsWithTypeOf<DirectionalLight>(allocator);
+        const auto& mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>(allocator);
+        const auto& skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>(allocator);
 
         if (lights.empty() || (mesh_renderables.empty() && skinned_renderables.empty()))
         {
@@ -76,15 +76,22 @@ namespace RB::Graphics
 
         const auto* light = lights[0];
         RB_ASSERT(LOGTAG_GRAPHICS, lights.size() == 1, "Only 1 directional light is currently supported");
+        
+        uint32_t total_slices = light->GetShadowSlices();
+        if (total_slices > Shader::MAX_NUM_CASCADES)
+        {
+            total_slices = Shader::MAX_NUM_CASCADES;
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Shadow slices of directional light is larger than CascadedShadowPass allows (you may see shadows clipping)");
+        }
 
-        uint32_t fsize = sizeof(Frustum) * m_ShadowSlices;
+        uint32_t fsize = sizeof(Frustum) * total_slices;
         Frustum* frustums = (Frustum*)allocator->Allocate(fsize);
 
-        List<Math::Float4x4> precomputed_vps(m_ShadowSlices);
-        for (int i = 0; i < m_ShadowSlices; ++i)
+        List<Math::Float4x4> precomputed_vps(total_slices);
+        for (int i = 0; i < total_slices; ++i)
         {
             float split;
-            frustums[i] = light->CalculateFrustum(view_context->camera, view_context->cameraTransform, i, m_ShadowSlices, &split);
+            frustums[i] = light->CalculateFrustum(view_context->camera, view_context->cameraTransform, i, &split, total_slices);
 
             precomputed_vps[i] = frustums[i].GetWorldToViewMatrix() * frustums[i].GetViewToClipMatrix();
         }
@@ -110,14 +117,15 @@ namespace RB::Graphics
                 const Transform*     transform = renderable->GetGameObject()->GetComponent<Transform>();
                 const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
 
-                uint32_t frustum_mask = 0;
+                uint32_t frustum_mask = UINT32_MAX;
                 if (mesh->HasValidAABB())
                 {
                     const Math::AABB& aabb = mesh->GetAABB();
                     const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
 
+                    frustum_mask = 0;
                     // Do frustum culling on each shadow slice
-                    for (int i = 0; i < m_ShadowSlices; ++i)
+                    for (int i = 0; i < total_slices; ++i)
                     {
                         frustum_mask |= Frustum::IsInFrustum(world_aabb, precomputed_vps[i]) << i;
                     }
@@ -155,7 +163,7 @@ namespace RB::Graphics
         entry->modelEntries = entries;
         entry->entryCount   = total_entries;
         entry->frustums     = frustums;
-        entry->totalSlices  = m_ShadowSlices;
+        entry->totalSlices  = total_slices;
 
         return entry;
     }

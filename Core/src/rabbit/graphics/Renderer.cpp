@@ -250,7 +250,7 @@ namespace RB::Graphics
 
     ViewContext* Renderer::CreateViewContexts(const Entity::Scene* const scene, uint32_t& out_context_count)
     {
-        auto camera_components = scene->GetComponentsWithTypeOf<Entity::Camera>();
+        auto camera_components = scene->GetComponentsWithTypeOf<Entity::Camera>(m_RenderAllocator);
 
         // Sort the camera's based on renderGraphType, which is going to be the render order
         // Maybe a way to do the sort when inserting the camera in the scene instead of every frame?

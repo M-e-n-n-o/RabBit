@@ -151,7 +151,8 @@ namespace RB::Entity
     {
         Math::Float4x4 local_to_world = m_Transform->GetLocalToWorldMatrix();
 
-        const auto& cameras = Application::GetInstance()->GetScene()->GetComponentsWithTypeOf<Camera>();
+        const Application* app = Application::GetInstance();
+        const auto& cameras = app->GetScene()->GetComponentsWithTypeOf<Camera>(app->GetAllocator());
 
         bool in_radius = false;
         for (const auto& camera : cameras)

@@ -23,7 +23,8 @@ namespace RB
 
         m_Accumulator += Math::Min(delta_time, 0.25f);
 
-        const auto& worlds2D = Application::GetInstance()->GetScene()->GetComponentsWithTypeOf<PhysicsWorld2D>();
+        const Application* app = Application::GetInstance();
+        const auto& worlds2D = app->GetScene()->GetComponentsWithTypeOf<PhysicsWorld2D>(app->GetAllocator());
 
         while (m_Accumulator >= PhysicsTickSpeedMs)
         {
