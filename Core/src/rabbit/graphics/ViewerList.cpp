@@ -109,7 +109,6 @@ namespace RB::Graphics
 
                 if (mesh->HasValidAABB())
                 {
-                    // We can do some frustum culling
                     const Math::AABB& aabb       = mesh->GetAABB();
                     const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
 
@@ -124,6 +123,7 @@ namespace RB::Graphics
                     {
                         if constexpr (std::is_same_v<TRenderable, SkinnedMeshRenderable>)
                         {
+                            // Culling based on distance from the camera
                             if (Math::Float3::Distance(model_mat.GetPosition(), cam_world.GetPosition()) > renderable->GetSkinningDistance())
                             {
                                 continue;
