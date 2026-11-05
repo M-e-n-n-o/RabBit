@@ -49,38 +49,44 @@ namespace RB::Graphics
                 {},
 
                 // Async compute compatible
-                false
+                false,
+
+                kViewerListPerspective_Camera
             };
     }
 
     RenderPassEntry* SkinningPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
-        auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>(allocator);
+        auto renderables = view_context->viewerLists[kViewerListPerspective_Camera]->GetViewables();
 
-        SkinningEntry::ModelEntry* entries = allocator->Allocate<SkinningEntry::ModelEntry>(skinned_renderables.size());
+        if (renderables.empty())
+        {
+            return nullptr;
+        }
+
+        SkinningEntry::ModelEntry* entries = allocator->Allocate<SkinningEntry::ModelEntry>(renderables.size());
 
         uint32_t total_entries = 0;
 
         const Math::Float4x4 cam_world = view_context->cameraTransform.GetLocalToWorldMatrix();
         const Math::Float4x4 cam_vp    = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
 
-        for (int i = 0; i < skinned_renderables.size(); ++i)
+        for (int i = 0; i < renderables.size(); ++i)
         {
-            const SkinnedMeshRenderable* renderable = skinned_renderables[i];
+            const ViewableEntry& viewable_entry = renderables[i];
+
+            if (viewable_entry.type != ViewableEntryType::SkinnedMesh)
+            {
+                continue;
+            }
+
+            const SkinnedMeshRenderable* renderable = (SkinnedMeshRenderable*)viewable_entry.component;
             const Mesh*                  mesh       = renderable->GetMesh();
             const Mesh::VertexPack&      vp         = mesh->GetVertexPack();
 
             if (!vp.primaryBuffer || !vp.primaryBuffer->ContentsReady() ||
                 !vp.secondaryBuffer || !vp.secondaryBuffer->ContentsReady() ||
                 !vp.boneWeightBuffer || !vp.boneWeightBuffer->ContentsReady())
-            {
-                continue;
-            }
-
-            const Transform* transform = renderable->GetGameObject()->GetComponent<Transform>();
-            const Math::Float4x4& model_mat = transform->GetLocalToWorldMatrix();
-
-            if (Math::Float3::Distance(model_mat.GetPosition(), cam_world.GetPosition()) > renderable->GetSkinningDistance())
             {
                 continue;
             }
@@ -92,18 +98,6 @@ namespace RB::Graphics
                     entries[entry_idx].boneWeightIn == vp.boneWeightBuffer)
                 {
                     // This mesh is used in multiple places, don't skin multiple times
-                    continue;
-                }
-            }
-
-            if (mesh->HasValidAABB())
-            {
-                // We can do some frustum culling
-                const Math::AABB& aabb       = mesh->GetAABB();
-                const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
-
-                if (!Frustum::IsInFrustum(world_aabb, cam_vp))
-                {
                     continue;
                 }
             }

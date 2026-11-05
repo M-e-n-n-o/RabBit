@@ -338,6 +338,8 @@ namespace RB::Graphics
             return id;
         };
 
+        uint8_t usedPerspectives = 0;
+
         for (RenderPassType pass_type : ordered_passes)
         {
             auto pass_ptr = m_Passes.find(pass_type);
@@ -358,6 +360,8 @@ namespace RB::Graphics
             memset(output_ids, -1, sizeof(output_ids));
 
             const RenderPassConfig& config = configs[pass_type];
+
+            usedPerspectives |= (1 << config.viewerPerspective);
 
             auto conn_it = m_Connections.find(pass_type);
 
@@ -497,6 +501,7 @@ namespace RB::Graphics
         graph->m_FinalOutputResourceID = m_FinalResourceId;
         graph->m_UnorderedPasses       = used_passes;
         graph->m_RenderFlow            = render_flow;
+        graph->m_ViewerPerspectives    = usedPerspectives;
 
         // Remove unused passes
         for (auto itr = m_Passes.begin(); itr != m_Passes.end(); ++itr)

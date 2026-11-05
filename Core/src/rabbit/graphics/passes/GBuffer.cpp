@@ -75,85 +75,84 @@ namespace RB::Graphics
                 },
 
                 // Async compute compatible
-                false
+                false,
+
+                kViewerListPerspective_Camera
             };
     }
 
     RenderPassEntry* GBufferPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
-        auto mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>(allocator);
-        auto skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>(allocator);
+        auto renderables = view_context->viewerLists[kViewerListPerspective_Camera]->GetViewables();
 
-        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(mesh_renderables.size() + skinned_renderables.size());
+        if (renderables.empty())
+        {
+            return nullptr;
+        }
+
+        GBufferEntry::ModelEntry* entries = allocator->Allocate<GBufferEntry::ModelEntry>(renderables.size());
 
         uint32_t total_entries = 0;
 
-        const Math::Float4x4 camera_vp = view_context->viewFrustum.GetWorldToViewMatrix() * view_context->viewFrustum.GetViewToClipMatrix();
-
-        auto ProcessRenderables = [&]<typename TRenderable>(const auto& container, auto GetPrimaryBuffer, auto GetSecondaryBuffer) 
+        for (const ViewableEntry& viewable_entry : renderables)
         {
-            for (const ObjectComponent* component : container)
-            {
-                const auto* renderable = static_cast<const TRenderable*>(component);
+            const auto* renderable = viewable_entry.component;
         
-                // TODO: GameObjects that use the same static Mesh & Material should be instanced.
-                // It would be a good idea to add a SetInstancedData method to the ViewContext and macro's
-                // in the shaders so that it, for examply, automatically picks the correct instanced model matrix
-                // in the Transform helper functions.
+            // TODO: GameObjects that use the same static Mesh & Material should be instanced.
+            // It would be a good idea to add a SetInstancedData method to the ViewContext and macro's
+            // in the shaders so that it, for examply, automatically picks the correct instanced model matrix
+            // in the Transform helper functions.
 
-                const Mesh*                 mesh        = renderable->GetMesh();
-                const Material*             mat         = renderable->GetMaterial();
-                const Mesh::VertexPack&     vp          = mesh->GetVertexPack();
-                const Shared<VertexBuffer>& prim_buffer = GetPrimaryBuffer(renderable, vp);
-                const Shared<VertexBuffer>& sec_buffer  = GetSecondaryBuffer(renderable, vp);
-                const Shared<Texture2D>&    albedo      = mat->GetAlbedoTexture();
-                const Shared<Texture2D>&    normal      = mat->GetNormalTexture();
+            Material*            mat         = nullptr;
+            Mesh::VertexPack     vp;
+            Shared<VertexBuffer> prim_buffer = nullptr;
+            Shared<VertexBuffer> sec_buffer  = nullptr;
+            if (viewable_entry.type == ViewableEntryType::Mesh)
+            {
+                const auto* mesh_renderable = (MeshRenderable*)renderable;
+                const auto* mesh = mesh_renderable->GetMesh();
 
-                if (!prim_buffer || !prim_buffer->ContentsReady() ||
-                    (sec_buffer && !sec_buffer->ContentsReady()) ||
-                    (vp.indexBuffer && !vp.indexBuffer->ContentsReady()) ||
-                    !albedo || !albedo->ContentsReady() ||
-                    (normal && !normal->ContentsReady()))
-                {
-                    continue;
-                }
-
-                const Transform*     transform = renderable->GetGameObject()->GetComponent<Transform>();
-                const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
-
-                if (mesh->HasValidAABB())
-                {
-                    // We can do some frustum culling
-                    const Math::AABB& aabb       = mesh->GetAABB();
-                    const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
-
-                    if (!Frustum::IsInFrustum(world_aabb, camera_vp))
-                    {
-                        continue;
-                    }
-                }
-
-                GBufferEntry::ModelEntry entry = {};
-                entry.vb_primary   = prim_buffer;
-                entry.vb_secondary = sec_buffer;
-                entry.ib           = vp.indexBuffer;
-                entry.albedoTex    = albedo;
-                entry.normalTex    = normal;
-                entry.modelMatrix  = model_mat;
-
-                entries[total_entries++] = entry;
+                mat         = mesh_renderable->GetMaterial();
+                vp          = mesh->GetVertexPack();
+                prim_buffer = vp.primaryBuffer;
+                sec_buffer  = vp.secondaryBuffer;
             }
-        };
+            else
+            {
+                const auto* mesh_renderable = (SkinnedMeshRenderable*)renderable;
+                const auto* mesh = mesh_renderable->GetMesh();
 
-        // Execute for regular meshes
-        ProcessRenderables.operator()<MeshRenderable>(mesh_renderables, 
-            [](auto* r, const auto& vp) { return vp.primaryBuffer; },
-            [](auto* r, const auto& vp) { return vp.secondaryBuffer; });
+                mat         = mesh_renderable->GetMaterial();
+                vp          = mesh->GetVertexPack();
+                prim_buffer = view_context->scheduledSkinning ? mesh_renderable->GetSkinnedPrimaryBuffer() : vp.primaryBuffer;
+                sec_buffer  = view_context->scheduledSkinning ? mesh_renderable->GetSkinnedSecondaryBuffer() : vp.secondaryBuffer;;
+            }
 
-        // Execute for skinned meshes
-        ProcessRenderables.operator()<SkinnedMeshRenderable>(skinned_renderables, 
-            [view_context](auto* r, const auto& vp) { return view_context->scheduledSkinning ? r->GetSkinnedPrimaryBuffer()   : vp.primaryBuffer; },
-            [view_context](auto* r, const auto& vp) { return view_context->scheduledSkinning ? r->GetSkinnedSecondaryBuffer() : vp.secondaryBuffer; });
+            const Shared<Texture2D>&    albedo      = mat->GetAlbedoTexture();
+            const Shared<Texture2D>&    normal      = mat->GetNormalTexture();
+
+            if (!prim_buffer || !prim_buffer->ContentsReady() ||
+                (sec_buffer && !sec_buffer->ContentsReady()) ||
+                (vp.indexBuffer && !vp.indexBuffer->ContentsReady()) ||
+                !albedo || !albedo->ContentsReady() ||
+                (normal && !normal->ContentsReady()))
+            {
+                continue;
+            }
+
+            const Transform*     transform = renderable->GetGameObject()->GetComponent<Transform>();
+            const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
+
+            GBufferEntry::ModelEntry entry = {};
+            entry.vb_primary   = prim_buffer;
+            entry.vb_secondary = sec_buffer;
+            entry.ib           = vp.indexBuffer;
+            entry.albedoTex    = albedo;
+            entry.normalTex    = normal;
+            entry.modelMatrix  = model_mat;
+
+            entries[total_entries++] = entry;
+        }
 
         GBufferEntry* entry = allocator->Allocate<GBufferEntry>();
         entry->entries      = entries;

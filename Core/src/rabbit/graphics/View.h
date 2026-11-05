@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Frustum.h"
+#include "ViewerList.h"
+
 #include "math/Vector.h"
 
 #include "entity/components/Camera.h"
@@ -23,26 +25,30 @@ namespace RB::Graphics
     class ViewContext
     {
     public:
-        bool                enabled;
-        bool                isOffscreen;
-        uint32_t            windowIndex;
-        Shared<Texture2D>   finalColorTarget;
-        Math::Float4        clearColor;
-        uint32_t            renderGraphType;
-        uint32_t            renderGraphSizeID;
+        bool                        enabled;
+        bool                        isOffscreen;
+        uint32_t                    windowIndex;
+        Shared<Texture2D>           finalColorTarget;
+        Math::Float4                clearColor;
+        uint32_t                    renderGraphType;
+        uint32_t                    renderGraphSizeID;
 
         // RenderPasses can change the properties of the viewport if needed
-        Viewport            viewport;
-        Frustum             viewFrustum;
+        Viewport                    viewport;
+        Frustum                     viewFrustum;
 
         // The camera this ViewContext is linked to
-        Entity::Camera      camera;
-        Entity::Transform   cameraTransform;
+        Entity::Camera              camera;
+        Entity::Transform           cameraTransform;
 
+        // Pre-culled meshes from different perspectives (ordered by ViewerListPerspective)
+        const ViewerList* const*   viewerLists;
+
+        // Helper methods
         void SetFrameConstants(uint32_t slot, RenderInterface* render_interface) const;
         void SetFrameConstants(uint32_t slot, RenderInterface* render_interface, Viewport vp, Frustum frustum) const;
 
         // Cross-pass communication members
-        bool                scheduledSkinning = false;
+        bool                        scheduledSkinning = false;
     };
 }

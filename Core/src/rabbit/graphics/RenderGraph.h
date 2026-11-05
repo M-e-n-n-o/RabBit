@@ -28,6 +28,8 @@ namespace RB::Graphics
         RenderPassEntry** SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator);
         void RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context, uint32_t size_id);
 
+        uint8_t GetUsedViewerPerspectivesFlag() const { return m_ViewerPerspectives; }
+
     private:
         friend class RenderGraphBuilder;
 
@@ -43,6 +45,7 @@ namespace RB::Graphics
         uint32_t                             m_FinalOutputResourceID;
         UnorderedMap<uint32_t, RenderPass*>  m_UnorderedPasses;
         List<FlowNode>                       m_RenderFlow;
+        uint8_t                              m_ViewerPerspectives;
     };
 
     // ---------------------------------------------------------------------------

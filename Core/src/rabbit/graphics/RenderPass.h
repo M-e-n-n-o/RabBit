@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderResource.h"
+#include "ViewerList.h"
 #include "app/FrameAllocator.h"
 
 namespace RB::Entity
@@ -115,10 +116,16 @@ namespace RB::Graphics
 
     struct RenderPassConfig
     {
+        // Resources used in the RenderPass
         RenderTextureInputDesc	dependencies[MAX_INOUT_RESOURCES_PER_RENDERPASS];
         RenderResourceDesc	    workingResources[MAX_WORKING_RESOURCES_PER_RENDERPASS];
-        RenderResourceDesc	    outputResources[MAX_INOUT_RESOURCES_PER_RENDERPASS];
-        bool                    asyncComputeCompatible  = false; // TODO Still unused
+        RenderResourceDesc	    outputResources [MAX_INOUT_RESOURCES_PER_RENDERPASS];
+
+        // TODO: Still unused
+        bool                    asyncComputeCompatible  = false;
+
+        // Filling this in correctly makes sure that the ViewerList of that type is generated
+        ViewerListPerspective   viewerPerspective       = kViewerListPerspective_None;
     };
 
     struct RenderPassEntry
@@ -140,15 +147,6 @@ namespace RB::Graphics
         RenderResource** workingRes;
         RenderResource** outputRes;
     };
-
-    // TODO: Instead of each RenderPass having its own SubmitEntry and collecting partly overlapping scene data,
-    // its probably better to have separate RenderDataScrapers that RenderPasses can share or have their own.
-    // This way we reduce the amount of overlapping data between, for example, a GBuffer and DirectionalShadow pass.
-    //class RenderDataScraper
-    //{
-    //public:
-    //
-    //};
 
     class RenderPass
     {

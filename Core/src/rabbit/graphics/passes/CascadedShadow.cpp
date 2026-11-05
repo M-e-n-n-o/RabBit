@@ -57,22 +57,23 @@ namespace RB::Graphics
                 },
 
                 // Async compute compatible
-                false
+                false,
+
+                kViewerListPerspective_DirectionalLight
             };
     }
 
     RenderPassEntry* CascadedShadowPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         const auto& lights = scene->GetComponentsWithTypeOf<DirectionalLight>(allocator);
-        const auto& mesh_renderables = scene->GetComponentsWithTypeOf<MeshRenderable>(allocator);
-        const auto& skinned_renderables = scene->GetComponentsWithTypeOf<SkinnedMeshRenderable>(allocator);
+        const auto& renderables = view_context->viewerLists[kViewerListPerspective_DirectionalLight]->GetViewables();
 
-        if (lights.empty() || (mesh_renderables.empty() && skinned_renderables.empty()))
+        if (lights.empty() || renderables.empty())
         {
             return nullptr;
         }
 
-        CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(mesh_renderables.size() + skinned_renderables.size());
+        CascadedShadowEntry::ModelEntry* entries = allocator->Allocate<CascadedShadowEntry::ModelEntry>(renderables.size());
 
         const auto* light = lights[0];
         RB_ASSERT(LOGTAG_GRAPHICS, lights.size() == 1, "Only 1 directional light is currently supported");
@@ -98,61 +99,44 @@ namespace RB::Graphics
 
         uint32_t total_entries = 0;
 
-        auto ProcessRenderables = [&]<typename TRenderable>(const auto& container, auto GetPrimaryBuffer) 
+        for (const ViewableEntry& viewable_entry : renderables)
         {
-            for (const ObjectComponent* component : container)
+            const auto* renderable = viewable_entry.component;
+
+            Mesh::VertexPack vp;
+            Shared<VertexBuffer> prim = nullptr;
+            if (viewable_entry.type == ViewableEntryType::Mesh)
             {
-                const auto* renderable = static_cast<const TRenderable*>(component);
-        
-                const Mesh*                 mesh = renderable->GetMesh();
-                const Mesh::VertexPack&     vp   = mesh->GetVertexPack();
-                const Shared<VertexBuffer>& prim = GetPrimaryBuffer(renderable, vp);
-
-                if (!prim || !prim->ContentsReady() ||
-                    (vp.indexBuffer && !vp.indexBuffer->ContentsReady()))
-                {
-                    continue;
-                }
-
-                const Transform*     transform = renderable->GetGameObject()->GetComponent<Transform>();
-                const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
-
-                uint32_t frustum_mask = UINT32_MAX;
-                if (mesh->HasValidAABB())
-                {
-                    const Math::AABB& aabb = mesh->GetAABB();
-                    const Math::AABB  world_aabb = Math::TransformAABBToWorld(aabb, model_mat);
-
-                    frustum_mask = 0;
-                    // Do frustum culling on each shadow slice
-                    for (int i = 0; i < total_slices; ++i)
-                    {
-                        frustum_mask |= Frustum::IsInFrustum(world_aabb, precomputed_vps[i]) << i;
-                    }
-                }
-
-                if (frustum_mask == 0)
-                {
-                    continue;
-                }
-
-                CascadedShadowEntry::ModelEntry entry = {};
-                entry.frustumMask   = frustum_mask;
-                entry.vb            = prim;
-                entry.ib            = vp.indexBuffer;
-                entry.modelMatrix   = model_mat;
-                entries[total_entries] = entry;
-                total_entries++;
+                const auto* mesh = ((MeshRenderable*)renderable)->GetMesh();
+                vp = mesh->GetVertexPack();
+                prim = vp.primaryBuffer;
             }
-        };
+            else
+            {
+                const auto* mesh_renderable = (SkinnedMeshRenderable*)renderable;
+                const auto* mesh = mesh_renderable->GetMesh();
+                vp = mesh->GetVertexPack();
+                prim = view_context->scheduledSkinning ? mesh_renderable->GetSkinnedPrimaryBuffer() : vp.primaryBuffer;;
+            }
 
-        // Execute for regular meshes
-        ProcessRenderables.operator()<MeshRenderable>(mesh_renderables, 
-            [](auto* r, const auto& vp)  { return vp.primaryBuffer; });
 
-        // Execute for skinned meshes
-        ProcessRenderables.operator()<SkinnedMeshRenderable>(skinned_renderables, 
-            [view_context](auto* r, const auto& vp) { return view_context->scheduledSkinning ? r->GetSkinnedPrimaryBuffer() : vp.primaryBuffer; });
+            if (!prim || !prim->ContentsReady() ||
+                (vp.indexBuffer && !vp.indexBuffer->ContentsReady()))
+            {
+                continue;
+            }
+
+            const Transform* transform = renderable->GetGameObject()->GetComponent<Transform>();
+            const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
+
+            CascadedShadowEntry::ModelEntry entry = {};
+            entry.frustumMask       = viewable_entry.extraInfo;
+            entry.vb                = prim;
+            entry.ib                = vp.indexBuffer;
+            entry.modelMatrix       = model_mat;
+            entries[total_entries]  = entry;
+            total_entries++;
+        }
 
         if (total_entries == 0)
         {

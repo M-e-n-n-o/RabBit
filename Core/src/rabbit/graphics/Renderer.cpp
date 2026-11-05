@@ -4,6 +4,7 @@
 #include "RenderPass.h"
 #include "Window.h"
 #include "View.h"
+#include "ViewerList.h"
 #include "ResourceDefaults.h"
 #include "ShaderSystem.h"
 #include "RenderGraph.h"
@@ -336,6 +337,23 @@ namespace RB::Graphics
 
             contexts[context_index].clearColor = camera->GetClearColor();
             contexts[context_index].renderGraphType = camera->GetRenderGraphType();
+
+            // Create ViewerLists for this ViewContext
+            ViewerList** viewer_lists = m_RenderAllocator->Allocate<ViewerList*>(kViewerListPerspective_Count);
+            uint8_t required_perspectives = m_RenderGraphs[contexts[context_index].renderGraphType]->GetUsedViewerPerspectivesFlag();
+
+            for (uint8_t viewer_idx = 0; viewer_idx < kViewerListPerspective_Count; ++viewer_idx)
+            {
+                if ((required_perspectives & (1 << viewer_idx)) == 0)
+                {
+                    viewer_lists[viewer_idx] = nullptr;
+                    continue;
+                }
+
+                viewer_lists[viewer_idx] = m_RenderAllocator->Allocate<ViewerList>(1, viewer_idx);
+                viewer_lists[viewer_idx]->CullEntries(&contexts[context_index], scene, m_RenderAllocator);
+            }
+            contexts[context_index].viewerLists = viewer_lists;
 
             context_index++;
         }

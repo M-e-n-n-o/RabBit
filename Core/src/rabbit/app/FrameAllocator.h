@@ -39,8 +39,8 @@ namespace RB
         // !!! BE AWARE that constructors & destructors are not called on objects that are allocated from this method !!!
         void* Allocate(uint64_t size, uint64_t align = 1);
 
-        template<typename T>
-        T* Allocate(uint64_t amount = 1);
+        template<typename T, typename... Args>
+        T* Allocate(uint64_t amount = 1, Args... constructor_args);
 
         FrameAllocationPageSet LockCurrentPageSet();
         void UnlockPageSet(FrameAllocationPageSet set);
@@ -62,8 +62,8 @@ namespace RB
         Mutex                        m_Mutex;
     };
 
-    template<typename T>
-    inline T* FrameAllocator::Allocate(uint64_t amount)
+    template<typename T, typename... Args>
+    inline T* FrameAllocator::Allocate(uint64_t amount, Args... constructor_args)
     {
         RB_MUTEX_AUTO_LOCK(m_Mutex);
 
@@ -74,7 +74,7 @@ namespace RB
 
         for (uint64_t i = 0; i < amount; i++)
         {
-            new (&objects[i]) T();
+            new (&objects[i]) T(constructor_args...);
         }
 
         used_page->RegisterDestructor(objects, amount, [](void* ptr, uint64_t count)

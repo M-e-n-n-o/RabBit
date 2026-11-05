@@ -82,6 +82,10 @@ namespace Editor
             sun->AddComponent<DirectionalLight>(Math::Float3(-0.3f, -0.98f, 0.0f), Math::Float3(0.99f, 0.97f, 0.76f));
         }
 
+
+        // This ImGui camera would be better in its own scene actually, this way no ViewerList is created for it and entries submitted.
+        // Implement this together with the SceneManager!!!!
+
         // This camera just renders the ImGui stuff on the OS window
         auto* imgui_cam = scene->CreateGameObject();
         imgui_cam->AddComponent<Transform>();
