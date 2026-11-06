@@ -18,8 +18,8 @@ namespace RB::Graphics
 
     enum class ViewableEntryType
     {
-        Mesh,
-        SkinnedMesh
+        Mesh,           // Entity::MeshRenderable
+        SkinnedMesh     // Entity::SkinnedMeshRenderable
     };
 
     struct ViewableEntry
