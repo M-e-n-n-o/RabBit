@@ -34,11 +34,12 @@ namespace RB::Graphics
             return;
         }
 
+        const Math::Float4x4 cam_world = view_context->cameraTransform.GetLocalToWorldMatrix();
+        
         // Camera data
         Math::Float4x4* cam_vp = nullptr;
 
-        // DirectionalLight data
-        const Math::Float4x4 cam_world = view_context->cameraTransform.GetLocalToWorldMatrix();
+        // CamFitDirLight data
         Span<const DirectionalLight*> dir_lights;
         Span<Math::Float4x4> dir_vps;
 
@@ -51,7 +52,7 @@ namespace RB::Graphics
         }
         break;
 
-        case kViewerListPerspective_DirectionalLight:
+        case kViewerListPerspective_CamFitDirLight:
         {
             dir_lights = scene->GetComponentsWithTypeOf<DirectionalLight>(allocator);
             
@@ -107,6 +108,15 @@ namespace RB::Graphics
                 const Transform*     transform = renderable->GetGameObject()->GetComponent<Transform>();
                 const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
 
+                if constexpr (std::is_same_v<TRenderable, SkinnedMeshRenderable>)
+                {
+                    // Culling based on distance from the camera
+                    if (Math::Float3::Distance(model_mat.GetPosition(), cam_world.GetPosition()) > renderable->GetSkinningDistance())
+                    {
+                        continue;
+                    }
+                }
+
                 if (mesh->HasValidAABB())
                 {
                     const Math::AABB& aabb       = mesh->GetAABB();
@@ -119,17 +129,8 @@ namespace RB::Graphics
                             continue;
                         }
                     }
-                    else if (m_Perspective == kViewerListPerspective_DirectionalLight)
+                    else if (m_Perspective == kViewerListPerspective_CamFitDirLight)
                     {
-                        if constexpr (std::is_same_v<TRenderable, SkinnedMeshRenderable>)
-                        {
-                            // Culling based on distance from the camera
-                            if (Math::Float3::Distance(model_mat.GetPosition(), cam_world.GetPosition()) > renderable->GetSkinningDistance())
-                            {
-                                continue;
-                            }
-                        }
-
                         uint64_t frustum_mask = 0;
 
                         // Do frustum culling on each shadow slice

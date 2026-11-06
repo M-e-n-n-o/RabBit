@@ -59,14 +59,14 @@ namespace RB::Graphics
                 // Async compute compatible
                 false,
 
-                kViewerListPerspective_DirectionalLight
+                kViewerListPerspective_CamFitDirLight
             };
     }
 
     RenderPassEntry* CascadedShadowPass::SubmitEntry(ViewContext* view_context, const Scene* const scene, FrameAllocator* allocator)
     {
         const auto& lights = scene->GetComponentsWithTypeOf<DirectionalLight>(allocator);
-        const auto& renderables = view_context->viewerLists[kViewerListPerspective_DirectionalLight]->GetViewables();
+        const auto& renderables = view_context->viewerLists[kViewerListPerspective_CamFitDirLight]->GetViewables();
 
         if (lights.empty() || renderables.empty())
         {

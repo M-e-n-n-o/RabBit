@@ -9,11 +9,11 @@ namespace RB::Graphics
 
     enum ViewerListPerspective : uint8_t
     {
-        kViewerListPerspective_Camera              = 0,
-        kViewerListPerspective_DirectionalLight    = 1,
+        kViewerListPerspective_Camera           = 0, // Entries in frustum of camera
+        kViewerListPerspective_CamFitDirLight   = 1, // Entries in frustum of directional light, fit around the frustum of the camera
 
-        kViewerListPerspective_None                = 2,
-        kViewerListPerspective_Count               = kViewerListPerspective_None
+        kViewerListPerspective_None             = 2,
+        kViewerListPerspective_Count            = kViewerListPerspective_None
     };
 
     enum class ViewableEntryType
