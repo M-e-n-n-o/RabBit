@@ -398,12 +398,12 @@ namespace RB::Graphics::D3D12
             return false;
         }
 
-        GetDataUnsafe(memory);
+        GetDataDirect(memory);
 
         return true;
     }
 
-    void ReadbackBufferD3D12::GetDataUnsafe(void* memory)
+    void ReadbackBufferD3D12::GetDataDirect(void* memory)
     {
         if (m_MappedMemory == nullptr)
         {
