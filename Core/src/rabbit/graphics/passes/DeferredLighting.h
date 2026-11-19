@@ -11,7 +11,7 @@ namespace RB::Graphics
     class DeferredLightingPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "DeferredLighting"; }
+        const char* GetName() const override { return "DeferredLighting"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 

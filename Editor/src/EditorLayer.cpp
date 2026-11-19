@@ -56,6 +56,7 @@ namespace Editor
         m_Viewport = m_Window->AddPanel<ViewportPanel>(ImGuiWindowFlags_None);
         m_Console = m_Window->AddPanel<ConsolePanel>(ImGuiWindowFlags_None);
         m_Hierarchy = m_Window->AddPanel<HierarchyPanel>(ImGuiWindowFlags_None);
+        m_Window->AddPanel<GpuTimelinePanel>(ImGuiWindowFlags_None);
         m_Window->AddPanel<TestWindowPanel>();
 
         m_Recording = false;

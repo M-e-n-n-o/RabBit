@@ -11,7 +11,7 @@ namespace RB::Graphics
     class SkinningPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "Skinning"; }
+        const char* GetName() const override { return "Skinning"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 

@@ -10,6 +10,7 @@ namespace RB
 
 namespace RB::Graphics
 {
+    class GpuTimer;
     class RenderGraphContext;
     class RenderGraphBuilder;
 
@@ -21,12 +22,13 @@ namespace RB::Graphics
     class RenderGraph
     {
     public:
+        RenderGraph() = default;
         ~RenderGraph();
 
-        RenderGraph() = default;
-
         RenderPassEntry** SubmitEntry(ViewContext* view_context, const Entity::Scene* const scene, FrameAllocator* allocator);
-        void RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context, uint32_t size_id);
+
+        void RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, 
+            RenderGraphContext* graph_context, uint32_t size_id, GpuTimer* gpu_timer);
 
         uint8_t GetUsedViewerPerspectivesFlag() const { return m_ViewerPerspectives; }
 
@@ -46,6 +48,9 @@ namespace RB::Graphics
         UnorderedMap<uint32_t, RenderPass*>  m_UnorderedPasses;
         List<FlowNode>                       m_RenderFlow;
         uint8_t                              m_ViewerPerspectives;
+#if !defined(RB_CONFIG_DIST)
+        List<Shared<TimestampQuery>>         m_Queries;
+#endif
     };
 
     // ---------------------------------------------------------------------------

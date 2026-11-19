@@ -8,6 +8,7 @@
 #include "ResourceDefaults.h"
 #include "ShaderSystem.h"
 #include "RenderGraph.h"
+#include "GpuTimer.h"
 
 #include "codeGen/ShaderDefines.h"
 #include "shaders/shared/Common.h"
@@ -29,7 +30,7 @@
 #include "platform/graphics/vulkan/RendererVK.h"
 #endif
 
-#if defined(RB_ENABLE_LOGS) && RB_PLATFORM_WINDOWS
+#if !defined(RB_CONFIG_DIST) && RB_PLATFORM_WINDOWS
 #define USE_PIX
 #include <pix3.h>
 #endif
@@ -66,6 +67,14 @@ namespace RB::Graphics
         Mutex*                              presentTimerMutex;
 
         VertexBuffer*                       backBufferCopyVB;
+
+        GpuTimer*                           gpuTimer;
+        Shared<TimestampQuery>              fullFrameQuery;
+#if !defined(RB_CONFIG_DIST)
+        Shared<TimestampQuery>              frameQuery;
+        List<Shared<TimestampQuery>>        contextQueries;
+        Shared<TimestampQuery>              presentCopiesQuery;
+#endif
 
         std::function<void()>               OnRenderFrameStart;
         std::function<void()>               OnRenderFrameEnd;
@@ -145,6 +154,15 @@ namespace RB::Graphics
         };
 
         m_BackBufferCopyVB = VertexBuffer::Create("BackBuffer copy VB", TopologyType::TriangleStrip, vertices, 4 * sizeof(float), sizeof(vertices));
+
+        m_FullFrameQuery = TimestampQuery::Create("Full-Frame");
+
+#if !defined(RB_CONFIG_DIST)
+        m_FrameQuery = TimestampQuery::Create("Frame");
+        m_PresentCopiesQuery = TimestampQuery::Create("Present Copies");
+#endif
+
+        m_GpuTimer = new GpuTimer();
     }
 
     Renderer::~Renderer()
@@ -173,6 +191,15 @@ namespace RB::Graphics
         }
         SAFE_DELETE(m_RenderGraphContext);
         SAFE_DELETE(m_RenderGraphSizeIDs);
+
+        SAFE_DELETE(m_GpuTimer);
+
+#if !defined(RB_CONFIG_DIST)
+        m_FrameQuery.reset();
+        m_ContextQueries.clear();
+        m_PresentCopiesQuery.reset();
+#endif
+        m_FullFrameQuery.reset();
 
         m_BackBufferCopyVB.reset();
 
@@ -216,6 +243,13 @@ namespace RB::Graphics
             context->presentTimeInverval            = &m_PresentTimeInverval;
             context->presentTimerMutex              = &m_PresentTimerMutex;
             context->backBufferCopyVB               = m_BackBufferCopyVB.get();
+            context->gpuTimer                       = m_GpuTimer;
+            context->fullFrameQuery                 = m_FullFrameQuery;
+#if !defined(RB_CONFIG_DIST)
+            context->frameQuery                     = m_FrameQuery;
+            context->contextQueries                 = m_ContextQueries;
+            context->presentCopiesQuery             = m_PresentCopiesQuery;
+#endif
             context->OnRenderFrameStart             = std::bind(&Renderer::OnFrameStart, this);
             context->OnRenderFrameEnd               = std::bind(&Renderer::OnFrameEnd, this);
             context->SyncWithGpu                    = std::bind(&Renderer::SyncWithGpu, this);
@@ -392,6 +426,16 @@ namespace RB::Graphics
         m_RenderGraphContext->CreateGraphResources();
 
         m_CurrentValidRenderGraphSizes = context_count;
+
+#if !defined(RB_CONFIG_DIST)
+        // One timestamp query for every ViewContext
+        for (uint32_t i = 0; i < context_count; ++i)
+        {
+            char name[32];
+            sprintf(name, "ViewContext %u", i);
+            m_ContextQueries.emplace_back(TimestampQuery::Create(name));
+        }
+#endif
     }
 
     void Renderer::SyncRenderer(bool gpu_sync)
@@ -559,7 +603,7 @@ namespace RB::Graphics
 
     Renderer* Renderer::Create(RenderAPI api, bool enable_validation_layer, bool load_pix_lib)
     {
-#if defined(RB_ENABLE_LOGS) && RB_PLATFORM_WINDOWS
+#if !defined(RB_CONFIG_DIST) && RB_PLATFORM_WINDOWS
         if (load_pix_lib)
         {
             // Load PIX library so you can attach at runtime
@@ -588,6 +632,17 @@ namespace RB::Graphics
         return nullptr;
     }
 
+#if !defined(RB_CONFIG_DIST)
+    #define RB_PROFILE_BEGIN(query) context->gpuTimer->OnBegin(query, 0);\
+                                    context->graphicsInterface->BeginQuery((query).get());
+
+    #define RB_PROFILE_END(query)   context->gpuTimer->OnEnd(query, 0);\
+                                    context->graphicsInterface->EndQuery((query).get());
+#else
+    #define RB_PROFILE_BEGIN(query)
+    #define RB_PROFILE_END(query)
+#endif
+
     void RenderJob(JobData* data)
     {
         RenderContext* context = (RenderContext*)data;
@@ -596,8 +651,14 @@ namespace RB::Graphics
 
         context->OnRenderFrameStart();
 
+        context->gpuTimer->Update();
+
+        context->gpuTimer->OnBegin(context->fullFrameQuery, 0);
+        context->graphicsInterface->BeginQuery(context->fullFrameQuery.get());
+
         {
-            RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Frame");
+            RB_MARKER_GPU_SCOPED(context->graphicsInterface, "Frame");
+            RB_PROFILE_BEGIN(context->frameQuery);
 
             for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
             {
@@ -608,7 +669,8 @@ namespace RB::Graphics
                     continue;
                 }
 
-                RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "ViewContext");
+                RB_MARKER_GPU_SCOPED(context->graphicsInterface, "ViewContext");
+                RB_PROFILE_BEGIN(context->contextQueries[view_context_index]);
 
                 const Shared<Texture2D>& final_color_target = view_context.finalColorTarget;
 
@@ -625,9 +687,14 @@ namespace RB::Graphics
                 context->renderGraphs[view_context.renderGraphType]->RunGraph(&view_context, 
                                                                               context->renderPassEntries[view_context_index], 
                                                                               context->graphicsInterface, 
-                                                                              context->graphContext, 
-                                                                              context->renderGraphSizeIDs[view_context_index]);
+                                                                              context->graphContext,
+                                                                              context->renderGraphSizeIDs[view_context_index],
+                                                                              context->gpuTimer);
+
+                RB_PROFILE_END(context->contextQueries[view_context_index]);
             }
+
+            RB_PROFILE_END(context->frameQuery);
         }
 
         // Prepare draw(s) to backbuffer(s)
@@ -649,6 +716,8 @@ namespace RB::Graphics
 
         // TODO Future optimize to batch the resource barriers that are done below
 
+        RB_PROFILE_BEGIN(context->presentCopiesQuery);
+
         // Copy to real backbuffers and present
         for (int view_context_index = 0; view_context_index < context->totalViewContexts; ++view_context_index)
         {
@@ -668,7 +737,7 @@ namespace RB::Graphics
                 continue;
             }
 
-            RB_PROFILE_GPU_SCOPED(context->graphicsInterface, "Present");
+            RB_MARKER_GPU_SCOPED(context->graphicsInterface, "Present");
 
             // Wait until the backbuffer resource is available
             if (window_index < context->backBufferAvailabilityGuards->size())
@@ -726,6 +795,11 @@ namespace RB::Graphics
             window_pairs[total_pairs].windowIndex = window_index;
             total_pairs++;
         }
+
+        RB_PROFILE_END(context->presentCopiesQuery);
+
+        context->gpuTimer->OnEnd(context->fullFrameQuery, 0);
+        context->graphicsInterface->EndQuery(context->fullFrameQuery.get());
 
         // Execute al the work to the GPU
         Shared<GpuGuard> guard = context->graphicsInterface->ExecuteOnGpu();

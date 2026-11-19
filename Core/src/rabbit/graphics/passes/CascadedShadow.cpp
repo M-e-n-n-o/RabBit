@@ -167,7 +167,7 @@ namespace RB::Graphics
 
         for (int slice = 0; slice < entry->totalSlices; ++slice)
         {
-            RB_PROFILE_GPU_SCOPED(in.ri, "Slice");
+            RB_MARKER_GPU_SCOPED(in.ri, "Slice");
 
             csm->SetFirstArraySlice(slice);
             in.ri->SetDepthStencil(csm);

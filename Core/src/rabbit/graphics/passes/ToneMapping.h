@@ -20,7 +20,7 @@ namespace RB::Graphics
     class ToneMappingPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "ToneMapping"; }
+        const char* GetName() const override { return "ToneMapping"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 

@@ -13,7 +13,7 @@ namespace RB::Graphics
     public:
         SmaaPass();
 
-        const char* GetName() override { return "SMAA"; }
+        const char* GetName() const override { return "SMAA"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 

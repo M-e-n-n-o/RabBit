@@ -11,7 +11,7 @@ namespace RB::Graphics
     class GBufferPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "GBuffer"; }
+        const char* GetName() const override { return "GBuffer"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 

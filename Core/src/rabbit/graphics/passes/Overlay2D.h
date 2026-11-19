@@ -11,7 +11,7 @@ namespace RB::Graphics
     class Overlay2DPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "Overlay2D"; }
+        const char* GetName() const override { return "Overlay2D"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 

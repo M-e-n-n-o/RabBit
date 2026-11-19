@@ -11,7 +11,7 @@ namespace RB::Graphics
     class CascadedShadowPass : public RenderPass
     {
     public:
-        const char* GetName() override { return "CascadedShadow"; }
+        const char* GetName() const override { return "CascadedShadow"; }
 
         RenderPassConfig GetConfiguration(const RenderPassSettings* settings) override;
 

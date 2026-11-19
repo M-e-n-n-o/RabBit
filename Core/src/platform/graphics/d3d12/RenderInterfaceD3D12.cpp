@@ -988,14 +988,14 @@ namespace RB::Graphics::D3D12
         m_CommandList->Dispatch(thread_groups_x, thread_groups_y, thread_groups_z);
     }
 
-    void RenderInterfaceD3D12::ProfileMarkerBegin(uint64_t color, const char* name)
+    void RenderInterfaceD3D12::MarkerBegin(uint64_t color, const char* name)
     {
 #if !defined(RB_CONFIG_DIST) && RB_PLATFORM_WINDOWS
         PIXBeginEvent(m_CommandList.Get(), color, name);
 #endif
     }
 
-    void RenderInterfaceD3D12::ProfileMarkerEnd()
+    void RenderInterfaceD3D12::MarkerEnd()
     {
 #if !defined(RB_CONFIG_DIST) && RB_PLATFORM_WINDOWS
         PIXEndEvent(m_CommandList.Get());

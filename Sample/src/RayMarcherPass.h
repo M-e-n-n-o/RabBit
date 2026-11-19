@@ -14,7 +14,7 @@ class RayMarcherPass : public RB::Graphics::RenderPass
 public:
     RayMarcherPass();
 
-    const char* GetName() override { return "RayMarcher"; }
+    const char* GetName() const override { return "RayMarcher"; }
 
     RB::Graphics::RenderPassConfig GetConfiguration(const RB::Graphics::RenderPassSettings* settings) override;
 

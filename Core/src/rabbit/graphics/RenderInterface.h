@@ -10,12 +10,12 @@ namespace RB::Math
 namespace RB::Graphics
 {
     // GPU markers
-#ifdef RB_ENABLE_LOGS
-    #define RB_PROFILE_GPU_SCOPED(render_interface, name)				ProfileGpuScoped rb_profile_gpu_scoped(render_interface, 0, name);
-    #define RB_PROFILE_GPU_SCOPED_COLOR(render_interface, name, color)	ProfileGpuScoped rb_profile_gpu_scoped(render_interface, color, name);
+#if !defined(RB_CONFIG_DIST)
+    #define RB_MARKER_GPU_SCOPED(render_interface, name)                MarkerGpuScoped rb_marker_gpu_scoped(render_interface, 0, name);
+    #define RB_MARKER_GPU_SCOPED_COLOR(render_interface, name, color)   MarkerGpuScoped rb_marker_gpu_scoped(render_interface, color, name);
 #else
-    #define RB_PROFILE_GPU_SCOPED(render_interface, name)		
-    #define RB_PROFILE_GPU_SCOPED_COLOR(render_interface, name, color) 
+    #define RB_MARKER_GPU_SCOPED(render_interface, name)
+    #define RB_MARKER_GPU_SCOPED_COLOR(render_interface, name, color)
 #endif
 
     class RenderResource;
@@ -115,8 +115,8 @@ namespace RB::Graphics
         void DrawInstanced(uint32_t instances);
         void Dispatch(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z);
 
-        virtual void ProfileMarkerBegin(uint64_t color, const char* name) = 0;
-        virtual void ProfileMarkerEnd() = 0;
+        virtual void MarkerBegin(uint64_t color, const char* name) = 0;
+        virtual void MarkerEnd() = 0;
 
         virtual void BeginQuery(Query* query) = 0;
         virtual void EndQuery(Query* query) = 0;
@@ -136,19 +136,19 @@ namespace RB::Graphics
         virtual void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) = 0;
     };
 
-#ifdef RB_ENABLE_LOGS
-    class ProfileGpuScoped
+#if !defined(RB_CONFIG_DIST)
+    class MarkerGpuScoped
     {
     public:
-        ProfileGpuScoped(RenderInterface* i, uint64_t color, const char* name)
+        MarkerGpuScoped(RenderInterface* i, uint64_t color, const char* name)
+            : m_Interface(i)
         {
-            m_Interface = i;
-            m_Interface->ProfileMarkerBegin(color, name);
+            m_Interface->MarkerBegin(color, name);
         }
 
-        ~ProfileGpuScoped()
+        ~MarkerGpuScoped()
         {
-            m_Interface->ProfileMarkerEnd();
+            m_Interface->MarkerEnd();
         }
 
     private:

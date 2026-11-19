@@ -8,6 +8,7 @@
 #include "panels/ViewportPanel.h"
 #include "panels/ConsolePanel.h"
 #include "panels/HierarchyPanel.h"
+#include "panels/GpuTimelinePanel.h"
 #include "engine/EngineEditorWindow.h"
 
 namespace Editor

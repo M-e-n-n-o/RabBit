@@ -25,6 +25,8 @@ namespace RB::Graphics
     class ViewContext;
     class ShaderSystem;
     class VertexBuffer;
+    class TimestampQuery;
+    class GpuTimer;
 
     // Defines the different render graph types and the order in which they are rendered
     enum RenderGraphType
@@ -58,8 +60,11 @@ namespace RB::Graphics
 
         ShaderSystem*     GetShaderSystem() const { return m_ShaderSystem; }
         FrameAllocator*   GetAllocator() const { return m_RenderAllocator; }
+        GpuTimer*         GetGpuTimer() const { return m_GpuTimer; }
 
         uint64_t GetRenderFrameIndex();
+
+        // CPU job timings
         float GetLastRenderTime(); // In ms
         float GetLastPresentInverval();  // In ms
 
@@ -87,30 +92,39 @@ namespace RB::Graphics
 
         inline static RenderAPI s_Api = RenderAPI::None;
 
-        bool                        m_IsShutdown;
-        WorkerThread*               m_RenderThread;
-        JobTypeID                   m_RenderJobType;
+        bool                         m_IsShutdown;
+        WorkerThread*                m_RenderThread;
+        JobTypeID                    m_RenderJobType;
+                                     
+        RenderInterface*             m_GraphicsInterface;
+        RenderGraph*                 m_RenderGraphs[kRenderGraphType_Count];
+        RenderGraphContext*          m_RenderGraphContext;
+        uint32_t                     m_CurrentValidRenderGraphSizes;
+        uint32_t*                    m_RenderGraphSizeIDs;
+                                     
+        ThreadedVariable<uint64_t>   m_RenderFrameIndex;
+        ThreadedVariable<uint32_t>   m_ForceSync;
+                                     
+        Timer                        m_PresentTimer;
+        double                       m_PresentTimeInverval;
+        Mutex                        m_PresentTimerMutex;
+                                     
+        Shared<VertexBuffer>         m_BackBufferCopyVB;
+                                     
+        Shared<TimestampQuery>       m_FullFrameQuery;
+#if !defined(RB_CONFIG_DIST)
+        // We only time individual contexts & passes in debug builds
+        Shared<TimestampQuery>       m_FrameQuery;
+        List<Shared<TimestampQuery>> m_ContextQueries;
+        Shared<TimestampQuery>       m_PresentCopiesQuery;
+#endif
+        GpuTimer*                    m_GpuTimer;
 
-        RenderInterface*            m_GraphicsInterface;
-        RenderGraph*                m_RenderGraphs[kRenderGraphType_Count];
-        RenderGraphContext*         m_RenderGraphContext;
-        uint32_t                    m_CurrentValidRenderGraphSizes;
-        uint32_t*                   m_RenderGraphSizeIDs;
-
-        ThreadedVariable<uint64_t>  m_RenderFrameIndex;
-        ThreadedVariable<uint32_t>  m_ForceSync;
-
-        Timer                       m_PresentTimer;
-        double                      m_PresentTimeInverval;
-        Mutex                       m_PresentTimerMutex;
-
-        Shared<VertexBuffer>        m_BackBufferCopyVB;
-
-        bool                        m_MultiThreadingSupport;
-
-        ShaderSystem*               m_ShaderSystem;
-
-        FrameAllocator*             m_RenderAllocator;
+        bool                         m_MultiThreadingSupport;
+                                     
+        ShaderSystem*                m_ShaderSystem;
+                                     
+        FrameAllocator*              m_RenderAllocator;
 
     public:
         struct BackBufferGuard
@@ -119,8 +133,8 @@ namespace RB::Graphics
         };
     private:
 
-        List<BackBufferGuard>		m_BackBufferAvailabilityGuards;
+        List<BackBufferGuard>        m_BackBufferAvailabilityGuards;
 
-        const uint32_t				m_RenderThreadTimeoutMs = 100;
+        const uint32_t               m_RenderThreadTimeoutMs = 100;
     };
 }

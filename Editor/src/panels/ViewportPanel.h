@@ -26,5 +26,6 @@ namespace Editor
         float m_MainThreadAverages[c_HistoryLength];
         float m_RenderThreadAverages[c_HistoryLength];
         float m_PresentAverages[c_HistoryLength];
+        float m_GpuAverages[c_HistoryLength];
     };
 }

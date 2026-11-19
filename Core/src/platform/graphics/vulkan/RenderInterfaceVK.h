@@ -85,8 +85,8 @@ namespace RB::Graphics::VK
         void DrawInstancedInternal(uint32_t instances) override {}
         void DispatchInternal(uint32_t thread_groups_x, uint32_t thread_groups_y, uint32_t thread_groups_z) override {}
 
-        void ProfileMarkerBegin(uint64_t color, const char* name) override {}
-        void ProfileMarkerEnd() override {}
+        void MarkerBegin(uint64_t color, const char* name) override {}
+        void MarkerEnd() override {}
 
         void* GetNativeInterface() const override { return (void*)&m_CommandBuffer; }
 

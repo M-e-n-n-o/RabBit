@@ -153,7 +153,7 @@ namespace RB::Graphics
     public:
         virtual ~RenderPass() = default;
 
-        virtual const char* GetName() = 0;
+        virtual const char* GetName() const = 0;
 
         virtual RenderPassConfig GetConfiguration(const RenderPassSettings* settings) = 0;
 

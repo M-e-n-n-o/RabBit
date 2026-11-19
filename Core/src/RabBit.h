@@ -91,6 +91,9 @@
 #include "rabbit/entity/components/PhysicsWorld.h"
 #include "rabbit/entity/components/PhysicsShape.h"
 
+#include "RabBit/graphics/Renderer.h"
+#include "rabbit/graphics/GpuTimer.h"
+
 #include "rabbit/graphics/passes/GBuffer.h"
 #include "rabbit/graphics/passes/SkinningPass.h"
 #include "rabbit/graphics/passes/CascadedShadow.h"

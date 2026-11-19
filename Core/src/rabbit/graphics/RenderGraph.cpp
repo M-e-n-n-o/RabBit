@@ -2,6 +2,7 @@
 #include "RenderGraph.h"
 #include "RenderGraphContext.h"
 #include "RenderInterface.h"
+#include "GpuTimer.h"
 #include "View.h"
 
 namespace RB::Graphics
@@ -47,11 +48,24 @@ namespace RB::Graphics
         return entries;
     }
 
-    void RenderGraph::RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, RenderGraphContext* graph_context, uint32_t size_id)
+#if !defined(RB_CONFIG_DIST)
+    #define RB_PROFILE_BEGIN(query) gpu_timer->OnBegin(query, 0);\
+                                    render_interface->BeginQuery((query).get());
+
+    #define RB_PROFILE_END(query)   gpu_timer->OnEnd(query, 0);\
+                                    render_interface->EndQuery((query).get());
+#else
+    #define RB_PROFILE_BEGIN(query)
+    #define RB_PROFILE_END(query)
+#endif
+
+    void RenderGraph::RunGraph(ViewContext* view_context, RenderPassEntry** entries, RenderInterface* render_interface, 
+        RenderGraphContext* graph_context, uint32_t size_id, GpuTimer* gpu_timer)
     {
         // First clear the necessary resources
         {
-            RB_PROFILE_GPU_SCOPED(render_interface, "Clear");
+            RB_MARKER_GPU_SCOPED(render_interface, "Clear");
+            RB_PROFILE_BEGIN(m_Queries[0]);
 
             const List<ResourceID>& all_resources = graph_context->GetScheduledGraphResources(m_ID);
             for (const ResourceID& id : all_resources)
@@ -64,6 +78,8 @@ namespace RB::Graphics
             }
 
             render_interface->FlushAllPending();
+
+            RB_PROFILE_END(m_Queries[0]);
         }
 
         const uint32_t disabled_max = graph_context->GetTotalCreatedResources();
@@ -152,7 +168,8 @@ namespace RB::Graphics
                     outputs[j] = nullptr;
             }
 
-            RB_PROFILE_GPU_SCOPED(render_interface, pass->GetName());
+            RB_MARKER_GPU_SCOPED(render_interface, pass->GetName());
+            RB_PROFILE_BEGIN(m_Queries[i + 1]);
 
             // Clear the render state before every pass
             render_interface->InvalidateState(false);
@@ -166,6 +183,8 @@ namespace RB::Graphics
             input.outputRes        = outputs;
 
             pass->Render(input);
+
+            RB_PROFILE_END(m_Queries[i + 1]);
         }
     }
 
@@ -512,6 +531,18 @@ namespace RB::Graphics
                 delete itr->second;
             }
         }
+
+#if !defined(RB_CONFIG_DIST)
+        // Build up timestamp queries for each pass + the beginning clear stage
+
+        graph->m_Queries.emplace_back(TimestampQuery::Create("Clear"));
+
+        for (int i = 0; i < graph->m_RenderFlow.size(); ++i)
+        {
+            const RenderPass* pass = graph->m_UnorderedPasses[graph->m_RenderFlow[i].passID];
+            graph->m_Queries.emplace_back(TimestampQuery::Create(pass->GetName()));
+        }
+#endif
 
         return graph;
     }

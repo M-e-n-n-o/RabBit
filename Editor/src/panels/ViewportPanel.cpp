@@ -28,6 +28,8 @@ namespace Editor
         {
             m_MainThreadAverages[i] = 0;
             m_RenderThreadAverages[i] = 0;
+            m_PresentAverages[i] = 0;
+            m_GpuAverages[i] = 0;
         }
     }
 
@@ -72,9 +74,10 @@ namespace Editor
 
         const float max_ms = 50.0f; // 20 FPS
 
-        const ImU32 main_color = IM_COL32(0, 255, 0, 255);
+        const ImU32 main_color   = IM_COL32(0, 255, 0, 255);
         const ImU32 render_color = IM_COL32(255, 0, 0, 255);
-        const ImU32 fps_color = IM_COL32(0, 0, 255, 255);
+        const ImU32 fps_color    = IM_COL32(255, 255, 255, 255);
+        const ImU32 gpu_color    = IM_COL32(0, 255, 255, 255);
 
         // Background
         dl->AddRectFilled(panel_min, ImVec2(graph_pos.x + graph_size.x, graph_pos.y + graph_size.y), IM_COL32(0, 0, 0, 127), 5.0f);
@@ -82,11 +85,13 @@ namespace Editor
         float main_average = 0;
         float render_average = 0;
         float present_average = 0;
+        float gpu_average = 0;
         {
             m_DeltaIndex = (m_DeltaIndex + 1) % c_HistoryLength;
-            m_MainThreadAverages[m_DeltaIndex] = Application::GetInstance()->GetDeltaTime() * 1000.0f;
-            m_RenderThreadAverages[m_DeltaIndex] = Application::GetInstance()->GetRenderer()->GetLastRenderTime();
-            m_PresentAverages[m_DeltaIndex] = Application::GetInstance()->GetRenderer()->GetLastPresentInverval();
+            m_MainThreadAverages[m_DeltaIndex]      = Application::GetInstance()->GetDeltaTime() * 1000.0f;
+            m_RenderThreadAverages[m_DeltaIndex]    = Application::GetInstance()->GetRenderer()->GetLastRenderTime();
+            m_PresentAverages[m_DeltaIndex]         = Application::GetInstance()->GetRenderer()->GetLastPresentInverval();
+            m_GpuAverages[m_DeltaIndex]             = Application::GetInstance()->GetRenderer()->GetGpuTimer()->GetLastGpuTime();
 
             int count = Math::Min(100, c_HistoryLength);
             for (int i = 0; i < count; i++)
@@ -95,18 +100,21 @@ namespace Editor
                 main_average += m_MainThreadAverages[idx];
                 render_average += m_RenderThreadAverages[idx];
                 present_average += m_PresentAverages[idx];
+                gpu_average += m_GpuAverages[idx];
             }
             main_average /= count;
             render_average /= count;
             present_average /= count;
+            gpu_average /= count;
         }
 
         float final_fps = 1000.0f / present_average;
 
         dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 8), main_color,    std::format("Main thread:    {:.2f}ms", main_average).c_str());
         dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 20), render_color, std::format("Render thread:  {:.2f}ms", render_average).c_str());
-        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 32), fps_color,    std::format("Frame time:     {:.2f}ms", present_average).c_str());
-        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 44), fps_color,    std::format("FPS:            {:.1f}", final_fps).c_str());
+        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 32), gpu_color,    std::format("GPU time:       {:.2f}ms", gpu_average).c_str());
+        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 44), fps_color,    std::format("Frame time:     {:.2f}ms", present_average).c_str());
+        dl->AddText(ImVec2(panel_min.x + 8, panel_min.y + 56), fps_color,    std::format("FPS:            {:.1f}", final_fps).c_str());
 
         auto PlotGraph = [&](float* timings, ImU32 color)
             {
@@ -127,6 +135,7 @@ namespace Editor
 
         PlotGraph(m_MainThreadAverages, main_color);
         PlotGraph(m_RenderThreadAverages, render_color);
+        PlotGraph(m_GpuAverages, gpu_color);
 
         auto DrawMarker = [&](float ms)
             {
