@@ -26,6 +26,8 @@ namespace RB::Graphics::D3D12
         }
 
         CreateFence();
+
+        RB_ASSERT_FATAL_RELEASE_D3D(m_CommandQueue->GetTimestampFrequency(&m_TimestampFrequency), "Failed to get timestamp frequency of Queue");
     }
 
     DeviceQueue::~DeviceQueue()

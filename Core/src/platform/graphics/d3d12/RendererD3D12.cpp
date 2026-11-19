@@ -3,12 +3,14 @@
 #include "RabBitCommon.h"
 #include "RendererD3D12.h"
 #include "GraphicsDevice.h"
+#include "DeviceQueue.h"
+#include "Pipeline.h"
+#include "QueryHeap.h"
 #include "graphics/ShaderSystem.h"
 #include "resource/ResourceManager.h"
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
 #include "resource/Descriptor.h"
-#include "Pipeline.h"
 
 #include "graphics/RenderInterface.h"
 
@@ -27,10 +29,12 @@ namespace RB::Graphics::D3D12
         g_TransientVBAllocator      = new TransientUploadBuffer("Transient VB Allocation",  k64KB);
         g_TransientUploadAllocator  = new TransientUploadBuffer("Transient Upoad Allocation", k128MB);
         g_PipelineManager           = new PipelineManager();
+        g_GraphicsTimestampHeap     = new TimestampHeap(25, g_GraphicsDevice->GetGraphicsQueue()->GetTimestampFrequency());
     }
 
     RendererD3D12::~RendererD3D12()
     {
+        delete g_GraphicsTimestampHeap;
         delete g_PipelineManager;
         delete g_TransientVBAllocator;
         delete g_TransientCBVAllocator;
@@ -44,6 +48,7 @@ namespace RB::Graphics::D3D12
 
     void RendererD3D12::OnFrameStart()
     {
+        g_GraphicsTimestampHeap->Update();
     }
 
     void RendererD3D12::OnFrameEnd()

@@ -260,12 +260,16 @@ namespace RB::Graphics::D3D12
     {
         RB_ASSERT_FATAL_RELEASE_D3D(D3D12CreateDevice(m_NativeAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_NativeDevice)), "Could not create D3D12 device");
 
-        // Enable debug messages
 #if !defined(RB_CONFIG_DIST)
+        // Makes sure that the GPU clock speed stays consistent so we can correctly measure GPU timings (only recommended in debug builds)
+        m_NativeDevice->SetStablePowerState(true);
+
         if (!enable_debug_messages)
         {
             return;
         }
+
+        // Enable debug messages
 
         if (FAILED(m_NativeDevice->QueryInterface(IID_PPV_ARGS(&m_InfoQueue))))
         {

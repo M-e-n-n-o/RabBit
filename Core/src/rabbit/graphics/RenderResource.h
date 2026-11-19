@@ -117,7 +117,7 @@ namespace RB::Graphics
     };
 
     // -----------------------------------------------------------------------------------------------
-    //							                    Buffers
+    //                                          Buffers
     // -----------------------------------------------------------------------------------------------
 
     class Buffer : public RenderResource
@@ -191,8 +191,10 @@ namespace RB::Graphics
     {
     public:
         // Make sure that the memory parameter is at least the size of GetPackedSize().
-        // If should_block is false it will return older frames' data. You probably want this behaviour when doing readbacks every frame.
+        // This does not check for races with the GPU, so may have to be buffered when reading every frame!
         virtual bool GetData(void* memory, bool block_until_ready = false) = 0;
+        // Reads from the readback buffer without checking if the GPU has written to the buffer, so caller has to make sure its safe to call!
+        virtual void GetDataDirect(void* memory) = 0;
 
         virtual uint64_t GetPackedSize() const = 0;
 
@@ -210,7 +212,7 @@ namespace RB::Graphics
     };
 
     // -----------------------------------------------------------------------------------------------
-    //							                    Textures
+    //                                           Textures
     // -----------------------------------------------------------------------------------------------
 
     uint32_t CalculateMaxMips(uint32_t width, uint32_t height);
@@ -327,5 +329,40 @@ namespace RB::Graphics
         Texture2D* colorTargets[8];
         uint32_t   colorTargetsCount;
         Texture2D* depthStencilTarget;
+    };
+
+    // -----------------------------------------------------------------------------------------------
+    //                                             Queries
+    // -----------------------------------------------------------------------------------------------
+
+    enum class QueryType : uint8_t
+    {
+        Unknown = 0,
+        Timestamp
+    };
+
+    class Query
+    {
+    public:
+        inline const char* GetName() const { return m_Name.c_str(); }
+        inline QueryType GetType() const { return m_Type; }
+
+    protected:
+        Query(const char* name, QueryType type) : m_Name(name), m_Type(type) {}
+        virtual ~Query() = default;
+
+        std::string m_Name;
+        QueryType   m_Type;
+    };
+
+    class TimestampQuery : public Query
+    {
+    public:
+        virtual void GetLatestStamps(double& begin_s, double& end_s) = 0;
+
+        static Shared<TimestampQuery> Create(const char* name);
+
+    protected:
+        TimestampQuery(const char* name) : Query(name, QueryType::Timestamp) {}
     };
 }

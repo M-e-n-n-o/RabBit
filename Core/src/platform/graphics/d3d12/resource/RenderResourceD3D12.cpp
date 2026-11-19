@@ -8,6 +8,7 @@
 #include "platform/graphics/d3d12/UtilsD3D12.h"
 #include "platform/graphics/d3d12/GraphicsDevice.h"
 #include "platform/graphics/d3d12/RenderInterfaceD3D12.h"
+#include "platform/graphics/d3d12/QueryHeap.h"
 #include "platform/graphics/d3d12/resource/UploadAllocator.h"
 
 namespace RB::Graphics::D3D12
@@ -374,8 +375,6 @@ namespace RB::Graphics::D3D12
 
     bool ReadbackBufferD3D12::GetData(void* memory, bool block_until_ready)
     {
-        // TODO: It would probably be safer to do this readback memcpy at the start of the frame to have a smaller chance the GPU is also writing to this resource
-
         bool popped_one = false;
 
         while (!m_Fences.empty())
@@ -399,6 +398,13 @@ namespace RB::Graphics::D3D12
             return false;
         }
 
+        GetDataUnsafe(memory);
+
+        return true;
+    }
+
+    void ReadbackBufferD3D12::GetDataUnsafe(void* memory)
+    {
         if (m_MappedMemory == nullptr)
         {
             m_Resource->GetResource()->Map(0, nullptr, (void**)&m_MappedMemory);
@@ -441,8 +447,6 @@ namespace RB::Graphics::D3D12
                 }
             }
         }
-
-        return true;
     }
 
     // ---------------------------------------------------------------------------
@@ -1199,6 +1203,52 @@ namespace RB::Graphics::D3D12
 
         if (m_RenderTargetHandle.isValid())
             m_RenderTargetDescriptor = g_DescriptorManager->GetCpuHandle(m_RenderTargetHandle);
+    }
+
+    // ---------------------------------------------------------------------------
+    //								TimestampQuery
+    // ---------------------------------------------------------------------------
+
+    TimestampQueryD3D12::TimestampQueryD3D12(const char* name)
+        : TimestampQuery(name)
+        , m_CurrentHeap(nullptr)
+        , m_HeapIndex(UINT32_MAX)
+    {
+    }
+
+    TimestampQueryD3D12::~TimestampQueryD3D12()
+    {
+        if (m_CurrentHeap != nullptr)
+        {
+            m_CurrentHeap->FreeIndex(m_HeapIndex);
+        }
+    }
+
+    void TimestampQueryD3D12::GetLatestStamps(double& begin, double& end)
+    {
+        if (m_CurrentHeap == nullptr)
+        {
+            begin, end = 0;
+            return;
+        }
+
+        m_CurrentHeap->GetTimestamps(m_HeapIndex, begin, end);
+    }
+
+    void TimestampQueryD3D12::EnsureHeapReserve(TimestampHeap* heap)
+    {
+        if (m_CurrentHeap == heap)
+        {
+            return;
+        }
+
+        if (m_CurrentHeap != nullptr)
+        {
+            m_CurrentHeap->FreeIndex(m_HeapIndex);
+        }
+
+        m_CurrentHeap = heap;
+        m_HeapIndex = heap->ReserveIndex();
     }
 }
 #endif

@@ -9,6 +9,8 @@
 
 namespace RB::Graphics::D3D12
 {
+    // We need 1 extra since the backbuffer wait is done just before the backbuffer copy
+    // The CPU is only throttled by the backbuffer wait, which happens after recording the frame, hence the +1
     #define MAX_NUM_CPU_FRAMES_IN_FLIGHT (BACK_BUFFER_COUNT + 1)
     #define TRANSIENT_CYCLES             MAX_NUM_CPU_FRAMES_IN_FLIGHT
 

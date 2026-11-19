@@ -5,6 +5,7 @@
 
 #include <thread>
 #include <mutex>
+#include <shared_mutex>
 #include <condition_variable>
 
 namespace RB
@@ -13,11 +14,14 @@ namespace RB
     //								    Mutex
     // ---------------------------------------------------------------------------
 
-    // TODO: In the future make a wrapper class for this and use SRWLock on Windows to improve performance
     using Mutex             = std::recursive_mutex; // TODO: Using a recursive mutex is slower than a normal mutex, fix this
     using ConditionVariable = std::condition_variable_any;
+    using ReadWriteLock     = std::shared_mutex;
 
-    #define RB_MUTEX_AUTO_LOCK(m) std::lock_guard<Mutex> auto_locking_and_unlocking_mutex(m)
+    #define RB_MUTEX_AUTO_LOCK(m)   std::lock_guard<Mutex> auto_locking_and_unlocking_mutex(m)
+
+    #define RB_AUTO_READ_LOCK(m)    std::shared_lock<ReadWriteLock> auto_locking_uand_unlocking_read_lock(m)
+    #define RB_AUTO_WRITE_LOCK(m)   std::unique_lock<ReadWriteLock> auto_locking_uand_unlocking_write_lock(m)
 
     // ---------------------------------------------------------------------------
     //								WorkerThread

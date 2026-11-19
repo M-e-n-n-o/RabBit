@@ -12,6 +12,7 @@
 namespace RB::Graphics::D3D12
 {
     class GpuGuardD3D12;
+    class TimestampHeap;
 
     class GenericBufferD3D12 : public GenericBuffer
     {
@@ -116,6 +117,7 @@ namespace RB::Graphics::D3D12
         void OnScheduledReadback(Shared<GpuGuardD3D12>& fence);
 
         bool GetData(void* memory, bool block_until_ready) override;
+        void GetDataDirect(void* memory) override;
 
     private:
         GpuResource*                                m_Resource;
@@ -328,6 +330,23 @@ namespace RB::Graphics::D3D12
         DescriptorIndex                 m_UavHandle;
         DescriptorIndex                 m_RenderTargetHandle;
         D3D12_CPU_DESCRIPTOR_HANDLE     m_RenderTargetDescriptor;
+    };
+
+    class TimestampQueryD3D12 : public TimestampQuery
+    {
+    public:
+        TimestampQueryD3D12(const char* name);
+        ~TimestampQueryD3D12();
+
+        void GetLatestStamps(double& begin, double& end) override;
+
+        void EnsureHeapReserve(TimestampHeap* heap);
+
+        uint32_t GetHeapIndex() const { return m_HeapIndex; }
+
+    private:
+        TimestampHeap* m_CurrentHeap;
+        uint32_t       m_HeapIndex;
     };
 }
 #endif

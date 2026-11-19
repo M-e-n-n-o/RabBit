@@ -425,4 +425,20 @@ namespace RB::Graphics
 
         return nullptr;
     }
+
+    Shared<TimestampQuery> TimestampQuery::Create(const char* name)
+    {
+        switch (Renderer::GetAPI())
+        {
+#if RB_GRAPHICS_API_D3D12
+        case RenderAPI::D3D12:
+            return CreateShared<D3D12::TimestampQueryD3D12>(name);
+#endif
+        default:
+            RB_LOG_CRITICAL(LOGTAG_GRAPHICS, "Not yet implemented");
+            break;
+        }
+
+        return nullptr;
+    }
 }

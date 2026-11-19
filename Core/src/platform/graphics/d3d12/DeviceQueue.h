@@ -33,6 +33,8 @@ namespace RB::Graphics::D3D12
         GPtr<ID3D12CommandQueue> GetCommandQueue() const { return m_CommandQueue; }
         GPtr<ID3D12Fence> GetFence() const { return m_Fence; }
 
+        uint64_t GetTimestampFrequency() const { return m_TimestampFrequency; }
+
     private:
         void CreateFence();
         void UpdateAvailableCommandAllocators();
@@ -54,6 +56,8 @@ namespace RB::Graphics::D3D12
         Queue<GPtr<ID3D12GraphicsCommandList2>> m_CommandListQueue;
         Queue<GPtr<ID3D12CommandAllocator>>     m_AvailableCommandAllocators;
         List<CommandAllocatorEntry>             m_RunningCommandAllocators;
+
+        uint64_t                                m_TimestampFrequency;
     };
 }
 #endif

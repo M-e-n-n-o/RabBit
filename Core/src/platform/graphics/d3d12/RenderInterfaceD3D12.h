@@ -14,6 +14,7 @@ namespace RB::Graphics::D3D12
 {
     class DeviceQueue;
     class GpuResource;
+    class TimestampHeap;
 
     class GpuGuardD3D12 : public GpuGuard
     {
@@ -93,6 +94,9 @@ namespace RB::Graphics::D3D12
         void ProfileMarkerBegin(uint64_t color, const char* name) override;
         void ProfileMarkerEnd() override;
 
+        void BeginQuery(Query* query) override;
+        void EndQuery(Query* query) override;
+
         void* GetNativeInterface() const override { return m_CommandList.Get(); }
 
     private:
@@ -108,11 +112,6 @@ namespace RB::Graphics::D3D12
         void SetGraphicsPipelineState();
         void SetComputePipelineState();
         void SetNewCommandList();
-
-        bool                                m_CopyOperationsOnly;
-        DeviceQueue*                        m_Queue;
-        GPtr<ID3D12GraphicsCommandList2>    m_CommandList;
-        ShaderSystem*                       m_ShaderSystem;
 
         struct PendingClear
         {
@@ -159,9 +158,16 @@ namespace RB::Graphics::D3D12
             List<PendingClear>                  pendingClears;
         };
 
-        RenderState                             m_RenderState;
+        bool                                m_CopyOperationsOnly;
+        DeviceQueue*                        m_Queue;
+        GPtr<ID3D12GraphicsCommandList2>    m_CommandList;
+        ShaderSystem*                       m_ShaderSystem;
 
-        List<ReadbackBuffer*>                   m_SchedulesReadbacks;
+        RenderState                         m_RenderState;
+
+        List<ReadbackBuffer*>               m_SchedulesReadbacks;
+
+        TimestampHeap*                      m_TimestampHeap;
     };
 }
 #endif

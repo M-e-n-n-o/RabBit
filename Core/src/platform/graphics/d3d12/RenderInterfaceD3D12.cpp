@@ -8,6 +8,7 @@
 #include "resource/ResourceStateManager.h"
 #include "resource/UploadAllocator.h"
 #include "resource/Descriptor.h"
+#include "QueryHeap.h"
 #include "Pipeline.h"
 #include "UtilsD3D12.h"
 #include "GraphicsDevice.h"
@@ -17,8 +18,10 @@
 #include "app/Application.h"
 #include <ShaderReflection.h>
 
+#if !defined(RB_CONFIG_DIST) && RB_PLATFORM_WINDOWS
 #define USE_PIX
 #include <pix3.h>
+#endif
 
 #include <d3dx12/d3dx12.h>
 
@@ -54,9 +57,15 @@ namespace RB::Graphics::D3D12
         , m_ShaderSystem(nullptr) // Defer set this as the shader system might not be created yet
     {
         if (allow_only_copy_operations)
+        {
             m_Queue = g_GraphicsDevice->GetCopyQueue();
+            m_TimestampHeap = nullptr;
+        }
         else
+        {
             m_Queue = g_GraphicsDevice->GetGraphicsQueue();
+            m_TimestampHeap = g_GraphicsTimestampHeap;
+        }
 
         SetNewCommandList();
         InvalidateState(true);
@@ -92,6 +101,11 @@ namespace RB::Graphics::D3D12
         {
             // Copy queue should not (have to) handle transitions
             FlushAllPending();
+        }
+
+        if (m_TimestampHeap)
+        {
+            m_TimestampHeap->Resolve(m_CommandList.Get());
         }
 
         // TODO Maybe do the ExecuteCommandLists on a separate thread in the future?
@@ -976,12 +990,63 @@ namespace RB::Graphics::D3D12
 
     void RenderInterfaceD3D12::ProfileMarkerBegin(uint64_t color, const char* name)
     {
+#if !defined(RB_CONFIG_DIST) && RB_PLATFORM_WINDOWS
         PIXBeginEvent(m_CommandList.Get(), color, name);
+#endif
     }
 
     void RenderInterfaceD3D12::ProfileMarkerEnd()
     {
+#if !defined(RB_CONFIG_DIST) && RB_PLATFORM_WINDOWS
         PIXEndEvent(m_CommandList.Get());
+#endif
+    }
+
+    void RenderInterfaceD3D12::BeginQuery(Query* query)
+    {
+        switch (query->GetType())
+        {
+        case QueryType::Timestamp:
+        {
+            if (m_TimestampHeap == nullptr)
+            {
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "This RenderInterface does not support timestamp queries yet");
+                return;
+            }
+
+            TimestampQueryD3D12* timestamp = (TimestampQueryD3D12*)query;
+            timestamp->EnsureHeapReserve(m_TimestampHeap);
+            m_TimestampHeap->OnBegin(m_CommandList.Get(), timestamp->GetHeapIndex());
+        }
+        break;
+
+        default:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Query type not yet implemented");
+            break;
+        }
+    }
+
+    void RenderInterfaceD3D12::EndQuery(Query* query)
+    {
+        switch (query->GetType())
+        {
+        case QueryType::Timestamp:
+        {
+            if (m_TimestampHeap == nullptr)
+            {
+                RB_LOG_ERROR(LOGTAG_GRAPHICS, "This RenderInterface does not support timestamp queries yet");
+                return;
+            }
+
+            TimestampQueryD3D12* timestamp = (TimestampQueryD3D12*)query;
+            m_TimestampHeap->OnEnd(m_CommandList.Get(), timestamp->GetHeapIndex());
+        }
+        break;
+
+        default:
+            RB_LOG_WARN(LOGTAG_GRAPHICS, "Query type not yet implemented");
+            break;
+        }
     }
 
     void RenderInterfaceD3D12::BindDescriptorHeaps()
