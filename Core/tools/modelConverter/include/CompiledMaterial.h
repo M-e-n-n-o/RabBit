@@ -15,7 +15,6 @@ namespace RB::ModelConverter
     {
         Opaque,
         Blended,
-        Cutout
     };
 
     struct CompiledMaterial
@@ -24,7 +23,8 @@ namespace RB::ModelConverter
         uint32_t    version;
         char        name[kMaxMaterialNameLength];
         BlendMode   blendMode;
-        uint8_t     pad0[3];
+        uint8_t     alphaCutoutThreshold;
+        uint8_t     pad0[2];
 
         // Texture file names (no directory), null terminated. Empty if the material has no such texture
         char        diffuseTexture[kMaxTextureNameLength];

@@ -22,12 +22,7 @@ namespace RB::Entity
             if (!AssetLoader::LoadConvertedMaterial(loaded_model.materialPaths[i].c_str(), &loaded_material))
                 continue;
 
-            Material* material = new Material();
-            if (!loaded_material.diffuseTexture.empty())
-                material->LoadAlbedoTexture((prefix + loaded_material.diffuseTexture).c_str(), converted_textures);
-            if (!loaded_material.normalTexture.empty())
-                material->LoadNormalTexture((prefix + loaded_material.normalTexture).c_str(), converted_textures);
-
+            Material* material = new Material(&loaded_material, converted_textures, texture_path_prefix);
             materials[i] = material;
         }
 

@@ -62,9 +62,37 @@ namespace RB::Entity
     }
 
     Material::Material()
+        : m_AlbedoTex(Graphics::g_TexDefaultError)
+        , m_NormalTex(nullptr)
+        , m_CompositionMode(CompositionMode::Opaque)
+        , m_CutoutThreshold(0.5f)
     {
-        m_AlbedoTex = Graphics::g_TexDefaultError;
-        m_NormalTex = nullptr;
+    }
+
+    Material::Material(LoadedMaterial* loaded_mat, bool converted_textures, const char* texture_path_prefix)
+        : Material()
+    {
+        if (loaded_mat = nullptr)
+        {
+            return;
+        }
+
+        if (!loaded_mat->diffuseTexture.empty())
+            LoadAlbedoTexture((texture_path_prefix + loaded_mat->diffuseTexture).c_str(), converted_textures);
+        if (!loaded_mat->normalTexture.empty())
+            LoadNormalTexture((texture_path_prefix + loaded_mat->normalTexture).c_str(), converted_textures);
+
+        m_CutoutThreshold = (float)loaded_mat->cutoutThreshold / UINT8_MAX;
+
+        switch (loaded_mat->blendMode)
+        {
+        case LoadedMaterial::BlendMode::Opaque:     m_CompositionMode = CompositionMode::Opaque; break;
+        case LoadedMaterial::BlendMode::Blended:    m_CompositionMode = CompositionMode::Blended; break;
+        default:
+            RB_LOG_WARN(LOGTAG_ENTITY, "Composition mode not recognized");
+            m_CompositionMode = CompositionMode::Opaque;
+            break;
+        }
     }
 
     void Material::LoadAlbedoTexture(const char* name, LoadedTexture* image)
@@ -86,9 +114,9 @@ namespace RB::Entity
         m_NormalTex = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
     }
 
-    void Material::LoadNormalTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space)
+    void Material::LoadNormalTexture(const char* file_name, bool converted_texture)
     {
-        m_NormalTex = LoadTexture(file_name, converted_texture, color_space);
+        m_NormalTex = LoadTexture(file_name, converted_texture, TextureColorSpace::Linear);
     }
 
     Shared<Graphics::Texture2D> Material::LoadTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space) const

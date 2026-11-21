@@ -120,12 +120,12 @@ namespace RB
         enum class BlendMode : uint8_t
         {
             Opaque,
-            Blended,
-            Cutout
+            Blended
         };
 
         std::string     name;
         BlendMode       blendMode;
+        uint8_t         cutoutThreshold;    // Uses range 0-UINT8_MAX
         std::string     diffuseTexture;     // Texture file names (no directory), empty if not set
         std::string     normalTexture;
     };

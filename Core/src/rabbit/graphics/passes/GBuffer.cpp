@@ -27,6 +27,7 @@ namespace RB::Graphics
             Shared<Texture>      albedoTex;
             Shared<Texture>      normalTex;
             Math::Float4x4	     modelMatrix;
+            float                cutoutThreshold;
         };
 
         ModelEntry*         entries;
@@ -128,6 +129,18 @@ namespace RB::Graphics
                 sec_buffer  = view_context->scheduledSkinning ? mesh_renderable->GetSkinnedSecondaryBuffer() : vp.secondaryBuffer;;
             }
 
+            if (mat->GetCompositionMode() != CompositionMode::Opaque)
+            {
+                // The GBuffer pass only supports opaque objects
+                continue;
+            }
+
+            if (mat->GetCutoutThreshold() > 0.99999f)
+            {
+                // This object will never actually be visible, so don't bother rendering
+                continue;
+            }
+
             const Shared<Texture2D>&    albedo      = mat->GetAlbedoTexture();
             const Shared<Texture2D>&    normal      = mat->GetNormalTexture();
 
@@ -144,12 +157,13 @@ namespace RB::Graphics
             const Math::Float4x4 model_mat = transform->GetLocalToWorldMatrix();
 
             GBufferEntry::ModelEntry entry = {};
-            entry.vb_primary   = prim_buffer;
-            entry.vb_secondary = sec_buffer;
-            entry.ib           = vp.indexBuffer;
-            entry.albedoTex    = albedo;
-            entry.normalTex    = normal;
-            entry.modelMatrix  = model_mat;
+            entry.vb_primary        = prim_buffer;
+            entry.vb_secondary      = sec_buffer;
+            entry.ib                = vp.indexBuffer;
+            entry.albedoTex         = albedo;
+            entry.normalTex         = normal;
+            entry.modelMatrix       = model_mat;
+            entry.cutoutThreshold   = mat->GetCutoutThreshold();
 
             entries[total_entries++] = entry;
         }
@@ -198,6 +212,7 @@ namespace RB::Graphics
             Shader::GBufferCB cb = {};
             cb.localToWorldMat = model_entry.modelMatrix;
             cb.hasNormalMap    = model_entry.normalTex != nullptr;
+            cb.cutoutThreshold = model_entry.cutoutThreshold;
 
             in.ri->SetConstantShaderData(GeometryGlobals_GBufferCB, &cb, sizeof(Shader::GBufferCB));
 

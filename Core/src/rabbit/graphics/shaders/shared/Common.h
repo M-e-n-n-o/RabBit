@@ -59,7 +59,8 @@ PB struct GBufferCB
 {
     PB float4x4 localToWorldMat;    // View matrix
     PB uint     hasNormalMap;
-    PB float3   padding;
+    PB float    cutoutThreshold;
+    PB float2   padding;
 };
 
 PB static const uint MAX_NUM_CASCADES = 4;

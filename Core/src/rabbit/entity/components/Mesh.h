@@ -47,26 +47,39 @@ namespace RB::Entity
         sRGB
     };
 
+    enum class CompositionMode
+    {
+        Opaque,
+        Blended,
+    };
+
     class Material
     {
     public:
-
         Material();
+        Material(LoadedMaterial* material, bool converted_textures = true, const char* texture_path_prefix = "");
 
         void LoadAlbedoTexture(const char* name, LoadedTexture* image);
         void LoadAlbedoTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
         void LoadNormalTexture(const char* name, LoadedTexture* image);
-        void LoadNormalTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space = TextureColorSpace::sRGB);
+        void LoadNormalTexture(const char* file_name, bool converted_texture);
 
-        Shared<Graphics::Texture2D> GetAlbedoTexture() const { return m_AlbedoTex; }
-        Shared<Graphics::Texture2D> GetNormalTexture() const { return m_NormalTex; }
+        void SetCompositionMode(CompositionMode mode) { m_CompositionMode = mode; }
+        void SetCutoutThreshold(float threshold)      { m_CutoutThreshold = threshold; }
+
+        Shared<Graphics::Texture2D> GetAlbedoTexture()   const { return m_AlbedoTex; }
+        Shared<Graphics::Texture2D> GetNormalTexture()   const { return m_NormalTex; }
+        CompositionMode             GetCompositionMode() const { return m_CompositionMode; }
+        float                       GetCutoutThreshold() const { return m_CutoutThreshold; }
 
     private:
         Shared<Graphics::Texture2D> LoadTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space) const;
 
         Shared<Graphics::Texture2D> m_AlbedoTex;
         Shared<Graphics::Texture2D> m_NormalTex;
+        CompositionMode             m_CompositionMode;
+        float                       m_CutoutThreshold;
     };
 
     class MeshRenderable : public ObjectComponent

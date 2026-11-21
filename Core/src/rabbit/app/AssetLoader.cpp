@@ -495,15 +495,15 @@ namespace RB
             {
             case ModelConverter::BlendMode::Opaque:  out_material->blendMode = LoadedMaterial::BlendMode::Opaque; break;
             case ModelConverter::BlendMode::Blended: out_material->blendMode = LoadedMaterial::BlendMode::Blended; break;
-            case ModelConverter::BlendMode::Cutout:  out_material->blendMode = LoadedMaterial::BlendMode::Cutout; break;
             default:
                 RB_LOG_ERROR(LOGTAG_MAIN, "Material file \"%s\" has an unknown blend mode: %d", final_path.c_str(), (int)material.blendMode);
                 return false;
             }
 
-            out_material->name           = ToString(material.name, ModelConverter::kMaxMaterialNameLength);
-            out_material->diffuseTexture = ToString(material.diffuseTexture, ModelConverter::kMaxTextureNameLength);
-            out_material->normalTexture  = ToString(material.normalTexture, ModelConverter::kMaxTextureNameLength);
+            out_material->name            = ToString(material.name, ModelConverter::kMaxMaterialNameLength);
+            out_material->diffuseTexture  = ToString(material.diffuseTexture, ModelConverter::kMaxTextureNameLength);
+            out_material->normalTexture   = ToString(material.normalTexture, ModelConverter::kMaxTextureNameLength);
+            out_material->cutoutThreshold = material.alphaCutoutThreshold;
 
             RB_LOG(LOGTAG_MAIN, "Loaded converted material: %s", out_material->name.c_str());
 

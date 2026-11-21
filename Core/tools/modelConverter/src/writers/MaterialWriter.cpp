@@ -35,9 +35,10 @@ namespace RB::ModelConverter
             LOG("Warning: texture name of material \"" << name << "\" is longer than " << (kMaxTextureNameLength - 1) << " characters and will be truncated");
 
         CompiledMaterial compiled = {};
-        compiled.magic     = kMaterialMagic;
-        compiled.version   = kMaterialVersion;
-        compiled.blendMode = material.blendMode;
+        compiled.magic                  = kMaterialMagic;
+        compiled.version                = kMaterialVersion;
+        compiled.blendMode              = material.blendMode;
+        compiled.alphaCutoutThreshold   = UINT8_MAX / 2; // 0.5f
         CopyName(compiled.name, sizeof(compiled.name), name);
         CopyName(compiled.diffuseTexture, sizeof(compiled.diffuseTexture), diffuse);
         CopyName(compiled.normalTexture, sizeof(compiled.normalTexture), normal);

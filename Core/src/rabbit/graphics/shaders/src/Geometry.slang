@@ -55,6 +55,11 @@ PO_GBufferEncodedOutput Gbuffer(PI_SIMPLE input, uniform PixelUniforms u)
 
     float4 color = u.albedo.Sample(g_WrapAnisoSampler, input.uv);
 
+    if (color.a < g_GBufferCB.cutoutThreshold)
+    {
+        discard;
+    }
+
     float3 normal = input.normal;
     if (g_GBufferCB.hasNormalMap != 0)
     {
