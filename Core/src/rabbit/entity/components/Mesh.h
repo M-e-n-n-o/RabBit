@@ -24,7 +24,7 @@ namespace RB::Entity
             Shared<Graphics::VertexBuffer> boneWeightBuffer = nullptr;
         };
 
-        Mesh(const char* name, const LoadedModel::Submodel& submodel, bool allow_skinning = true);
+        Mesh(const char* name, const LoadedMesh::Submesh& submesh, bool allow_skinning = true);
         Mesh(const char* name, const float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, const uint32_t* index_data = nullptr, uint64_t index_data_count = 0);
 
         const VertexPack& GetVertexPack() const { return m_VertexPack; }
@@ -53,10 +53,10 @@ namespace RB::Entity
 
         Material();
 
-        void LoadAlbedoTexture(const char* name, LoadedImage* image);
+        void LoadAlbedoTexture(const char* name, LoadedTexture* image);
         void LoadAlbedoTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
-        void LoadNormalTexture(const char* name, LoadedImage* image);
+        void LoadNormalTexture(const char* name, LoadedTexture* image);
         void LoadNormalTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space = TextureColorSpace::sRGB);
 
         Shared<Graphics::Texture2D> GetAlbedoTexture() const { return m_AlbedoTex; }
@@ -89,7 +89,7 @@ namespace RB::Entity
     class SkinnedMeshRenderable : public ObjectComponent
     {
     public:
-        SkinnedMeshRenderable(Mesh* mesh, Material* material, List<Transform*> nodes, List<LoadedModel::SkinBone> bones, float max_skinning_distance = 100.0f);
+        SkinnedMeshRenderable(Mesh* mesh, Material* material, List<Transform*> nodes, List<LoadedMesh::SkinBone> bones, float max_skinning_distance = 100.0f);
 
         void OnAttached() override;
 
@@ -113,6 +113,6 @@ namespace RB::Entity
         Shared<Graphics::VertexBuffer>  m_SkinnedSecondaryBuffer;
         Shared<Graphics::GenericBuffer> m_BoneMatrixBuffer;
         List<Transform*>                m_SkeletonNodes;
-        List<LoadedModel::SkinBone>     m_Bones;
+        List<LoadedMesh::SkinBone>     m_Bones;
     };
 }

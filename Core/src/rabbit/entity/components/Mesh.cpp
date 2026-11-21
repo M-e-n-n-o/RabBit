@@ -10,7 +10,7 @@
 
 namespace RB::Entity
 {
-    Mesh::Mesh(const char* name, const LoadedModel::Submodel& submodel, bool allow_skinning)
+    Mesh::Mesh(const char* name, const LoadedMesh::Submesh& submesh, bool allow_skinning)
     {
         char position_name[100];
         sprintf(position_name, "%s primary", name);
@@ -19,31 +19,31 @@ namespace RB::Entity
         sprintf(secondary_name, "%s secondary", name);
 
         uint32_t position_size = sizeof(Math::Float3);
-        uint32_t vertex_size = sizeof(LoadedModel::Vertex);
+        uint32_t vertex_size = sizeof(LoadedMesh::Vertex);
 
-        m_VertexPack.primaryBuffer   = Graphics::VertexBuffer::Create(position_name,  RB::Graphics::TopologyType::TriangleList, submodel.positions.data(), position_size, position_size * submodel.positions.size());
-        m_VertexPack.secondaryBuffer = Graphics::VertexBuffer::Create(secondary_name, RB::Graphics::TopologyType::TriangleList, submodel.vertices.data(), vertex_size, vertex_size * submodel.vertices.size());
+        m_VertexPack.primaryBuffer   = Graphics::VertexBuffer::Create(position_name,  RB::Graphics::TopologyType::TriangleList, submesh.positions.data(), position_size, position_size * submesh.positions.size());
+        m_VertexPack.secondaryBuffer = Graphics::VertexBuffer::Create(secondary_name, RB::Graphics::TopologyType::TriangleList, submesh.vertices.data(), vertex_size, vertex_size * submesh.vertices.size());
 
-        if (!submodel.indices.empty())
+        if (!submesh.indices.empty())
         {
             char index_name[100];
             sprintf(index_name, "%s indices", name);
 
-            m_VertexPack.indexBuffer = Graphics::IndexBuffer::Create(index_name, submodel.indices.data(), submodel.indices.size());
+            m_VertexPack.indexBuffer = Graphics::IndexBuffer::Create(index_name, submesh.indices.data(), submesh.indices.size());
         }
 
-        if (allow_skinning && submodel.isSkinned)
+        if (allow_skinning && submesh.isSkinned)
         {
             char bones_name[100];
             sprintf(bones_name, "%s bones", name);
 
-            uint32_t bones_size = sizeof(LoadedModel::SkinVertex);
-            m_VertexPack.boneWeightBuffer = Graphics::VertexBuffer::Create(bones_name, RB::Graphics::TopologyType::TriangleList, submodel.skinVertices.data(), bones_size, bones_size * submodel.skinVertices.size());
+            uint32_t bones_size = sizeof(LoadedMesh::SkinVertex);
+            m_VertexPack.boneWeightBuffer = Graphics::VertexBuffer::Create(bones_name, RB::Graphics::TopologyType::TriangleList, submesh.skinVertices.data(), bones_size, bones_size * submesh.skinVertices.size());
         }
 
         m_ValidBounds = true;
-        m_Bounds.min = submodel.minBounds;
-        m_Bounds.max = submodel.maxBounds;
+        m_Bounds.min = submesh.minBounds;
+        m_Bounds.max = submesh.maxBounds;
     }
 
     Mesh::Mesh(const char* name, const float* vertex_data, uint32_t elements_per_vertex, uint64_t vertex_data_count, const uint32_t* index_data, uint64_t index_data_count)
@@ -67,7 +67,7 @@ namespace RB::Entity
         m_NormalTex = nullptr;
     }
 
-    void Material::LoadAlbedoTexture(const char* name, LoadedImage* image)
+    void Material::LoadAlbedoTexture(const char* name, LoadedTexture* image)
     {
         m_AlbedoTex = nullptr;
         m_AlbedoTex = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
@@ -81,7 +81,7 @@ namespace RB::Entity
             m_AlbedoTex = Graphics::g_TexDefaultError;
     }
 
-    void Material::LoadNormalTexture(const char* name, LoadedImage* image)
+    void Material::LoadNormalTexture(const char* name, LoadedTexture* image)
     {
         m_NormalTex = Graphics::Texture2D::Create(name, image->data, image->dataSize, image->format, image->width, image->height, false, false);
     }
@@ -93,7 +93,7 @@ namespace RB::Entity
 
     Shared<Graphics::Texture2D> Material::LoadTexture(const char* file_name, bool converted_texture, TextureColorSpace color_space) const
     {
-        LoadedImage img;
+        LoadedTexture img;
 
         bool success;
         if (converted_texture)
@@ -107,7 +107,7 @@ namespace RB::Entity
         return Graphics::Texture2D::Create(img.name, img.data, img.dataSize, img.format, img.width, img.height, img.mipCount, false, false);
     }
 
-    SkinnedMeshRenderable::SkinnedMeshRenderable(Mesh* mesh, Material* material, List<Transform*> nodes, List<LoadedModel::SkinBone> bones, float max_skinning_distance)
+    SkinnedMeshRenderable::SkinnedMeshRenderable(Mesh* mesh, Material* material, List<Transform*> nodes, List<LoadedMesh::SkinBone> bones, float max_skinning_distance)
         : m_Mesh(nullptr)
         , m_Material(nullptr)
         , m_SkinningDistance(max_skinning_distance)
@@ -175,7 +175,7 @@ namespace RB::Entity
 
         for (size_t i = 0; i < m_Bones.size(); i++)
         {
-            const LoadedModel::SkinBone& bone = m_Bones[i];
+            const LoadedMesh::SkinBone& bone = m_Bones[i];
             Transform* bone_transform = m_SkeletonNodes[bone.nodeIndex];
 
             // bind-space -> bone-local -> world -> back into attach-node-local space (so that gbuffer can render normally)

@@ -82,7 +82,11 @@ int main(int argc, char* argv[])
     LOG("Input file: " << input_file);
 
     const char* output_file = FindLaunchArg("-output");
-    EXIT_ON_FAIL(output_file != nullptr, "No -output file specified");
+
+    std::string default_out_name = GetFilenameWithoutExtension(input_file) + ".rbtx";
+    if (output_file == nullptr)
+        output_file = default_out_name.c_str();
+
     LOG("Output file: " << output_file);
 
     const char* target_format_name = FindLaunchArg("-format");

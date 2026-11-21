@@ -13,7 +13,7 @@ namespace RB::Entity
     public:
         Font(const char* name, LoadedFont& loaded_font)
         {
-            LoadedImage& img = loaded_font.fontAtlas;
+            LoadedTexture& img = loaded_font.fontAtlas;
             m_FontTexture = Graphics::Texture2D::Create(name, img.data, img.dataSize, img.format, img.width, img.height, false, false);
 
             m_Characters = loaded_font.characters;

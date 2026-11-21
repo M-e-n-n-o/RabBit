@@ -5,6 +5,8 @@
 #include <filesystem>
 
 #include <CompiledTexture.h>
+#include <CompiledMesh.h>
+#include <CompiledMaterial.h>
 #include <CompiledModel.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -17,14 +19,14 @@ using namespace RB::Graphics;
 
 namespace RB
 {
-    LoadedImage::LoadedImage()
+    LoadedTexture::LoadedTexture()
         : data(nullptr)
         , dataSize(0)
         , width(0)
         , height(0)
     {}
 
-    LoadedImage::~LoadedImage()
+    LoadedTexture::~LoadedTexture()
     {
         if (loadedUsingStb)
         {
@@ -62,7 +64,7 @@ namespace RB
         //                                  Images
         // ---------------------------------------------------------------------------
 
-        bool LoadConvertedTexture(const char* path, LoadedImage* out_image)
+        bool LoadConvertedTexture(const char* path, LoadedTexture* out_image)
         {
             std::string final_path = (g_AssetPath + ((std::string)path));
 
@@ -128,7 +130,7 @@ namespace RB
             return true;
         }
 
-        bool LoadTexture8Bit(const char* path, LoadedImage* out_image, bool srgb)
+        bool LoadTexture8Bit(const char* path, LoadedTexture* out_image, bool srgb)
         {
             std::string final_path = (g_AssetPath + ((std::string)path));
 
@@ -199,7 +201,7 @@ namespace RB
         }
 
         // ---------------------------------------------------------------------------
-        //                                  Models
+        //                                  Meshes
         // ---------------------------------------------------------------------------
 
         template<typename T>
@@ -235,7 +237,7 @@ namespace RB
             return result;
         }
 
-        bool LoadConvertedModel(const char* path, LoadedModel* out_model)
+        bool LoadConvertedMesh(const char* path, LoadedMesh* out_mesh)
         {
             // TODO:
             // - Store more texture types (normals, roughness, etc.)
@@ -243,20 +245,20 @@ namespace RB
             //      - You can then choose the behaviour when its not yet loaded. Need to block until loaded or just skip rendering until loaded?
 
             // The bulk vertex data is copied straight from the file, so the layouts have to match
-            static_assert(sizeof(Math::Float3)              == sizeof(ModelConverter::PackedFloat3), "Math::Float3 does not match the file layout, copy per element instead");
-            static_assert(sizeof(LoadedModel::Vertex)       == sizeof(ModelConverter::CompiledVertex), "LoadedModel::Vertex does not match the file layout, copy per element instead");
-            static_assert(sizeof(LoadedModel::SkinVertex)   == sizeof(ModelConverter::CompiledSkinVertex), "LoadedModel::SkinVertex does not match the file layout");
-            static_assert(sizeof(Math::Float4x4)            == sizeof(float) * 16, "Math::Float4x4 does not match the file layout");
+            static_assert(sizeof(Math::Float3)             == sizeof(ModelConverter::PackedFloat3), "Math::Float3 does not match the file layout, copy per element instead");
+            static_assert(sizeof(LoadedMesh::Vertex)       == sizeof(ModelConverter::CompiledVertex), "LoadedMesh::Vertex does not match the file layout, copy per element instead");
+            static_assert(sizeof(LoadedMesh::SkinVertex)   == sizeof(ModelConverter::CompiledSkinVertex), "LoadedMesh::SkinVertex does not match the file layout");
+            static_assert(sizeof(Math::Float4x4)           == sizeof(float) * 16, "Math::Float4x4 does not match the file layout");
 
             std::string final_path = (g_AssetPath + ((std::string)path));
 
-            RB_LOG(LOGTAG_MAIN, "Loading converted model file: %s", final_path.c_str());
+            RB_LOG(LOGTAG_MAIN, "Loading converted mesh file: %s", final_path.c_str());
 
             auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
 
             if (!file_handle->IsValid())
             {
-                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load model file \"%s\" from disk", final_path.c_str());
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load mesh file \"%s\" from disk", final_path.c_str());
                 return false;
             }
 
@@ -264,65 +266,55 @@ namespace RB
             const uint8_t* base = (const uint8_t*)data.data;
             const uint64_t file_size = data.size;
 
-            if (file_size < sizeof(ModelConverter::CompiledModelHeader))
+            if (file_size < sizeof(ModelConverter::CompiledMeshHeader))
             {
-                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is not a valid converted model (too small)", final_path.c_str());
+                RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is not a valid converted model (too small)", final_path.c_str());
                 return false;
             }
 
-            ModelConverter::CompiledModelHeader header;
+            ModelConverter::CompiledMeshHeader header;
             memcpy(&header, base, sizeof(header));
 
-            if (header.magic != ModelConverter::ValidMagic)
+            if (header.magic != ModelConverter::kMeshMagic)
             {
-                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is not a valid converted model, incorrect magic: %d", final_path.c_str(), header.magic);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is not a valid converted model, incorrect magic: %d", final_path.c_str(), header.magic);
                 return false;
             }
 
-            if (header.version != ModelConverter::kCurrentVersion)
+            if (header.version != ModelConverter::kMeshVersion)
             {
-                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" has version %d but version %d is expected, convert it again", final_path.c_str(), header.version, ModelConverter::kCurrentVersion);
+                RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" has version %d but version %d is expected, convert it again", final_path.c_str(), header.version, ModelConverter::kMeshVersion);
                 return false;
             }
 
             if (header.fileSize != file_size)
             {
-                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is truncated or corrupt", final_path.c_str());
+                RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is truncated or corrupt", final_path.c_str());
                 return false;
             }
 
-            const ModelConverter::CompiledMaterial*  materials  = nullptr;
-            const ModelConverter::CompiledSubmodel*  submodels  = nullptr;
+            const ModelConverter::CompiledSubmesh*   submeshes  = nullptr;
             const ModelConverter::CompiledNode*      nodes      = nullptr;
             const ModelConverter::CompiledAnimation* animations = nullptr;
 
-            if (!GetFileArray(base, file_size, header.materialsOffset,  header.materialCount,  materials)  ||
-                !GetFileArray(base, file_size, header.submodelsOffset,  header.submodelCount,  submodels)  ||
+            if (!GetFileArray(base, file_size, header.submeshesOffset,  header.submeshCount,   submeshes)  ||
                 !GetFileArray(base, file_size, header.nodesOffset,      header.nodeCount,      nodes)      ||
                 !GetFileArray(base, file_size, header.animationsOffset, header.animationCount, animations))
             {
-                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (tables are out of bounds)", final_path.c_str());
+                RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is corrupt (tables are out of bounds)", final_path.c_str());
                 return false;
             }
 
-            // Materials
-            for (uint32_t i = 0; i < header.materialCount; i++)
-            {
-                const auto& mat = materials[i];
-                out_model->albedoTextures.push_back(std::string(mat.diffuseTexture, strnlen(mat.diffuseTexture, ModelConverter::kMaxTextureLength)));
-                out_model->normalTextures.push_back(std::string(mat.normalTexture, strnlen(mat.normalTexture, ModelConverter::kMaxTextureLength)));
-            }
-
             // Nodes
-            out_model->nodes.resize(header.nodeCount);
+            out_mesh->nodes.resize(header.nodeCount);
             for (uint32_t i = 0; i < header.nodeCount; i++)
             {
                 const ModelConverter::CompiledNode& src = nodes[i];
-                LoadedModel::Node& dst = out_model->nodes[i];
+                LoadedMesh::Node& dst = out_mesh->nodes[i];
 
                 if (src.parent >= (int32_t)i)
                 {
-                    RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (node %d has an invalid parent)", final_path.c_str(), i);
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is corrupt (node %d has an invalid parent)", final_path.c_str(), i);
                     return false;
                 }
 
@@ -333,20 +325,20 @@ namespace RB
                 dst.scale       = ToFloat3(src.scale);
             }
 
-            // Submodels
-            out_model->models.resize(header.submodelCount);
-            for (uint32_t i = 0; i < header.submodelCount; i++)
+            // Submeshes
+            out_mesh->submeshes.resize(header.submeshCount);
+            for (uint32_t i = 0; i < header.submeshCount; i++)
             {
-                const ModelConverter::CompiledSubmodel& src = submodels[i];
-                LoadedModel::Submodel& dst = out_model->models[i];
+                const ModelConverter::CompiledSubmesh& src = submeshes[i];
+                LoadedMesh::Submesh& dst = out_mesh->submeshes[i];
 
                 const ModelConverter::PackedFloat3*         positions       = nullptr;
                 const ModelConverter::CompiledVertex*       vertices        = nullptr;
-                const uint32_t*                             indices         = nullptr;
+                const uint32_t*                            indices         = nullptr;
                 const ModelConverter::CompiledSkinVertex*   skin_vertices   = nullptr;
                 const ModelConverter::CompiledSkinBone*     skin_bones      = nullptr;
 
-                const bool skinned = (src.flags & ModelConverter::kSubmodel_Skinned) != 0;
+                const bool skinned = (src.flags & ModelConverter::kSubmesh_Skinned) != 0;
 
                 if (src.nodeIndex >= header.nodeCount ||
                     !GetFileArray(base, file_size, src.positionsOffset, src.vertexCount, positions) ||
@@ -355,13 +347,12 @@ namespace RB
                     (skinned && (!GetFileArray(base, file_size, src.skinVerticesOffset, src.vertexCount, skin_vertices) ||
                                  !GetFileArray(base, file_size, src.skinBonesOffset,    src.boneCount,   skin_bones))))
                 {
-                    RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (submodel %d is out of bounds)", final_path.c_str(), i);
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is corrupt (submodel %d is out of bounds)", final_path.c_str(), i);
                     return false;
                 }
 
                 dst.minBounds       = ToFloat3(src.minBounds);
                 dst.maxBounds       = ToFloat3(src.maxBounds);
-                dst.materialIndex   = src.materialIndex;
                 dst.nodeIndex       = src.nodeIndex;
                 dst.isSkinned       = skinned;
 
@@ -387,7 +378,7 @@ namespace RB
                     {
                         if (skin_bones[b].nodeIndex >= header.nodeCount)
                         {
-                            RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (submodel %d has a bone without a node)", final_path.c_str(), i);
+                            RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is corrupt (submodel %d has a bone without a node)", final_path.c_str(), i);
                             return false;
                         }
 
@@ -398,16 +389,16 @@ namespace RB
             }
 
             // Animations
-            out_model->animations.resize(header.animationCount);
+            out_mesh->animations.resize(header.animationCount);
             for (uint32_t i = 0; i < header.animationCount; i++)
             {
                 const ModelConverter::CompiledAnimation& src = animations[i];
-                LoadedModel::Animation& dst = out_model->animations[i];
+                LoadedMesh::Animation& dst = out_mesh->animations[i];
 
                 const ModelConverter::CompiledChannel* channels = nullptr;
                 if (!GetFileArray(base, file_size, src.channelsOffset, src.channelCount, channels))
                 {
-                    RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (animation %d is out of bounds)", final_path.c_str(), i);
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is corrupt (animation %d is out of bounds)", final_path.c_str(), i);
                     return false;
                 }
 
@@ -418,7 +409,7 @@ namespace RB
                 for (uint32_t c = 0; c < src.channelCount; c++)
                 {
                     const ModelConverter::CompiledChannel& src_ch = channels[c];
-                    LoadedModel::AnimationChannel& dst_ch = dst.channels[c];
+                    LoadedMesh::AnimationChannel& dst_ch = dst.channels[c];
 
                     const ModelConverter::CompiledKey*          translation = nullptr;
                     const ModelConverter::CompiledRotationKey*  rotation    = nullptr;
@@ -429,7 +420,7 @@ namespace RB
                         !GetFileArray(base, file_size, src_ch.rotationKeysOffset,    src_ch.rotationKeyCount,    rotation)    ||
                         !GetFileArray(base, file_size, src_ch.scaleKeysOffset,       src_ch.scaleKeyCount,       scale))
                     {
-                        RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (animation %d has an invalid channel)", final_path.c_str(), i);
+                        RB_LOG_ERROR(LOGTAG_MAIN, "Mesh file \"%s\" is corrupt (animation %d has an invalid channel)", final_path.c_str(), i);
                         return false;
                     }
 
@@ -449,7 +440,163 @@ namespace RB
                 }
             }
 
-            RB_LOG(LOGTAG_MAIN, "Loaded converted model: %s (%d submodels, %d nodes, %d animations)", header.name, header.submodelCount, header.nodeCount, header.animationCount);
+            RB_LOG(LOGTAG_MAIN, "Loaded converted mesh: %s (%d submeshes, %d nodes, %d animations)", header.name, header.submeshCount, header.nodeCount, header.animationCount);
+
+            return true;
+        }
+
+        // ---------------------------------------------------------------------------
+        //                                  Materials
+        // ---------------------------------------------------------------------------
+
+        static std::string ToString(const char* fixed_string, size_t capacity)
+        {
+            return std::string(fixed_string, strnlen(fixed_string, capacity));
+        }
+
+        bool LoadConvertedMaterial(const char* path, LoadedMaterial* out_material)
+        {
+            std::string final_path = (g_AssetPath + ((std::string)path));
+
+            RB_LOG(LOGTAG_MAIN, "Loading converted material file: %s", final_path.c_str());
+
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
+
+            if (!file_handle->IsValid())
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load material file \"%s\" from disk", final_path.c_str());
+                return false;
+            }
+
+            FileData data = file_handle->ReadFull();
+
+            if (data.size < sizeof(ModelConverter::CompiledMaterial))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Material file \"%s\" is not a valid converted material (too small)", final_path.c_str());
+                return false;
+            }
+
+            ModelConverter::CompiledMaterial material;
+            memcpy(&material, data.data, sizeof(material));
+
+            if (material.magic != ModelConverter::kMaterialMagic)
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Material file \"%s\" is not a valid converted material, incorrect magic: %d", final_path.c_str(), material.magic);
+                return false;
+            }
+
+            if (material.version != ModelConverter::kMaterialVersion)
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Material file \"%s\" has version %d but version %d is expected, convert it again", final_path.c_str(), material.version, ModelConverter::kMaterialVersion);
+                return false;
+            }
+
+            switch (material.blendMode)
+            {
+            case ModelConverter::BlendMode::Opaque:  out_material->blendMode = LoadedMaterial::BlendMode::Opaque; break;
+            case ModelConverter::BlendMode::Blended: out_material->blendMode = LoadedMaterial::BlendMode::Blended; break;
+            case ModelConverter::BlendMode::Cutout:  out_material->blendMode = LoadedMaterial::BlendMode::Cutout; break;
+            default:
+                RB_LOG_ERROR(LOGTAG_MAIN, "Material file \"%s\" has an unknown blend mode: %d", final_path.c_str(), (int)material.blendMode);
+                return false;
+            }
+
+            out_material->name           = ToString(material.name, ModelConverter::kMaxMaterialNameLength);
+            out_material->diffuseTexture = ToString(material.diffuseTexture, ModelConverter::kMaxTextureNameLength);
+            out_material->normalTexture  = ToString(material.normalTexture, ModelConverter::kMaxTextureNameLength);
+
+            RB_LOG(LOGTAG_MAIN, "Loaded converted material: %s", out_material->name.c_str());
+
+            return true;
+        }
+
+        // ---------------------------------------------------------------------------
+        //                                  Models
+        // ---------------------------------------------------------------------------
+
+        bool LoadConvertedModel(const char* path, LoadedModel* out_model)
+        {
+            std::string final_path = (g_AssetPath + ((std::string)path));
+
+            RB_LOG(LOGTAG_MAIN, "Loading converted model file: %s", final_path.c_str());
+
+            auto file_handle = FileLoader::OpenFile(final_path.c_str(), OpenFileMode::kFileMode_Read | OpenFileMode::kFileMode_Binary);
+
+            if (!file_handle->IsValid())
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Failed to load model file \"%s\" from disk", final_path.c_str());
+                return false;
+            }
+
+            FileData data = file_handle->ReadFull();
+            const uint8_t* base = (const uint8_t*)data.data;
+            const uint64_t file_size = data.size;
+
+            if (file_size < sizeof(ModelConverter::CompiledModelHeader))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is not a valid converted model (too small)", final_path.c_str());
+                return false;
+            }
+
+            ModelConverter::CompiledModelHeader header;
+            memcpy(&header, base, sizeof(header));
+
+            if (header.magic != ModelConverter::kModelMagic)
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is not a valid converted model, incorrect magic: %d", final_path.c_str(), header.magic);
+                return false;
+            }
+
+            if (header.version != ModelConverter::kModelVersion)
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" has version %d but version %d is expected, convert it again", final_path.c_str(), header.version, ModelConverter::kModelVersion);
+                return false;
+            }
+
+            if (header.fileSize != file_size)
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is truncated or corrupt", final_path.c_str());
+                return false;
+            }
+
+            const ModelConverter::CompiledModelMaterial* materials         = nullptr;
+            const uint32_t*                              submesh_materials = nullptr;
+
+            if (!GetFileArray(base, file_size, header.materialsOffset,        header.materialCount, materials) ||
+                !GetFileArray(base, file_size, header.submeshMaterialsOffset, header.submeshCount,  submesh_materials))
+            {
+                RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (tables are out of bounds)", final_path.c_str());
+                return false;
+            }
+
+            // Referenced files are stored relative to the model file
+            const std::filesystem::path model_dir = std::filesystem::path(path).parent_path();
+            auto resolve = [&model_dir](const char* file, size_t capacity)
+            {
+                return (model_dir / ToString(file, capacity)).generic_string();
+            };
+
+            out_model->name     = ToString(header.name, ModelConverter::kMaxModelNameLength);
+            out_model->meshPath = resolve(header.meshFile, ModelConverter::kMaxFileNameLength);
+
+            out_model->materialPaths.resize(header.materialCount);
+            for (uint32_t i = 0; i < header.materialCount; i++)
+                out_model->materialPaths[i] = resolve(materials[i].file, ModelConverter::kMaxFileNameLength);
+
+            out_model->submeshMaterials.resize(header.submeshCount);
+            for (uint32_t i = 0; i < header.submeshCount; i++)
+            {
+                const uint32_t index = submesh_materials[i];
+                if (index != ModelConverter::kNoMaterial && index >= header.materialCount)
+                {
+                    RB_LOG_ERROR(LOGTAG_MAIN, "Model file \"%s\" is corrupt (submesh %d has an invalid material)", final_path.c_str(), i);
+                    return false;
+                }
+
+                out_model->submeshMaterials[i] = (index == ModelConverter::kNoMaterial) ? LoadedModel::kNoMaterial : index;
+            }
+
+            RB_LOG(LOGTAG_MAIN, "Loaded converted model: %s (%d materials, %d submeshes)", out_model->name.c_str(), header.materialCount, header.submeshCount);
 
             return true;
         }
@@ -464,7 +611,7 @@ namespace RB
 
             RB_LOG(LOGTAG_MAIN, "Loading font: %s", final_path.c_str());
 
-            LoadedImage* img = &out_font->fontAtlas;
+            LoadedTexture* img = &out_font->fontAtlas;
             *img = {};
             img->loadedUsingStb = false;
             img->format         = RenderResourceFormat::R8_UNORM;

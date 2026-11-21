@@ -5,6 +5,8 @@
 
 #include <RabBit.h>
 
+#include <filesystem>
+
 using namespace RB;
 using namespace RB::Events;
 using namespace RB::Entity;
@@ -38,26 +40,12 @@ namespace Editor
 
         // Scene
         {
-            LoadedModel model;
-            bool success = AssetLoader::LoadConvertedModel(m_ModelName, &model);
-            if (!success)
-            {
-                return;
-            }
+            // Make sure the asset loader uses the relative path
+            std::filesystem::path file_name(m_ModelName);
+            std::string path = file_name.parent_path().string() + "/";
+            AssetLoader::Init(path.c_str());
 
-            List<Material*> materials;
-            for (int i = 0; i < model.albedoTextures.size(); i++)
-            {
-                Material* mat = new Material();
-                materials.push_back(mat);
-                mat->LoadAlbedoTexture(model.albedoTextures[i].c_str(), false);
-            }
-            for (int i = 0; i < model.normalTextures.size(); i++)
-            {
-                materials[i]->LoadNormalTexture((model.normalTextures[i]).c_str(), false);
-            }
-
-            m_Model = SceneUtils::SpawnModel(scene, &model, materials);
+            m_Model = SceneUtils::SpawnModel(scene, file_name.filename().string().c_str(), false);
 
             // This camera renders the viewport
             auto* game_cam_obj = scene->CreateGameObject();
@@ -66,11 +54,12 @@ namespace Editor
             m_Camera->SetClearColor({ 0.3f, 0.3f, 0.3f, 1.0f });
 
             Math::Float3 model_bounds(0);
-            for (const auto& submodel : model.models)
+            for (const auto& submesh : m_Model.meshes)
             {
-                model_bounds.x = Math::Max(model_bounds.x, submodel.maxBounds.x);
-                model_bounds.y = Math::Max(model_bounds.y, submodel.maxBounds.y);
-                model_bounds.z = Math::Max(model_bounds.z, submodel.maxBounds.z);
+                const auto& aabb = submesh->GetAABB();
+                model_bounds.x = Math::Max(model_bounds.x, aabb.max.x);
+                model_bounds.y = Math::Max(model_bounds.y, aabb.max.y);
+                model_bounds.z = Math::Max(model_bounds.z, aabb.max.z);
             }
             float cam_distance = Math::Max(model_bounds.x, Math::Max(model_bounds.y, model_bounds.z)) * 4.0f;
             m_OrbitDistance = cam_distance;
